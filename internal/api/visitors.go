@@ -82,8 +82,12 @@ func (d Deps) handleVisitors(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
 		return
 	}
-	if len(rows) > days {
-		rows = rows[len(rows)-days:]
+	// Calendar window including today (UTC). Rows are ascending, so drop the
+	// old prefix; a gap shortens the result instead of reaching further back.
+	now := time.Now().UTC()
+	cutoff := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -(days - 1))
+	for len(rows) > 0 && rows[0].Day.Before(cutoff) {
+		rows = rows[1:]
 	}
 
 	body := visitorsBody{GeneratedAt: generatedAt.UTC(), Days: make([]visitorDay, 0, len(rows))}

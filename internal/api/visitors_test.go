@@ -19,15 +19,39 @@ type visitorsBody struct {
 	Days        []map[string]any `json:"days"`
 }
 
-// visitorRows returns n consecutive days ending 2026-09-27, oldest first.
+// visitorRows returns n consecutive days ending today (UTC), oldest first.
 func visitorRows(n int) []store.VisitorDaily {
-	end := time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC)
+	end := utcToday()
 	out := make([]store.VisitorDaily, 0, n)
 	for i := n - 1; i >= 0; i-- {
 		day := end.AddDate(0, 0, -i)
 		out = append(out, store.VisitorDaily{Day: day, Uniques: 100 + i, Requests: int64(1000 + i), PageViews: int64(500 + i), FetchedAt: day})
 	}
 	return out
+}
+
+func utcToday() time.Time {
+	n := time.Now().UTC()
+	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+// days is a calendar window: a gap must not let the window reach further back.
+func TestVisitorsDaysIsACalendarWindowNotARowCount(t *testing.T) {
+	old, recent := utcToday().AddDate(0, 0, -40), utcToday().AddDate(0, 0, -2)
+	rows := []store.VisitorDaily{{Day: old, Uniques: 1}, {Day: recent, Uniques: 2}}
+	b, _, _ := visitorsGet(t, &stubSource{visitors: rows}, "?days=30")
+	if len(b.Days) != 1 || b.Days[0]["day"] != recent.Format("2006-01-02") {
+		t.Errorf("days = %v, want only %s", b.Days, recent.Format("2006-01-02"))
+	}
+	// The window includes today: days=3 reaches back to today-2.
+	b, _, _ = visitorsGet(t, &stubSource{visitors: rows}, "?days=3")
+	if len(b.Days) != 1 {
+		t.Errorf("days=3: %v, want today-2 included", b.Days)
+	}
+	b, _, _ = visitorsGet(t, &stubSource{visitors: rows}, "?days=2")
+	if len(b.Days) != 0 {
+		t.Errorf("days=2: %v, want today-2 excluded", b.Days)
+	}
 }
 
 func visitorsDeps(t *testing.T, src *stubSource) api.Deps {
@@ -67,8 +91,8 @@ func TestVisitorsShape(t *testing.T) {
 		t.Fatalf("days = %d, want 2", len(b.Days))
 	}
 	first := b.Days[0]
-	if first["day"] != "2026-09-26" {
-		t.Errorf("day = %v, want 2026-09-26", first["day"])
+	if first["day"] != utcToday().AddDate(0, 0, -1).Format("2006-01-02") {
+		t.Errorf("day = %v, want yesterday", first["day"])
 	}
 	for _, k := range []string{"uniques", "requests", "page_views"} {
 		if _, ok := first[k].(float64); !ok {
@@ -111,12 +135,10 @@ func TestVisitorsEmptyTableIsAnEmptyArray(t *testing.T) {
 }
 
 func TestVisitorsKeepsAscendingOrderAndGaps(t *testing.T) {
-	rows := []store.VisitorDaily{
-		{Day: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), Uniques: 1},
-		{Day: time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC), Uniques: 4},
-	}
+	t1, t2 := utcToday().AddDate(0, 0, -9), utcToday().AddDate(0, 0, -6)
+	rows := []store.VisitorDaily{{Day: t1, Uniques: 1}, {Day: t2, Uniques: 4}}
 	b, _, _ := visitorsGet(t, &stubSource{visitors: rows}, "")
-	if len(b.Days) != 2 || b.Days[0]["day"] != "2026-09-01" || b.Days[1]["day"] != "2026-09-04" {
+	if len(b.Days) != 2 || b.Days[0]["day"] != t1.Format("2006-01-02") || b.Days[1]["day"] != t2.Format("2006-01-02") {
 		t.Errorf("days = %v, want the two stored days only, oldest first", b.Days)
 	}
 }
@@ -143,8 +165,8 @@ func TestVisitorsDaysParameter(t *testing.T) {
 			t.Errorf("%q: %d days, want %d", c.query, len(b.Days), c.want)
 		}
 		// The newest day is always kept; clamping trims the old end.
-		if last := b.Days[len(b.Days)-1]["day"]; last != "2026-09-27" {
-			t.Errorf("%q: last day = %v, want 2026-09-27", c.query, last)
+		if last := b.Days[len(b.Days)-1]["day"]; last != utcToday().Format("2006-01-02") {
+			t.Errorf("%q: last day = %v, want today", c.query, last)
 		}
 	}
 }
