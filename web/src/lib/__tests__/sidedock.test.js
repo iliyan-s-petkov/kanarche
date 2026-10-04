@@ -445,27 +445,17 @@ describe('the desktop bottom panel', () => {
     expect(ctx.el.querySelector('.map-dock__more').hidden).toBe(true)
   })
 
-  it('a short panel lays the gauges beside the chart and shortens the history link; a tall one goes back', async () => {
+  it('an open panel keeps one layout and the full history link at any height', async () => {
     vp = stubViewport(true)
     ctx = page()
     ctx.vs.openSensor(101)
     await settle()
     const dock = ctx.el.querySelector('.map-dock')
-    const more = dock.querySelector('.map-dock__more')
-    const long = more.textContent
-    let height = 180
-    Object.defineProperty(dock, 'clientHeight', { configurable: true, get: () => height })
+    const long = dock.querySelector('.map-dock__more').textContent
+    Object.defineProperty(dock, 'clientHeight', { configurable: true, get: () => 180 })
     ctx.dock.measure()
-    expect(dock.classList.contains('map-dock--short')).toBe(true)
-    expect(more.textContent.length).toBeLessThan(long.length)
-    // 1024x768 home: under the 24rem cap the gauge row would leave the chart no height.
-    height = 330
-    ctx.dock.measure()
-    expect(dock.classList.contains('map-dock--short')).toBe(true)
-    height = 384
-    ctx.dock.measure()
-    expect(dock.classList.contains('map-dock--short')).toBe(false)
-    expect(more.textContent).toBe(long)
+    expect(dock.className).not.toMatch(/--short/)
+    expect(dock.querySelector('.map-dock__more').textContent).toBe(long)
   })
 
   it('narrowing leaves exactly one chart, under the map', async () => {

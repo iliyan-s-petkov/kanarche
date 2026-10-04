@@ -89,14 +89,16 @@ test('1440: a tapped sensor opens a panel along the bottom of the map', async ({
   await context.close()
 })
 
-test('1440: the gauges share one row', async ({ browser }, testInfo) => {
+test('1440: the gauges stack in a rail, one row each', async ({ browser }, testInfo) => {
   testInfo.setTimeout(60000)
   const { context, page } = await wideOpen(browser)
   const gauges = page.locator(`${PANEL} .gauges .gauge`)
   await expect(gauges.first()).toBeVisible()
   expect(await gauges.count()).toBeGreaterThan(1)
+  const lefts = await gauges.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
+  expect(new Set(lefts).size, `gauge lefts differ: ${lefts}`).toBe(1)
   const tops = await gauges.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
-  expect(new Set(tops).size, `gauge tops differ: ${tops}`).toBe(1)
+  expect(new Set(tops).size, `gauges share a row: ${tops}`).toBe(tops.length)
   await context.close()
 })
 
@@ -418,32 +420,7 @@ test('1440: the orientation control and wind note stay clear of the panel, open 
   await context.close()
 })
 
-// OpenProject #697: the panel's depth, its gauge row and the station-info button.
-test('1440: the gauge row spreads across the panel instead of clustering left', async ({ browser }, testInfo) => {
-  testInfo.setTimeout(60000)
-  const { context, page } = await wideOpen(browser)
-  const gauges = page.locator(`${PANEL} .gauges .gauge`)
-  await expect(gauges.first()).toBeVisible()
-  const dock = await box(page.locator(PANEL))
-  const first = await box(gauges.first())
-  const last = await box(gauges.last())
-  expect((last.x + last.width - first.x) / dock.width, 'gauges span less than half of the panel').toBeGreaterThanOrEqual(0.5)
-  for (const g of await gauges.all()) expect((await box(g)).width, 'a gauge is wider than its cap').toBeLessThanOrEqual(135)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  await context.close()
-})
-
-test('1024: the spread gauge row does not overflow the panel', async ({ browser }, testInfo) => {
-  testInfo.setTimeout(60000)
-  const { context, page } = await wideOpen(browser, { width: 1024, height: 768 })
-  const row = await box(page.locator(`${PANEL} .gauges`))
-  const dock = await box(page.locator(PANEL))
-  expect(row.x + row.width).toBeLessThanOrEqual(dock.x + dock.width)
-  const tops = await page.locator(`${PANEL} .gauges .gauge`).evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
-  expect(new Set(tops).size, `gauge tops differ: ${tops}`).toBe(1)
-  await context.close()
-})
-
+// OpenProject #697: the panel's depth and the station-info button.
 test('1440: the panel is lifted off the map and its header is set apart from the body', async ({ browser }, testInfo) => {
   testInfo.setTimeout(60000)
   const { context, page } = await wideOpen(browser)
@@ -540,6 +517,8 @@ test('1440: folded, the panel shows only its header and the gauges', async ({ br
   const { context, page } = await wideOpen(browser)
   await page.locator(PANEL).getByRole('button', { name: 'Fold' }).click()
   await expect(page.locator(`${PANEL} .gauges .gauge`).first()).toBeVisible()
+  const tops = await page.locator(`${PANEL} .gauges .gauge`).evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
+  expect(new Set(tops).size, `folded gauges are not one horizontal row: ${tops}`).toBe(1)
   await expect(page.locator(`${PANEL} .panel-chart__tools`)).toBeHidden()
   for (const sel of TOOLS) await expect(page.locator(`${PANEL} ${sel}`)).toBeHidden()
   await context.close()
@@ -694,4 +673,79 @@ test('the panel chart keeps a readable plot (1024 and 1440 home, 1024 area page)
     expect(canvas.y + canvas.height, `${size.width} ${path}: the chart runs past its frame`).toBeLessThanOrEqual(frame.y + frame.height + 1)
     await context.close()
   }
+})
+
+// PR E: the open panel is a side rail of gauge rows beside the toolbar and a tall chart.
+const RAIL_CASES = [
+  ['1440 BG', WIDE, '/'], ['1440 EN', WIDE, '/en/'], ['1024 BG', { width: 1024, height: 768 }, '/'],
+  ['1024 EN', { width: 1024, height: 768 }, '/en/'], ['1024 area', { width: 1024, height: 768 }, '/en/area/sofia'],
+]
+
+test('the open panel is a rail left of a tall chart; rows pick the metric and keep to one line (1440, 1024; BG, EN; area)', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(240000)
+  for (const [name, size, path] of RAIL_CASES) {
+    const { context, page } = await openCharted(browser, size, path)
+    const rows = page.locator(`${PANEL} .gauges .gauge`)
+    await expect(rows.first(), name).toBeVisible()
+    const rail = await box(page.locator(`${PANEL} .gauges`))
+    const plot = await box(page.locator(`${PANEL} .panel-chart__dockplot`))
+    const dock = await box(page.locator(PANEL))
+    expect(rail.x + rail.width, `${name}: the rail is not left of the plot`).toBeLessThanOrEqual(plot.x + 1)
+    expect(overlaps(rail, plot), `${name}: rail and plot overlap`).toBe(false)
+    expect(plot.height / dock.height, `${name}: the plot is under 55% of the panel`).toBeGreaterThanOrEqual(0.55)
+    const labels = await page.locator(`${PANEL} .gauges .gauge__label, ${PANEL} .gauges .gauge__value`).evaluateAll((els) =>
+      els.map((e) => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: Number.parseFloat(getComputedStyle(e).lineHeight) || 0, fs: Number.parseFloat(getComputedStyle(e).fontSize) })))
+    for (const l of labels) expect(l.h, `${name}: "${l.text}" wraps`).toBeLessThanOrEqual((l.lh || l.fs * 1.4) * 1.3)
+    for (const g of await rows.all()) expect((await box(g)).width, `${name}: a gauge row is as narrow as the old 72px cell`).toBeGreaterThan(150)
+    await expect(page.locator(`${PANEL}.map-dock--short`), name).toHaveCount(0)
+    const plotEl = page.locator(`${PANEL} .panel-chart__dock`)
+    const was = await plotEl.getAttribute('data-metric')
+    const other = page.locator(`${PANEL} .gauges .gauge[aria-pressed="false"]`).first()
+    await other.click()
+    await expect(plotEl, `${name}: the row did not switch the chart`).not.toHaveAttribute('data-metric', was)
+    await expect(page.locator(`${PANEL} .gauges .gauge[aria-pressed="true"]`), name).toHaveCount(1)
+    await context.close()
+  }
+})
+
+// The rail fills down then across, so the number of columns follows the panel's height, live while it is dragged.
+test('the rail reflows with the panel height: one column when tall, more when short, all rows inside it, no scrolling', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(120000)
+  const { context, page } = await openCharted(browser, WIDE, '/en/')
+  const rows = page.locator(`${PANEL} .gauges .gauge`)
+  await expect(rows.first()).toBeVisible()
+  // The fixture sensor has two metrics; a typical one has five.
+  await page.evaluate(() => {
+    const list = document.querySelector('.map-dock .gauges')
+    const first = list.querySelector('.gauge')
+    while (list.querySelectorAll('.gauge').length < 5) {
+      const copy = first.cloneNode(true)
+      copy.setAttribute('aria-pressed', 'false')
+      copy.querySelector('.gauge__label').textContent = 'Atmospheric pressure, long label'
+      list.appendChild(copy)
+    }
+  })
+  const layout = () => page.evaluate(() => {
+    const list = document.querySelector('.map-dock .gauges')
+    const l = list.getBoundingClientRect()
+    const g = [...list.querySelectorAll('.gauge')].map((e) => e.getBoundingClientRect())
+    const inside = g.every((r) => r.left >= l.left - 1 && r.right <= l.right + 1 && r.top >= l.top - 1 && r.bottom <= l.bottom + 1)
+    return { columns: new Set(g.map((r) => Math.round(r.left))).size, inside, scrolls: list.scrollHeight > list.clientHeight + 1 || list.scrollWidth > list.clientWidth + 1 }
+  })
+  const drag = async (dy) => {
+    const g = await box(page.locator('.map-dock__grip'))
+    await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2 + dy, { steps: 8 })
+    await page.mouse.up()
+  }
+  await drag(-600)
+  await expect.poll(async () => (await layout()).columns, 'tall: one column').toBe(1)
+  expect(await layout()).toMatchObject({ inside: true, scrolls: false })
+  await drag(700)
+  await expect.poll(async () => (await layout()).columns, 'short: the rows wrap into more columns').toBeGreaterThanOrEqual(2)
+  expect(await layout(), 'short: a row falls outside the rail or the rail scrolls').toMatchObject({ inside: true, scrolls: false })
+  await drag(-600)
+  await expect.poll(async () => (await layout()).columns, 'dragging back up reflows to one column').toBe(1)
+  await context.close()
 })

@@ -564,12 +564,41 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-dock .panel-chart__dockplot { grid-area: plot; min-block-size: 0; min-inline-size: 0; }
 .map-dock .chart-frame--fill { block-size: 100%; min-block-size: 0; overflow: hidden; }
 .map-dock--folded .panel-chart__tools, .map-dock--folded .panel-chart__dockplot { display: none; }
-/* A short panel (lib/sidedock.svelte.js) puts the gauges in a column beside the toolbar and the chart, the history link in the title row. */
-.map-dock--short:not(.map-dock--folded) {
-  grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto minmax(0, 1fr);
-  grid-template-areas: "head head more" "gauges tools tools" "gauges plot plot";
+/* Open: the gauges are a rail beside the toolbar and a full-height chart; the history link ends the title row.
+   The rail's width is its content; the dock is a size container so the rail's row count follows its height. */
+.map-dock:not(.map-dock--folded) {
+  container-type: size;
+  grid-template-columns: fit-content(45%) minmax(0, 1fr) auto; grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas: "head head more" "gauges tools tools" "gauges plot plot"; padding-block-end: var(--space-2);
 }
-.map-dock--short:not(.map-dock--folded) .gauges { grid-auto-columns: 72px; align-content: start; }
+.map-dock:not(.map-dock--folded) .map-dock__head { padding-block-end: var(--space-1); }
+.map-dock:not(.map-dock--folded) .map-dock__body { display: flex; flex-direction: column; }
+/* Fills down then across: 3 rows in a short panel, 5 once there is room, so all rows show without scrolling. */
+.map-dock:not(.map-dock--folded) .gauges {
+  flex: 1 1 0; min-block-size: 0; overflow: hidden; padding: 0; justify-items: stretch;
+  grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 12rem;
+  grid-template-rows: repeat(3, minmax(3rem, 1fr)); gap: var(--space-1) var(--space-2);
+}
+@container (min-height: 17.5rem) { .map-dock:not(.map-dock--folded) .gauges { grid-template-rows: repeat(5, minmax(3rem, 1fr)); } }
+@media (min-width: 1200px) { .map-dock:not(.map-dock--folded) .gauges { grid-auto-columns: 15rem; } }
+/* A row: the arc at 36px, the label over the value; the pressed row has an accent bar and a tint, not a box. */
+.map-dock:not(.map-dock--folded) .gauges .gauge {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-areas: "arc label" "arc value";
+  align-items: center; justify-items: stretch; align-content: center; column-gap: var(--space-2);
+  inline-size: auto; max-inline-size: none; min-block-size: 0; padding: 0 var(--space-2);
+  border-inline-start: 3px solid transparent; border-radius: var(--radius-sm); text-align: start;
+}
+.map-dock:not(.map-dock--folded) .gauges .gauge:hover { background: var(--surface-2); }
+.map-dock:not(.map-dock--folded) .gauges .gauge--pick[aria-pressed="true"] {
+  box-shadow: none; border-inline-start-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.map-dock:not(.map-dock--folded) .gauges .gauge--pick:focus-visible { box-shadow: var(--focus-ring); }
+.map-dock:not(.map-dock--folded) .gauge__svg { grid-area: arc; }
+.map-dock:not(.map-dock--folded) .gauge__label, .map-dock:not(.map-dock--folded) .gauge__value {
+  text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.map-dock:not(.map-dock--folded) .gauge__label { grid-area: label; }
+.map-dock:not(.map-dock--folded) .gauge__value { grid-area: value; }
 .map-dock__more {
   grid-area: more; justify-self: end; align-self: center;
   display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-4);
