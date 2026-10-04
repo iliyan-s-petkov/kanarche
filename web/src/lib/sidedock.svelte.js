@@ -6,7 +6,7 @@ import { createStarSlot } from './panelstar.js'
 import { panelDock } from './paneldock.svelte.js'
 import { sectionHidden } from './panelhost.js'
 import { readFlag, writeFlag } from './storage.js'
-import { heightBounds, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from './dockheight.js'
+import { stackReserve, heightBounds, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from './dockheight.js'
 
 const WIDE = '(min-width: 1024px)'
 const TITLE_ID = 'map-dock-title'
@@ -16,6 +16,9 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 // The right-hand control column; when it and the locate button do not fit above the panel, the panel clears the column.
 const COLUMN = '.map__full, .map-zoom, .map-orient'
 const GAP = 8
+// The left stack: the top row, and the controls that ride up with the panel (legend, freshness card).
+const TOP_ROW = '.map__layers, .map-controls, .map-note'
+const RIDERS = '.scale--onmap, .map-freshness'
 
 function icon(doc, cls, d) {
   const svg = doc.createElementNS(SVG_NS, 'svg')
@@ -116,7 +119,17 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   // The saved height is the reader's choice; what shows is that clamped to the map as it is now.
   let chosen = readHeight()
   const rem = () => Number.parseFloat(win?.getComputedStyle?.(doc.documentElement).fontSize ?? '') || 16
-  const bounds = () => heightBounds(frame.clientHeight, rem())
+  // The riders' height above the panel is measured as laid out now, less the panel height already applied to them.
+  function reserve() {
+    const host = shell ?? frame
+    const f = frame.getBoundingClientRect()
+    const shown = (sel) => [...host.querySelectorAll(sel)].filter((n) => n.getClientRects().length > 0).map((n) => n.getBoundingClientRect())
+    const applied = Number.parseFloat(shell?.style.getPropertyValue('--map-panel-h') ?? '') || 0
+    const rise = Math.max(0, ...shown(RIDERS).map((r) => f.bottom - r.top - applied))
+    const topBottom = Math.max(0, ...shown(TOP_ROW).map((r) => r.bottom - f.top))
+    return stackReserve({ rise, topBottom, gap: GAP })
+  }
+  const bounds = () => heightBounds(frame.clientHeight, rem(), mounted() ? reserve() : 0)
   function applyHeight() {
     const b = bounds()
     if (chosen === null) el.style.removeProperty('--map-dock-h')
@@ -137,6 +150,8 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   const listeners = new Set()
   let lastHeight = -1
   function measure() {
+    // The legend folding or the map resizing moves the cap; the saved choice is only clamped, never rewritten.
+    if (mounted()) applyHeight()
     const h = mounted() ? Math.max(0, Math.round(frame.getBoundingClientRect().bottom - el.getBoundingClientRect().top)) : 0
     // Under its 24rem cap (1024px, area pages) the open panel has too little height for a gauge row above the chart.
     if (mounted() && !folded && el.clientHeight > 0 && (el.clientHeight < SHORT_PX) !== short) {
@@ -213,6 +228,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
       frame.appendChild(el)
       shell?.classList.add('map-shell--docked')
       watcher?.observe(el)
+      ;[...(shell ?? frame).querySelectorAll(RIDERS + ', ' + TOP_ROW)].forEach((n) => watcher?.observe(n))
       applyHeight()
       panelDock.on = true
       el.focus({ preventScroll: true })

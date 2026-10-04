@@ -9,9 +9,15 @@ const ABOVE_REM = 8
 const SHARE = 0.45
 const STEP = 16
 
-export function heightBounds(mapHeight, rem) {
+// What the left control stack needs above the panel: its bottom-left part (rise), the top row and a gap.
+export function stackReserve({ rise, topBottom, gap }) {
+  return rise > 0 ? Math.ceil(rise + topBottom + gap) : 0
+}
+
+// reserve is the map the stack needs left above the panel; the floor wins when even that cannot fit.
+export function heightBounds(mapHeight, rem, reserve = 0) {
   const min = Math.round(FLOOR_REM * rem)
-  return { min, max: Math.max(min, Math.round(mapHeight - ABOVE_REM * rem)) }
+  return { min, max: Math.max(min, Math.round(mapHeight - Math.max(ABOVE_REM * rem, reserve))) }
 }
 
 export function defaultHeight(mapHeight, rem) {

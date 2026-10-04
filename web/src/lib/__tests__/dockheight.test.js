@@ -1,6 +1,6 @@
 // The bottom panel's draggable height (OpenProject #697): bounds, clamping, keys and the saved choice.
 import { describe, it, expect } from 'vitest'
-import { HEIGHT_KEY, heightBounds, defaultHeight, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from '../dockheight.js'
+import { HEIGHT_KEY, stackReserve, heightBounds, defaultHeight, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from '../dockheight.js'
 
 function memory(init = {}) {
   const map = new Map(Object.entries(init))
@@ -12,7 +12,33 @@ function memory(init = {}) {
   }
 }
 
+describe('stackReserve', () => {
+  it('is the stack above the panel plus the top row and a gap', () => {
+    expect(stackReserve({ rise: 150, topBottom: 104, gap: 8 })).toBe(262)
+  })
+
+  it('is nothing when no bottom-left control is showing', () => {
+    expect(stackReserve({ rise: 0, topBottom: 104, gap: 8 })).toBe(0)
+  })
+
+  it('rounds up so the stack is never short a fraction of a pixel', () => {
+    expect(stackReserve({ rise: 100.2, topBottom: 50.1, gap: 8 })).toBe(159)
+  })
+})
+
 describe('heightBounds', () => {
+  it('lets a tall stack take more of the map than the 8rem default', () => {
+    expect(heightBounds(768, 16, 300)).toEqual({ min: 224, max: 468 })
+  })
+
+  it('keeps the 8rem default when the stack needs less', () => {
+    expect(heightBounds(900, 16, 100)).toEqual({ min: 224, max: 772 })
+  })
+
+  it('lets the floor win when the stack cannot fit even there', () => {
+    expect(heightBounds(768, 16, 700)).toEqual({ min: 224, max: 224 })
+  })
+
   it('floors at 14rem and leaves 8rem of map above the panel', () => {
     expect(heightBounds(900, 16)).toEqual({ min: 224, max: 772 })
   })
