@@ -702,7 +702,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 .chart-tip--multi .chart-tip__caption { margin-block-end: var(--space-1); order: -1; }
 .chart-tip--multi { display: flex; flex-direction: column; }
 .chart-tip::after {
-  content: ''; position: absolute; inset-inline-start: var(--tip-arrow, 50%); inline-size: 8px; block-size: 8px;
+  content: ''; position: absolute; inset-inline-start: var(--tip-arrow); inline-size: 8px; block-size: 8px;
   background: var(--bg); border: 1px solid var(--border); transform: translateX(-50%) rotate(45deg);
 }
 .chart-tip[data-placement='above']::after { inset-block-end: -5px; border-block-start: 0; border-inline-start: 0; }
