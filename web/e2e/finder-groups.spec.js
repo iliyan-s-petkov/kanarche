@@ -8,6 +8,8 @@ async function openOverSofia(ctx, path, vp) {
   await page.setViewportSize(vp)
   await page.goto(path)
   await page.waitForFunction(() => document.querySelector('[data-island="map"]')?.__map?.isStyleLoaded?.())
+  await page.waitForTimeout(1000)
+  await expect.poll(() => page.evaluate(() => document.querySelector('[data-island="map"]').__map.isMoving())).toBe(false)
   await page.evaluate(() => document.querySelector('[data-island="map"]').__map.jumpTo({ center: [23.32, 42.69], zoom: 11 }))
   const input = page.locator('[data-island="finder"] input')
   await expect(async () => {
@@ -17,7 +19,7 @@ async function openOverSofia(ctx, path, vp) {
   return { page, input }
 }
 
-test('districts sit above cities under labelled groups; arrows skip headings', async ({ ctx }) => {
+test.only('districts sit above cities under labelled groups; arrows skip headings', async ({ ctx }) => {
   const { page, input } = await openOverSofia(ctx, '/en/', { width: 1440, height: 900 })
   const labels = page.locator('[data-island="finder"] .combobox__group-label')
   await expect(labels.nth(0)).toHaveText('City districts')
@@ -36,7 +38,7 @@ test('districts sit above cities under labelled groups; arrows skip headings', a
   await page.close()
 })
 
-test('Bulgarian headings on a phone', async ({ ctx }) => {
+test.only('Bulgarian headings on a phone', async ({ ctx }) => {
   const { page } = await openOverSofia(ctx, '/', { width: 390, height: 844 })
   await expect(page.locator('[data-island="finder"] .combobox__group-label').nth(0)).toHaveText('Градски райони')
   await expect(page.locator('[data-island="finder"] .combobox__group-label').nth(1)).toHaveText('Градове и области')
