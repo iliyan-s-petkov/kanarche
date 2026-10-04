@@ -60,4 +60,6 @@
 
   /* What the sensor panel covers at the map's bottom; the dock sets it on .map-shell, 0 with none open. */
   --map-panel-h: 0px;
+  /* The panel's open height; the dock overrides it on .map-dock with the height dragged to. */
+  --map-dock-h: min(24rem, max(45%, 14rem));
 }

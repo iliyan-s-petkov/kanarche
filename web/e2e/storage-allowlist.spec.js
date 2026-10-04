@@ -81,3 +81,18 @@ test('localStorage after folding the sensor panel holds only allow-listed keys',
 
   await page.close()
 })
+
+test('localStorage after resizing the sensor panel holds only allow-listed keys', async ({ ctx }) => {
+  const page = await ctx.newPage()
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/en/#sensor=101')
+  await page.locator('.map-dock__grip').focus({ timeout: 20000 })
+  await page.keyboard.press('End')
+
+  const keys = await page.evaluate(() => Object.keys(localStorage))
+  expect(keys).toContain('kanarche:panel-height')
+  const unexpected = keys.filter((k) => !allowed.has(k))
+  expect(unexpected, `unlisted localStorage keys: ${unexpected.join(', ')}`).toEqual([])
+
+  await page.close()
+})

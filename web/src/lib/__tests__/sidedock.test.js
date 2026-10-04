@@ -44,7 +44,7 @@ function page({ docked = false } = {}) {
     metric: 'P2', metrics: 'P1,P2,temperature,humidity',
     tClose: 'Close', tSheetHistory: 'Full history below',
     tPanelHistory: 'Full history & nearby sensors', tPanelHistoryShort: 'Full history',
-    tPanelFold: 'Fold', tPanelExpand: 'Expand',
+    tPanelFold: 'Fold', tPanelExpand: 'Expand', tPanelResize: 'Resize panel',
   })
   const canvas = document.createElement('canvas')
   canvas.tabIndex = 0
@@ -528,5 +528,118 @@ describe('the desktop bottom panel', () => {
     ctx.vs.closeSensor()
     await settle()
     expect(seen.at(-1)).toBe(0)
+  })
+})
+
+// OpenProject #697: the panel's top edge is a resize handle; the chosen height is saved.
+describe('the bottom panel resize handle', () => {
+  let ctx
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+    const store = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: (k) => store.delete(k),
+    })
+    vi.stubGlobal('requestAnimationFrame', (fn) => { fn(0); return 1 })
+    Element.prototype.scrollIntoView = vi.fn()
+    resetViewStateForTests()
+    history.replaceState(null, '', '/')
+    setSensors(BODY)
+    stubViewport(true)
+  })
+  afterEach(() => {
+    ctx?.stop()
+    resetViewStateForTests()
+    setSensors(null)
+    document.body.replaceChildren()
+    vi.unstubAllGlobals()
+  })
+
+  const mapHeight = (h) => Object.defineProperty(ctx.el, 'clientHeight', { value: h, configurable: true })
+  async function open(h = 900) {
+    ctx = page()
+    mapHeight(h)
+    ctx.vs.openSensor(101)
+    await settle()
+    const dock = ctx.el.querySelector('.map-dock')
+    return { dock, grip: dock.querySelector('.map-dock__grip') }
+  }
+  const key = (el, k) => el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+  const pointer = (el, type, y) => {
+    const e = new MouseEvent(type, { clientY: y, button: 0, bubbles: true, cancelable: true })
+    Object.defineProperty(e, 'pointerId', { value: 1 })
+    el.dispatchEvent(e)
+  }
+
+  it('is a focusable horizontal separator with the panel height range', async () => {
+    const { grip } = await open(900)
+    expect(grip).toBeTruthy()
+    expect(grip.getAttribute('role')).toBe('separator')
+    expect(grip.getAttribute('aria-orientation')).toBe('horizontal')
+    expect(grip.getAttribute('aria-label')).toBe('Resize panel')
+    expect(grip.tabIndex).toBe(0)
+    expect(grip.getAttribute('aria-valuemin')).toBe('224')
+    expect(grip.getAttribute('aria-valuemax')).toBe('772')
+  })
+
+  it('End, Home and the arrows set the height, clamped, and save it', async () => {
+    const { dock, grip } = await open(900)
+    key(grip, 'End')
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('772px')
+    expect(localStorage.getItem('kanarche:panel-height')).toBe('772')
+    expect(grip.getAttribute('aria-valuenow')).toBe('772')
+    key(grip, 'Home')
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('224px')
+    key(grip, 'ArrowUp')
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('240px')
+    expect(localStorage.getItem('kanarche:panel-height')).toBe('240')
+  })
+
+  it('dragging the handle up grows the panel by the distance and saves it on release', async () => {
+    const { dock, grip } = await open(900)
+    dock.getBoundingClientRect = () => ({ top: 500, bottom: 800, left: 0, right: 0, width: 0, height: 300 })
+    pointer(grip, 'pointerdown', 500)
+    pointer(grip, 'pointermove', 400)
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('400px')
+    pointer(grip, 'pointermove', 100)
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('700px')
+    pointer(grip, 'pointerup', 100)
+    expect(localStorage.getItem('kanarche:panel-height')).toBe('700')
+    pointer(grip, 'pointermove', 50)
+    expect(dock.style.getPropertyValue('--map-dock-h'), 'moves after release resized the panel').toBe('700px')
+  })
+
+  it('opens at the saved height and re-clamps it to a smaller window, keeping the choice', async () => {
+    localStorage.setItem('kanarche:panel-height', '600')
+    const { dock, grip } = await open(900)
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('600px')
+    mapHeight(500)
+    window.dispatchEvent(new Event('resize'))
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('372px')
+    expect(grip.getAttribute('aria-valuemax')).toBe('372')
+    expect(localStorage.getItem('kanarche:panel-height')).toBe('600')
+    mapHeight(900)
+    window.dispatchEvent(new Event('resize'))
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('600px')
+  })
+
+  it('a double-click resets to the default height and forgets the choice', async () => {
+    localStorage.setItem('kanarche:panel-height', '600')
+    const { dock, grip } = await open(900)
+    grip.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('')
+    expect(localStorage.getItem('kanarche:panel-height')).toBeNull()
+  })
+
+  it('folded, the handle is hidden; expanded, the chosen height is back', async () => {
+    localStorage.setItem('kanarche:panel-height', '600')
+    const { dock, grip } = await open(900)
+    dock.querySelector('.map-dock__fold').click()
+    expect(grip.hidden).toBe(true)
+    dock.querySelector('.map-dock__fold').click()
+    expect(grip.hidden).toBe(false)
+    expect(dock.style.getPropertyValue('--map-dock-h')).toBe('600px')
   })
 })

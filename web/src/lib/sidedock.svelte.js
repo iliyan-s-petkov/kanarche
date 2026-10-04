@@ -6,12 +6,16 @@ import { createStarSlot } from './panelstar.js'
 import { panelDock } from './paneldock.svelte.js'
 import { sectionHidden } from './panelhost.js'
 import { readFlag, writeFlag } from './storage.js'
+import { heightBounds, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from './dockheight.js'
 
 const WIDE = '(min-width: 1024px)'
 const TITLE_ID = 'map-dock-title'
 const FOLD_KEY = 'kanarche:panel-folded'
 const SHORT_PX = 352
 const SVG_NS = 'http://www.w3.org/2000/svg'
+// The right-hand control column; when it and the locate button do not fit above the panel, the panel clears the column.
+const COLUMN = '.map__full, .map-zoom, .map-orient'
+const GAP = 8
 
 function icon(doc, cls, d) {
   const svg = doc.createElementNS(SVG_NS, 'svg')
@@ -29,7 +33,7 @@ function icon(doc, cls, d) {
   return svg
 }
 
-export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreShortLabel = '', foldLabel = '', expandLabel = '' } = {}) {
+export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreShortLabel = '', foldLabel = '', expandLabel = '', resizeLabel = '' } = {}) {
   const doc = frame.ownerDocument
   const win = doc.defaultView
   const shell = frame.closest('.map-shell')
@@ -49,6 +53,16 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   el.setAttribute('role', 'group')
   el.setAttribute('aria-labelledby', TITLE_ID)
   el.tabIndex = -1
+
+  // The top edge's resize handle: a separator whose value is the panel's height in pixels.
+  const grip = doc.createElement('div')
+  grip.className = 'map-dock__grip'
+  grip.setAttribute('role', 'separator')
+  grip.setAttribute('aria-orientation', 'horizontal')
+  grip.setAttribute('aria-label', resizeLabel)
+  grip.title = resizeLabel
+  grip.tabIndex = 0
+  el.appendChild(grip)
 
   const head = doc.createElement('div')
   head.className = 'map-dock__head'
@@ -88,6 +102,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   function paintFold() {
     el.classList.toggle('map-dock--folded', folded)
     el.classList.toggle('map-dock--short', short)
+    grip.hidden = folded
     const label = folded ? expandLabel : foldLabel
     fold.setAttribute('aria-label', label)
     fold.title = label
@@ -97,6 +112,20 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
 
   const panel = () => doc.querySelector('[data-island="panel"] .sensor-panel')
   const mounted = () => el.parentNode === frame
+
+  // The saved height is the reader's choice; what shows is that clamped to the map as it is now.
+  let chosen = readHeight()
+  const rem = () => Number.parseFloat(win?.getComputedStyle?.(doc.documentElement).fontSize ?? '') || 16
+  const bounds = () => heightBounds(frame.clientHeight, rem())
+  function applyHeight() {
+    const b = bounds()
+    if (chosen === null) el.style.removeProperty('--map-dock-h')
+    else el.style.setProperty('--map-dock-h', `${clampHeight(chosen, b)}px`)
+    grip.setAttribute('aria-valuemin', String(b.min))
+    grip.setAttribute('aria-valuemax', String(b.max))
+    grip.setAttribute('aria-valuenow', String(chosen === null ? clampHeight(el.offsetHeight, b) : clampHeight(chosen, b)))
+  }
+  applyHeight()
 
   function restoreGauges() {
     if (marker && gauges) marker.replaceWith(gauges)
@@ -114,12 +143,19 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
       short = !short
       paintFold()
     }
+    shell?.classList.toggle('map-shell--crowded', mounted() && crowded())
     if (h !== lastHeight) {
       if (h > 0) shell?.style.setProperty('--map-panel-h', `${h}px`)
       else shell?.style.removeProperty('--map-panel-h')
       lastHeight = h
     }
     listeners.forEach((fn) => fn(h))
+  }
+  function crowded() {
+    const top = frame.getBoundingClientRect().top
+    const lowest = Math.max(0, ...[...(shell ?? frame).querySelectorAll(COLUMN)].map((n) => n.getBoundingClientRect().bottom - top))
+    const locate = (shell ?? frame).querySelector('.map-locate')?.offsetHeight ?? 0
+    return el.getBoundingClientRect().top - top < lowest + locate + 2 * GAP
   }
   const watcher = typeof win?.ResizeObserver === 'function' ? new win.ResizeObserver(measure) : null
 
@@ -177,6 +213,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
       frame.appendChild(el)
       shell?.classList.add('map-shell--docked')
       watcher?.observe(el)
+      applyHeight()
       panelDock.on = true
       el.focus({ preventScroll: true })
     }
@@ -197,6 +234,58 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     paintFold()
     measure()
   })
+  // Pointer events cover mouse, touch and pen; the capture keeps the drag when the pointer leaves the handle.
+  let drag = null
+  let queued = false
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    drag = { y: e.clientY, h: el.getBoundingClientRect().height, to: null }
+    try { grip.setPointerCapture?.(e.pointerId) } catch { /* a synthetic pointer has nothing to capture */ }
+    el.classList.add('map-dock--resizing')
+  })
+  grip.addEventListener('pointermove', (e) => {
+    if (!drag) return
+    drag.to = drag.h + drag.y - e.clientY
+    if (queued) return
+    queued = true
+    // One height per frame; the ResizeObserver then republishes --map-panel-h and the map's padding.
+    ;(win?.requestAnimationFrame ?? ((fn) => setTimeout(fn, 16)))(() => {
+      queued = false
+      if (drag?.to == null) return
+      chosen = clampHeight(drag.to, bounds())
+      applyHeight()
+    })
+  })
+  function endDrag() {
+    if (!drag) return
+    if (drag.to != null) {
+      chosen = clampHeight(drag.to, bounds())
+      applyHeight()
+      writeHeight(chosen)
+    }
+    drag = null
+    el.classList.remove('map-dock--resizing')
+  }
+  grip.addEventListener('pointerup', endDrag)
+  grip.addEventListener('pointercancel', endDrag)
+  grip.addEventListener('lostpointercapture', endDrag)
+  grip.addEventListener('dblclick', () => {
+    chosen = null
+    clearHeight()
+    applyHeight()
+  })
+  grip.addEventListener('keydown', (e) => {
+    const b = bounds()
+    const next = keyHeight(e.key, chosen === null ? clampHeight(el.offsetHeight, b) : clampHeight(chosen, b), b)
+    if (next === null) return
+    e.preventDefault()
+    chosen = next
+    applyHeight()
+    writeHeight(chosen)
+  })
+  win?.addEventListener?.('resize', () => { if (mounted()) applyHeight() })
+
   more.addEventListener('click', () => panel()?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
   mq?.addEventListener?.('change', sync)
 

@@ -240,6 +240,7 @@ export function mountChrome(el, cfg) {
     moreShortLabel: cfg.t.panelHistoryShort,
     foldLabel: cfg.t.panelFold,
     expandLabel: cfg.t.panelExpand,
+    resizeLabel: cfg.t.panelResize,
   })
   fullButton = mountFullscreen(el, {
     label: cfg.t.fullscreen,

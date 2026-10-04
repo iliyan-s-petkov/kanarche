@@ -145,6 +145,7 @@ export function readConfig(el) {
       panelHistory: d.tPanelHistory || '',
       panelHistoryShort: d.tPanelHistoryShort || '',
       panelFold: d.tPanelFold || '',
+      panelResize: d.tPanelResize || '',
       panelExpand: d.tPanelExpand || '',
       zoomIn: d.tZoomIn || '',
       zoomOut: d.tZoomOut || '',
