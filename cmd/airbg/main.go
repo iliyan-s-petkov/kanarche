@@ -25,6 +25,7 @@ import (
 	"airbg.org/internal/snapshot"
 	"airbg.org/internal/store"
 	"airbg.org/internal/upstream"
+	"airbg.org/internal/upstream/bathing"
 	"airbg.org/internal/upstream/cloudflare"
 	"airbg.org/internal/upstream/eea"
 	"airbg.org/internal/web"
@@ -35,7 +36,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|validate-config|contract|healthz>")
+		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|validate-config|contract|healthz>")
 		os.Exit(2)
 	}
 
@@ -112,6 +113,9 @@ func main() {
 		if cfg.Cloudflare.Enabled {
 			cfStore := store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)
 			go cloudflare.NewCollector(cfg.Cloudflare, os.Getenv(cloudflare.TokenEnv), cfStore).Loop(ctx)
+		}
+		if cfg.Sea.Enabled {
+			go bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)).Loop(ctx)
 		}
 		client := upstream.New(cfg.Upstream)
 		collectStore := store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)
@@ -233,6 +237,16 @@ func main() {
 			os.Exit(1)
 		}
 		slog.Info("seed visitor daily complete", "path", os.Args[2], "rows", n)
+
+	// Forced refresh of the bathing-water layer, ignoring refresh_interval.
+	case "import-sea":
+		st, err := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator)).RunOnce(ctx)
+		if err != nil {
+			slog.Error("import sea", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("import sea complete", "sites", st.Sites, "classes", st.Classes, "samples", st.Samples,
+			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan)
 
 	case "purge-outside-boundary":
 		// Deliberately a separate, operator-invoked step (task-17 review
@@ -415,6 +429,18 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 		close(cfDone)
 	}
 
+	// Weekly EEA bathing-water import; see internal/upstream/bathing/README.md.
+	seaDone := make(chan struct{})
+	if cfg.Sea.Enabled {
+		sc := bathing.NewCollector(cfg.Sea, collectorStore)
+		go func() {
+			defer close(seaDone)
+			sc.Loop(pollCtx)
+		}()
+	} else {
+		close(seaDone)
+	}
+
 	err = srv.Run(ctx)
 
 	// Stop the poller and wait for it, so the process does not exit with a
@@ -424,5 +450,6 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	<-windDone
 	<-eeaDone
 	<-cfDone
+	<-seaDone
 	return err
 }
