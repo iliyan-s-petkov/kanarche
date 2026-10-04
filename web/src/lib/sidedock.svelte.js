@@ -123,6 +123,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     areaText.textContent = text
     area.hidden = text === ''
     el.classList.toggle('map-dock--area', text !== '')
+    if (mounted()) applyHeight()
   }
 
   let folded = readFlag(FOLD_KEY, false)
@@ -152,7 +153,12 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     const topBottom = Math.max(0, ...shown(TOP_ROW).map((r) => r.bottom - f.top))
     return stackReserve({ rise, topBottom, gap: GAP })
   }
-  const bounds = () => heightBounds(frame.clientHeight, rem(), mounted() ? reserve() : 0)
+  // The area line takes 2rem of the panel, so the floor rises by as much while it shows.
+  const bounds = () => {
+    const b = heightBounds(frame.clientHeight, rem(), mounted() ? reserve() : 0)
+    const extra = area.hidden ? 0 : Math.round(2 * rem())
+    return { min: b.min + extra, max: Math.max(b.min + extra, b.max) }
+  }
   function applyHeight() {
     const b = bounds()
     if (chosen === null) el.style.removeProperty('--map-dock-h')

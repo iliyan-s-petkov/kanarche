@@ -674,6 +674,18 @@ describe('the panel area line', () => {
     vi.unstubAllGlobals()
   })
 
+  it('raises the height floor by the line', async () => {
+    await open()
+    const grip = () => document.querySelector('.map-dock [role="separator"]')
+    expect(grip().getAttribute('aria-valuemin')).toBe('256')
+  })
+
+  it('keeps the plain height floor when there is no line', async () => {
+    await open({ readouts: false })
+    expect(line().hidden).toBe(true)
+    expect(document.querySelector('.map-dock [role="separator"]').getAttribute('aria-valuemin')).toBe('224')
+  })
+
   it('names the area and counts its sensors, from the same data as the readouts', async () => {
     await open()
     expect(line().hidden).toBe(false)

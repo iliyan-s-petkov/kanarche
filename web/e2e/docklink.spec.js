@@ -56,11 +56,13 @@ test('1440: the panel ends in a line naming the area, and the click brings the f
   expect(l.y + l.height).toBeLessThanOrEqual(d.y + d.height)
   expect(l.height, 'one compact row').toBeLessThanOrEqual(32)
 
-  await line.click()
+  // Under the fold before the click, near the top after it.
   const figures = page.locator('[data-island="readouts"]')
+  expect((await figures.boundingBox()).y, 'figures already at the top').toBeGreaterThan(600)
+  await line.click()
   await expect.poll(async () => {
     const r = await figures.boundingBox()
-    return r !== null && r.y < 900 && r.y + r.height > 0
+    return r !== null && r.y >= 0 && r.y < 300
   }, { timeout: 10000 }).toBe(true)
   await expect(figures).toBeFocused()
   expect(page.url(), 'the hash keeps the sensor').toMatch(/sensor=\d+/)
@@ -84,13 +86,42 @@ test('1440 bg: the line reads in Bulgarian', async ({ browser }, testInfo) => {
   await context.close()
 })
 
-test('1440: the five-row rail still shows every gauge with the line in place', async ({ browser }, testInfo) => {
+test('1440: with the line in place a five-row rail always has the height for its rows', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(90000)
+  const { context, page } = await openSensor(browser, '/en/')
+  await expect(page.locator(LINE)).toBeVisible()
+  const bad = await page.evaluate(() => {
+    const dock = document.querySelector('.map-dock')
+    const rail = dock.querySelector('.gauges')
+    const out = []
+    for (let h = 300; h <= 440; h += 4) {
+      dock.style.setProperty('--map-dock-h', `${h}px`)
+      const rows = getComputedStyle(rail).gridTemplateRows.split(' ').length
+      // Five 52px rows and four 4px gaps.
+      if (rows === 5 && rail.clientHeight < 276) out.push({ h, rows, rail: rail.clientHeight })
+    }
+    return out
+  })
+  expect(bad, 'five rows in a rail too short for them').toEqual([])
+  await context.close()
+})
+
+test('1440: an empty-state message under the chart stays above the line', async ({ browser }, testInfo) => {
   testInfo.setTimeout(60000)
   const { context, page } = await openSensor(browser, '/en/')
   await expect(page.locator(LINE)).toBeVisible()
-  const gauges = page.locator(`${PANEL} .gauges`)
-  const scroll = await gauges.evaluate((el) => el.scrollHeight - el.clientHeight)
-  expect(scroll, 'the rail clips its rows').toBeLessThanOrEqual(1)
+  // The e2e fixture has no readings, so the chart shows its own empty-state message.
+  const msg = page.locator('.map-dock .chart-message')
+  await expect(msg).toBeVisible()
+  // The shortest panel leaves the chart the least room.
+  await page.getByRole('separator', { name: 'Resize panel' }).focus()
+  await page.keyboard.press('Home')
+  await page.waitForTimeout(300)
+  const r = await page.evaluate(() => ({
+    msgBottom: document.querySelector('.map-dock .chart-message').getBoundingClientRect().bottom,
+    lineTop: document.querySelector('.map-dock__area').getBoundingClientRect().top,
+  }))
+  expect(r.msgBottom, 'the message runs into the line').toBeLessThanOrEqual(r.lineTop + 1)
   await context.close()
 })
 
