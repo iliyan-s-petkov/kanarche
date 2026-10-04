@@ -21,6 +21,13 @@ const box = async (locator) => {
 const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 const panelHeight = async (page) => Math.round((await box(page.locator(PANEL))).height)
 const mapHeight = (page) => page.evaluate(() => document.querySelector('.map-dock').parentElement.clientHeight)
+// The cap the handle reports: 8rem of map left above, or less when the left control stack needs more room.
+const cap = async (page) => {
+  const max = Number(await page.locator(GRIP).getAttribute('aria-valuemax'))
+  expect(max).toBeGreaterThanOrEqual(14 * REM)
+  expect(max).toBeLessThanOrEqual((await mapHeight(page)) - 8 * REM)
+  return max
+}
 const covered = (page) => page.evaluate(() => {
   const shell = document.querySelector('.map-shell')
   const map = document.querySelector('[data-island="map"]').__map
@@ -66,8 +73,8 @@ test('1440: dragging the handle resizes the panel live, moves the controls and p
   await drag(page, 2000)
   await expect.poll(() => panelHeight(page)).toBe(14 * REM)
   await drag(page, -2000)
-  const mh = await mapHeight(page)
-  await expect.poll(() => panelHeight(page)).toBe(mh - 8 * REM)
+  const max = await cap(page)
+  await expect.poll(() => panelHeight(page)).toBe(max)
 
   // A double-click goes back to the default and forgets the choice.
   await grip.dblclick()
@@ -100,9 +107,8 @@ test('1440: the handle is a keyboard separator; folded it is gone and the height
   await openDocked(page)
   const grip = page.getByRole('separator', { name: 'Resize panel' })
   await expect(grip).toHaveAttribute('aria-orientation', 'horizontal')
-  const mh = await mapHeight(page)
+  const max = await cap(page)
   await expect(grip).toHaveAttribute('aria-valuemin', String(14 * REM))
-  await expect(grip).toHaveAttribute('aria-valuemax', String(mh - 8 * REM))
   const before = await panelHeight(page)
   await expect(grip).toHaveAttribute('aria-valuenow', String(before))
 
@@ -116,15 +122,15 @@ test('1440: the handle is a keyboard separator; folded it is gone and the height
   await expect.poll(() => panelHeight(page)).toBe(14 * REM)
   await expect(grip).toHaveAttribute('aria-valuenow', String(14 * REM))
   await page.keyboard.press('End')
-  await expect.poll(() => panelHeight(page)).toBe(mh - 8 * REM)
-  await expect(grip).toHaveAttribute('aria-valuenow', String(mh - 8 * REM))
+  await expect.poll(() => panelHeight(page)).toBe(max)
+  await expect(grip).toHaveAttribute('aria-valuenow', String(max))
 
   await page.locator(PANEL).getByRole('button', { name: 'Fold' }).click()
   await expect(page.locator(GRIP)).toBeHidden()
   await expect.poll(() => panelHeight(page)).toBeLessThan(200)
   await page.locator(PANEL).getByRole('button', { name: 'Expand' }).click()
   await expect(page.locator(GRIP)).toBeVisible()
-  await expect.poll(() => panelHeight(page)).toBe(mh - 8 * REM)
+  await expect.poll(() => panelHeight(page)).toBe(max)
   await context.close()
 })
 
@@ -210,7 +216,7 @@ test('at the tallest panel on a short map the left stack stays above the panel a
     const panel = await box(page.locator(PANEL))
     const map = await box(page.locator(PANEL).locator('xpath=..'))
     // The key must have reached the cap, or the check below proves nothing.
-    expect(Math.round(panel.height)).toBe(Math.round(map.height - 8 * REM))
+    expect(Math.round(panel.height)).toBe(await cap(page))
     const seen = []
     for (const sel of LEFT) {
       const c = page.locator(sel).first()
@@ -224,4 +230,49 @@ test('at the tallest panel on a short map the left stack stays above the panel a
     await page.evaluate(() => localStorage.clear())
   }
   await context.close()
+})
+
+// Pairwise: the stack must not collide with itself, whichever way the legend is folded (the panel's max rides it up).
+const STACK = ['.map__layers', '.map-controls__metric', '.map-note', '.scale--onmap', '.map-freshness', '.map-wind-label']
+const NAMES = { en: '/en/', bg: '/' }
+
+test('at the tallest panel the left stack does not overlap itself (1024x768 and 1440x900; BG and EN; legend folded and open)', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(300000)
+  for (const size of [{ width: 1024, height: 768 }, WIDE]) {
+    for (const [lang, path] of Object.entries(NAMES)) {
+      for (const open of [false, true]) {
+        const at = `${size.width}x${size.height} ${lang} legend ${open ? 'open' : 'folded'}`
+        const context = await browser.newContext({ viewport: size })
+        const page = await context.newPage()
+        await page.addInitScript((o) => localStorage.setItem('kanarche:legend-open', o ? 'true' : 'false'), open)
+        await openDocked(page, path)
+        const legend = page.locator('.scale--onmap')
+        if (await legend.evaluate((d) => d.open) !== open) await legend.locator('summary').first().click()
+        await page.locator(GRIP).focus()
+        await page.keyboard.press('End')
+        await page.waitForTimeout(500)
+        const panel = await box(page.locator(PANEL))
+        const map = await box(page.locator(PANEL).locator('xpath=..'))
+        const grip = page.getByRole('separator')
+        // aria-valuemax is the cap the key reached.
+        await expect(grip).toHaveAttribute('aria-valuemax', String(Math.round(panel.height)))
+        const seen = []
+        for (const sel of STACK) {
+          const c = page.locator(sel).first()
+          if (await c.count() === 0 || !(await c.isVisible())) continue
+          const b = await box(c)
+          expect(overlaps(panel, b), `${sel} under the panel (${at})`).toBe(false)
+          expect(b.y >= map.y - 1, `${sel} above the map (${at})`).toBe(true)
+          seen.push([sel, b])
+        }
+        expect(seen.length, `stack not found (${at})`).toBeGreaterThan(2)
+        for (let i = 0; i < seen.length; i++) {
+          for (let j = i + 1; j < seen.length; j++) {
+            expect(overlaps(seen[i][1], seen[j][1]), `${seen[i][0]} overlaps ${seen[j][0]} (${at})`).toBe(false)
+          }
+        }
+        await context.close()
+      }
+    }
+  }
 })
