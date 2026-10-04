@@ -8,7 +8,12 @@ const PHONE = { width: 390, height: 844, isMobile: true, hasTouch: true }
 const shot = (page, name) => process.env.E2E_SHOT_DIR && page.screenshot({ path: `${process.env.E2E_SHOT_DIR}/${name}.png` })
 
 async function prepareMap(page, path = '/en/') {
+  // The opening camera (favourite, saved view, geoip) is placed before the first
+  // hex paint, and the style can report loaded and idle before that jump runs.
+  // The first hexes response marks the camera as placed; an area page has its own.
+  const placed = path.includes('/area/') ? null : page.waitForResponse(/\/api\/v1\/hexes/)
   await page.goto(path)
+  await placed
   await mapSettled(page)
   await page.evaluate(() => {
     document.querySelector('.map-shell').scrollIntoView({ block: 'start', behavior: 'instant' })
@@ -150,10 +155,11 @@ test('a favourite that is no longer in the data is ignored and the key stays', a
   const context = await browser.newContext(WIDE)
   const page = await context.newPage()
   await page.addInitScript((k) => localStorage.setItem(k, '999999999'), KEY)
+  // The favourite is resolved before the first hex paint, so that response means it was ignored.
+  const placed = page.waitForResponse(/\/api\/v1\/hexes/)
   await page.goto('/en/')
+  await placed
   await mapSettled(page)
-  // The favourite is resolved against the loaded sensors, so wait for those.
-  await expect.poll(() => hexPoints(page, []).then((p) => p.length), { timeout: 20000 }).toBeGreaterThan(0)
   await expect(page.locator('.sensor-panel')).toHaveCount(0)
   expect(page.url()).not.toContain('sensor=')
   expect(await stored(page)).toBe('999999999')
