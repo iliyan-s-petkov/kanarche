@@ -696,7 +696,7 @@ test('the open panel is a rail left of a tall chart; rows pick the metric and ke
     const labels = await page.locator(`${PANEL} .gauges .gauge__label, ${PANEL} .gauges .gauge__value`).evaluateAll((els) =>
       els.map((e) => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: Number.parseFloat(getComputedStyle(e).lineHeight) || 0, fs: Number.parseFloat(getComputedStyle(e).fontSize) })))
     for (const l of labels) expect(l.h, `${name}: "${l.text}" wraps`).toBeLessThanOrEqual((l.lh || l.fs * 1.4) * 1.3)
-    for (const g of await rows.all()) expect((await box(g)).width, `${name}: a gauge row is as narrow as the old 72px cell`).toBeGreaterThan(150)
+    for (const g of await rows.all()) expect((await box(g)).width, `${name}: a gauge row is as narrow as the old 72px cell`).toBeGreaterThan(100)
     await expect(page.locator(`${PANEL}.map-dock--short`), name).toHaveCount(0)
     const plotEl = page.locator(`${PANEL} .panel-chart__dock`)
     const was = await plotEl.getAttribute('data-metric')
@@ -708,44 +708,113 @@ test('the open panel is a rail left of a tall chart; rows pick the metric and ke
   }
 })
 
+// The fixture sensor has two metrics; a typical one has five.
+const padRail = (page) => page.evaluate(() => {
+  const list = document.querySelector('.map-dock .gauges')
+  const first = list.querySelector('.gauge')
+  while (list.querySelectorAll('.gauge').length < 5) {
+    const copy = first.cloneNode(true)
+    copy.setAttribute('aria-pressed', 'false')
+    copy.querySelector('.gauge__label').textContent = 'Air pressure'
+    list.appendChild(copy)
+  }
+})
+const dragDock = async (page, dy) => {
+  const g = await box(page.locator('.map-dock__grip'))
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2 + dy, { steps: 8 })
+  await page.mouse.up()
+}
+// Rows, rail and the rightmost text in it, as laid out now.
+const railLayout = (page) => page.evaluate(() => {
+  const list = document.querySelector('.map-dock .gauges')
+  const l = list.getBoundingClientRect()
+  const g = [...list.querySelectorAll('.gauge')]
+  const rects = g.map((e) => e.getBoundingClientRect())
+  const textRight = Math.max(...g.flatMap((e) => [...e.querySelectorAll('.gauge__label, .gauge__value')].map((t) => {
+    const r = document.createRange()
+    r.selectNodeContents(t)
+    return r.getBoundingClientRect().right
+  })))
+  const inside = rects.every((r) => r.left >= l.left - 1 && r.right <= l.right + 1 && r.top >= l.top - 1 && r.bottom <= l.bottom + 1)
+  const tools = document.querySelector('.map-dock .panel-chart__tools').getBoundingClientRect()
+  const plot = document.querySelector('.map-dock .panel-chart__dockplot').getBoundingClientRect()
+  return {
+    columns: new Set(rects.map((r) => Math.round(r.left))).size, inside,
+    scrolls: list.scrollHeight > list.clientHeight + 1 || list.scrollWidth > list.clientWidth + 1,
+    maxRowH: Math.max(...rects.map((r) => r.height)), firstTop: rects[0].top, toolsTop: tools.top,
+    railRight: l.right, textRight, railW: l.width, plotLeft: plot.left, plotW: plot.width,
+  }
+})
+
 // The rail fills down then across, so the number of columns follows the panel's height, live while it is dragged.
 test('the rail reflows with the panel height: one column when tall, more when short, all rows inside it, no scrolling', async ({ browser }, testInfo) => {
   testInfo.setTimeout(120000)
   const { context, page } = await openCharted(browser, WIDE, '/en/')
-  const rows = page.locator(`${PANEL} .gauges .gauge`)
-  await expect(rows.first()).toBeVisible()
-  // The fixture sensor has two metrics; a typical one has five.
-  await page.evaluate(() => {
-    const list = document.querySelector('.map-dock .gauges')
-    const first = list.querySelector('.gauge')
-    while (list.querySelectorAll('.gauge').length < 5) {
-      const copy = first.cloneNode(true)
-      copy.setAttribute('aria-pressed', 'false')
-      copy.querySelector('.gauge__label').textContent = 'Atmospheric pressure, long label'
-      list.appendChild(copy)
-    }
-  })
-  const layout = () => page.evaluate(() => {
-    const list = document.querySelector('.map-dock .gauges')
-    const l = list.getBoundingClientRect()
-    const g = [...list.querySelectorAll('.gauge')].map((e) => e.getBoundingClientRect())
-    const inside = g.every((r) => r.left >= l.left - 1 && r.right <= l.right + 1 && r.top >= l.top - 1 && r.bottom <= l.bottom + 1)
-    return { columns: new Set(g.map((r) => Math.round(r.left))).size, inside, scrolls: list.scrollHeight > list.clientHeight + 1 || list.scrollWidth > list.clientWidth + 1 }
-  })
-  const drag = async (dy) => {
-    const g = await box(page.locator('.map-dock__grip'))
-    await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2 + dy, { steps: 8 })
-    await page.mouse.up()
-  }
-  await drag(-600)
+  await expect(page.locator(`${PANEL} .gauges .gauge`).first()).toBeVisible()
+  await padRail(page)
+  const layout = () => railLayout(page)
+  await dragDock(page, -600)
   await expect.poll(async () => (await layout()).columns, 'tall: one column').toBe(1)
   expect(await layout()).toMatchObject({ inside: true, scrolls: false })
-  await drag(700)
+  await dragDock(page, 700)
   await expect.poll(async () => (await layout()).columns, 'short: the rows wrap into more columns').toBeGreaterThanOrEqual(2)
   expect(await layout(), 'short: a row falls outside the rail or the rail scrolls').toMatchObject({ inside: true, scrolls: false })
-  await drag(-600)
+  await dragDock(page, -600)
   await expect.poll(async () => (await layout()).columns, 'dragging back up reflows to one column').toBe(1)
+  await context.close()
+})
+
+// Rows hug their content from the top and the rail is as wide as its rows, so no height or width is left over.
+test('the rail hugs its rows: tight height from the toolbar down, no dead strip on the right, short panel wraps (1440, 1024)', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(180000)
+  for (const size of [WIDE, { width: 1024, height: 768 }]) {
+    const name = String(size.width)
+    const { context, page } = await openCharted(browser, size, '/en/')
+    await expect(page.locator(`${PANEL} .gauges .gauge`).first()).toBeVisible()
+    await padRail(page)
+    await dragDock(page, -600)
+    await expect.poll(async () => (await railLayout(page)).columns, `${name} tall: one column`).toBe(1)
+    const tall = await railLayout(page)
+    console.log(`MEASURE ${name} tall`, JSON.stringify(tall))
+    expect(tall.maxRowH, `${name} tall: a row is stretched past its content`).toBeLessThanOrEqual(64)
+    expect(Math.abs(tall.firstTop - tall.toolsTop), `${name} tall: the first row is not level with the toolbar`).toBeLessThanOrEqual(8)
+    expect(tall, `${name} tall: five rows do not fit`).toMatchObject({ inside: true, scrolls: false })
+    expect(tall.railRight - tall.textRight, `${name} tall: dead strip right of the rows`).toBeLessThanOrEqual(16)
+    if (size.width === 1440) {
+      expect(tall.plotLeft - tall.textRight, `${name} tall: the rail column is wider than its rows`).toBeLessThanOrEqual(40)
+      expect(tall.plotW, `${name} tall: the plot did not get the freed width`).toBeGreaterThan(900)
+    }
+    await dragDock(page, 700)
+    await expect.poll(async () => (await railLayout(page)).columns, `${name} short: wraps to more columns`).toBeGreaterThanOrEqual(2)
+    const short = await railLayout(page)
+    console.log(`MEASURE ${name} short`, JSON.stringify(short))
+    expect(short, `${name} short: a row is clipped`).toMatchObject({ inside: true, scrolls: false })
+    expect(short.maxRowH, `${name} short: a row is stretched`).toBeLessThanOrEqual(64)
+    expect(short.railRight - short.textRight, `${name} short: dead strip right of the rows`).toBeLessThanOrEqual(16)
+    await context.close()
+  }
+})
+
+// Every height from the floor up either shows five rows in one column or three per column, never a clipped row;
+// the switch sits where five rows (276px) and the title row first fit.
+test('the rail never clips a row at any panel height and goes to five rows exactly when they fit', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(120000)
+  const { context, page } = await openCharted(browser, WIDE, '/en/')
+  await expect(page.locator(`${PANEL} .gauges .gauge`).first()).toBeVisible()
+  await padRail(page)
+  const at = async (h) => {
+    await page.evaluate((h) => document.querySelector('.map-dock').style.setProperty('block-size', `${h}px`, 'important'), h)
+    await expect.poll(async () => (await box(page.locator(PANEL))).height).toBeCloseTo(h, 0)
+    return railLayout(page)
+  }
+  for (let h = 224; h <= 460; h += 6) {
+    const l = await at(h)
+    expect(l, `${h}px: a row is clipped`).toMatchObject({ inside: true, scrolls: false })
+  }
+  // dock = content + 2px border + 16px padding; content = 276px of rows + 41px of title row and gap.
+  expect((await at(336)).columns, '336px: five rows fit in one column').toBe(1)
+  expect((await at(334)).columns, '334px: five rows no longer fit, so three per column').toBe(2)
   await context.close()
 })

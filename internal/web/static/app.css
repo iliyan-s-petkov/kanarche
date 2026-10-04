@@ -573,14 +573,18 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 .map-dock:not(.map-dock--folded) .map-dock__head { padding-block-end: var(--space-1); }
 .map-dock:not(.map-dock--folded) .map-dock__body { display: flex; flex-direction: column; }
-/* Fills down then across: 3 rows in a short panel, 5 once there is room, so all rows show without scrolling. */
+/* Fills down then across, rows hugging the top: 3 in a short panel, 5 once the body holds five 3.25rem rows and
+   their gaps (276px), so all show without scrolling. Columns are as wide as their rows. */
 .map-dock:not(.map-dock--folded) .gauges {
-  flex: 1 1 0; min-block-size: 0; overflow: hidden; padding: 0; justify-items: stretch;
-  grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 12rem;
-  grid-template-rows: repeat(3, minmax(3rem, 1fr)); gap: var(--space-1) var(--space-2);
+  flex: 1 1 0; min-block-size: 0; overflow: hidden; padding: 0; justify-items: stretch; align-content: start; justify-content: start;
+  grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: max-content;
+  grid-template-rows: repeat(3, 3rem); gap: var(--space-1) var(--space-2);
 }
-@container (min-height: 17.5rem) { .map-dock:not(.map-dock--folded) .gauges { grid-template-rows: repeat(5, minmax(3rem, 1fr)); } }
-@media (min-width: 1200px) { .map-dock:not(.map-dock--folded) .gauges { grid-auto-columns: 15rem; } }
+/* Dock content height = 276px of rows + 41px of title row (37) and gap (4); 53px of title row on touch (44px buttons). */
+@container (min-height: 19.875rem) { .map-dock:not(.map-dock--folded) .gauges { grid-template-rows: repeat(5, 3.25rem); } }
+@media (hover: none) {
+  @container (max-height: 20.6875rem) { .map-dock:not(.map-dock--folded) .gauges { grid-template-rows: repeat(3, 3rem); } }
+}
 /* A row: the arc at 36px, the label over the value; the pressed row has an accent bar and a tint, not a box. */
 .map-dock:not(.map-dock--folded) .gauges .gauge {
   display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-areas: "arc label" "arc value";
