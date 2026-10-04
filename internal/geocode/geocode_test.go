@@ -60,7 +60,7 @@ func TestSearchSendsTheNominatimPolicyParameters(t *testing.T) {
 	r := up.last.Load()
 	q := r.URL.Query()
 	for k, want := range map[string]string{
-		"q": "Витоша 1", "countrycodes": "bg", "limit": "5", "format": "jsonv2", "accept-language": "bg",
+		"q": "Витоша 1", "countrycodes": "bg", "limit": "8", "format": "jsonv2", "accept-language": "bg",
 	} {
 		if got := q.Get(k); got != want {
 			t.Errorf("upstream %s = %q, want %q", k, got, want)
@@ -126,8 +126,11 @@ func TestSearchDropsUnusableRows(t *testing.T) {
 }
 
 func TestSearchCapsResultsAtFive(t *testing.T) {
-	row := `{"display_name":"x","lat":"42","lon":"23","boundingbox":["42","42","23","23"]}`
-	up := newStub(t, 200, "["+strings.Repeat(row+",", 7)+row+"]")
+	var rows []string
+	for _, n := range []string{"a", "b", "c", "d", "e", "f", "g", "h"} {
+		rows = append(rows, `{"display_name":"`+n+`","lat":"42","lon":"23","boundingbox":["42","42","23","23"]}`)
+	}
+	up := newStub(t, 200, "["+strings.Join(rows, ",")+"]")
 	res, err := geocode.New(cfgFor(up.URL)).Search(t.Context(), "many", "en")
 	if err != nil {
 		t.Fatalf("Search: %v", err)

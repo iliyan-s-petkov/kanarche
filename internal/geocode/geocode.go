@@ -34,9 +34,13 @@ const (
 	MaxQueryRunes = 120
 )
 
-// maxResults mirrors the limit= sent upstream; it is enforced again on the way
-// back so a misbehaving upstream cannot widen the response.
-const maxResults = 5
+// maxResults is what the caller gets back. upstreamLimit asks for a few more
+// rows so merging same-label rows still leaves up to maxResults; it is still
+// one upstream request.
+const (
+	maxResults    = 5
+	upstreamLimit = 8
+)
 
 // maxBodyBytes caps what is read from the upstream.
 const maxBodyBytes = 1 << 20
@@ -140,7 +144,8 @@ func (s *Service) clock() time.Time {
 // Search returns matches for q, which must already have passed Clean. lang is
 // "bg" or "en".
 func (s *Service) Search(ctx context.Context, q, lang string) ([]Result, error) {
-	key := lang + "\x00" + strings.ToLower(strings.Join(strings.Fields(q), " "))
+	// The v2 prefix keeps entries cached in the old label shape from being served.
+	key := "v2\x00" + lang + "\x00" + strings.ToLower(strings.Join(strings.Fields(q), " "))
 	if res, ok := s.cache.get(key); ok {
 		return res, nil
 	}
@@ -164,7 +169,8 @@ func (s *Service) fetch(ctx context.Context, q, lang string) ([]Result, error) {
 	v.Set("q", q)
 	v.Set("format", "jsonv2")
 	v.Set("countrycodes", "bg")
-	v.Set("limit", strconv.Itoa(maxResults))
+	v.Set("limit", strconv.Itoa(upstreamLimit))
+	v.Set("addressdetails", "1")
 	v.Set("accept-language", lang)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.baseURL+"/search?"+v.Encode(), nil)
@@ -203,29 +209,94 @@ func (s *Service) fetch(ctx context.Context, q, lang string) ([]Result, error) {
 // nominatimRow is the part of a jsonv2 search row this proxy keeps. Nominatim
 // sends coordinates as strings.
 type nominatimRow struct {
-	DisplayName string   `json:"display_name"`
-	Lat         string   `json:"lat"`
-	Lon         string   `json:"lon"`
-	BoundingBox []string `json:"boundingbox"`
+	Name        string            `json:"name"`
+	DisplayName string            `json:"display_name"`
+	Lat         string            `json:"lat"`
+	Lon         string            `json:"lon"`
+	BoundingBox []string          `json:"boundingbox"`
+	Address     map[string]string `json:"address"`
 }
 
+// firstOf returns the first non-empty address value among keys.
+func firstOf(addr map[string]string, keys ...string) string {
+	for _, k := range keys {
+		if v := strings.TrimSpace(addr[k]); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// buildLabel makes a short label: house number and road (or the place name),
+// the smallest sub-locality, the city/town/village, then the municipality or
+// county only when it is not already contained in the label. Postcode and
+// country are dropped (search is Bulgaria-only). Without address parts it
+// falls back to display_name.
+func buildLabel(row nominatimRow) string {
+	addr := row.Address
+	head := firstOf(addr, "road", "pedestrian", "footway", "path", "residential")
+	if head != "" {
+		if hn := firstOf(addr, "house_number"); hn != "" {
+			head += " " + hn
+		}
+	} else {
+		head = strings.TrimSpace(row.Name)
+	}
+	if head == "" {
+		return row.DisplayName
+	}
+	parts := []string{head}
+	// add skips a value already present in, or containing, an earlier part.
+	add := func(v string) {
+		if v == "" {
+			return
+		}
+		lv := strings.ToLower(v)
+		for _, p := range parts {
+			lp := strings.ToLower(p)
+			if strings.Contains(lp, lv) || strings.Contains(lv, lp) {
+				return
+			}
+		}
+		parts = append(parts, v)
+	}
+	add(firstOf(addr, "suburb", "quarter", "neighbourhood", "city_district"))
+	add(firstOf(addr, "city", "town", "village", "hamlet"))
+	add(firstOf(addr, "municipality", "county"))
+	return strings.Join(parts, ", ")
+}
+
+// mergeBBox widens a to cover b; an all-zero box means none.
+func mergeBBox(a, b [4]float64) [4]float64 {
+	if b == ([4]float64{}) {
+		return a
+	}
+	if a == ([4]float64{}) {
+		return b
+	}
+	return [4]float64{math.Min(a[0], b[0]), math.Min(a[1], b[1]), math.Max(a[2], b[2]), math.Max(a[3], b[3])}
+}
+
+// reduce keeps the first-seen order and merges rows whose label is equal
+// (OSM splits one street into ways with different postcodes): bboxes are
+// united, the point stays the first row's, a real OSM point on the street where
+// the union centre could fall beside it.
 func reduce(body []byte) ([]Result, error) {
 	var rows []nominatimRow
 	if err := json.Unmarshal(body, &rows); err != nil {
 		return nil, ErrUpstream
 	}
-	out := make([]Result, 0, len(rows))
+	out := make([]Result, 0, maxResults)
+	seen := make(map[string]int, len(rows))
 	for _, row := range rows {
-		if len(out) == maxResults {
-			break
-		}
 		lat, errLat := strconv.ParseFloat(row.Lat, 64)
 		lon, errLon := strconv.ParseFloat(row.Lon, 64)
-		if row.DisplayName == "" || errLat != nil || errLon != nil ||
+		label := buildLabel(row)
+		if label == "" || errLat != nil || errLon != nil ||
 			math.Abs(lat) > 90 || math.Abs(lon) > 180 {
 			continue
 		}
-		res := Result{Label: row.DisplayName, Lat: lat, Lon: lon}
+		var box [4]float64
 		// Nominatim's order is [south, north, west, east].
 		if len(row.BoundingBox) == 4 {
 			var b [4]float64
@@ -239,10 +310,19 @@ func reduce(body []byte) ([]Result, error) {
 				b[i] = f
 			}
 			if valid {
-				res.BBox = [4]float64{b[2], b[0], b[3], b[1]}
+				box = [4]float64{b[2], b[0], b[3], b[1]}
 			}
 		}
-		out = append(out, res)
+		key := strings.ToLower(label)
+		if i, ok := seen[key]; ok {
+			out[i].BBox = mergeBBox(out[i].BBox, box)
+			continue
+		}
+		if len(out) == maxResults {
+			continue
+		}
+		seen[key] = len(out)
+		out = append(out, Result{Label: label, Lat: lat, Lon: lon, BBox: box})
 	}
 	return out, nil
 }
