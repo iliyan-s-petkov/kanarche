@@ -105,7 +105,8 @@ func TestCustomSpanTakesTheResolutionOfTheNamedPeriodThatCoversIt(t *testing.T) 
 		wantHourly bool
 	}{
 		{"an afternoon", 4 * time.Hour, false},
-		{"a fortnight", 14 * 24 * time.Hour, false},
+		{"three days", 3 * 24 * time.Hour, false},
+		{"a fortnight", 14 * 24 * time.Hour, true},
 		{"six months", 182 * 24 * time.Hour, true},
 	} {
 		window, hourly, bucket := api.PeriodForSpanForTesting(cfg, tc.span)

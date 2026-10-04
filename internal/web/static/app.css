@@ -685,6 +685,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 .chart-frame--resizable .chart-host { block-size: 100%; }
 .chart-frame--fill { border: 1px solid var(--border-faint); border-radius: var(--radius-sm); }
+/* Both frames clip their overflow, so the message sits centred inside rather than below. */
+.chart-frame--fill, .chart-frame--resizable { position: relative; }
+.chart-frame--fill .chart-message, .chart-frame--resizable .chart-message { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: var(--space-3); text-align: center; color: var(--fg); }
 .chart-frame--fill .chart-host { block-size: 100%; }
 
 /* The reading card (web/src/lib/charttooltip.js): placed by script, so only its look is here. */

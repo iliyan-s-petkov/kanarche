@@ -259,9 +259,9 @@
 
 <div bind:this={frame} class="chart-frame" class:chart-frame--resizable={resizable} class:chart-frame--fill={fill}>
   <div bind:this={host} class="chart-host"></div>
+  {#if status === 'unavailable'}<p class="chart-message">{unavailable}</p>{/if}
+  {#if status === 'empty'}<p class="chart-message">{empty}</p>{/if}
 </div>
-{#if status === 'unavailable'}<p class="chart-message">{unavailable}</p>{/if}
-{#if status === 'empty'}<p class="chart-message">{empty}</p>{/if}
 
 <style>
   /* The legend is built by uPlot at runtime, so its selectors are :global. It is a static key: swatch and name, no values. */

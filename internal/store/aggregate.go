@@ -423,8 +423,11 @@ SELECT ` + bucketed("time", 5) + ` AS b, avg(value) FROM reading
  GROUP BY b
  ORDER BY b`
 
+	// Weighted by sample_count so re-bucketing hours equals what raw readings would average.
 	hourlySeriesSQL = `
-SELECT ` + bucketed("bucket", 4) + ` AS b, avg(avg_value) FROM reading_hourly
+SELECT ` + bucketed("bucket", 4) + ` AS b,
+       COALESCE(sum(avg_value * sample_count) / NULLIF(sum(sample_count), 0), avg(avg_value))
+  FROM reading_hourly
  WHERE sensor_id = $1 AND metric = $2 AND bucket >= $3
    AND ($5::timestamptz IS NULL OR bucket < $5)
  GROUP BY b
