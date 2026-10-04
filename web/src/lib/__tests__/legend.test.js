@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi } from 'vitest'
-import { LEGEND_CLASSES, buildWindRow, legendRows, legendTitle, rampGradient, renderLegend, setWindRow } from '../legend.js'
+import { LEGEND_CLASSES, buildSeaRows, buildWindRow, legendRows, legendTitle, rampGradient, renderLegend, setWindRow } from '../legend.js'
 
 // Shaped like /api/v1/scales: ascending, upper INCLUSIVE, the top band open
 // (upper === null), and both label languages present — internal/api/scales.go
@@ -325,6 +325,21 @@ describe('the on-map legend and the refresh cluster', () => {
 
     expect(Number(lift[1]), 'legend still overlaps the refresh cluster')
       .toBeGreaterThan(Number(btn[1]))
+  })
+})
+
+describe('sea legend rows', () => {
+  const colours = { excellent: '#0b4f9c', good: '#3a8fd9', sufficient: '#8cc5e8', poor: '#8e3a9c', not_classified: '#9ca3af' }
+  const t = { legend: 'Bathing water', classes: { excellent: 'Excellent', good: 'Good', sufficient: 'Sufficient', poor: 'Poor', not_classified: 'Not classified' } }
+
+  it('names every class beside its marker colour, and starts hidden', () => {
+    const el = buildSeaRows(t, colours)
+    expect(el.hidden).toBe(true)
+    expect(el.classList.contains('scale__sea')).toBe(true)
+    expect(el.textContent).toContain('Bathing water')
+    const rows = [...el.querySelectorAll('.legend__row')]
+    expect(rows.map((r) => r.textContent)).toEqual(['Excellent', 'Good', 'Sufficient', 'Poor', 'Not classified'])
+    expect(rows.map((r) => r.querySelector('rect').getAttribute('fill'))).toEqual(Object.values(colours))
   })
 })
 

@@ -30,6 +30,8 @@ import { mountChrome } from '../lib/chrome.js'
 import { installPanelPadding } from '../lib/panelpadding.js'
 import { installMapLoad } from '../lib/mapload.js'
 import { findSensor } from '../lib/sensors.svelte.js'
+import { createSeaPanel } from '../lib/seapanel.svelte.js'
+import { SEA_LAYER_ID } from '../lib/sea.js'
 
 // The flat cells and their tilted columns: one feature, two ways of drawing it.
 const HEX_CELL_LAYERS = [HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID]
@@ -150,6 +152,10 @@ export function mount(el) {
   // rather than an overlay they ask for.
   const boundaryState = { on: false, body: null, loading: false }
 
+  // The bathing sites: one fetch per page like the wind, and a card of their own beside the sensor panel.
+  const seaPanel = createSeaPanel(el, cfg)
+  const seaState = { on: false, body: null, loading: false, closePanel: seaPanel.close }
+
   chrome.locateButton.addEventListener('click', () => locateMe(map, state, cfg, chrome))
   installLocateHint(map, chrome.locateButton, cfg, {
     text: cfg.t.locateHint,
@@ -188,7 +194,7 @@ export function mount(el) {
   // One object rather than four `let`s because the handler is async: by the
   // time it runs, mount() has returned and cannot receive them.
   const subs = {}
-  installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, onMoveEnd, subs })
+  installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState, onMoveEnd, subs })
 
   map.on('moveend', onMoveEnd)
   trackLastView(map, cfg)
@@ -206,6 +212,8 @@ export function mount(el) {
   const onMarkerClick = (e) => {
     const props = e.features?.[0]?.properties
     if (!props) return
+    if (hit(map, e.point, [SEA_LAYER_ID]).length) return
+    seaPanel.close()
     if (props.slug) {
       state.slug = props.slug
       refresh(map, state, cfg, chrome)
@@ -228,6 +236,8 @@ export function mount(el) {
   // name, so it selects the area its centre falls nearest instead.
   // Both cell layers in one listener: a tilted click lands on the column, a flat one on the fill.
   map.on('click', HEX_CELL_LAYERS, (e) => {
+    if (hit(map, e.point, [SEA_LAYER_ID]).length) return
+    seaPanel.close()
     const id = e.features?.[0]?.properties?.sensorId
     if (id !== undefined && id !== null) {
       vs.openSensor(Number(id))
@@ -254,6 +264,16 @@ export function mount(el) {
     if (slug) refresh(map, state, cfg, chrome)
   })
 
+  // A bathing site sits on top of whatever is under it, so it claims the click outright.
+  map.on('click', SEA_LAYER_ID, (e) => {
+    const id = e.features?.[0]?.properties?.id
+    if (!id) return
+    vs.closeSensor()
+    seaPanel.open(String(id))
+  })
+  map.on('mouseenter', SEA_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer' })
+  map.on('mouseleave', SEA_LAYER_ID, () => { map.getCanvas().style.cursor = '' })
+
   // MapLibre fires click only for a click, not the end of a drag, so a pan
   // leaves the wind note open. Runs alongside the marker and cell handlers.
   map.on('click', () => chrome.foldWind())
@@ -262,7 +282,7 @@ export function mount(el) {
   // Registered after the layer handlers, which claim clicks that open something.
   map.on('click', (e) => {
     if (vs.sensorId == null) return
-    const feats = hit(map, e.point, [LAYER_ID, ...HEX_CELL_LAYERS])
+    const feats = hit(map, e.point, [LAYER_ID, ...HEX_CELL_LAYERS, SEA_LAYER_ID])
     if (feats.some((f) => f.properties?.id != null || f.properties?.sensorId != null)) return
     vs.closeSensor()
   })
@@ -309,7 +329,7 @@ export function mount(el) {
   // what the ground between them means.
   map.on('click', (e) => {
     if (!boundaryState.on) return
-    if (hit(map, e.point, [LAYER_ID, ...HEX_CELL_LAYERS]).length) return
+    if (hit(map, e.point, [LAYER_ID, ...HEX_CELL_LAYERS, SEA_LAYER_ID]).length) return
     const slug = boundaryChoice(state, hit(map, e.point, [BOUNDARY_FILL_LAYER_ID])[0])
     if (!slug) return
     state.slug = slug

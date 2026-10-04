@@ -159,6 +159,25 @@ describe('isPhoneViewport', () => {
   })
 })
 
+describe('the bathing-water key', () => {
+  it('shows with the layer and survives a legend repaint', () => {
+    const el = document.createElement('div')
+    el.className = 'map'
+    el.dataset.tSeaLegend = 'Bathing water'
+    el.dataset.seaColours = '#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c,#9ca3af'
+    document.body.appendChild(el)
+    const c = mountChrome(el, readConfig(el))
+    const key = () => el.querySelector('.scale__sea')
+    expect(key().hidden).toBe(true)
+    c.showSea(true)
+    c.showLegend({ bands: [], tier: null, metric: 'pm25', scale: null })
+    expect(key().hidden).toBe(false)
+    expect(key().textContent).toContain('Bathing water')
+    c.showSea(false)
+    expect(key().hidden).toBe(true)
+  })
+})
+
 // The disclosure is why an unmeasured forecast layer is allowed on a map of
 // measurements, so it is never dismissible — but two sentences and a model name
 // unrolled over the map is most of a phone screen. Folded, it is a line the

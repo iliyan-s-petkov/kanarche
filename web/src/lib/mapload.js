@@ -10,7 +10,7 @@ import {
   CITIZEN_SOURCE, OFFICIAL_SOURCE,
 } from './sourcefilter.svelte.js'
 import { getShowFaulty, setShowFaulty, onShowFaultyChange } from './faultyfilter.svelte.js'
-import { diamondImage } from './markericon.js'
+import { diamondImage, squareImage } from './markericon.js'
 import { chooseWindow } from './mapwindow.js'
 import { GRID_MIN_ZOOM_FRACTIONAL, POINT_TIER_MIN_ZOOM_FRACTIONAL } from './hexes.js'
 import { installLayers } from './maplayers.js'
@@ -37,6 +37,8 @@ import {
 import { addBasemapOverlay } from './mapstyle.js'
 import { setWind, refreshWind } from './mapwind.js'
 import { setBoundaries } from './mapboundaries.js'
+import { seaLayout, seaPaint, setSea } from './mapsea.js'
+import { SEA_IMAGE_ID, SEA_LAYER_ID, SEA_SOURCE_ID } from './sea.js'
 import {
   refresh, refreshHexes, onMetricChange, applyMetricColours, initData,
   mapHint, repaintSensors, setSourceViewAvailability,
@@ -51,7 +53,7 @@ import { hexExtrusionPaint, installHexRise } from './hexrise.js'
 
 // Named rather than positional: windState and boundaryState are structurally
 // identical objects, so a transposed pair would be silent here and at runtime.
-export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, onMoveEnd, subs }) {
+export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState = {}, onMoveEnd, subs }) {
   map.on('load', async () => {
     // Not awaited: the metric subscription below must be registered before
     // this handler's first await, and the ground is detail the map does
@@ -267,6 +269,17 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       paint: arrowPaint(cfg),
     }, map.getLayer?.(HEX_LABEL_LAYER_ID) ? HEX_LABEL_LAYER_ID : undefined)
 
+    // Bathing sites as squares, added empty and hidden like the wind; the first toggle fetches them.
+    map.addSource(SEA_SOURCE_ID, { type: 'geojson', data: emptyCollection() })
+    map.addImage(SEA_IMAGE_ID, squareImage(), { sdf: true, pixelRatio: MARKER_PIXEL_RATIO })
+    map.addLayer({
+      id: SEA_LAYER_ID,
+      type: 'symbol',
+      source: SEA_SOURCE_ID,
+      layout: { ...seaLayout(), visibility: 'none' },
+      paint: seaPaint(cfg),
+    })
+
     // Wind is an overlay, so it belongs with the other overlays rather than in
     // a button of its own in the corner. Assembled here and not in mountChrome
     // because it is the only view that needs the map's source and the fetch
@@ -326,6 +339,15 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       apply: (on) => { setShowFaulty(on); return on },
     }
 
+    // Off until asked for: a seasonal layer, and the only one that is not air.
+    const seaView = {
+      id: 'sea',
+      label: cfg.t.sea.toggle,
+      defaultOff: true,
+      mark: 'square',
+      apply: (on) => setSea(map, cfg, chrome, seaState, on),
+    }
+
     // Here and not in mountChrome: the options are the style's own groups, and
     // map.getStyle() has no layers to report until the style has loaded. A menu
     // built any earlier is a menu of nothing, which is why it stays hidden
@@ -333,7 +355,7 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     installLayers(map, chrome.layersUI, {
       labels: cfg.t.layers,
       caption: cfg.t.layersCaption,
-      views: [...chrome.layerViews, ...sourceViews, chrome.inactiveView, faultyView, windView, boundaryView],
+      views: [...chrome.layerViews, ...sourceViews, chrome.inactiveView, faultyView, windView, seaView, boundaryView],
     })
 
     setSourceViewAvailability(chrome, cfg.metric, cfg.t, state.coverage)

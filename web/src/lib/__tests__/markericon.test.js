@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { diamondImage, DIAMOND_PX, DIAMOND_RADIUS_PX } from '../markericon.js'
+import { diamondImage, squareImage, DIAMOND_PX, DIAMOND_RADIUS_PX, SQUARE_HALF_PX } from '../markericon.js'
 
 // MapLibre's SDF shader cuts the glyph at alpha 192 (its buffer, 0.75). Every
 // assertion here is about where that cut falls, because that — not the raw
@@ -43,5 +43,26 @@ describe('diamondImage', () => {
     const c = DIAMOND_PX
     expect(alphaAt(big, c + 2 * DIAMOND_RADIUS_PX - 2, c)).toBeGreaterThan(EDGE)
     expect(alphaAt(big, c + 2 * DIAMOND_RADIUS_PX + 2, c)).toBeLessThan(EDGE)
+  })
+})
+
+describe('squareImage', () => {
+  const img = squareImage()
+  const c = DIAMOND_PX / 2
+
+  it('is an RGBA buffer of the nominal size', () => {
+    expect(img.width).toBe(DIAMOND_PX)
+    expect(img.data).toHaveLength(DIAMOND_PX * DIAMOND_PX * 4)
+  })
+
+  // The one thing separating it from the diamond: the corners are inside.
+  it('keeps the corners the diamond cuts', () => {
+    const d = SQUARE_HALF_PX - 2
+    expect(alphaAt(img, c + d, c + d)).toBeGreaterThan(EDGE)
+    expect(alphaAt(img, c + SQUARE_HALF_PX + 1, c)).toBeLessThan(EDGE)
+  })
+
+  it('leaves the halo somewhere to draw', () => {
+    expect(alphaAt(img, 0, 0)).toBeLessThan(EDGE)
   })
 })
