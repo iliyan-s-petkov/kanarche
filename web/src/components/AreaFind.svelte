@@ -10,13 +10,13 @@
   // screen-reader hint both describe arrow keys and an active descendant, so
   // that contract is what is built here rather than the shorter thing the
   // mockup happens to do.
-  import { matchAreas, exactMatch, splitMark } from '../lib/find.js'
+  import { matchAreas, exactMatch, splitMark, areaGroup } from '../lib/find.js'
 
   // `address` switches on the last-row address search (map tab only):
   // { search(q) -> Promise<rows>, onpick, onclear, row, loading, none, busy,
   //   error, credit, creditHref }. The request runs only on Enter or a click
   // on that row, never while typing.
-  let { areas, lang = 'bg', label, placeholder, hint, empty, onpick, address = null, id = 'area-find' } = $props()
+  let { areas, lang = 'bg', label, placeholder, hint, empty, onpick, address = null, groups = null, id = 'area-find' } = $props()
 
   let query = $state('')
   let open = $state(false)
@@ -32,6 +32,17 @@
   const MIN_ADDRESS_RUNES = 3
   const listId = `${id}-listbox`
   const matches = $derived(matchAreas(areas, query, lang))
+  // Headings only when both groups have matches; one kind alone has nothing to
+  // be told apart from. Each segment keeps its flat start index for option ids.
+  const segments = $derived.by(() => {
+    const kinds = new Set(matches.map(areaGroup))
+    if (!groups || kinds.size < 2) return [{ key: null, start: 0, items: matches }]
+    const d = matches.filter((m) => areaGroup(m) === 'district')
+    return [
+      { key: 'district', start: 0, items: d },
+      { key: 'place', start: d.length, items: matches.slice(d.length) },
+    ]
+  })
   const trimmed = $derived(query.trim())
   const canSearch = $derived(!!address && [...trimmed].length >= MIN_ADDRESS_RUNES)
   const showResults = $derived(addr.status === 'results')
@@ -165,6 +176,19 @@
   }
 </script>
 
+{#snippet option(match, i)}
+  {@const parts = splitMark(match.name, match.at, match.len)}
+  <!-- mousedown, not click: click arrives after blur has already closed
+       the list, so a mouse pick would land on nothing. -->
+  <li
+    class="combobox__opt"
+    id="{id}-opt-{i}"
+    role="option"
+    aria-selected={i === active}
+    onmousedown={(e) => { e.preventDefault(); pick(match) }}
+  ><span class="combobox__text">{parts.before}<mark>{parts.hit}</mark>{parts.after}</span></li>
+{/snippet}
+
 <div class="field field--search combobox toolbar__find">
   <label class="field__label" for={id}>{label}</label>
   <input
@@ -214,17 +238,21 @@
            has no area for is an ordinary thing to do. -->
       <li class="combobox__empty">{empty}</li>
     {:else}
-      {#each matches as match, i (match.name)}
-        {@const parts = splitMark(match.name, match.at, match.len)}
-        <!-- mousedown, not click: click arrives after blur has already closed
-             the list, so a mouse pick would land on nothing. -->
-        <li
-          class="combobox__opt"
-          id="{id}-opt-{i}"
-          role="option"
-          aria-selected={i === active}
-          onmousedown={(e) => { e.preventDefault(); pick(match) }}
-        ><span class="combobox__text">{parts.before}<mark>{parts.hit}</mark>{parts.after}</span></li>
+      {#each segments as seg (seg.key)}
+        {#if seg.key}
+          <li role="presentation">
+            <ul role="group" class="combobox__group" aria-labelledby="{id}-grp-{seg.key}">
+              <li role="presentation" class="combobox__group-label" id="{id}-grp-{seg.key}">{groups[seg.key]}</li>
+              {#each seg.items as match, j (match.name)}
+                {@render option(match, seg.start + j)}
+              {/each}
+            </ul>
+          </li>
+        {:else}
+          {#each seg.items as match, j (match.name)}
+            {@render option(match, seg.start + j)}
+          {/each}
+        {/if}
       {/each}
     {/if}
     {#if canSearch}

@@ -1814,6 +1814,9 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 /* Address search in the finder: the OSM credit line and the searched-address pin. */
 .combobox__credit { padding: var(--space-2) var(--space-4); font-size: var(--text-compact); color: var(--muted); }
 .combobox__credit a { color: inherit; text-decoration: underline; }
+.combobox__group { list-style: none; margin: 0; padding: 0; }
+.combobox__group-label { padding: var(--space-2) var(--space-4) var(--space-1); font-size: var(--text-compact); font-weight: 600; color: var(--muted); }
+li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1px solid var(--border); }
 .combobox__opt--address { border-block-start: 1px solid var(--border); }
 .address-pin {
   inline-size: 18px; block-size: 18px; border-radius: 50%;
