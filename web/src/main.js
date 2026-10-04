@@ -26,6 +26,7 @@ const ISLANDS = {
   sensorbar: () => import('./islands/sensorbar.js'),
   theme: () => import('./islands/theme.js'),
   clearsettings: () => import('./islands/clearsettings.js'),
+  copycode: () => import('./islands/copycode.js'),
   visitors: () => import('./islands/visitors.js'),
 }
 
