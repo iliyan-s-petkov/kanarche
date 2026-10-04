@@ -666,3 +666,40 @@ func TestEEAIsValidatedWhenDisabled(t *testing.T) {
 		t.Error("Validate skipped the eea block because it was disabled")
 	}
 }
+
+func TestSeaValidationRejectsBadSettings(t *testing.T) {
+	for name, mutate := range map[string]func(*Config){
+		"http url":              func(c *Config) { c.Sea.URL = "http://discodata.invalid/sql" },
+		"empty host":            func(c *Config) { c.Sea.URL = "https:///sql" },
+		"lower-case country":    func(c *Config) { c.Sea.Country = "bg" },
+		"quoted country":        func(c *Config) { c.Sea.Country = "B'" },
+		"zero request timeout":  func(c *Config) { c.Sea.RequestTimeout = 0 },
+		"zero refresh interval": func(c *Config) { c.Sea.RefreshInterval = 0 },
+		"zero payload bound":    func(c *Config) { c.Sea.MaxPayloadBytes = 0 },
+		"zero max rows":         func(c *Config) { c.Sea.MaxRows = 0 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := validConfig(t)
+			mutate(&c)
+			if err := c.Validate(); err == nil {
+				t.Errorf("Validate accepted %s", name)
+			}
+		})
+	}
+}
+
+func TestSeaIsValidatedWhenDisabled(t *testing.T) {
+	c := validConfig(t)
+	c.Sea.Enabled = false
+	c.Sea.URL = "not a url at all"
+	if err := c.Validate(); err == nil {
+		t.Error("Validate skipped the sea block because it was disabled")
+	}
+}
+
+func TestSeaUserAgentIsDerived(t *testing.T) {
+	c := validConfig(t)
+	if c.Sea.UserAgent == "" || c.Sea.UserAgent != c.EEA.UserAgent {
+		t.Errorf("Sea.UserAgent = %q, want the collector user agent %q", c.Sea.UserAgent, c.EEA.UserAgent)
+	}
+}

@@ -18,7 +18,8 @@ type raw struct {
 	Wind       *rawWind       `yaml:"wind"`
 	EEA        *rawEEA        `yaml:"eea"`
 	Cloudflare *rawCloudflare `yaml:"cloudflare"`
-	Geocoder   *rawGeocoder   `yaml:"geocoder"`
+	Sea        *rawSea        `yaml:"sea"`
+	Geocoder  *rawGeocoder   `yaml:"geocoder"`
 	Store      *rawStore      `yaml:"store"`
 	Series     *rawSeries     `yaml:"series"`
 	Quality    *rawQuality    `yaml:"quality"`
@@ -165,6 +166,17 @@ type rawCloudflare struct {
 	ZoneID         *string   `yaml:"zone_id"`
 	RequestTimeout *Duration `yaml:"request_timeout"`
 	PollInterval   *Duration `yaml:"poll_interval"`
+}
+
+// rawSea configures the EEA bathing-water import. See internal/upstream/bathing/README.md.
+type rawSea struct {
+	Enabled         *bool     `yaml:"enabled"`
+	URL             *string   `yaml:"url"`
+	Country         *string   `yaml:"country"`
+	RequestTimeout  *Duration `yaml:"request_timeout"`
+	RefreshInterval *Duration `yaml:"refresh_interval"`
+	MaxPayloadBytes *int64    `yaml:"max_payload_bytes"`
+	MaxRows         *int      `yaml:"max_rows"`
 }
 
 // rawGeocoder configures the address-search proxy. The upstream is Nominatim

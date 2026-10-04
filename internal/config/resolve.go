@@ -19,6 +19,7 @@ type Config struct {
 	Wind       Wind
 	EEA        EEA
 	Cloudflare Cloudflare
+	Sea        Sea
 	Geocoder   Geocoder
 	Store      Store
 	Series     Series
@@ -192,6 +193,21 @@ type Cloudflare struct {
 	ZoneID         string
 	RequestTimeout time.Duration
 	PollInterval   time.Duration
+}
+
+// Sea configures the EEA bathing-water import. See internal/upstream/bathing/README.md.
+type Sea struct {
+	Enabled bool
+	// URL is the Discodata SQL endpoint; Country is the only value interpolated into its queries.
+	URL     string
+	Country string
+	// UserAgent is derived from Listen.BaseURL.
+	UserAgent       string
+	RequestTimeout  time.Duration
+	RefreshInterval time.Duration
+	MaxPayloadBytes int64
+	// MaxRows is the nrOfHits page size; a page that comes back full is treated as truncated.
+	MaxRows int
 }
 
 // Geocoder configures the address-search proxy. See internal/geocode.
@@ -493,6 +509,16 @@ func resolve(r *raw) Config {
 			ZoneID:         *r.Cloudflare.ZoneID,
 			RequestTimeout: r.Cloudflare.RequestTimeout.Std(),
 			PollInterval:   r.Cloudflare.PollInterval.Std(),
+		},
+		Sea: Sea{
+			Enabled:         *r.Sea.Enabled,
+			URL:             *r.Sea.URL,
+			Country:         *r.Sea.Country,
+			UserAgent:       CollectorUserAgent(*r.Listen.BaseURL),
+			RequestTimeout:  r.Sea.RequestTimeout.Std(),
+			RefreshInterval: r.Sea.RefreshInterval.Std(),
+			MaxPayloadBytes: *r.Sea.MaxPayloadBytes,
+			MaxRows:         *r.Sea.MaxRows,
 		},
 		Geocoder: Geocoder{
 			URL:               *r.Geocoder.URL,
