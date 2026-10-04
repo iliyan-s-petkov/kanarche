@@ -75,6 +75,7 @@ func (c Config) Validate() error {
 	c.validateWind(&p)
 	c.validateEEA(&p)
 	c.validateCloudflare(&p)
+	c.validateGeocoder(&p)
 	c.validateStoreAndSeries(&p)
 	c.validateQuality(&p)
 	c.validateFrontend(&p)
@@ -212,9 +213,10 @@ func (c Config) validateDatabase(p *problems) {
 
 func (c Config) validateRateLimit(p *problems) {
 	for path, b := range map[string]Bucket{
-		"ratelimit.api":    c.RateLimit.API,
-		"ratelimit.pages":  c.RateLimit.Pages,
-		"ratelimit.series": c.RateLimit.Series.Bucket,
+		"ratelimit.api":     c.RateLimit.API,
+		"ratelimit.pages":   c.RateLimit.Pages,
+		"ratelimit.series":  c.RateLimit.Series.Bucket,
+		"ratelimit.geocode": c.RateLimit.Geocode,
 	} {
 		p.positiveFloat(path+".per_second", b.PerSecond)
 		p.positiveFloat(path+".burst", b.Burst)
@@ -332,6 +334,26 @@ func (c Config) validateWind(p *problems) {
 	if h := time.Duration(c.Wind.ForecastHours) * time.Hour; c.Wind.Retention < h {
 		p.addf("wind.retention (%v) is shorter than wind.forecast_hours (%v); stored forecasts would expire while still being served", c.Wind.Retention, h)
 	}
+}
+
+// validateGeocoder takes http as well as https so a local stub can stand in for
+// the upstream in tests; the URL comes from config only, never from a request.
+func (c Config) validateGeocoder(p *problems) {
+	u, err := url.Parse(c.Geocoder.URL)
+	switch {
+	case err != nil:
+		p.addf("geocoder.url = %q is not a URL: %s", c.Geocoder.URL, parseErrorReason(err))
+	case u.Scheme != "http" && u.Scheme != "https":
+		p.addf("geocoder.url = %q must use http or https", c.Geocoder.URL)
+	case u.Host == "":
+		p.addf("geocoder.url = %q must be absolute", c.Geocoder.URL)
+	case u.RawQuery != "":
+		p.addf("geocoder.url = %q must carry no query string", c.Geocoder.URL)
+	}
+	p.positive("geocoder.request_timeout", c.Geocoder.RequestTimeout)
+	p.positive("geocoder.cache_ttl", c.Geocoder.CacheTTL)
+	p.positiveInt("geocoder.cache_max_entries", c.Geocoder.CacheMaxEntries)
+	p.positiveFloat("geocoder.upstream_per_second", c.Geocoder.UpstreamPerSecond)
 }
 
 // validateEEA runs whether or not the feed is enabled, so a bad setting fails

@@ -19,6 +19,7 @@ type Config struct {
 	Wind       Wind
 	EEA        EEA
 	Cloudflare Cloudflare
+	Geocoder   Geocoder
 	Store      Store
 	Series     Series
 	Quality    Quality
@@ -89,6 +90,7 @@ type RateLimit struct {
 	API        Bucket
 	Pages      Bucket
 	Series     SeriesBucket
+	Geocode    Bucket
 	Enumerate  Enumerate
 	ShardCount int
 }
@@ -190,6 +192,20 @@ type Cloudflare struct {
 	ZoneID         string
 	RequestTimeout time.Duration
 	PollInterval   time.Duration
+}
+
+// Geocoder configures the address-search proxy. See internal/geocode.
+type Geocoder struct {
+	URL string
+	// UserAgent is derived from Listen.BaseURL; Nominatim's policy requires an
+	// identifying one.
+	UserAgent      string
+	RequestTimeout time.Duration
+	CacheTTL       time.Duration
+	// CacheMaxEntries bounds the LRU; the oldest-used entry is dropped first.
+	CacheMaxEntries int
+	// UpstreamPerSecond is the global rate to the upstream, across all visitors.
+	UpstreamPerSecond float64
 }
 
 type Store struct {
@@ -422,6 +438,7 @@ func resolve(r *raw) Config {
 			API:        resolveBucket(r.RateLimit.API),
 			Pages:      resolveBucket(r.RateLimit.Pages),
 			Series:     resolveSeriesBucket(r.RateLimit.Series),
+			Geocode:    resolveBucket(r.RateLimit.Geocode),
 			ShardCount: *r.RateLimit.ShardCount,
 			Enumerate: Enumerate{
 				AreasPerWindow:   *r.RateLimit.Enumerate.AreasPerWindow,
@@ -476,6 +493,14 @@ func resolve(r *raw) Config {
 			ZoneID:         *r.Cloudflare.ZoneID,
 			RequestTimeout: r.Cloudflare.RequestTimeout.Std(),
 			PollInterval:   r.Cloudflare.PollInterval.Std(),
+		},
+		Geocoder: Geocoder{
+			URL:               *r.Geocoder.URL,
+			UserAgent:         CollectorUserAgent(*r.Listen.BaseURL),
+			RequestTimeout:    r.Geocoder.RequestTimeout.Std(),
+			CacheTTL:          r.Geocoder.CacheTTL.Std(),
+			CacheMaxEntries:   *r.Geocoder.CacheMaxEntries,
+			UpstreamPerSecond: *r.Geocoder.UpstreamPerSecond,
 		},
 		Store: Store{
 			CoverageThreshold:       *r.Store.CoverageThreshold,

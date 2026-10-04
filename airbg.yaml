@@ -146,6 +146,13 @@ ratelimit:
     # enough for in-flight queries to drain, short enough that a legitimate
     # reader's chart appears late rather than never.
     retry_after: "2s"
+  # Per client, on /api/v1/geocode only. Each miss costs the shared 1 req/s
+  # upstream budget, so a visitor gets a short burst, then one search per 5s.
+  geocode:
+    per_second: 0.2
+    burst: 5
+    ttl: "30m"
+    evict_interval: "5m"
   # Breadth limiting: not about request rate but about how much of the dataset
   # one client can enumerate. Anti-extraction here is tiering plus rate
   # limiting, not authentication.
@@ -218,6 +225,16 @@ eea:
   min_poll_interval: "30m"
   metadata_interval: "168h"
   max_payload_bytes: 67108864
+
+# Address search proxy (internal/geocode). Queries are personal data: never
+# logged. AIRBG_GEOCODER_URL overrides url. See docs/configuration.md.
+geocoder:
+  url: "https://nominatim.openstreetmap.org"
+  request_timeout: "5s"
+  cache_ttl: "24h"
+  cache_max_entries: 2000
+  # Nominatim's usage policy allows at most one request per second, total.
+  upstream_per_second: 1
 
 # Daily unique visitors, pulled from Cloudflare's GraphQL analytics API. See
 # internal/upstream/cloudflare/README.md. The API token is env-only
