@@ -43,9 +43,12 @@ async function tapBox(cue) {
 async function setLegend(page, open) {
   const legend = page.locator('details.scale--onmap')
   await expect(legend).toBeAttached()
-  if ((await legend.evaluate((el) => el.open)) !== open) await page.locator('.scale__toggle').click()
-  if (open) await expect(legend).toHaveAttribute('open', '')
-  else await expect(legend).not.toHaveAttribute('open', '')
+  // Re-checked on every attempt: a repaint can replace the legend between the read and the click.
+  await expect(async () => {
+    if ((await legend.evaluate((el) => el.open)) !== open) await page.locator('.scale__toggle').click()
+    if (open) await expect(legend).toHaveAttribute('open', '', { timeout: 1500 })
+    else await expect(legend).not.toHaveAttribute('open', '', { timeout: 1500 })
+  }).toPass({ timeout: 15_000 })
 }
 
 for (const vp of VIEWPORTS) {
@@ -73,35 +76,26 @@ for (const vp of VIEWPORTS) {
 
         const cue = page.locator('a.scroll-cue')
         await expect(cue).toBeVisible()
-        // The map island mounts after FCP and can still shift the cue; measure once it straddles the map edge.
+        // The map island mounts after FCP and can still shift the cue, so the whole
+        // geometry is judged in one retried read rather than from separate snapshots.
         const mapEl = page.locator('#map, #area-map').first()
         await expect.poll(async () => {
-          const b = await cue.boundingBox()
-          const m = await mapEl.boundingBox()
-          return Math.abs(b.y - (m.y + m.height))
-        }).toBeLessThanOrEqual(2)
-        const box = await cue.boundingBox()
-        const map = await mapEl.boundingBox()
-
-        // Fully inside the first viewport.
-        expect(box.y).toBeGreaterThanOrEqual(0)
-        expect(box.y + box.height).toBeLessThanOrEqual(vp.height)
-
-        // Visual tab is the spike's small pull tab, not the old 44px strip.
-        expect(box.width).toBeLessThanOrEqual(57)
-        expect(box.height).toBeLessThanOrEqual(29)
-
-        // The tap target (::before) is still >= 44px tall.
-        const tap = await tapBox(cue)
-        expect(tap.height).toBeGreaterThanOrEqual(44)
-
-        // Straddles the map's bottom edge.
-        expect(Math.abs(box.y - (map.y + map.height))).toBeLessThanOrEqual(2)
-
-        for (const sel of ['.scale--onmap', '.map-play', '.map-freshness', '.map-locate', '.scale__info']) {
-          const o = await page.locator(sel).first().boundingBox()
-          if (o) expect(overlaps(box, o), sel).toBe(false)
-        }
+          const box = await cue.boundingBox()
+          const map = await mapEl.boundingBox()
+          if (!box || !map) return 'unmeasured'
+          // Straddles the map's bottom edge, fully inside the first viewport.
+          if (Math.abs(box.y - (map.y + map.height)) > 2) return 'edge'
+          if (box.y < 0 || box.y + box.height > vp.height) return 'viewport'
+          // Visual tab is the spike's small pull tab, not the old 44px strip.
+          if (box.width > 57 || box.height > 29) return 'size'
+          // The tap target (::before) is still >= 44px tall.
+          if ((await tapBox(cue)).height < 44) return 'tap'
+          for (const sel of ['.scale--onmap', '.map-play', '.map-freshness', '.map-locate', '.scale__info']) {
+            const o = await page.locator(sel).first().boundingBox()
+            if (o && overlaps(box, o)) return sel
+          }
+          return 'ok'
+        }).toBe('ok')
 
         await ctx.close()
       })
@@ -118,25 +112,26 @@ test('the full 64x44 tap target is hit-testable, not just the visual tab', async
   await setLegend(page, false)
   const cue = page.locator('a.scroll-cue')
   await expect(cue).toBeVisible()
-  const box = await cue.boundingBox()
-  const centerX = box.x + box.width / 2
-  const centerY = box.y + box.height / 2
-
-  const points = {
-    '10px above top edge': { x: centerX, y: box.y - 10 },
-    '10px below bottom edge': { x: centerX, y: box.y + box.height + 10 },
-    '2px inside left extension': { x: box.x - 2, y: centerY },
-    '2px inside right extension': { x: box.x + box.width + 2, y: centerY },
-  }
-
-  for (const [label, p] of Object.entries(points)) {
-    const hitsCue = await page.evaluate(({ x, y }) => {
-      const el = document.elementFromPoint(x, y)
-      const cueEl = document.querySelector('a.scroll-cue')
-      return !!el && (el === cueEl || cueEl.contains(el))
-    }, p)
-    expect(hitsCue, `${label} (${p.x}, ${p.y})`).toBe(true)
-  }
+  // Box and hit tests are redone together on each attempt, so a late reflow
+  // cannot leave the points computed from one layout and tested against another.
+  await expect.poll(() => page.evaluate(() => {
+    const cueEl = document.querySelector('a.scroll-cue')
+    const box = cueEl.getBoundingClientRect()
+    const cx = box.x + box.width / 2
+    const cy = box.y + box.height / 2
+    const points = {
+      '10px above top edge': { x: cx, y: box.y - 10 },
+      '10px below bottom edge': { x: cx, y: box.y + box.height + 10 },
+      '2px inside left extension': { x: box.x - 2, y: cy },
+      '2px inside right extension': { x: box.x + box.width + 2, y: cy },
+    }
+    const missed = []
+    for (const [label, p] of Object.entries(points)) {
+      const el = document.elementFromPoint(p.x, p.y)
+      if (!(el && (el === cueEl || cueEl.contains(el)))) missed.push(label)
+    }
+    return missed
+  })).toEqual([])
 
   await ctx.close()
 })
@@ -234,9 +229,11 @@ test('the pull tab is shown on the 1280x800 desktop home map only, not on an are
     else await expect(page.locator('a.scroll-cue')).toBeHidden()
     // On desktop the area summary stays under the title, above the map.
     if (path.includes('/area/')) {
-      const summary = await page.locator('.area-summary').boundingBox()
-      const map = await page.locator('#area-map').boundingBox()
-      expect(summary.y + summary.height).toBeLessThanOrEqual(map.y)
+      await expect.poll(async () => {
+        const summary = await page.locator('.area-summary').boundingBox()
+        const map = await page.locator('#area-map').boundingBox()
+        return summary.y + summary.height <= map.y
+      }).toBe(true)
     }
   }
   await page.close()
@@ -249,8 +246,10 @@ test('the cue holds two stacked chevrons', async ({ browser }) => {
   await mapSettled(page)
   const chevrons = page.locator('a.scroll-cue .scroll-cue__chevron')
   await expect(chevrons).toHaveCount(2)
-  const [a, b] = await chevrons.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().y))
-  expect(b).toBeGreaterThan(a)
+  await expect.poll(async () => {
+    const [a, b] = await chevrons.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().y))
+    return b > a
+  }).toBe(true)
   await expect(page.locator('a.scroll-cue')).toHaveAttribute('aria-label', /\S/)
   await ctx.close()
 })
@@ -260,8 +259,7 @@ test('393x873: the cue tap target is at least 44px tall', async ({ browser }) =>
   const page = await ctx.newPage()
   await page.goto('/')
   await mapSettled(page)
-  const tap = await tapBox(page.locator('a.scroll-cue'))
-  expect(tap.height).toBeGreaterThanOrEqual(44)
+  await expect.poll(async () => (await tapBox(page.locator('a.scroll-cue'))).height).toBeGreaterThanOrEqual(44)
   await ctx.close()
 })
 
