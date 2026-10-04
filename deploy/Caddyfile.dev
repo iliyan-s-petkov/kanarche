@@ -7,7 +7,7 @@
 # DNS-01 against a TXT record at Cloudflare.
 
 {
-	email admin@airbg.org
+	email admin@kanarche.eu
 }
 
 staging.airbg.org {
