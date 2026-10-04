@@ -227,7 +227,7 @@ eea:
 cloudflare:
   enabled: true
   url: "https://api.cloudflare.com/client/v4/graphql"
-  zone_id: "b9c4f3ae6570006c5b2d62f114dd4fd9"
+  zone_id: "99908e08fb4cf78baabd96d343b0b517"
   request_timeout: "30s"
   # Once a day is enough: the API groups by day, and today's row is still
   # accumulating until the UTC day rolls over. Each run re-pulls the last 3
