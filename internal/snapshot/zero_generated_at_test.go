@@ -51,6 +51,9 @@ func TestZeroGeneratedAtCoversEveryPayloadType(t *testing.T) {
 		"windPayload": func(now time.Time) canonicalisable {
 			return windPayload{GeneratedAt: now, ValidAt: dataTime, Model: "ecmwf_ifs025"}
 		},
+		"pollenPayload": func(now time.Time) canonicalisable {
+			return pollenPayload{GeneratedAt: now, Area: "sofia", FetchedAt: dataTime, Days: []string{"2026-10-04"}}
+		},
 		"SeriesPayload": func(now time.Time) canonicalisable {
 			// Also carries no GeneratedAt; Times are the payload's own data,
 			// not the build timestamp, and must not be cleared.

@@ -231,6 +231,9 @@ type Snapshot struct {
 	// memory: the lookup must not become a way to make the database walk the
 	// sensor table one id at a time.
 	SensorLocations map[int64]SensorLocation
+
+	// pollen is the per-area forecast table; empty when disabled or unavailable.
+	pollen pollenState
 }
 
 // Holder publishes snapshots to concurrent readers.
@@ -257,6 +260,10 @@ type Holder struct {
 	// after NewHolder returns. A disabled overlay is the zero value.
 	// See docs/wind-overlay.md.
 	wind config.Wind
+
+	// pollen and pollenZone are set by WithPollen; the zero value is disabled.
+	pollen     config.Pollen
+	pollenZone *time.Location
 }
 
 // NewHolder takes the series configuration because the snapshot serves the
@@ -266,8 +273,11 @@ type Holder struct {
 //
 // The wind configuration is set here as well, making the field immutable
 // after construction.
-func NewHolder(cfg config.Series, wind config.Wind) *Holder {
+func NewHolder(cfg config.Series, wind config.Wind, opts ...HolderOption) *Holder {
 	h := &Holder{metric: cfg.DefaultMetric, window: cfg.DefaultWindow, wind: wind}
+	for _, o := range opts {
+		o(h)
+	}
 	// Matched on window rather than on the DefaultSeriesPeriod name, because
 	// the window is what config.Validate guarantees a period exists for.
 	for _, p := range cfg.Periods {

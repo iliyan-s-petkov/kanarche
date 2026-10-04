@@ -203,6 +203,12 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 		}
 	}
 
+	if h.pollen.Enabled {
+		if err := buildPollen(ctx, s, h, h.Load(), snap, now); err != nil {
+			return nil, err
+		}
+	}
+
 	counts, err := s.AllAreaSeriesCounts(ctx, h.metric, now.Add(-h.window), false, h.bucket)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot: area series counts: %w", err)
