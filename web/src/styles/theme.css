@@ -43,6 +43,8 @@
   --masthead-h: 48px;
   /* Horizontal scale ramp; legend.js sets it at runtime from /api/v1/scales. */
   --ramp-h: none;
+  /* Chart tooltip arrow offset; charttooltip.js sets it per hover. */
+  --tip-arrow: 50%;
 
   /* Frosted glass (issue 578): the open layers list and expanded legend sit on the
      map, so a solid card hides it and full transparency makes the labels

@@ -56,6 +56,8 @@
   --masthead-h: 48px;
   /* Horizontal scale ramp; legend.js sets it at runtime from /api/v1/scales. */
   --ramp-h: none;
+  /* Chart tooltip arrow offset; charttooltip.js sets it per hover. */
+  --tip-arrow: 50%;
 
   --text-caption: 12px;
   --text-compact: 14px;

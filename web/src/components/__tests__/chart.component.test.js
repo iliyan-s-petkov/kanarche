@@ -310,39 +310,38 @@ describe('Chart.svelte', () => {
     await vi.waitFor(() => expect(target.textContent).toContain(props.unavailable))
   })
 
-  // uPlot's legend IS its hover readout, and at rest it renders the series
-  // label beside a literal em-dash placeholder — "µg/m³ --" under a chart
-  // nobody has touched yet, which reads as unfinished markup rather than as
-  // "hover me". Hiding the legend outright would take the readout with it, so
-  // the component gates its visibility on the cursor instead.
-  //
-  // Asserted through the hook rather than through a real mouse event: uPlot is
-  // stubbed here (it needs layout jsdom does not have), so the hook is the only
-  // honest seam. It is also the thing that would break — a mutation dropping
-  // the hook, or inverting the idx test, fails this.
-  it('shows the hover readout only while the cursor is on the plot', async () => {
+  // The hover reading is the tooltip plugin's card; the legend is only a static key.
+  it('hands the hover reading to the tooltip plugin and keeps the legend values off', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ t: ['2026-08-14T00:00:00Z', '2026-08-14T01:00:00Z'], v: [12.3, 13.1] }), { status: 200 }),
     )
     vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
-    render()
+    render({ metricLabel: 'PM2.5' })
 
     await vi.waitFor(() => expect(uplotCalls).toHaveLength(1))
-    const { opts, el } = uplotCalls[0]
-    const setCursor = opts.hooks.setCursor[0]
-
-    // At rest — which is the state the reader sees on page load.
-    setCursor({ cursor: { idx: null } })
-    expect(el.classList.contains('chart-live')).toBe(false)
-
-    setCursor({ cursor: { idx: 0 } })
-    expect(el.classList.contains('chart-live')).toBe(true)
-
-    // idx 0 is a real point, not "no point": a truthiness test instead of a
-    // null test would leave the leftmost point of every chart unreadable.
-    setCursor({ cursor: { idx: null } })
-    expect(el.classList.contains('chart-live')).toBe(false)
+    const { opts } = uplotCalls[0]
+    expect(opts.plugins).toHaveLength(1)
+    expect(typeof opts.plugins[0].hooks.setCursor).toBe('function')
+    expect(opts.legend.live).toBe(false)
+    // One line needs no key to tell it from another.
+    expect(opts.legend.show).toBe(false)
   })
+
+  it('keeps a series key when several lines share the plot', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(
+      new Response(JSON.stringify({ t: ['2026-08-14T00:00:00Z', '2026-08-14T01:00:00Z'], v: [12.3, 13.1] }), { status: 200 })))
+    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+    render({
+      url: undefined,
+      sources: [
+        { url: '/api/v1/sensor/1/series?metric=P2', label: 'PM2.5', colour: '#111', scale: 'y' },
+        { url: '/api/v1/sensor/2/series?metric=temperature', label: 'Temp', colour: '#f90', scale: 'y2' },
+      ],
+    })
+    await vi.waitFor(() => expect(uplotCalls).toHaveLength(1))
+    expect(uplotCalls[0].opts.legend).toEqual({ show: true, live: false })
+  })
+
   // Three lines off one banded body must cost ONE request. The band is served
   // from the database (the snapshot's precomputed body has no spread in it), so
   // asking three times is three area queries for one chart.

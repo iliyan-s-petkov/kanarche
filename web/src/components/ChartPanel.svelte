@@ -116,6 +116,7 @@
         {lineColour}
         {valueLabel}
         {valueUnit}
+        {metricLabel}
         {timeLabel}
         {empty}
         {unavailable}
