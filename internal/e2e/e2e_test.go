@@ -242,6 +242,24 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	seedReading(t, st, station, "P1", 18, "ok", now)
 	seedReading(t, st, station, "O3", 40, "ok", now)
 
+	// One bathing site east of the sensors, for sea.spec.js.
+	sea := store.BathingData{
+		Sites: []store.BathingSite{
+			{ID: "BG0000000000000001", NameBG: "ПЛАЖ ТЕСТ", NameEN: "PLAZH TEST", Zone: "coastal", Lat: 42.75, Lon: 23.45, ProfileURL: "https://example.org/profile.pdf"},
+		},
+		Classes: []store.BathingClass{
+			{SiteID: "BG0000000000000001", Season: 2023, Quality: "good"},
+			{SiteID: "BG0000000000000001", Season: 2024, Quality: "excellent"},
+		},
+		Samples: []store.BathingSample{
+			{SiteID: "BG0000000000000001", Date: time.Date(2024, 7, 2, 0, 0, 0, 0, time.UTC), Season: 2024, EC: 15, ECBelowDetection: true, IE: 150},
+			{SiteID: "BG0000000000000001", Date: time.Date(2024, 5, 20, 0, 0, 0, 0, time.UTC), Season: 2024, EC: 600, IE: 20, PreSeason: true},
+		},
+	}
+	if err := st.ReplaceBathing(ctx, sea, now); err != nil {
+		t.Fatalf("ReplaceBathing: %v", err)
+	}
+
 	// The 30d and 1y periods read reading_hourly, which only the rollup fills.
 	if _, err := st.RollupAll(ctx); err != nil {
 		t.Fatalf("RollupAll: %v", err)

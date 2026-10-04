@@ -403,10 +403,11 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-wind-label__toggle::before { content: 'ⓘ'; margin-inline-end: var(--space-1); }
 .map-wind-label__toggle:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius); }
 .map-wind-label__text:not(:empty) { margin-block-start: var(--space-1); }
-/* The bathing-site card (lib/seapanel.svelte.js): top-left under the controls on desktop, a bottom sheet on phones. */
+/* The bathing-site card (lib/seapanel.svelte.js): right, under the search and clear of the control column and
+   the legend on desktop; a bottom sheet on phones. */
 .map-sea {
-  position: absolute; z-index: 5; inset-block-start: calc(12px + 44px + var(--space-2)); inset-inline-start: 12px;
-  inline-size: min(22rem, calc(100% - 24px)); max-block-size: calc(100% - 12px - 44px - var(--space-2) - 4rem); overflow: auto;
+  position: absolute; z-index: 5; inset-block-start: calc(12px + 48px + var(--space-2)); inset-inline-end: calc(var(--space-2) * 2 + 40px);
+  inline-size: min(22rem, calc(100% - 24px)); max-block-size: calc(100% - 12px - 48px - var(--space-2) - 4.5rem); overflow: auto;
   background: var(--bg); border-radius: var(--radius); box-shadow: var(--elev-raised);
 }
 .map-sea[hidden] { display: none; }

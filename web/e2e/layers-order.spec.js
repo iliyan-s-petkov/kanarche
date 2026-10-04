@@ -16,7 +16,7 @@ test('the layers menu lists Inactive stations directly above Faulty stations', a
   const names = labels.map((s) => s.split(' — ')[0].trim())
   const expected = [
     'Scale', 'Cell values', 'OpenStreetMap', 'Citizen sensors', 'Official stations',
-    'Inactive stations', 'Faulty stations', 'Wind', 'Province outlines',
+    'Inactive stations', 'Faulty stations', 'Wind', 'Bathing water', 'Province outlines',
   ]
   // Wind appears only when a forecast is loaded; compare the rows that are there.
   expect(names).toEqual(expected.filter((n) => names.includes(n)))
