@@ -107,3 +107,12 @@ export function areaSourceStats(body, metric) {
     .map(([source, values]) => ({ source, n: values.length, median: median(values) }))
     .sort((a, b) => (a.source < b.source ? -1 : a.source > b.source ? 1 : 0))
 }
+
+// The area's own name, from the list the map last loaded. Absent when the
+// reader zoomed straight past the tier that carries it, and the caller then
+// falls back to a tier line that counts the sensors without naming the place.
+export function areaName(areas, slug, lang) {
+  const area = (areas ?? []).find((a) => a.slug === slug)
+  if (!area) return ''
+  return (lang === 'bg' ? area.name_bg : area.name_en) || ''
+}

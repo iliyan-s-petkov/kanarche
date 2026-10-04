@@ -609,6 +609,28 @@ strong, b { font-weight: var(--weight-emphasis); }
   min-block-size: 2rem; border: 1px solid var(--accent); border-radius: var(--radius-pill);
   background: var(--accent); color: var(--accent-on); font: inherit; font-weight: var(--weight-emphasis); cursor: pointer;
 }
+/* The footer row: one compact line under the rail and the chart, pointing at the area figures under the map.
+   Its row is only in the grid while it shows; the rail's five-row threshold rises by the row and its gap (2rem). */
+.map-dock__area {
+  grid-area: area; display: flex; align-items: center; gap: var(--space-2); justify-self: start; min-inline-size: 0; max-inline-size: 100%;
+  min-block-size: 1.75rem; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm);
+  background: none; color: var(--fg-2); font: inherit; cursor: pointer; text-align: start;
+}
+.map-dock__area:hover { color: var(--fg); background: var(--surface-2); }
+.map-dock__area:focus-visible { box-shadow: var(--focus-ring); }
+.map-dock__area[hidden] { display: none; }
+.map-dock__area span { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-dock__area-ico { inline-size: 14px; block-size: 14px; flex: none; }
+.map-dock--area { grid-template-rows: auto auto auto minmax(0, 1fr) auto; grid-template-areas: "head head" "gauges gauges" "tools more" "plot plot" "area area"; }
+.map-dock--folded.map-dock--area { grid-template-rows: auto auto auto; grid-template-areas: "head head" "gauges more" "area area"; }
+.map-dock--area:not(.map-dock--folded) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "head head more" "gauges tools tools" "gauges plot plot" "area area area";
+}
+@container (height < 21.875rem) { .map-dock--area:not(.map-dock--folded) .gauges { grid-template-rows: repeat(3, 3rem); } }
+@container (height >= 21.875rem) { .map-dock--area:not(.map-dock--folded) .gauges { grid-template-rows: repeat(5, 3.25rem); } }
+@media (hover: none) {
+  @container (height <= 22.6875rem) { .map-dock--area:not(.map-dock--folded) .gauges { grid-template-rows: repeat(3, 3rem); } }
+}
 .map-dock__more:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .map-dock__more[hidden] { display: none; }
 .map-dock__more-ico { inline-size: 16px; block-size: 16px; flex: none; }

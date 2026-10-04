@@ -10,6 +10,7 @@ import { mountChrome } from '../chrome.js'
 import { readConfig } from '../mapconfig.js'
 import { mount as mountPanel } from '../../islands/panel.js'
 import { setSensors, findSensor } from '../sensors.svelte.js'
+import { setMapAreas } from '../mapareas.svelte.js'
 import { getViewState, resetViewStateForTests } from '../viewstate.svelte.js'
 
 const BODY = {
@@ -35,7 +36,7 @@ function stubViewport(wide) {
 }
 
 // docked: the home page's host, which app.css hides from 1024px (only the dock shows the sensor there).
-function page({ docked = false } = {}) {
+function page({ docked = false, readouts = false } = {}) {
   const shell = document.createElement('div')
   shell.className = 'map-shell'
   const el = document.createElement('div')
@@ -44,6 +45,8 @@ function page({ docked = false } = {}) {
     metric: 'P2', metrics: 'P1,P2,temperature,humidity',
     tClose: 'Close', tSheetHistory: 'Full history below',
     tPanelHistory: 'Full history & nearby sensors', tPanelHistoryShort: 'Full history',
+    tPanelAreaBelow: '{area} · {total} sensors: area figures below',
+    tPanelAreaBelowUnnamed: '{total} sensors in this area: figures below',
     tPanelFold: 'Fold', tPanelExpand: 'Expand', tPanelResize: 'Resize panel',
   })
   const canvas = document.createElement('canvas')
@@ -67,6 +70,13 @@ function page({ docked = false } = {}) {
   })
   if (docked) host.classList.add('place-host', 'place-host--docked')
   document.body.append(shell, host)
+  if (readouts) {
+    const island = document.createElement('div')
+    island.dataset.island = 'readouts'
+    island.dataset.sensorRow = 'on'
+    island.id = 'readouts-under-map'
+    document.body.appendChild(island)
+  }
 
   const chrome = mountChrome(el, readConfig(el))
   mountPanel(host)
@@ -631,5 +641,103 @@ describe('the bottom panel resize handle', () => {
     dock.querySelector('.map-dock__fold').click()
     expect(grip.hidden).toBe(false)
     expect(dock.style.getPropertyValue('--map-dock-h')).toBe('600px')
+  })
+})
+
+// The line at the foot of the panel that points at the area figures under the map.
+describe('the panel area line', () => {
+  let ctx
+  const line = () => document.querySelector('.map-dock .map-dock__area')
+  const open = async (opts = { readouts: true }) => {
+    stubViewport(true)
+    ctx = page(opts)
+    ctx.vs.openSensor(101)
+    await settle()
+  }
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+    Element.prototype.scrollIntoView = vi.fn()
+    resetViewStateForTests()
+    history.replaceState(null, '', '/')
+    document.documentElement.setAttribute('lang', 'en')
+    setMapAreas([{ slug: 'plovdiv', name_en: 'Plovdiv', name_bg: 'Пловдив' }])
+    setSensors(BODY, 'plovdiv')
+  })
+  afterEach(() => {
+    ctx?.stop()
+    resetViewStateForTests()
+    setSensors(null)
+    setMapAreas([])
+    document.body.replaceChildren()
+    document.body.className = ''
+    document.documentElement.removeAttribute('lang')
+    vi.unstubAllGlobals()
+  })
+
+  it('names the area and counts its sensors, from the same data as the readouts', async () => {
+    await open()
+    expect(line().hidden).toBe(false)
+    expect(line().textContent.trim()).toBe('Plovdiv · 2 sensors: area figures below')
+  })
+
+  it('speaks the page language', async () => {
+    document.documentElement.setAttribute('lang', 'bg')
+    await open()
+    expect(line().textContent).toContain('Пловдив')
+  })
+
+  it('drops the name when the map has not loaded the area list', async () => {
+    setMapAreas([])
+    await open()
+    expect(line().textContent.trim()).toBe('2 sensors in this area: figures below')
+  })
+
+  it('is hidden when the area has a single reporting station', async () => {
+    setSensors({ sensors: { id: [101], quality: ['ok'], station: [101], measures: [['P1', 'P2', 'temperature', 'humidity']], P1: [31], P2: [18], temperature: [21], humidity: [55] } }, 'plovdiv')
+    await open()
+    expect(line().hidden).toBe(true)
+  })
+
+  it('is hidden where the page has no area figures under the map', async () => {
+    await open({ readouts: false })
+    expect(line().hidden).toBe(true)
+  })
+
+  it('is hidden when the readouts island skips the sensor row', async () => {
+    await open()
+    document.querySelector('[data-island="readouts"]').dataset.sensorRow = 'off'
+    ctx.vs.openSensor(102)
+    await settle()
+    expect(line().hidden).toBe(true)
+  })
+
+  it('is not in the dock in fullscreen', async () => {
+    await open()
+    ctx.full.click()
+    await settle()
+    expect(document.querySelector('.map-dock')).toBeNull()
+  })
+
+  it('scrolls to the figures and moves focus there, without touching the hash', async () => {
+    await open()
+    const target = document.querySelector('#readouts-under-map')
+    const hash = location.hash
+    line().click()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'smooth' })
+    expect(document.activeElement).toBe(target)
+    expect(location.hash).toBe(hash)
+  })
+
+  it('does not animate when the reader prefers reduced motion', async () => {
+    await open()
+    vi.stubGlobal('matchMedia', (q) => ({ matches: q.includes('prefers-reduced-motion') || q.includes('min-width: 1024px'), media: q, addEventListener() {}, removeEventListener() {} }))
+    line().click()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'auto' })
+  })
+
+  it('is a button, reachable by keyboard', async () => {
+    await open()
+    expect(line().tagName).toBe('BUTTON')
+    expect(line().type).toBe('button')
   })
 })

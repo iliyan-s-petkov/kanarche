@@ -181,6 +181,8 @@
   "map.error.unavailable": "Map data is unavailable right now",
   "map.fullscreen": "Full screen",
   "map.fullscreen.exit": "Exit full screen",
+  "map.panel.area_below": "{area} · {total} sensors: area figures below",
+  "map.panel.area_below_unnamed": "{total} sensors in this area: figures below",
   "map.panel.expand": "Expand",
   "map.panel.fold": "Fold",
   "map.panel.history": "Full history & nearby sensors",

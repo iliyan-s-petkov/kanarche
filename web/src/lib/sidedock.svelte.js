@@ -6,6 +6,9 @@ import { createStarSlot } from './panelstar.js'
 import { panelDock } from './paneldock.svelte.js'
 import { sectionHidden } from './panelhost.js'
 import { readFlag, writeFlag } from './storage.js'
+import { areaLine } from './arealine.js'
+import { getSensors, getSensorArea } from './sensors.svelte.js'
+import { getMapAreas } from './mapareas.svelte.js'
 import { stackReserve, heightBounds, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from './dockheight.js'
 
 const WIDE = '(min-width: 1024px)'
@@ -35,7 +38,7 @@ function icon(doc, cls, d) {
   return svg
 }
 
-export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreShortLabel = '', foldLabel = '', expandLabel = '', resizeLabel = '' } = {}) {
+export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreShortLabel = '', areaBelow = '', areaBelowUnnamed = '', foldLabel = '', expandLabel = '', resizeLabel = '' } = {}) {
   const doc = frame.ownerDocument
   const win = doc.defaultView
   const shell = frame.closest('.map-shell')
@@ -98,6 +101,29 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   const moreText = doc.createElement('span')
   more.appendChild(moreText)
   if (moreLabel) el.appendChild(more)
+
+  // The footer row: a pointer to the area figures under the map, shown while the readouts have an area row.
+  const area = doc.createElement('button')
+  area.type = 'button'
+  area.className = 'map-dock__area'
+  area.hidden = true
+  area.appendChild(icon(doc, 'map-dock__area-ico', 'M8 3v9M4 8.5l4 4 4-4'))
+  const areaText = doc.createElement('span')
+  area.appendChild(areaText)
+  el.appendChild(area)
+  // The island only skips its sensor row on the area page, where the card says it all.
+  const figures = () => doc.querySelector('[data-island="readouts"]:not([data-sensor-row="off"])')
+
+  function paintArea(vs) {
+    const lang = doc.documentElement.getAttribute('lang') || 'bg'
+    const text = figures() ? areaLine({
+      body: getSensors(), metric: vs.metric, sensorId: vs.sensorId, areas: getMapAreas(), slug: getSensorArea(), lang,
+      t: { areaBelow, areaBelowUnnamed },
+    }) : ''
+    areaText.textContent = text
+    area.hidden = text === ''
+    el.classList.toggle('map-dock--area', text !== '')
+  }
 
   let folded = readFlag(FOLD_KEY, false)
   function paintFold() {
@@ -294,6 +320,15 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   })
   win?.addEventListener?.('resize', () => { if (mounted()) applyHeight() })
 
+  // Scrolls like the cue under the map; the figures take focus so the next Tab reads them.
+  area.addEventListener('click', () => {
+    const target = figures()
+    if (!target) return
+    const reduce = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    target.tabIndex = -1
+    target.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' })
+    target.focus({ preventScroll: true })
+  })
   more.addEventListener('click', () => panel()?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
   mq?.addEventListener?.('change', sync)
 
@@ -329,6 +364,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
           findSensor(vs.sensorId)
           tick().then(sync)
         })
+        $effect(() => paintArea(vs))
       })
     },
   }

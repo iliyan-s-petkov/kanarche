@@ -145,6 +145,8 @@ export function readConfig(el) {
       // The bottom panel's link down to the card, its short folded form, and the fold button's two names.
       panelHistory: d.tPanelHistory || '',
       panelHistoryShort: d.tPanelHistoryShort || '',
+      panelAreaBelow: d.tPanelAreaBelow || '',
+      panelAreaBelowUnnamed: d.tPanelAreaBelowUnnamed || '',
       panelFold: d.tPanelFold || '',
       panelResize: d.tPanelResize || '',
       panelExpand: d.tPanelExpand || '',

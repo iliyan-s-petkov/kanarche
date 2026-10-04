@@ -9,21 +9,14 @@
 // state what it would restate.
 import { mount as mountComponent, unmount } from 'svelte'
 import Readouts from '../components/Readouts.svelte'
-import { areaStats, areaSourceStats } from '../lib/areastats.js'
+import { areaStats, areaSourceStats, areaName } from '../lib/areastats.js'
 import { areaCards, areaSourceCards } from '../lib/areacards.js'
 import { getViewState } from '../lib/viewstate.svelte.js'
 import { getSensors, getSensorArea, getScales } from '../lib/sensors.svelte.js'
 import { getMapAreas } from '../lib/mapareas.svelte.js'
 import { parseMetricList, zipLabels } from '../lib/metrics.js'
 
-// The area's own name, from the list the map last loaded. Absent when the
-// reader zoomed straight past the tier that carries it, and the caller then
-// falls back to a tier line that counts the sensors without naming the place.
-export function areaName(areas, slug, lang) {
-  const area = (areas ?? []).find((a) => a.slug === slug)
-  if (!area) return ''
-  return (lang === 'bg' ? area.name_bg : area.name_en) || ''
-}
+export { areaName }
 
 export function mount(el, doc = document) {
   const d = el.dataset
