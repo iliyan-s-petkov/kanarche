@@ -273,6 +273,25 @@ func (s *Snapshot) Pollen(slug string) *PollenView {
 	return s.pollen.views[slug]
 }
 
+// SetPollenForTesting installs one area's table and its encoded body, for
+// handler and page tests outside this package.
+func (s *Snapshot) SetPollenForTesting(slug string, v *PollenView, cfg config.Pollen, fetchedAt time.Time) error {
+	b, err := encode(pollenPayloadFrom(fetchedAt, slug, fetchedAt, cfg, v.Days, v))
+	if err != nil {
+		return err
+	}
+	if s.pollen.bodies == nil {
+		s.pollen = pollenState{bodies: map[string]Body{}, views: map[string]*PollenView{}}
+	}
+	s.pollen.bodies[slug], s.pollen.views[slug] = b, v
+	return nil
+}
+
+// PollenViewForTesting builds a view from daily rows, as Build does.
+func PollenViewForTesting(rows []store.AreaPollenDay, cfg config.Pollen, days []string) map[string]*PollenView {
+	return pollenViews(rows, cfg, days)
+}
+
 // HolderOption configures an optional layer at construction.
 type HolderOption func(*Holder)
 

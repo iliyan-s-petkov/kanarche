@@ -20,6 +20,7 @@ import (
 	"airbg.org/internal/db"
 	"airbg.org/internal/i18n"
 	"airbg.org/internal/ingest"
+	"airbg.org/internal/pollen"
 	"airbg.org/internal/quality"
 	"airbg.org/internal/server"
 	"airbg.org/internal/snapshot"
@@ -106,6 +107,9 @@ func main() {
 			// The wind loop is started alongside the reading loop, on its own
 			// interval, and stops with the same context.
 			go wind.NewCollector(cfg.Wind, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)).Loop(ctx)
+		}
+		if cfg.Pollen.Enabled {
+			go pollen.NewCollector(cfg.Pollen, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)).Loop(ctx)
 		}
 		if cfg.EEA.Enabled {
 			go eea.NewCollector(cfg.EEA, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series), quality.NewScorer(cfg.Quality)).Loop(ctx)
@@ -326,7 +330,11 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	if cfg.Wind.Enabled {
 		windCfg = cfg.Wind
 	}
-	holder := snapshot.NewHolder(cfg.Series, windCfg)
+	var holderOpts []snapshot.HolderOption
+	if cfg.Pollen.Enabled {
+		holderOpts = append(holderOpts, snapshot.WithPollen(cfg.Pollen))
+	}
+	holder := snapshot.NewHolder(cfg.Series, windCfg, holderOpts...)
 	pub := server.NewPublisher(collectorStore, holder, log)
 
 	cat, err := i18n.LoadWithOverrides(cfg.I18n.Dir)
@@ -403,6 +411,18 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 		close(windDone)
 	}
 
+	// Runs at cfg.Pollen.RunAtUTC, sharing the collector pool.
+	pollenDone := make(chan struct{})
+	if cfg.Pollen.Enabled {
+		pc := pollen.NewCollector(cfg.Pollen, collectorStore)
+		go func() {
+			defer close(pollenDone)
+			pc.Loop(pollCtx)
+		}()
+	} else {
+		close(pollenDone)
+	}
+
 	// Runs on cfg.EEA.PollInterval, sharing the collector pool.
 	eeaDone := make(chan struct{})
 	if cfg.EEA.Enabled {
@@ -448,6 +468,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	stopPolling()
 	<-polled
 	<-windDone
+	<-pollenDone
 	<-eeaDone
 	<-cfDone
 	<-seaDone
