@@ -5,11 +5,11 @@
   "airbg:schema": "openmaptiles",
   "airbg:note": "sources.basemap.url carries the dated archive name; regenerating the basemap changes it here and in tiles.archive. See docs/tiles.md."
  },
- "glyphs": "https://tiles.airbg.org/glyphs/{fontstack}/{range}.pbf",
+ "glyphs": "https://tiles.kanarche.eu/glyphs/{fontstack}/{range}.pbf",
  "sources": {
   "basemap": {
    "type": "vector",
-   "url": "pmtiles://https://tiles.airbg.org/bulgaria-20260827.pmtiles",
+   "url": "pmtiles://https://tiles.kanarche.eu/bulgaria-20260827.pmtiles",
    "attribution": "© OpenStreetMap contributors"
   }
  },

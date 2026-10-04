@@ -13,6 +13,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1173,19 +1174,40 @@ func TestKanarcheTilesVhostIsOpenAndServesTiles(t *testing.T) {
 	}
 }
 
-// Until the cutover the new names must not compete with airbg.org in search.
-// The cutover PR removes the header and inverts the first half of this test.
-func TestKanarcheIsNoindexAndAirbgIsNot(t *testing.T) {
+// kanarche.eu is canonical since the cutover (phase 5a), so no production name
+// may tell crawlers to drop it.
+func TestNoProductionVhostSendsXRobotsTag(t *testing.T) {
 	blocks := caddyBlocks(t, "Caddyfile")
-	re := regexp.MustCompile(`(?i)header\s+X-Robots-Tag\s+"?noindex"?`)
-	for _, name := range []string{"kanarche.eu", "www.kanarche.eu"} {
-		if !re.MatchString(blocks[name]) {
-			t.Errorf("%s does not send X-Robots-Tag: noindex", name)
+	for _, name := range []string{"kanarche.eu", "www.kanarche.eu", "tiles.kanarche.eu", "airbg.org", "www.airbg.org", "tiles.airbg.org"} {
+		block, ok := blocks[name]
+		if !ok {
+			t.Fatalf("Caddyfile has no %s site block; found %v", name, keysOf(blocks))
+		}
+		if strings.Contains(strings.ToLower(block), "x-robots-tag") {
+			t.Errorf("%s sends X-Robots-Tag; kanarche.eu is canonical and must be indexable", name)
 		}
 	}
-	for _, name := range []string{"airbg.org", "www.airbg.org", "tiles.airbg.org"} {
-		if strings.Contains(strings.ToLower(blocks[name]), "x-robots-tag") {
-			t.Errorf("%s sends X-Robots-Tag; airbg.org stays canonical and indexable", name)
+}
+
+// The example .env is what an operator copies: it must name kanarche.eu as
+// canonical and keep both tile origins in connect-src for the redirect window.
+func TestExampleEnvIsCanonicalOnKanarche(t *testing.T) {
+	if got, want := envExampleValue(t, "AIRBG_LISTEN_BASE_URL"), "https://kanarche.eu"; got != want {
+		t.Errorf(".env.example AIRBG_LISTEN_BASE_URL = %q, want %q", got, want)
+	}
+	if got, want := envExampleValue(t, "AIRBG_TILES_PUBLIC_URL"), "https://tiles.kanarche.eu"; got != want {
+		t.Errorf(".env.example AIRBG_TILES_PUBLIC_URL = %q, want %q", got, want)
+	}
+	csp := envExampleValue(t, "AIRBG_LISTEN_CSP")
+	var connect []string
+	for _, directive := range strings.Split(csp, ";") {
+		if fields := strings.Fields(directive); len(fields) > 0 && fields[0] == "connect-src" {
+			connect = fields[1:]
+		}
+	}
+	for _, origin := range []string{"https://tiles.kanarche.eu", "https://tiles.airbg.org"} {
+		if !slices.Contains(connect, origin) {
+			t.Errorf(".env.example connect-src %v lacks %s", connect, origin)
 		}
 	}
 }

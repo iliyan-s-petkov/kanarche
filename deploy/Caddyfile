@@ -63,10 +63,9 @@ tiles.airbg.org {
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 }
 
-# kanarche.eu serves the same app while airbg.org stays canonical (rebrand
-# phase 2). Own blocks, so nothing here can change an airbg.org response. The
-# certificate is the same lineage and carries these names too. noindex and the
-# short HSTS go at the cutover.
+# kanarche.eu is canonical since the cutover (rebrand phase 5a). Own blocks, so
+# nothing here can change an airbg.org response. The certificate is the same
+# lineage and carries these names too. The short HSTS goes in phase 5c.
 kanarche.eu, www.kanarche.eu {
 	tls /etc/caddy/tls/origin.pem /etc/caddy/tls/origin.key {
 		client_auth {
@@ -84,7 +83,6 @@ kanarche.eu, www.kanarche.eu {
 
 	reverse_proxy app:8080
 
-	header X-Robots-Tag "noindex"
 	header Strict-Transport-Security "max-age=300"
 }
 
