@@ -4,10 +4,11 @@ export function createBackToTop({ doc = document, win = window, IO = win.Interse
   const target = doc.querySelector('.map-shell') ?? doc.querySelector('.back-to-top-sentinel')
   if (!btn || !target || !IO) return null
 
-  // Past the target means it left above the viewport; a target still below the fold must not show the button.
+  // The observed band is the lower half of the viewport; a target above it (bottom <= band top) shows the button.
+  // A hero map that never leaves the viewport still qualifies; a target below the fold does not.
   const observer = new IO(([entry]) => {
-    btn.classList.toggle('back-to-top--visible', !entry.isIntersecting && entry.boundingClientRect.bottom <= 0)
-  }, { threshold: 0 })
+    btn.classList.toggle('back-to-top--visible', !entry.isIntersecting && entry.boundingClientRect.bottom <= entry.rootBounds.top)
+  }, { threshold: 0, rootMargin: '-50% 0px 0px 0px' })
   observer.observe(target)
 
   btn.addEventListener('click', () => {

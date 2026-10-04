@@ -7,7 +7,8 @@ function stubIO() {
   let cb = null
   const observe = vi.fn()
   function IO(fn, opts) { cb = fn; this.opts = opts; this.observe = observe }
-  return { IO, observe, fire: (isIntersecting, bottom) => cb([{ isIntersecting, boundingClientRect: { bottom } }]) }
+  return { IO, observe, // rootTop is the top of the observed band: half the viewport height once rootMargin trims the top by 50%.
+    fire: (isIntersecting, bottom, rootTop = 450) => cb([{ isIntersecting, boundingClientRect: { bottom }, rootBounds: { top: rootTop } }]) }
 }
 
 function page({ withMap = true } = {}) {
@@ -68,6 +69,29 @@ describe('createBackToTop', () => {
     expect(btn.classList.contains(VISIBLE)).toBe(false)
     e.fire(false, -10)
     expect(btn.classList.contains(VISIBLE)).toBe(true)
+  })
+
+  it('observes only the lower half of the viewport', () => {
+    page()
+    const e = env()
+    const r = createBackToTop({ doc: e.doc, win: e.win, IO: e.IO })
+    expect(r.observer.opts.rootMargin).toBe('-50% 0px 0px 0px')
+  })
+
+  it('shows when the map bottom has risen above mid-viewport but is still on screen', () => {
+    const { btn } = page()
+    const e = env()
+    createBackToTop({ doc: e.doc, win: e.win, IO: e.IO })
+    e.fire(false, 287)
+    expect(btn.classList.contains(VISIBLE)).toBe(true)
+  })
+
+  it('stays hidden while the map bottom is still in the lower half', () => {
+    const { btn } = page()
+    const e = env()
+    createBackToTop({ doc: e.doc, win: e.win, IO: e.IO })
+    e.fire(true, 600)
+    expect(btn.classList.contains(VISIBLE)).toBe(false)
   })
 
   it('hides again when the map comes back', () => {
