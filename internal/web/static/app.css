@@ -561,8 +561,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-dock .panel-more { min-inline-size: 2rem; }
 /* The panel sits on the map's bottom edge, so its menus open upward, over the map and its controls. */
 .map-dock .colmenu__panel, .map-dock .panel-menu { inset-block-start: auto; inset-block-end: calc(100% + var(--space-1)); }
-.map-dock .panel-chart__dockplot { grid-area: plot; min-block-size: 0; min-inline-size: 0; }
-.map-dock .chart-frame--fill { block-size: 100%; min-block-size: 0; overflow: hidden; }
+.map-dock .panel-chart__dockplot { grid-area: plot; min-block-size: 0; min-inline-size: 0; display: flex; flex-direction: column; }
+/* The frame takes what the empty-state message leaves, so the message stays inside the plot cell. */
+.map-dock .chart-frame--fill { flex: 1 1 0; min-block-size: 0; overflow: hidden; }
+.map-dock .chart-message { flex: none; margin: var(--space-1) 0 0; }
 .map-dock--folded .panel-chart__tools, .map-dock--folded .panel-chart__dockplot { display: none; }
 /* Open: the gauges are a rail beside the toolbar and a full-height chart; the history link ends the title row.
    The rail's width is its content; the dock is a size container so the rail's row count follows its height. */
@@ -608,6 +610,30 @@ strong, b { font-weight: var(--weight-emphasis); }
   display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-4);
   min-block-size: 2rem; border: 1px solid var(--accent); border-radius: var(--radius-pill);
   background: var(--accent); color: var(--accent-on); font: inherit; font-weight: var(--weight-emphasis); cursor: pointer;
+}
+/* The footer row: one compact line under the rail and the chart, pointing at the area figures under the map.
+   Its row is only in the grid while it shows; the rail's five-row threshold rises by the row and its gap (2rem). */
+.map-dock__area {
+  grid-area: area; display: flex; align-items: center; gap: var(--space-2); justify-self: start; min-inline-size: 0; max-inline-size: 100%;
+  min-block-size: 1.75rem; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm);
+  background: none; color: var(--fg-2); font: inherit; cursor: pointer; text-align: start;
+}
+.map-dock__area:hover { color: var(--fg); background: var(--surface-2); }
+.map-dock__area:focus-visible { box-shadow: var(--focus-ring); }
+.map-dock__area[hidden] { display: none; }
+.map-dock__area span { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-dock__area-ico { inline-size: 14px; block-size: 14px; flex: none; }
+.map-dock--area { grid-template-rows: auto auto auto minmax(0, 1fr) auto; grid-template-areas: "head head" "gauges gauges" "tools more" "plot plot" "area area"; }
+.map-dock--folded.map-dock--area { grid-template-rows: auto auto; grid-template-areas: "head head" "gauges more"; }
+.map-dock--folded .map-dock__area { display: none; }
+.map-dock--area:not(.map-dock--folded) { min-block-size: 16rem; }
+.map-dock--area:not(.map-dock--folded) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "head head more" "gauges tools tools" "gauges plot plot" "area area area";
+}
+@container (height < 21.875rem) { .map-dock--area:not(.map-dock--folded) .gauges { grid-template-rows: repeat(3, 3rem); } }
+@container (height >= 21.875rem) { .map-dock--area:not(.map-dock--folded) .gauges { grid-template-rows: repeat(5, 3.25rem); } }
+@media (hover: none) {
+  @container (height <= 22.6875rem) { .map-dock--area:not(.map-dock--folded) .gauges { grid-template-rows: repeat(3, 3rem); } }
 }
 .map-dock__more:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .map-dock__more[hidden] { display: none; }

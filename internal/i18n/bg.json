@@ -183,6 +183,8 @@
   "map.error.unavailable": "Данните за картата в момента не са достъпни",
   "map.fullscreen": "На цял екран",
   "map.fullscreen.exit": "Изход от цял екран",
+  "map.panel.area_below": "{area} · {total} сензора: показатели за района по-долу",
+  "map.panel.area_below_unnamed": "{total} сензора в този район: показатели по-долу",
   "map.panel.expand": "Разгъни",
   "map.panel.fold": "Сгъни",
   "map.panel.history": "Пълна история и близки сензори",

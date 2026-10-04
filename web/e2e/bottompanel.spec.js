@@ -809,12 +809,12 @@ test('the rail never clips a row at any panel height and goes to five rows exact
     await expect.poll(async () => (await box(page.locator(PANEL))).height).toBeCloseTo(h, 0)
     return railLayout(page)
   }
-  for (let h = 224; h <= 460; h += 6) {
+  for (let h = 256; h <= 492; h += 6) {
     const l = await at(h)
     expect(l, `${h}px: a row is clipped`).toMatchObject({ inside: true, scrolls: false })
   }
-  // dock = content + 2px border + 16px padding; content = 276px of rows + 41px of title row and gap.
-  expect((await at(336)).columns, '336px: five rows fit in one column').toBe(1)
-  expect((await at(334)).columns, '334px: five rows no longer fit, so three per column').toBe(2)
+  // dock = content + 2px border + 16px padding; content = 276px of rows + 41px of title row and gap + 32px of area line.
+  expect((await at(368)).columns, '368px: five rows fit in one column').toBe(1)
+  expect((await at(366)).columns, '366px: five rows no longer fit, so three per column').toBe(2)
   await context.close()
 })

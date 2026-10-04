@@ -238,6 +238,8 @@ export function mountChrome(el, cfg) {
     closeLabel: cfg.t.close,
     moreLabel: cfg.t.panelHistory,
     moreShortLabel: cfg.t.panelHistoryShort,
+    areaBelow: cfg.t.panelAreaBelow,
+    areaBelowUnnamed: cfg.t.panelAreaBelowUnnamed,
     foldLabel: cfg.t.panelFold,
     expandLabel: cfg.t.panelExpand,
     resizeLabel: cfg.t.panelResize,

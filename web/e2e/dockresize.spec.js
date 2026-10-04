@@ -69,9 +69,9 @@ test('1440: dragging the handle resizes the panel live, moves the controls and p
   await expect(page.locator(`${PANEL} .gauges`)).toBeVisible({ timeout: 20000 })
   await expect.poll(() => panelHeight(page)).toBe(before + 150)
 
-  // Clamped at both ends: 14rem, and 8rem of map left above.
+  // Clamped at both ends: 16rem (14rem plus the area line), and 8rem of map left above.
   await drag(page, 2000)
-  await expect.poll(() => panelHeight(page)).toBe(14 * REM)
+  await expect.poll(() => panelHeight(page)).toBe(16 * REM)
   await drag(page, -2000)
   const max = await cap(page)
   await expect.poll(() => panelHeight(page)).toBe(max)
@@ -108,7 +108,7 @@ test('1440: the handle is a keyboard separator; folded it is gone and the height
   const grip = page.getByRole('separator', { name: 'Resize panel' })
   await expect(grip).toHaveAttribute('aria-orientation', 'horizontal')
   const max = await cap(page)
-  await expect(grip).toHaveAttribute('aria-valuemin', String(14 * REM))
+  await expect(grip).toHaveAttribute('aria-valuemin', String(16 * REM))
   const before = await panelHeight(page)
   await expect(grip).toHaveAttribute('aria-valuenow', String(before))
 
@@ -119,8 +119,8 @@ test('1440: the handle is a keyboard separator; folded it is gone and the height
   await page.keyboard.press('ArrowDown')
   await expect.poll(() => panelHeight(page)).toBe(before - 16)
   await page.keyboard.press('Home')
-  await expect.poll(() => panelHeight(page)).toBe(14 * REM)
-  await expect(grip).toHaveAttribute('aria-valuenow', String(14 * REM))
+  await expect.poll(() => panelHeight(page)).toBe(16 * REM)
+  await expect(grip).toHaveAttribute('aria-valuenow', String(16 * REM))
   await page.keyboard.press('End')
   await expect.poll(() => panelHeight(page)).toBe(max)
   await expect(grip).toHaveAttribute('aria-valuenow', String(max))
