@@ -11,7 +11,6 @@ import { stackReserve, heightBounds, clampHeight, keyHeight, readHeight, writeHe
 const WIDE = '(min-width: 1024px)'
 const TITLE_ID = 'map-dock-title'
 const FOLD_KEY = 'kanarche:panel-folded'
-const SHORT_PX = 352
 const SVG_NS = 'http://www.w3.org/2000/svg'
 // The right-hand control column; when it and the locate button do not fit above the panel, the panel clears the column.
 const COLUMN = '.map__full, .map-zoom, .map-orient'
@@ -101,15 +100,13 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   if (moreLabel) el.appendChild(more)
 
   let folded = readFlag(FOLD_KEY, false)
-  let short = false
   function paintFold() {
     el.classList.toggle('map-dock--folded', folded)
-    el.classList.toggle('map-dock--short', short)
     grip.hidden = folded
     const label = folded ? expandLabel : foldLabel
     fold.setAttribute('aria-label', label)
     fold.title = label
-    moreText.textContent = (folded || short) && moreShortLabel ? moreShortLabel : moreLabel
+    moreText.textContent = folded && moreShortLabel ? moreShortLabel : moreLabel
   }
   paintFold()
 
@@ -153,11 +150,6 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     // The legend folding or the map resizing moves the cap; the saved choice is only clamped, never rewritten.
     if (mounted()) applyHeight()
     const h = mounted() ? Math.max(0, Math.round(frame.getBoundingClientRect().bottom - el.getBoundingClientRect().top)) : 0
-    // Under its 24rem cap (1024px, area pages) the open panel has too little height for a gauge row above the chart.
-    if (mounted() && !folded && el.clientHeight > 0 && (el.clientHeight < SHORT_PX) !== short) {
-      short = !short
-      paintFold()
-    }
     shell?.classList.toggle('map-shell--crowded', mounted() && crowded())
     if (h !== lastHeight) {
       if (h > 0) shell?.style.setProperty('--map-panel-h', `${h}px`)
