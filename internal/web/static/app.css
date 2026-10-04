@@ -1773,3 +1773,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 @media (hover: none) {
   .map-orient__close, .map-orient__north-btn { min-block-size: 44px; min-inline-size: 44px; }
 }
+
+/* Address search in the finder: the OSM credit line and the searched-address pin. */
+.combobox__credit { padding: var(--space-2) var(--space-4); font-size: var(--text-compact); color: var(--muted); }
+.combobox__credit a { color: inherit; text-decoration: underline; }
+.combobox__opt--address { border-block-start: 1px solid var(--border); }
+.address-pin {
+  inline-size: 18px; block-size: 18px; border-radius: 50%;
+  background: var(--accent); border: 3px solid var(--bg); box-shadow: var(--elev-float);
+}
+/* Status and credit lines wrap on a narrow finder; room so the credit is not scrolled off. */
+.map-controls__find .combobox__list { max-block-size: min(26rem, 60vh); }

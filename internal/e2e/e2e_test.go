@@ -11,9 +11,12 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,6 +40,7 @@ func TestBrowser(t *testing.T) {
 	t.Setenv(config.PathEnv, filepath.Join("..", "..", "airbg.yaml"))
 	t.Setenv(config.DatabaseURLEnv, "postgres://user:pass@localhost:5432/airbg")
 	widenRateLimits(t)
+	t.Setenv("AIRBG_GEOCODER_URL", startGeocoderStub(t).URL)
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatalf("config.Load: %v", err)
@@ -311,4 +315,23 @@ func widenRateLimits(t *testing.T) {
 	t.Setenv("AIRBG_RATELIMIT_SERIES_BURST", "200")
 	t.Setenv("AIRBG_RATELIMIT_PAGES_PER_SECOND", "1000")
 	t.Setenv("AIRBG_RATELIMIT_PAGES_BURST", "10000")
+	t.Setenv("AIRBG_RATELIMIT_GEOCODE_PER_SECOND", "50")
+	t.Setenv("AIRBG_RATELIMIT_GEOCODE_BURST", "200")
+	t.Setenv("AIRBG_GEOCODER_UPSTREAM_PER_SECOND", "50")
+}
+
+// startGeocoderStub stands in for Nominatim; the real one is never called. A
+// query containing "nowhere" gets no match, anything else one match in Sofia.
+func startGeocoderStub(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(strings.ToLower(r.URL.Query().Get("q")), "nowhere") {
+			_, _ = w.Write([]byte("[]"))
+			return
+		}
+		_, _ = w.Write([]byte(`[{"display_name":"Stub street 1, Sofia, Bulgaria","lat":"42.6977","lon":"23.3219","boundingbox":["42.6970","42.6984","23.3210","23.3228"]}]`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
 }

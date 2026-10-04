@@ -23,6 +23,7 @@ import (
 	"airbg.org/internal/api"
 	"airbg.org/internal/config"
 	"airbg.org/internal/designkit"
+	"airbg.org/internal/geocode"
 	"airbg.org/internal/httpx"
 	"airbg.org/internal/i18n"
 	"airbg.org/internal/metrics"
@@ -61,16 +62,18 @@ type Server struct {
 	pageLimiter                  *ratelimit.Limiter
 	breadth                      *ratelimit.Breadth
 	seriesLimiter                *ratelimit.Limiter
+	geocodeLimiter               *ratelimit.Limiter
 	log                          *slog.Logger
 	maxConns                     int32
 	// One eviction interval per limiter, because each limiter has its own key
 	// (see startEvicting). A single shared interval silently ignored
 	// ratelimit.series.evict_interval for as long as both values happened to be
 	// equal in airbg.yaml.
-	apiEvictInterval    time.Duration
-	pagesEvictInterval  time.Duration
-	seriesEvictInterval time.Duration
-	shutdownGrace       time.Duration
+	apiEvictInterval     time.Duration
+	pagesEvictInterval   time.Duration
+	seriesEvictInterval  time.Duration
+	geocodeEvictInterval time.Duration
+	shutdownGrace        time.Duration
 }
 
 // maxBodyBytes: this service answers GETs. Anything larger than a generously
@@ -104,6 +107,7 @@ func New(opts Options) (*Server, error) {
 	pageLimiter := ratelimit.New(opts.Config.RateLimit.Pages, opts.Config.RateLimit.ShardCount)
 	seriesLimiter := api.NewSeriesLimiter(opts.Config)
 	breadth := ratelimit.NewBreadth(opts.Config.RateLimit.Enumerate)
+	geocodeLimiter := api.NewGeocodeLimiter(opts.Config)
 
 	// Built here, not left for api.NewRouter's fail-closed default, so its size
 	// is the operator's configured value rather than the package-level fallback.
@@ -113,12 +117,14 @@ func New(opts Options) (*Server, error) {
 	}
 
 	apiMux := api.NewRouter(api.Deps{
-		Config:        opts.Config,
-		Snapshots:     opts.Snapshots,
-		Breadth:       breadth,
-		Store:         opts.Store,
-		SeriesLimiter: seriesLimiter,
-		Admission:     admission,
+		Config:         opts.Config,
+		Snapshots:      opts.Snapshots,
+		Breadth:        breadth,
+		Store:          opts.Store,
+		SeriesLimiter:  seriesLimiter,
+		Admission:      admission,
+		Geocoder:       geocode.New(opts.Config.Geocoder),
+		GeocodeLimiter: geocodeLimiter,
 	})
 
 	// The API mounts under /api/; everything else is a page. One mux at the
@@ -183,18 +189,20 @@ func New(opts Options) (*Server, error) {
 			IdleTimeout:       opts.Config.Timeouts.Idle,
 			MaxHeaderBytes:    maxHeaderBytes,
 		},
-		publicLn:            opts.PublicListener,
-		privateLn:           opts.PrivateListener,
-		limiter:             limiter,
-		pageLimiter:         pageLimiter,
-		breadth:             breadth,
-		seriesLimiter:       seriesLimiter,
-		log:                 opts.Logger,
-		maxConns:            opts.Config.Listen.MaxConns,
-		apiEvictInterval:    opts.Config.RateLimit.API.EvictInterval,
-		pagesEvictInterval:  opts.Config.RateLimit.Pages.EvictInterval,
-		seriesEvictInterval: opts.Config.RateLimit.Series.EvictInterval,
-		shutdownGrace:       opts.Config.Timeouts.ShutdownGrace,
+		publicLn:             opts.PublicListener,
+		privateLn:            opts.PrivateListener,
+		limiter:              limiter,
+		pageLimiter:          pageLimiter,
+		breadth:              breadth,
+		seriesLimiter:        seriesLimiter,
+		geocodeLimiter:       geocodeLimiter,
+		log:                  opts.Logger,
+		maxConns:             opts.Config.Listen.MaxConns,
+		apiEvictInterval:     opts.Config.RateLimit.API.EvictInterval,
+		pagesEvictInterval:   opts.Config.RateLimit.Pages.EvictInterval,
+		seriesEvictInterval:  opts.Config.RateLimit.Series.EvictInterval,
+		geocodeEvictInterval: opts.Config.RateLimit.Geocode.EvictInterval,
+		shutdownGrace:        opts.Config.Timeouts.ShutdownGrace,
 	}
 
 	if opts.Config.Tiles.Enabled() {
@@ -322,6 +330,7 @@ func (s *Server) startEvicting(ctx context.Context) {
 	s.pageLimiter.StartEvicting(ctx, s.pagesEvictInterval)
 	s.breadth.StartEvicting(ctx, s.apiEvictInterval)
 	s.seriesLimiter.StartEvicting(ctx, s.seriesEvictInterval)
+	s.geocodeLimiter.StartEvicting(ctx, s.geocodeEvictInterval)
 }
 
 // serveCapped listens and serves srv under the connection cap.

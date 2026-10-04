@@ -18,6 +18,7 @@ type raw struct {
 	Wind       *rawWind       `yaml:"wind"`
 	EEA        *rawEEA        `yaml:"eea"`
 	Cloudflare *rawCloudflare `yaml:"cloudflare"`
+	Geocoder   *rawGeocoder   `yaml:"geocoder"`
 	Store      *rawStore      `yaml:"store"`
 	Series     *rawSeries     `yaml:"series"`
 	Quality    *rawQuality    `yaml:"quality"`
@@ -68,6 +69,7 @@ type rawRateLimit struct {
 	API        *rawBucket       `yaml:"api"`
 	Pages      *rawBucket       `yaml:"pages"`
 	Series     *rawSeriesBucket `yaml:"series"`
+	Geocode    *rawBucket       `yaml:"geocode"`
 	Enumerate  *rawEnumerate    `yaml:"enumerate"`
 	ShardCount *int             `yaml:"shard_count"`
 }
@@ -163,6 +165,16 @@ type rawCloudflare struct {
 	ZoneID         *string   `yaml:"zone_id"`
 	RequestTimeout *Duration `yaml:"request_timeout"`
 	PollInterval   *Duration `yaml:"poll_interval"`
+}
+
+// rawGeocoder configures the address-search proxy. The upstream is Nominatim
+// by default; url is the only key an operator normally overrides.
+type rawGeocoder struct {
+	URL               *string   `yaml:"url"`
+	RequestTimeout    *Duration `yaml:"request_timeout"`
+	CacheTTL          *Duration `yaml:"cache_ttl"`
+	CacheMaxEntries   *int      `yaml:"cache_max_entries"`
+	UpstreamPerSecond *float64  `yaml:"upstream_per_second"`
 }
 
 type rawStore struct {

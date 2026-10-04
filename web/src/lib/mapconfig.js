@@ -115,6 +115,7 @@ export function readConfig(el) {
     // Strings come from the server, not from a JS catalogue: Go owns the
     // catalogue, and a second copy here would drift on the first edit.
     t: {
+      addressPin: d.tAddressPin || '',
       legend: d.tLegend || '',
       // The name of the fold, not of the key: the summary is icon-only, and an
       // icon-only control still has to be announced as something.

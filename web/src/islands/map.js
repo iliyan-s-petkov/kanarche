@@ -9,7 +9,8 @@ import { installZoom, installOrientation } from '../lib/mapcontrols.js'
 import { getJSON } from '../lib/api.js'
 import { getViewState } from '../lib/viewstate.svelte.js'
 import { readWindow } from '../lib/mapwindow.js'
-import { provideAreaSelect } from '../lib/mapareas.svelte.js'
+import { provideAreaSelect, provideAddressPin } from '../lib/mapareas.svelte.js'
+import { createAddressPin } from '../lib/addresspin.js'
 import { BOUNDARY_FILL_LAYER_ID, boundsOf, findBoundary } from '../lib/boundaries.js'
 import { LAYER_ID, FAULTY_LAYER_ID, HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID, HEX_POINT_LAYER_ID, HEX_SOURCE_ID } from '../lib/mapids.js'
 import { MIN_ZOOM, readConfig } from '../lib/mapconfig.js'
@@ -158,6 +159,8 @@ export function mount(el) {
   // The finder island is beside this one, not inside it: it names an area and
   // this map is what moves. Registered here, where the camera is.
   const unselect = provideAreaSelect((area) => showArea(map, state, cfg, chrome, area))
+  const addressPin = createAddressPin(map, cfg.t.addressPin)
+  const unprovidePin = provideAddressPin(addressPin)
 
   // Declared before the 'load' handler that cancels it: a jumpTo taken during
   // the opening placement queues a moveend the handler has already answered.
@@ -319,6 +322,6 @@ export function mount(el) {
   return {
     map,
     chrome,
-    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect() },
+    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear() },
   }
 }

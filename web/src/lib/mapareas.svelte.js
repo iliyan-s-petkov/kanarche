@@ -32,3 +32,19 @@ export function provideAreaSelect(fn) {
 export function selectMapArea(area) {
   return select ? select(area) : false
 }
+
+// The searched-address pin, same shape: the map registers it, the finder calls it.
+let pin = null
+
+export function provideAddressPin(handlers) {
+  pin = handlers
+  return () => { if (pin === handlers) pin = null }
+}
+
+export function showMapAddress(row) {
+  pin?.show(row)
+}
+
+export function clearMapAddress() {
+  pin?.clear()
+}

@@ -85,6 +85,7 @@
      data-t-panel-fold="{{.T "map.panel.fold"}}"
      data-t-panel-resize="{{.T "map.panel.resize"}}"
      data-t-panel-expand="{{.T "map.panel.expand"}}"
+     data-t-address-pin="{{.T "find.address_pin"}}"
      data-t-zoom-in="{{.T "map.zoom.in"}}"
      data-t-zoom-out="{{.T "map.zoom.out"}}"
      data-t-zoom-reset="{{.T "map.zoom.reset"}}"
@@ -330,6 +331,12 @@
 {{define "finderIsland"}}{{$map := not (.OnPath "/areas")}}<div data-island="finder"
      {{if not $map}}data-source=".table tbody"{{end}}
      data-t-label="{{.T "find.label"}}"
-     data-t-placeholder="{{.T "find.placeholder"}}"
+     data-t-placeholder="{{if $map}}{{.T "find.placeholder_address"}}{{else}}{{.T "find.placeholder"}}{{end}}"
      data-t-hint="{{if $map}}{{.T "find.hint_map"}}{{else}}{{.T "find.hint"}}{{end}}"
-     data-t-empty="{{.T "find.no_match"}}"></div>{{end}}
+     data-t-empty="{{.T "find.no_match"}}"
+     {{if $map}}data-t-address-row="{{.T "find.address_row"}}"
+     data-t-address-loading="{{.T "find.address_loading"}}"
+     data-t-address-none="{{.T "find.address_none"}}"
+     data-t-address-busy="{{.T "find.address_busy"}}"
+     data-t-address-error="{{.T "find.address_error"}}"
+     data-t-address-credit="{{.T "find.address_credit"}}"{{end}}></div>{{end}}

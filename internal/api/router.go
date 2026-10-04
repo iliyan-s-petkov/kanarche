@@ -16,6 +16,7 @@ import (
 
 	"airbg.org/internal/admit"
 	"airbg.org/internal/config"
+	"airbg.org/internal/geocode"
 	"airbg.org/internal/ratelimit"
 	"airbg.org/internal/snapshot"
 	"airbg.org/internal/store"
@@ -60,6 +61,13 @@ type Deps struct {
 	// crowd. NewRouter substitutes a default when nil, so a handler is never
 	// admitted without a cap.
 	Admission *admit.Semaphore
+
+	// Geocoder serves /api/v1/geocode. Nil leaves the route answering 503, so a
+	// deployment without one fails closed rather than unlimited.
+	Geocoder *geocode.Service
+	// GeocodeLimiter is the per-client bucket for that route; nil also answers
+	// 503. The caller owns its evictor.
+	GeocodeLimiter *ratelimit.Limiter
 
 	// visitors is set by NewRouter, one per router.
 	visitors *visitorCache
@@ -144,6 +152,7 @@ func (d Deps) handlers() map[string]http.HandlerFunc {
 		"GET /api/v1/sensor/{id}/series":  d.handleSensorSeries,
 		"GET /api/v1/sensor/{id}/locate":  d.handleSensorLocate,
 		"GET /api/v1/locate":              d.handleLocate,
+		"GET /api/v1/geocode":             d.handleGeocode,
 		// Phase 1 §7.4's partner API is deferred to Phase 4. The path is
 		// reserved now so the version namespace cannot be taken by anything
 		// else, and it answers a truthful 501 rather than a 404 that would

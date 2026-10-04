@@ -8,7 +8,8 @@
 import { mount as mountComponent } from 'svelte'
 import AreaFind from '../components/AreaFind.svelte'
 import { areaOptions, readAreas } from '../lib/find.js'
-import { getMapAreas, selectMapArea } from '../lib/mapareas.svelte.js'
+import { getMapAreas, selectMapArea, showMapAddress, clearMapAddress } from '../lib/mapareas.svelte.js'
+import { searchAddress } from '../lib/geocode.js'
 
 export function mount(el, doc = document) {
   const d = el.dataset
@@ -45,6 +46,22 @@ export function mount(el, doc = document) {
       // A getter, not a snapshot: the map's list lands after this mounts.
       get areas() { return areaOptions(getMapAreas(), lang) },
       onpick: (m) => selectMapArea(m.area),
+      // Only the map tab: the list tab has no map to show an address on.
+      // Absent strings (an old template) leave the feature off.
+      address: d.tAddressRow
+        ? {
+            search: (q) => searchAddress(q, lang),
+            onpick: showMapAddress,
+            onclear: clearMapAddress,
+            row: d.tAddressRow,
+            loading: d.tAddressLoading || '',
+            none: d.tAddressNone || '',
+            busy: d.tAddressBusy || '',
+            error: d.tAddressError || '',
+            credit: d.tAddressCredit || '',
+            creditHref: 'https://www.openstreetmap.org/copyright',
+          }
+        : null,
     },
   })
 }
