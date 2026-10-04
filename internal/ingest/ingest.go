@@ -45,8 +45,8 @@ const (
 	// (or shrink) the alert's actual margin without anyone noticing
 	// (task-16 review finding 4).
 	//
-	// 32, not 30: the widest raw-table series window (airbg.yaml's "30d"
-	// period) is 30 days, and retention must outlive it by a margin, or a
+	// 32 days: the widest raw-table series window is airbg.yaml's "7d" period
+	// (30d and 1y read reading_hourly), and retention must outlive it, or a
 	// rollup that falls behind that window can be asked to read rows this
 	// policy already dropped (task 2.7). See
 	// TestRawRetentionExceedsSeriesRawWindow.
