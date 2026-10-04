@@ -1552,10 +1552,13 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .panel-menu__opt { display: flex; align-items: center; gap: var(--space-3); min-block-size: 44px; padding: 0 var(--space-4); }
 
 /* /about Prose page: tiles, numbered lists, a table and one chart. */
+/* Fluid: tracks the viewport, stops at 96rem. Other .measure pages keep 60rem. */
+.measure.about-page { max-inline-size: 96rem; }
+.about-page .page-head > p { max-inline-size: 80ch; }
 .about-section { padding-block: var(--space-8) 0; }
 .about-section--first { padding-block-start: 0; }
 .about-section > h2 { margin: 0 0 var(--space-3); }
-.about-section > p { color: var(--fg-2); max-inline-size: 60ch; margin: 0 0 var(--space-4); }
+.about-section > p { color: var(--fg-2); max-inline-size: 80ch; margin: 0 0 var(--space-4); }
 .about-toc { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block-start: var(--space-4); }
 .about-toc a { font-size: var(--text-compact); text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-3); color: var(--fg-2); }
 .about-toc a:hover { border-color: var(--accent); color: var(--accent); }
@@ -1574,9 +1577,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 
 .about-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-6); counter-reset: step; }
 .about-steps li { display: grid; gap: var(--space-2); align-content: start; counter-increment: step; }
-.about-steps li::before { content: counter(step); font-size: var(--text-caption); letter-spacing: var(--track-caption); color: var(--meta); }
-.about-steps h3 { margin: 0; font-size: var(--text-card); font-weight: var(--weight-body); }
-.about-steps p { margin: 0; color: var(--fg-2); max-inline-size: 60ch; }
+.about-steps h3 { margin: 0; display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-card); font-weight: var(--weight-body); }
+.about-steps h3::before { content: counter(step); flex: none; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--accent); color: var(--accent-on); display: grid; place-items: center; font: var(--weight-emphasis) var(--text-compact)/1 var(--font-body); font-variant-numeric: tabular-nums; }
+.about-step__extra { display: grid; gap: var(--space-2); }
+.about-step__extra p { margin: 0; }
+.about-steps p { margin: 0; color: var(--fg-2); max-inline-size: 80ch; }
 .about-code { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-2); border-radius: var(--radius-sm); overflow-x: auto; font: var(--text-caption)/1.5 ui-monospace, monospace; color: var(--fg); }
 .about-shot { margin: 0; }
 .about-shot__img { display: block; inline-size: 100%; block-size: auto; border: 1px solid var(--border-faint); border-radius: var(--radius); }
@@ -1588,13 +1593,34 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   :root:not([data-theme="light"]) .about-shot__img--light { display: none; }
   :root:not([data-theme="light"]) .about-shot__img--dark { display: block; }
 }
-/* Wide: text left, screenshot right, spanning the step's rows. */
+/* Wide: two columns, odd steps text then image, even steps image then text (DOM order stays text first). */
+.about-step__text { display: grid; gap: var(--space-2); }
 @media (min-width: 672px) {
-  .about-steps li { grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); column-gap: var(--space-6); }
-  .about-steps li > :not(.about-shot) { grid-column: 1; }
-  .about-steps .about-shot { grid-column: 2; grid-row: 1 / span 5; }
+  .about-steps li { grid-template-columns: minmax(0, 1fr) clamp(22rem, 38%, 36rem); column-gap: var(--space-8); align-items: center; }
+  .about-steps .about-step__text { grid-column: 1; grid-row: 1; }
+  .about-steps .about-shot { grid-column: 2; grid-row: 1; }
+  .about-steps .about-step__extra { grid-column: 1 / -1; }
+  .about-steps li:nth-child(even) { grid-template-columns: clamp(22rem, 38%, 36rem) minmax(0, 1fr); }
+  .about-steps li:nth-child(even) .about-step__text { grid-column: 2; }
+  .about-steps li:nth-child(even) .about-shot { grid-column: 1; }
 }
 
+.about-cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-block-end: var(--space-4); }
+.about-card { position: relative; background: var(--bg); border: 1px solid var(--border-faint); border-radius: var(--radius); padding: var(--space-4); display: grid; gap: var(--space-2); align-content: start; }
+.about-card:hover, .about-card:focus-within { border-color: var(--accent); }
+.about-card__ill { inline-size: 100%; block-size: 7rem; color: var(--fg-2); margin-block-end: var(--space-2); }
+.about-card__ill .ill-fill { fill: var(--surface); }
+.about-card__ill .ill-warn { fill: var(--warn); }
+.about-card__ill .ill-dot { fill: currentColor; stroke: none; }
+.about-card__ill .ill-blade { stroke: currentColor; stroke-linecap: round; }
+.about-card__title { margin: 0; font-size: var(--text-card); font-weight: var(--weight-emphasis); }
+.about-card__title a { color: var(--accent); text-decoration: none; }
+/* One link per card: the title's ::after stretches over the whole card. */
+.about-card__title a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
+.about-card__title a:focus-visible { outline: none; box-shadow: none; }
+.about-card__title a:focus-visible::after { box-shadow: var(--focus-ring); }
+.about-card__desc { color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); line-height: 1.4; }
+.about-section > p.about-card__note { font-size: var(--text-caption); color: var(--muted); }
 .about-promise { display: flex; gap: var(--space-3); align-items: flex-start; background: var(--surface-sel); border-radius: var(--radius); padding: var(--space-4); margin-block-end: var(--space-4); }
 .about-promise svg { flex: none; color: var(--accent); }
 .about-promise p { margin: 0; }
