@@ -9,7 +9,8 @@
     "kanarche:map-view",
     "kanarche:locate-hint-seen",
     "kanarche:favourite-sensor",
-    "kanarche:panel-folded"
+    "kanarche:panel-folded",
+    "kanarche:panel-height"
   ],
   "legacy": [
     "airbg:theme",
@@ -21,7 +22,8 @@
     "airbg:map-view",
     "airbg:locate-hint-seen",
     "airbg:favourite-sensor",
-    "airbg:panel-folded"
+    "airbg:panel-folded",
+    "airbg:panel-height"
   ],
   "sessionStorage": []
 }

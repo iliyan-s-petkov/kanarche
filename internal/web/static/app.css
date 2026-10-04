@@ -497,10 +497,11 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* From 1024px the open sensor is a panel along the map's bottom (lib/sidedock.svelte.js):
    title row, gauges, the chart's toolbar with the link to the card under the map (area pages only), the chart.
    Folded it keeps the header and the gauges row. The dock sets --map-panel-h on the shell to what it
-   covers, and the bottom controls ride above it. The 14rem floor keeps a readable chart over an area page's short map. */
+   covers, and the bottom controls ride above it. The 14rem floor keeps a readable chart over an area page's short map.
+   The grip on the top edge drags the height (--map-dock-h); a folded panel ignores it. */
 .map-dock {
   position: absolute; z-index: 4; inset-inline: var(--space-2); inset-block-end: var(--space-2);
-  block-size: min(24rem, max(45%, 14rem));
+  block-size: var(--map-dock-h);
   display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto minmax(0, 1fr);
   grid-template-areas: "head head" "gauges gauges" "tools more" "plot plot";
   gap: var(--space-1) var(--space-3);
@@ -513,6 +514,20 @@ strong, b { font-weight: var(--weight-emphasis); }
   block-size: auto; grid-template-rows: auto auto; grid-template-areas: "head head" "gauges more";
 }
 .map-dock:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+/* A pill centred on the top edge, inside a taller hit area. */
+.map-dock__grip {
+  position: absolute; z-index: 1; inset-block-start: -10px; inset-inline-start: calc(50% - 2rem);
+  inline-size: 4rem; block-size: 20px; border-radius: var(--radius-pill);
+  cursor: ns-resize; touch-action: none; user-select: none;
+}
+.map-dock__grip::before {
+  content: ""; position: absolute; inset-block-start: 8px; inset-inline: 0.75rem;
+  block-size: 4px; border-radius: var(--radius-pill); background: var(--fg-2); opacity: 0.6;
+}
+.map-dock__grip:hover::before, .map-dock--resizing .map-dock__grip::before { opacity: 1; }
+.map-dock__grip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.map-dock__grip[hidden] { display: none; }
+.map-dock--resizing { user-select: none; }
 .map-dock__head {
   grid-area: head; display: flex; align-items: center; gap: var(--space-2);
   padding-block-end: var(--space-2); border-bottom: 1px solid var(--border-faint);
@@ -570,6 +585,11 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-shell.map-shell--docked .scale--onmap, .map-shell--docked .map-wind-label { inset-block-end: calc(3.5rem + var(--map-panel-h, 0px)); }
 .map-shell--docked .map-locate { bottom: calc(var(--space-2) + var(--map-panel-h, 0px)); }
 .map-shell--docked .maplibregl-ctrl-bottom-right, .map-shell--docked .maplibregl-ctrl-bottom-left { bottom: var(--map-panel-h, 0px); }
+/* Too little map above the panel for the right-hand column and locate (lib/sidedock.svelte.js): the panel
+   stops short of the column, locate drops to the column's foot and the wind note moves off it. */
+.map-shell--crowded .map-dock { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+.map-shell--docked.map-shell--crowded .map-locate { bottom: var(--space-2); inset-inline-end: calc(var(--space-2) + 4px); }
+.map-shell--docked.map-shell--crowded .map-wind-label { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
 @media (hover: none) {
   .map-dock__fold, .map-dock__close, .map-dock .panel-info, .map-dock__more { min-block-size: 44px; min-inline-size: 44px; }
   .map-dock .panel-chart__tools .btn, .map-dock .chart-field__control, .map-dock .chart-range input, .map-dock .panel-more { min-block-size: 44px; }
