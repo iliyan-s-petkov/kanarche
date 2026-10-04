@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Regenerates the Getting started screenshots on /about from https://airbg.org.
+// Regenerates the Getting started screenshots on /about from https://kanarche.eu.
 // Read-only browsing of production. Needs `npm ci` in web/ and its Chromium.
 //
-//   node tools/about-screenshots.mjs [--base https://airbg.org] [--only layers,areas]
+//   node tools/about-screenshots.mjs [--base https://kanarche.eu] [--only layers,areas]
 //
 // Output: internal/web/static/about/start-<step>-<lang>-<theme>.webp, 560x460.
 // Annotations are injected DOM (ring plus numbered badge), so a rerun redraws them.
@@ -15,7 +15,7 @@ const { chromium } = await import(pathToFileURL(resolve(here, '../web/node_modul
 
 const args = process.argv.slice(2)
 const opt = (name, dflt) => (args.includes(name) ? args[args.indexOf(name) + 1] : dflt)
-const BASE = opt('--base', 'https://airbg.org')
+const BASE = opt('--base', 'https://kanarche.eu')
 const ONLY = opt('--only', '')
 const OUT = resolve(here, '../internal/web/static/about')
 const W = 560

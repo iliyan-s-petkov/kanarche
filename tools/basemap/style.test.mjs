@@ -80,5 +80,10 @@ const stray = strangers.filter(c => hits(c).join() !== 'poi-other');
 ok('an unenumerated class falls to poi-other', stray.length === 0,
    stray.map(c => c + ' -> ' + (hits(c).join('+') || 'NOTHING')).join(', '));
 
+/* kanarche.eu is canonical; tiles.airbg.org keeps serving only for cached copies. */
+const TILES = 'https://tiles.kanarche.eu/';
+ok('glyphs on ' + TILES, style.glyphs.startsWith(TILES), style.glyphs);
+ok('basemap source on ' + TILES, style.sources.basemap.url.startsWith('pmtiles://' + TILES), style.sources.basemap.url);
+
 console.log(fail ? `\n${fail} failed` : '\nall checks passed');
 process.exit(fail ? 1 : 0);

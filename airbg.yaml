@@ -469,7 +469,7 @@ frontend:
 tiles:
   addr: ""        # e.g. "127.0.0.1:8082"
   dir: ""         # e.g. "/var/lib/airbg/tiles" — holds the archive, style.json, glyphs/
-  public_url: ""  # e.g. "https://tiles.airbg.org"
+  public_url: ""  # e.g. "https://tiles.kanarche.eu"
   archive: ""     # e.g. "bulgaria-20260815.pmtiles" — regeneration changes this
   # Extra origins allowed to read the basemap cross-origin; listen.base_url is
   # always allowed and is not listed here. See docs/tiles.md.
