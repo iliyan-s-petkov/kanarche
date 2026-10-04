@@ -19,7 +19,7 @@ async function openOverSofia(ctx, path, vp) {
   return { page, input }
 }
 
-test.only('districts sit above cities under labelled groups; arrows skip headings', async ({ ctx }) => {
+test('districts sit above cities under labelled groups; arrows skip headings', async ({ ctx }) => {
   const { page, input } = await openOverSofia(ctx, '/en/', { width: 1440, height: 900 })
   const labels = page.locator('[data-island="finder"] .combobox__group-label')
   await expect(labels.nth(0)).toHaveText('City districts')
@@ -38,7 +38,7 @@ test.only('districts sit above cities under labelled groups; arrows skip heading
   await page.close()
 })
 
-test.only('Bulgarian headings on a phone', async ({ ctx }) => {
+test('Bulgarian headings on a phone', async ({ ctx }) => {
   const { page } = await openOverSofia(ctx, '/', { width: 390, height: 844 })
   await expect(page.locator('[data-island="finder"] .combobox__group-label').nth(0)).toHaveText('Градски райони')
   await expect(page.locator('[data-island="finder"] .combobox__group-label').nth(1)).toHaveText('Градове и области')
