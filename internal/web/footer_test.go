@@ -364,14 +364,14 @@ func TestAirbgInfoIsLinkedFromTheFooterAndAboutAsIndependent(t *testing.T) {
 		for _, href := range []string{
 			"https://airbg.info/naprawi-si-stancia",
 			"https://airbg.info/zaqwi-uchastie",
-			"https://airbg.info/karta",
+			"https://maps.sensor.community",
 		} {
 			if !strings.Contains(body, `href="`+href+`" rel="noopener noreferrer"`) {
 				t.Errorf("%s lacks the %s link", tc.path, href)
 			}
 		}
-		if i, j := strings.Index(body, `id="station"`), strings.Index(body, `id="more"`); i < 0 || j < i || strings.Contains(body[i:j], "sensor.community") {
-			t.Errorf("%s: the station section must not tie airbg.info to sensor.community", tc.path)
+		if i, j := strings.Index(body, `id="station"`), strings.Index(body, `id="more"`); i < 0 || j < i || strings.Contains(stationProse(body[i:j]), "sensor.community") {
+			t.Errorf("%s: the station intro and note must not tie airbg.info to sensor.community", tc.path)
 		}
 		if !strings.Contains(body, `id="station"`) || !strings.Contains(body, tc.note) {
 			t.Errorf("%s lacks the station section or its independence note %q", tc.path, tc.note)
@@ -390,4 +390,14 @@ func TestPrivacyMetaDoesNotClaimNoIPAddresses(t *testing.T) {
 			}
 		}
 	}
+}
+
+// stationProse is the station section minus its cards: the sensor.community
+// map is a card of its own, but the prose must not tie airbg.info to it.
+func stationProse(section string) string {
+	var out strings.Builder
+	for _, p := range regexp.MustCompile(`(?s)<p(?: [^>]*)?>.*?</p>`).FindAllString(section, -1) {
+		out.WriteString(p)
+	}
+	return out.String()
 }

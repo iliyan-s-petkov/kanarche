@@ -145,3 +145,23 @@ func TestWindCreditsOpenMeteo(t *testing.T) {
 		}
 	}
 }
+
+// The About station cards: each carries a title and a one-line description.
+func TestAboutStationCardCopyExistsInEveryLanguage(t *testing.T) {
+	c := loaded(t)
+	for _, card := range []string{"build", "adopt", "map"} {
+		for _, key := range []string{"about.station." + card, "about.station." + card + ".desc"} {
+			for _, lang := range c.Languages() {
+				if !c.Has(lang, key) || strings.TrimSpace(c.T(lang, key)) == "" {
+					t.Errorf("%q is missing or empty in %q", key, lang)
+				}
+			}
+		}
+	}
+	if got := c.T("en", "about.station.map"); got != "sensor.community map" {
+		t.Errorf("en about.station.map = %q", got)
+	}
+	if got := c.T("bg", "about.station.map"); got != "Картата на sensor.community" {
+		t.Errorf("bg about.station.map = %q", got)
+	}
+}
