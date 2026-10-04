@@ -45,6 +45,11 @@ func Attributions() []Attribution {
 			Text:   "Wind forecast data by Open-Meteo.com, CC BY 4.0",
 			URL:    "https://open-meteo.com/",
 		},
+		{
+			Source: "eea-bathing",
+			Text:   "Bathing water quality: European Environment Agency (EEA), WISE Bathing Water Directive data, CC BY 4.0",
+			URL:    "https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
+		},
 	}
 }
 
