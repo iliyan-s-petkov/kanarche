@@ -524,9 +524,9 @@ func TestOnlyTheSiteVhostRequiresCloudflaresCertificate(t *testing.T) {
 }
 
 // www.airbg.org is in the certificate and proxied at Cloudflare, so requests
-// for it arrive here. Without a block of its own Caddy answers nothing and the
-// name is dead. It comes through the edge like the apex, so it needs the same
-// client certificate.
+// for it arrive here. Without a block Caddy answers nothing and the name is
+// dead. It comes through the edge like the apex, so it needs the same client
+// certificate. Since phase 5b it redirects straight to kanarche.eu.
 func TestTheWwwVhostRedirectsAndIsEquallyClosed(t *testing.T) {
 	blocks := caddyBlocks(t, "Caddyfile")
 
@@ -537,8 +537,8 @@ func TestTheWwwVhostRedirectsAndIsEquallyClosed(t *testing.T) {
 	if !strings.Contains(www, "require_and_verify") {
 		t.Error("the www.airbg.org block does not require a client certificate; it reaches the origin through the edge exactly as the apex does")
 	}
-	if !strings.Contains(www, "redir https://airbg.org") {
-		t.Error("the www.airbg.org block does not redirect to the apex, so the site would serve on two names")
+	if !strings.Contains(www, "redir https://kanarche.eu{uri}") {
+		t.Error("the www.airbg.org block does not redirect to kanarche.eu, so the site would serve on two names")
 	}
 }
 
@@ -639,37 +639,37 @@ func TestTheDevCaddyfileIsUnmistakableAndOpen(t *testing.T) {
 	}
 }
 
-// TestTheSiteVhostCapsRequestBodies asserts that the airbg.org block contains
-// a request_body directive with max_size 64KB, while tiles.airbg.org and
-// www.airbg.org do not contain request_body at all.
+// TestTheSiteVhostCapsRequestBodies asserts that the kanarche.eu block contains
+// a request_body directive with max_size 64KB, while the tiles and redirect
+// blocks do not contain request_body at all.
 func TestTheSiteVhostCapsRequestBodies(t *testing.T) {
 	blocks := caddyBlocks(t, "Caddyfile")
 
-	site, ok := blocks["airbg.org"]
+	site, ok := blocks["kanarche.eu"]
 	if !ok {
-		t.Fatalf("Caddyfile has no airbg.org site block; found %v", keysOf(blocks))
+		t.Fatalf("Caddyfile has no kanarche.eu site block; found %v", keysOf(blocks))
 	}
 	if !strings.Contains(site, "request_body") {
-		t.Error("the airbg.org block does not cap request bodies — the app wraps bodies in http.MaxBytesReader, but this is the outer wall")
+		t.Error("the kanarche.eu block does not cap request bodies — the app wraps bodies in http.MaxBytesReader, but this is the outer wall")
 	}
 	if !strings.Contains(site, "max_size 64KB") {
-		t.Error("the airbg.org block's request_body does not set max_size 64KB")
+		t.Error("the kanarche.eu block's request_body does not set max_size 64KB")
 	}
 
-	for _, name := range []string{"tiles.airbg.org", "www.airbg.org"} {
+	for _, name := range []string{"tiles.airbg.org", "tiles.kanarche.eu", "airbg.org", "www.airbg.org"} {
 		block, ok := blocks[name]
 		if !ok {
 			t.Fatalf("Caddyfile has no %s site block; found %v", name, keysOf(blocks))
 		}
 		if strings.Contains(block, "request_body") {
-			t.Errorf("the %s block contains request_body, which should only be in airbg.org", name)
+			t.Errorf("the %s block contains request_body, which should only be in kanarche.eu", name)
 		}
 	}
 }
 
 // TestEncodeIsStaticOnly asserts that every `encode` line in the Caddyfile
 // has a matcher (starts with a `@` token before the algorithm names), and that
-// there is exactly one such line per app block (airbg.org and kanarche.eu),
+// there is exactly one such line, in the one app block (kanarche.eu),
 // with matcher `path /static/*`.
 func TestEncodeIsStaticOnly(t *testing.T) {
 	data, err := os.ReadFile("Caddyfile")
@@ -684,8 +684,8 @@ func TestEncodeIsStaticOnly(t *testing.T) {
 		}
 	}
 
-	if len(encodeLines) != 2 {
-		t.Fatalf("Caddyfile contains %d `encode` lines, want exactly 2 (airbg.org, kanarche.eu); found: %v", len(encodeLines), encodeLines)
+	if len(encodeLines) != 1 {
+		t.Fatalf("Caddyfile contains %d `encode` lines, want exactly 1 (kanarche.eu); found: %v", len(encodeLines), encodeLines)
 	}
 
 	for _, encodeLine := range encodeLines {
@@ -706,12 +706,12 @@ func TestEncodeIsStaticOnly(t *testing.T) {
 
 	// Verify the matcher is declared with path /static/*
 	blocks := caddyBlocks(t, "Caddyfile")
-	site, ok := blocks["airbg.org"]
+	site, ok := blocks["kanarche.eu"]
 	if !ok {
-		t.Fatalf("Caddyfile has no airbg.org site block; found %v", keysOf(blocks))
+		t.Fatalf("Caddyfile has no kanarche.eu site block; found %v", keysOf(blocks))
 	}
 	if !strings.Contains(site, "@static path /static/*") {
-		t.Error("the airbg.org block does not declare @static with path /static/* — static assets will not be compressed")
+		t.Error("the kanarche.eu block does not declare @static with path /static/* — static assets will not be compressed")
 	}
 }
 
@@ -1249,4 +1249,73 @@ func trustPool(block string) string {
 		return ""
 	}
 	return m[1]
+}
+
+// Phase 5b: airbg.org and www.airbg.org only redirect to kanarche.eu, path and
+// query untouched, from a block that keeps the client certificate and HSTS.
+func TestAirbgRedirectsToKanarche(t *testing.T) {
+	blocks := caddyBlocks(t, "Caddyfile")
+	redir := regexp.MustCompile(`^\s*redir\s+(\S+)\s+(\S+)\s*$`)
+	for _, name := range []string{"airbg.org", "www.airbg.org"} {
+		block, ok := blocks[name]
+		if !ok {
+			t.Fatalf("Caddyfile has no %s site block; found %v", name, keysOf(blocks))
+		}
+		for _, problem := range clientAuthProblems(name, block) {
+			t.Error(problem)
+		}
+		if !strings.Contains(block, `header Strict-Transport-Security "max-age=31536000; includeSubDomains"`) {
+			t.Errorf("%s lost its HSTS header", name)
+		}
+		if strings.Contains(block, "reverse_proxy") {
+			t.Errorf("%s still proxies to the app; it must only redirect", name)
+		}
+		var found []string
+		for _, line := range strings.Split(block, "\n") {
+			if m := redir.FindStringSubmatch(line); m != nil {
+				found = append(found, line)
+				if m[1] != "https://kanarche.eu{uri}" {
+					t.Errorf("%s redirects to %q, want https://kanarche.eu{uri} (path and query, no marker)", name, m[1])
+				}
+				// 302 for the rollback window, then 301; never a method-preserving 307/308.
+				if m[2] != "302" && m[2] != "301" {
+					t.Errorf("%s redirect status %q, want 302 or 301", name, m[2])
+				}
+			}
+		}
+		if len(found) != 1 {
+			t.Errorf("%s has %d redir lines, want exactly 1: %v", name, len(found), found)
+		}
+	}
+}
+
+// The 302 -> 301 flip must be a one-line change, so both names share one redir.
+func TestAirbgRedirectStatusLivesOnOneLine(t *testing.T) {
+	data, err := os.ReadFile("Caddyfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lines []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.Contains(stripCaddyComment(line), "redir ") {
+			lines = append(lines, line)
+		}
+	}
+	if len(lines) != 1 {
+		t.Errorf("Caddyfile has %d redir lines, want 1 shared by airbg.org and www.airbg.org: %v", len(lines), lines)
+	}
+}
+
+// tiles.airbg.org keeps serving the same archive for cached style.json copies.
+func TestAirbgTilesKeepsServing(t *testing.T) {
+	block, ok := caddyBlocks(t, "Caddyfile")["tiles.airbg.org"]
+	if !ok {
+		t.Fatal("Caddyfile has no tiles.airbg.org site block")
+	}
+	if !strings.Contains(block, "reverse_proxy app:8082") {
+		t.Error("tiles.airbg.org no longer proxies to the tiles listener")
+	}
+	if strings.Contains(block, "redir") {
+		t.Error("tiles.airbg.org redirects; cross-origin range requests would fail")
+	}
 }
