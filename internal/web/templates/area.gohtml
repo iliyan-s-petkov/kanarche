@@ -53,6 +53,7 @@
      data-metric-labels="{{.MetricLabelsAttr}}"
      data-metric="{{.DefaultMetric}}"
      data-t-legend="{{.T "metric.legend"}}"></div>
+{{with .AreaPollen}}{{if .Chip}}<a class="pollen-chip" href="#pollen">{{.Chip}}</a>{{end}}{{end}}
 </div>
 
 {{if .Area.Covered}}
@@ -285,6 +286,23 @@
      same number, and the cell carries a tier line saying what the sensors are
      counted in, which the bare sentence did not. */}}
 {{template "readouts-island" .}}
+
+{{/* Pollen forecast per species and local day (PageData.AreaPollen). */}}
+{{with .AreaPollen}}
+<section id="pollen" class="pollen" aria-labelledby="pollen-title">
+<h2 id="pollen-title">{{$.T "pollen.title"}}</h2>
+<div class="pollen-scroll">
+<table class="pollen-table">
+<thead><tr><th scope="col">{{$.T "pollen.species"}}</th>{{range .Days}}<th scope="col"><time datetime="{{.Date}}">{{.Label}}</time></th>{{end}}</tr></thead>
+<tbody>
+{{range .Rows}}<tr><th scope="row">{{.Name}}</th>{{range .Cells}}{{if .Has}}<td data-level="{{.Level}}"><span class="pollen-level">{{.LevelText}}</span><span class="pollen-bar" aria-hidden="true"></span><span class="pollen-value">{{.Mean}}</span></td>{{else}}<td class="pollen-none">—<span class="visually-hidden">{{$.T "pollen.no_data"}}</span></td>{{end}}{{end}}</tr>
+{{end}}</tbody>
+</table>
+</div>
+<p class="pollen-note">{{$.T "pollen.unit_note"}} {{$.T "pollen.note"}}</p>
+<p class="pollen-credit"><a class="link" href="{{$.AttributionURL "open-meteo"}}" rel="noopener noreferrer">{{$.T "pollen.credit"}}</a></p>
+</section>
+{{end}}
 
 {{/* Part of / children / nearest — up to three blocks of plain links, after
      the figures rather than beside them: this is where-else, not how-much.

@@ -1,7 +1,7 @@
 -- +goose Up
 
 -- Forecast pollen (CAMS via Open-Meteo) on a lattice of model cells. Model
--- output, not counts. lon_c/lat_c are centidegrees. See docs/pollen.md.
+-- output, not counts. lon_c/lat_c are centidegrees. Settings: airbg.yaml pollen.
 
 CREATE TABLE pollen_forecast (
     valid_at   timestamptz NOT NULL,

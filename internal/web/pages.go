@@ -164,6 +164,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	data.Title, data.Description = rr.areaSEO(row, lang)
 	data.AreaNowHTML = data.areaNowHTML(row)
 	data.AreaDayHTML = data.areaDayHTML(row)
+	data.AreaPollen = rr.pollenBlock(snap.Pollen(meta.Slug), lang)
 	rr.buildAreaLinks(&data, meta, row, snap, lang)
 	data.JSONLD = rr.mustJSONLD(rr.areaJSONLD(data, row))
 	rr.render(w, r, http.StatusOK, "area", data)
