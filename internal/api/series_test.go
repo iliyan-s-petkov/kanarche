@@ -109,7 +109,7 @@ func TestSeriesRejectsNonNumericSensorID(t *testing.T) {
 // a chart that is wrong without being empty, which is the hardest kind to catch.
 func TestLongPeriodsUseTheRollup(t *testing.T) {
 	cfg := testConfig(t).Series
-	cases := map[string]bool{"24h": false, "7d": false, "30d": false, "1y": true}
+	cases := map[string]bool{"24h": false, "7d": false, "30d": true, "1y": true}
 	for period, wantHourly := range cases {
 		_, hourly, ok := api.ParsePeriodForTesting(cfg, period)
 		if !ok {

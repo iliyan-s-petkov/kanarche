@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"airbg.org/internal/snapshot"
 	"airbg.org/internal/store"
 	"airbg.org/internal/upstream"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // admissionRejected counts requests shed by the admission semaphore.
@@ -297,6 +299,28 @@ func (d Deps) allowSeriesQuery(w http.ResponseWriter, r *http.Request, dimension
 	return false
 }
 
+// writeSeriesQueryError answers a failed series query. A statement timeout
+// (SQLSTATE 57014) or a context deadline is load, so it is a retryable 503;
+// anything else is a 500. Logged with the detail, answered without it: a pgx
+// error carries the SQL text and table names.
+func (d Deps) writeSeriesQueryError(w http.ResponseWriter, err error, msg string, attrs ...any) {
+	var pgErr *pgconn.PgError
+	timedOut := errors.Is(err, context.DeadlineExceeded) ||
+		(errors.As(err, &pgErr) && pgErr.Code == "57014")
+	kind := "internal"
+	if timedOut {
+		kind = "timeout"
+	}
+	slog.Error(msg, append(attrs, "kind", kind, "error", err)...)
+	if !timedOut {
+		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
+		return
+	}
+	w.Header().Set("Retry-After", strconv.Itoa(int(d.Config.RateLimit.Series.RetryAfter.Seconds())))
+	writeError(w, http.StatusServiceUnavailable, "unavailable",
+		"The chart took too long to load. Please try again shortly.")
+}
+
 func (d Deps) handleSensorSeries(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id <= 0 {
@@ -330,8 +354,7 @@ func (d Deps) handleSensorSeries(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Logged with the detail, answered without it. A pgx error carries the
 		// SQL text and table names.
-		slog.Error("sensor series query failed", "sensor_id", id, "metric", metric, "error", err)
-		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
+		d.writeSeriesQueryError(w, err, "sensor series query failed", "sensor_id", id, "metric", metric)
 		return
 	}
 
@@ -408,8 +431,7 @@ func (d Deps) handleAreaSeries(w http.ResponseWriter, r *http.Request) {
 		bands, err := d.Store.AreaSeriesBand(r.Context(), slug, metric, since, until, pd.Hourly, pd.Bucket)
 		release()
 		if err != nil {
-			slog.Error("area band query failed", "slug", slug, "metric", metric, "error", err)
-			writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
+			d.writeSeriesQueryError(w, err, "area band query failed", "slug", slug, "metric", metric)
 			return
 		}
 		writeBand(w, body, bands, periodMaxAge(d.Config, pd))
@@ -419,8 +441,7 @@ func (d Deps) handleAreaSeries(w http.ResponseWriter, r *http.Request) {
 	points, err := d.Store.AreaSeries(r.Context(), slug, metric, since, until, pd.Hourly, pd.Bucket)
 	release()
 	if err != nil {
-		slog.Error("area series query failed", "slug", slug, "metric", metric, "error", err)
-		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
+		d.writeSeriesQueryError(w, err, "area series query failed", "slug", slug, "metric", metric)
 		return
 	}
 

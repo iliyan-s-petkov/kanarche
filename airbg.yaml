@@ -271,7 +271,8 @@ series:
   # The hourly flag is not a performance hint, it is a correctness
   # requirement. Raw readings are retained for 32 days, so a 1-year window
   # against the raw table silently returns the last 32 days under a "1 year"
-  # label — a chart that is wrong without being empty.
+  # label — a chart that is wrong without being empty. 30d is hourly too: its raw
+  # aggregation exceeded the series statement_timeout on a cold request.
   #
   # max_age is per period because each value needs its own justification: a
   # 24h chart of raw readings is a live view whose right edge moves every few
@@ -296,7 +297,7 @@ series:
       max_age: "600s"
     - name: "30d"
       window: "720h"
-      hourly: false
+      hourly: true
       bucket: "6h"
       max_age: "1800s"
     - name: "1y"

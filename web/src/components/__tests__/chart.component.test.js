@@ -52,6 +52,19 @@ function render(extra) {
 }
 
 describe('Chart.svelte', () => {
+  // In the dock the frame is clipped to the plot area, so a message rendered
+  // after it falls outside the clip and the reader sees an empty box.
+  it.each([
+    ['unavailable', () => vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('boom')), props.unavailable],
+    ['empty', () => vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ times: [], values: [] }))), props.empty],
+  ])('draws the %s message inside the fill frame', async (_, arrange, text) => {
+    arrange()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const target = render({ url: '/api/v1/area/inframe/series', fill: true })
+    await vi.waitFor(() => expect(target.textContent).toContain(text))
+    expect(target.querySelector('.chart-frame .chart-message')?.textContent).toBe(text)
+  })
+
   it('says the data is unavailable when the fetch fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('boom'))
     // Ported from the old island suite: the console.error is kept
