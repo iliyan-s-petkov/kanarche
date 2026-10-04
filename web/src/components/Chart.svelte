@@ -5,6 +5,7 @@
   import { tickSpace, tickValues } from '../lib/timeaxis.js'
   import { getJSON } from '../lib/api.js'
   import { legibleStroke } from '../lib/axiscolour.js'
+  import { chartTooltip } from '../lib/charttooltip.js'
 
   // Two ways in, one way through. `url`/`lineColour`/`valueLabel` describe a
   // single line — the area chart, which has only ever had one — and `sources`
@@ -23,17 +24,19 @@
   // "v". It is what lets one banded response draw three lines, and dash is how
   // those three are told apart: the sensor is solid, its surroundings dashed.
   //
+  // metricLabel names the single line in the hover card; valueLabel is the unit there, so it is the fallback.
+  //
   // fill sizes the plot to whatever height its container gives the frame, with no drag handle:
   // the sensor panel over the map hands the chart the room left after its header and gauges.
   //
   // resizable gives the plot a drag handle: analysing a day of four metrics
   // wants more than the 240px a summary chart needs.
   let {
-    url, lineColour, valueLabel, valueUnit = '', sources = null,
+    url, lineColour, valueLabel, valueUnit = '', metricLabel = '', sources = null,
     title, timeLabel, empty, unavailable, resizable = false, fill = false,
   } = $props()
 
-  const defs = $derived(sources ?? [{ url, label: valueLabel, colour: lineColour, scale: 'y', unit: valueUnit }])
+  const defs = $derived(sources ?? [{ url, label: valueLabel, name: metricLabel || valueLabel, colour: lineColour, scale: 'y', unit: valueUnit }])
 
   // Three states, one variable: the reader must always be told which one they
   // are in. 'loading' renders nothing rather than a spinner — the panel around
@@ -43,19 +46,20 @@
   let frame
 
   // The plot's own height. A resized frame carries an inline height the reader
-  // dragged, and uPlot's legend sits inside it, so its strip comes off the plot
-  // rather than overflowing the box.
+  // dragged, and the series key (several lines only) sits inside it, so its strip
+  // comes off the plot rather than overflowing the box.
   const BASE_HEIGHT = 240
   const LEGEND_STRIP = 34
   // Measured once the legend exists, because 34 was only its height in one
   // font at one language: wherever it ran taller the plot overflowed the
   // clipped frame and the x-axis title was cut off against the strip below.
   function legendStrip() {
-    return host?.querySelector('.u-legend')?.offsetHeight || LEGEND_STRIP
+    const key = host?.querySelector('.u-legend')
+    return key ? key.offsetHeight || LEGEND_STRIP : 0
   }
   function plotSize() {
     const measured = (resizable || fill) && frame?.clientHeight
-    // A fill chart's legend floats over the plot (style below), so it takes no strip.
+    // A fill chart's key floats over the plot (style below), so it takes no strip.
     const dragged = measured ? frame.clientHeight - (fill ? 0 : legendStrip()) : BASE_HEIGHT
     return { width: host.clientWidth || 600, height: Math.max(fill ? 80 : 160, dragged) }
   }
@@ -155,8 +159,7 @@
         // default, so milliseconds would plot every point in 1970 silently.
         //
         // The x series carries a label because uPlot supplies its own English
-        // "Time" when it has none, and that label is visible in the hover
-        // readout below — the one English word on a Bulgarian page.
+        // "Time" when it has none, and an English word must not reach a Bulgarian page.
         series: [
           { label: timeLabel },
           // spanGaps false, the default, spelled out: mergeSeries writes null
@@ -178,7 +181,7 @@
           {
             values: tickValues(data[0], document.documentElement.lang || undefined),
             space: tickSpace(data[0], document.documentElement.lang || undefined),
-            // A fill chart (the map's panel) gives the axis title's row to the plot; the hover readout still names it.
+            // A fill chart (the map's panel) gives the axis title's row to the plot.
             label: fill ? undefined : timeLabel || undefined,
             ...(fill ? { size: 32 } : {}),
             stroke: axisStroke,
@@ -203,17 +206,13 @@
           }),
         ],
         scales: { x: { time: true } },
-        // uPlot's legend IS the hover readout, and with no cursor on the plot
-        // it renders the series labels beside em-dash placeholders. Switching
-        // it off would take the readout away with it, so it is hidden by CSS
-        // (see below) and revealed only while the cursor is over a point.
-        //
-        // idx != null, not a truthy test: index 0 is the leftmost point of
-        // every chart, and `if (idx)` would leave it the one value nobody can
-        // read.
-        hooks: {
-          setCursor: [(u) => host.classList.toggle('chart-live', u.cursor.idx != null)],
-        },
+        // The hover reading is the tooltip card; the legend is only a series key, and only
+        // when there is more than one line to tell apart.
+        legend: { show: lines.length > 1, live: false },
+        plugins: [chartTooltip({
+          lang: document.documentElement.lang || undefined,
+          lines: lines.map((s) => ({ name: s.name ?? s.label, colour: s.colour, unit: s.unit })),
+        })],
       }, data, host)
       // E2E-only handle for the x labels' positions, which uPlot draws on canvas; stripped from a plain build.
       if (import.meta.env.VITE_E2E_MAP_HANDLE) chart.root.__uplot = chart
@@ -265,17 +264,8 @@
 {#if status === 'empty'}<p class="chart-message">{empty}</p>{/if}
 
 <style>
-  /* Fully :global on both sides, deliberately. uPlot builds .u-legend itself at
-     runtime so compile-time scoping never reaches it — and `chart-live` is added
-     by the setCursor hook, never by this template, so Svelte prunes any selector
-     mentioning it as unused and the rule silently never ships. (It did: the
-     build warned "Unused CSS selector".)
-
-     visibility, not display: the legend keeps its box either way, so revealing
-     it does not shift the page under the pointer that is reading it. */
-  :global(.chart-host .u-legend) { visibility: hidden; }
-  :global(.chart-host.chart-live .u-legend) { visibility: visible; }
-  /* The map's panel has no height for a legend strip; its hover readout sits over the plot's top corner. */
+  /* The legend is built by uPlot at runtime, so its selectors are :global. It is a static key: swatch and name, no values. */
+  /* The map's panel has no height for a key strip; the key floats over the plot's top corner. */
   :global(.chart-frame--fill .chart-host) { position: relative; }
   :global(.chart-frame--fill .u-legend) { position: absolute; inset-block-start: 0; inset-inline-end: 0; margin: 0; background: var(--bg); border-radius: var(--radius); }
 </style>
