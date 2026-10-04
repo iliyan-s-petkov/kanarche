@@ -56,6 +56,8 @@
   "about.start.embed.alt": "The map embedded on another page, centred on Plovdiv Province.",
   "about.start.embed.docs": "Embedding guide",
   "about.start.embed.code_label": "Embed code",
+  "about.start.embed.copy": "Copy",
+  "about.start.embed.copied": "Copied",
   "about.privacy.intro": "We keep no IP address or identifier: none in logs, none in the database. Your IP is used for a moment in memory to limit abusive traffic, then forgotten. Cloudflare, our network provider, sees it too and gives us only daily totals.",
   "about.privacy.clear_note": "Removes only the keys listed above.",
   "about.privacy.storage_key": "Stored key",
