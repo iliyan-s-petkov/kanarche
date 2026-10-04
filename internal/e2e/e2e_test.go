@@ -241,6 +241,11 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	station := seedStation(t, st, lon, lat, "BG0050A", "София Дружба")
 	seedReading(t, st, station, "P1", 18, "ok", now)
 	seedReading(t, st, station, "O3", 40, "ok", now)
+
+	// The 30d and 1y periods read reading_hourly, which only the rollup fills.
+	if _, err := st.RollupAll(ctx); err != nil {
+		t.Fatalf("RollupAll: %v", err)
+	}
 }
 
 // seedSensor upserts one sensor at (lon, lat). Every value travels as a bound
