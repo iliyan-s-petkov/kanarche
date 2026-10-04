@@ -16,6 +16,7 @@ type raw struct {
 	Cache      *rawCache      `yaml:"cache"`
 	Upstream   *rawUpstream   `yaml:"upstream"`
 	Wind       *rawWind       `yaml:"wind"`
+	Pollen     *rawPollen     `yaml:"pollen"`
 	EEA        *rawEEA        `yaml:"eea"`
 	Cloudflare *rawCloudflare `yaml:"cloudflare"`
 	Sea        *rawSea        `yaml:"sea"`
@@ -138,6 +139,34 @@ type rawWind struct {
 	PointsPerReq    *int      `yaml:"points_per_request"`
 	MaxPayloadBytes *int64    `yaml:"max_payload_bytes"`
 	Retention       *Duration `yaml:"retention"`
+}
+
+// rawPollen configures the forecast pollen table. Shaped like rawWind; see
+// airbg.yaml pollen for what each key means.
+type rawPollen struct {
+	Enabled         *bool              `yaml:"enabled"`
+	URL             *string            `yaml:"url"`
+	Domain          *string            `yaml:"domain"`
+	Country         *string            `yaml:"country"`
+	LatticeDeg      *float64           `yaml:"lattice_deg"`
+	LatticeMarginKm *float64           `yaml:"lattice_margin_km"`
+	CellReachKm     *float64           `yaml:"cell_reach_km"`
+	RunAtUTC        *[]string          `yaml:"run_at_utc"`
+	StaleAfter      *Duration          `yaml:"stale_after"`
+	PastDays        *int               `yaml:"past_days"`
+	ForecastDays    *int               `yaml:"forecast_days"`
+	DaysShown       *int               `yaml:"days_shown"`
+	MinHours        *int               `yaml:"min_hours"`
+	RequestTimeout  *Duration          `yaml:"request_timeout"`
+	PointsPerReq    *int               `yaml:"points_per_request"`
+	MaxPayloadBytes *int64             `yaml:"max_payload_bytes"`
+	Species         []rawPollenSpecies `yaml:"species"`
+}
+
+// rawPollenSpecies is a list entry so the file order is the display order.
+type rawPollenSpecies struct {
+	Name   *string    `yaml:"name"`
+	Levels *[]float64 `yaml:"levels"`
 }
 
 // rawEEA configures the official-station feed. Shaped like rawWind: enabled is

@@ -210,6 +210,47 @@ wind:
   max_payload_bytes: 16777216
   retention: "48h"
 
+# Forecast pollen, CAMS Europe via the Open-Meteo air-quality API (free tier:
+# non-commercial use, attribution required). Model output, not counts.
+pollen:
+  enabled: true
+  url: "https://air-quality-api.open-meteo.com/v1/air-quality"
+  domain: "cams_europe"
+  # area.country_code whose extent the lattice covers.
+  country: "BG"
+  # Multiple of the 0.1 degree model grid. 0.2 is about 300 points over BG.
+  lattice_deg: 0.2
+  lattice_margin_km: 10
+  # An area with no lattice point inside takes the nearest within this.
+  cell_reach_km: 25
+  # CAMS runs at 00 UTC and is published by about 08:30 UTC.
+  run_at_utc: ["09:15", "21:15"]
+  # On start, fetch only if the newest stored run is older than this.
+  stale_after: "13h"
+  past_days: 1
+  forecast_days: 4
+  days_shown: 3
+  # A local day with fewer hourly values is not shown.
+  min_hours: 12
+  request_timeout: "60s"
+  points_per_request: 100
+  max_payload_bytes: 33554432
+  # levels: lower bounds of low, moderate, high, very high in grains/m3.
+  # List order is the table's row order.
+  species:
+    - name: "ragweed"
+      levels: [0.2, 10, 30, 100]
+    - name: "mugwort"
+      levels: [0.2, 10, 50, 100]
+    - name: "grass"
+      levels: [0.2, 10, 30, 100]
+    - name: "birch"
+      levels: [0.2, 10, 100, 500]
+    - name: "alder"
+      levels: [0.2, 10, 100, 500]
+    - name: "olive"
+      levels: [0.2, 10, 100, 500]
+
 # The official reference stations. See internal/upstream/eea/README.md.
 eea:
   enabled: true

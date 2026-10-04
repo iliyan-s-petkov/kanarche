@@ -719,3 +719,64 @@ func TestSeaClassColoursMustBeFiveColours(t *testing.T) {
 		})
 	}
 }
+
+func TestPollenValidationRejectsBadSettings(t *testing.T) {
+	for name, mutate := range map[string]func(*Config){
+		"http url":                 func(c *Config) { c.Pollen.URL = "http://example.invalid/v1/air-quality" },
+		"url with a query":         func(c *Config) { c.Pollen.URL = "https://example.invalid/v1/air-quality?domains=x" },
+		"empty host":               func(c *Config) { c.Pollen.URL = "https:///v1/air-quality" },
+		"empty domain":             func(c *Config) { c.Pollen.Domain = "" },
+		"empty country":            func(c *Config) { c.Pollen.Country = "" },
+		"lattice off grid":         func(c *Config) { c.Pollen.LatticeDeg = 0.25 },
+		"zero lattice":             func(c *Config) { c.Pollen.LatticeDeg = 0 },
+		"negative margin":          func(c *Config) { c.Pollen.LatticeMarginKm = -1 },
+		"zero reach":               func(c *Config) { c.Pollen.CellReachKm = 0 },
+		"no run times":             func(c *Config) { c.Pollen.RunAtUTC = nil },
+		"bad run time":             func(c *Config) { c.Pollen.RunAtUTC = []string{"9:15pm"} },
+		"run time past 23:59":      func(c *Config) { c.Pollen.RunAtUTC = []string{"24:00"} },
+		"zero stale_after":         func(c *Config) { c.Pollen.StaleAfter = 0 },
+		"negative past_days":       func(c *Config) { c.Pollen.PastDays = -1 },
+		"zero forecast_days":       func(c *Config) { c.Pollen.ForecastDays = 0 },
+		"days_shown over forecast": func(c *Config) { c.Pollen.DaysShown = c.Pollen.ForecastDays + 1 },
+		"zero days_shown":          func(c *Config) { c.Pollen.DaysShown = 0 },
+		"min_hours over a day":     func(c *Config) { c.Pollen.MinHours = 25 },
+		"zero min_hours":           func(c *Config) { c.Pollen.MinHours = 0 },
+		"zero request timeout":     func(c *Config) { c.Pollen.RequestTimeout = 0 },
+		"zero points per req":      func(c *Config) { c.Pollen.PointsPerReq = 0 },
+		"zero payload bound":       func(c *Config) { c.Pollen.MaxPayloadBytes = 0 },
+		"no species":               func(c *Config) { c.Pollen.Species = nil },
+		"unknown species":          func(c *Config) { c.Pollen.Species[0].Name = "oak" },
+		"duplicate species":        func(c *Config) { c.Pollen.Species[1].Name = c.Pollen.Species[0].Name },
+		"three levels":             func(c *Config) { c.Pollen.Species[0].Levels = []float64{1, 2, 3} },
+		"levels not ascending":     func(c *Config) { c.Pollen.Species[0].Levels = []float64{1, 10, 10, 50} },
+		"zero first level":         func(c *Config) { c.Pollen.Species[0].Levels = []float64{0, 10, 30, 100} },
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := validConfig(t)
+			mutate(&c)
+			if err := c.Validate(); err == nil {
+				t.Errorf("Validate accepted %s", name)
+			} else if !strings.Contains(err.Error(), "pollen.") {
+				t.Errorf("Validate error %v does not name the pollen block", err)
+			}
+		})
+	}
+}
+
+func TestPollenIsValidatedWhenDisabled(t *testing.T) {
+	c := validConfig(t)
+	c.Pollen.Enabled = false
+	c.Pollen.URL = "not a url at all"
+	if err := c.Validate(); err == nil {
+		t.Error("Validate skipped the pollen block because it was disabled")
+	}
+}
+
+func TestPollenRunTimesAreSorted(t *testing.T) {
+	p := Pollen{RunAtUTC: []string{"21:15", "09:05"}}
+	got := p.RunTimes()
+	want := []time.Duration{9*time.Hour + 5*time.Minute, 21*time.Hour + 15*time.Minute}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("RunTimes = %v, want %v", got, want)
+	}
+}
