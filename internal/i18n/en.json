@@ -162,6 +162,8 @@
   "find.address_none": "No address found. OpenStreetMap house-number coverage in Bulgaria is patchy; try the street name alone.",
   "find.address_pin": "Searched address",
   "find.address_row": "Search address:",
+  "find.group_district": "City districts",
+  "find.group_place": "Cities and provinces",
   "find.hint": "Use the arrow keys to choose an area and Enter to open its page.",
   "find.hint_map": "Use the arrow keys to choose an area and Enter to centre the map on it. The last row searches for an address.",
   "find.label": "Find an area",

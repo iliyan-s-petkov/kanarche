@@ -33,6 +33,12 @@ export function areaOptions(entries, lang = 'bg') {
     .filter((o) => o.name)
 }
 
+// areaGroup says which labelled group a match sits in: Sofia-style districts
+// ('neighbourhood') or everything else. Entries with no kind are places.
+export function areaGroup(m) {
+  return m.area?.kind === 'neighbourhood' ? 'district' : 'place'
+}
+
 // matchAreas returns the areas whose name contains the query, each carrying
 // where the match starts and how long it is, so the option can mark the matched
 // run without the renderer searching the string a second time.
@@ -53,7 +59,8 @@ export function matchAreas(areas, query, lang = 'bg') {
     if (at !== -1) out.push({ ...area, at, len: q.length })
   }
   const collator = new Intl.Collator(lang)
-  return out.sort((a, b) => collator.compare(a.name, b.name))
+  // Districts first, then the rest; A-Z inside each.
+  return out.sort((a, b) => (areaGroup(a) === areaGroup(b) ? 0 : areaGroup(a) === 'district' ? -1 : 1) || collator.compare(a.name, b.name))
 }
 
 // exactMatch is what Enter is allowed to act on. A half-typed query must never

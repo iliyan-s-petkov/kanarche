@@ -45,6 +45,7 @@ export function mount(el, doc = document) {
       ...props,
       // A getter, not a snapshot: the map's list lands after this mounts.
       get areas() { return areaOptions(getMapAreas(), lang) },
+      groups: d.tGroupDistrict && d.tGroupPlace ? { district: d.tGroupDistrict, place: d.tGroupPlace } : null,
       onpick: (m) => selectMapArea(m.area),
       // Only the map tab: the list tab has no map to show an address on.
       // Absent strings (an old template) leave the feature off.
