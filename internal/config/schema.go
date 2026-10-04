@@ -19,7 +19,7 @@ type raw struct {
 	EEA        *rawEEA        `yaml:"eea"`
 	Cloudflare *rawCloudflare `yaml:"cloudflare"`
 	Sea        *rawSea        `yaml:"sea"`
-	Geocoder  *rawGeocoder   `yaml:"geocoder"`
+	Geocoder   *rawGeocoder   `yaml:"geocoder"`
 	Store      *rawStore      `yaml:"store"`
 	Series     *rawSeries     `yaml:"series"`
 	Quality    *rawQuality    `yaml:"quality"`
@@ -286,6 +286,7 @@ type rawFrontend struct {
 	ChartLineColour    *string  `yaml:"chart_line_colour"`
 	ChartCompareColour *string  `yaml:"chart_compare_colour"`
 	ChartSeriesColours *string  `yaml:"chart_series_colours"`
+	SeaClassColours    *string  `yaml:"sea_class_colours"`
 	ZoomCity           *int     `yaml:"zoom_city"`
 	ZoomSensor         *int     `yaml:"zoom_sensor"`
 	// The national fallback view. One home for it, because it is rendered into

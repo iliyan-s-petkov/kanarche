@@ -302,8 +302,10 @@ type Frontend struct {
 	// The third line onwards, comma-separated: the panel draws as many metrics
 	// as the reader ticks, and the two above only name two of them.
 	ChartSeriesColours string
-	ZoomCity           int
-	ZoomSensor         int
+	// Bathing-water markers: excellent, good, sufficient, poor, not classified.
+	SeaClassColours string
+	ZoomCity        int
+	ZoomSensor      int
 	// The national fallback view: roughly Bulgaria's centre, at a zoom that
 	// fits the country. Used for the home page's map and for a visitor whose
 	// location cannot be determined (internal/api/locate.go).
@@ -587,6 +589,7 @@ func resolve(r *raw) Config {
 			ChartLineColour:    *r.Frontend.ChartLineColour,
 			ChartCompareColour: *r.Frontend.ChartCompareColour,
 			ChartSeriesColours: *r.Frontend.ChartSeriesColours,
+			SeaClassColours:    *r.Frontend.SeaClassColours,
 			ZoomCity:           *r.Frontend.ZoomCity,
 			ZoomSensor:         *r.Frontend.ZoomSensor,
 			DefaultZoom:        *r.Frontend.DefaultZoom,

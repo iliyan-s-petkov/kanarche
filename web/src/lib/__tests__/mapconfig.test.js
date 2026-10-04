@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { readConfig, layerLabelKey } from '../mapconfig.js'
 import { LAYER_ORDER } from '../maplayers.js'
+import { readSeaTexts } from '../sea.js'
 
 // readConfig reads the server-rendered data-* attributes. Passed a plain
 // {dataset} object rather than a real DOM element: readConfig only ever
@@ -237,4 +238,37 @@ describe('readConfig', () => {
     expect(cfg.zoomCity).toBe(9)
     expect(cfg.zoomSensor).toBe(11)
   })
+})
+
+describe('readConfig sea layer', () => {
+  it('reads the class colours positionally, the credit link and the strings', () => {
+    const cfg = readConfig({ dataset: {
+      seaColours: '#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c,#9ca3af',
+      seaCreditUrl: 'https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water',
+      tSeaToggle: 'Bathing water',
+    } })
+    expect(cfg.seaColours.excellent).toBe('#0b4f9c')
+    expect(cfg.seaColours.not_classified).toBe('#9ca3af')
+    expect(cfg.seaCreditURL).toBe('https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water')
+    expect(cfg.t.sea.toggle).toBe('Bathing water')
+  })
+})
+
+// Every data-t-sea-* attribute the map templates render is one readSeaTexts reads.
+describe('sea attributes in the map templates', () => {
+  for (const name of ['index', 'area', 'embed']) {
+    it(`${name}.gohtml`, () => {
+      const html = readFileSync(join('..', 'internal', 'web', 'templates', `${name}.gohtml`), 'utf8')
+      const attrs = [...html.matchAll(/data-t-sea-([a-z-]+)=/g)].map((m) => m[1])
+      expect(attrs.length).toBeGreaterThan(20)
+      const ds = Object.fromEntries(attrs.map((a) => [
+        't' + ('sea-' + a).split('-').map((w) => w[0].toUpperCase() + w.slice(1)).join(''), 'x',
+      ]))
+      const t = readSeaTexts(ds)
+      const flat = [...Object.values(t).filter((v) => typeof v === 'string'), ...Object.values(t.classes), ...Object.values(t.zones)]
+      expect(flat.every((v) => v === 'x')).toBe(true)
+      expect(html).toContain('data-sea-colours=')
+      expect(html).toContain('data-sea-credit-url=')
+    })
+  }
 })

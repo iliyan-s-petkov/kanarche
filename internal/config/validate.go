@@ -595,6 +595,16 @@ func (c Config) validateFrontend(p *problems) {
 			p.addf("frontend.chart_series_colours[%d] = %q, must be a six-digit hex colour such as #9ca3af", i, colour)
 		}
 	}
+	// Positional, one per bathing class; the frontend reads them by index.
+	seaColours := strings.Split(c.Frontend.SeaClassColours, ",")
+	if len(seaColours) != 5 {
+		p.addf("frontend.sea_class_colours has %d entries, want 5 (excellent, good, sufficient, poor, not classified)", len(seaColours))
+	}
+	for i, colour := range seaColours {
+		if !colourPattern.MatchString(strings.TrimSpace(colour)) {
+			p.addf("frontend.sea_class_colours[%d] = %q, must be a six-digit hex colour such as #9ca3af", i, colour)
+		}
+	}
 	for path, zoom := range map[string]int{
 		"frontend.zoom_city":    c.Frontend.ZoomCity,
 		"frontend.zoom_sensor":  c.Frontend.ZoomSensor,

@@ -703,3 +703,19 @@ func TestSeaUserAgentIsDerived(t *testing.T) {
 		t.Errorf("Sea.UserAgent = %q, want the collector user agent %q", c.Sea.UserAgent, c.EEA.UserAgent)
 	}
 }
+
+func TestSeaClassColoursMustBeFiveColours(t *testing.T) {
+	for name, v := range map[string]string{
+		"four entries": "#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c",
+		"six entries":  "#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c,#9ca3af,#000000",
+		"bad colour":   "#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c,grey",
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := validConfig(t)
+			c.Frontend.SeaClassColours = v
+			if err := c.Validate(); err == nil {
+				t.Errorf("Validate accepted sea_class_colours %q", v)
+			}
+		})
+	}
+}
