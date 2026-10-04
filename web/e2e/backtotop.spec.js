@@ -78,6 +78,50 @@ for (const vp of VIEWPORTS) {
   })
 }
 
+// The unpadded page: on desktop the hero map cannot leave the viewport, the button still has to show.
+test('1440x900: the home page, unpadded, shows the button at the bottom and clears the dock', async ({ browser }) => {
+  const ctx = await browser.newContext(VIEWPORTS[0].opts)
+  const page = await ctx.newPage()
+  await page.goto('/')
+  await mapSettled(page)
+  await expect(page.locator(BTN)).toBeHidden()
+  await jump(page, await bottom(page))
+  await expect(page.locator(BTN)).toBeVisible()
+  if (process.env.TOTOP_SHOT) await page.screenshot({ path: process.env.TOTOP_SHOT })
+  await page.locator(BTN).click()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  await expect(page.locator(BTN)).toBeHidden()
+  await ctx.close()
+})
+
+const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
+
+for (const [w, h] of [[1440, 900], [1024, 768]]) {
+  test(`${w}x${h}: with a sensor open the button clears the dock and the bottom-right map controls`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h } })
+    const page = await ctx.newPage()
+    await page.goto('/en/#sensor=101')
+    await mapSettled(page)
+    await expect(page.locator('.map-dock')).toBeVisible()
+    const max = await bottom(page)
+    // Every step from the first scroll to the bottom, so the dock is checked while it rides up the viewport.
+    for (let y = 0; y <= max; y += 60) {
+      await jump(page, y)
+      if (!(await page.locator(BTN).isVisible())) continue
+      const b = await page.locator(BTN).boundingBox()
+      for (const sel of ['.map-dock', '.maplibregl-ctrl-bottom-right']) {
+        const el = page.locator(sel).first()
+        if (await el.count() === 0 || !(await el.isVisible())) continue
+        const r = await el.boundingBox()
+        expect(overlaps(b, r), `${sel} at scrollY ${y}`).toBe(false)
+      }
+    }
+    await jump(page, max)
+    await expect(page.locator(BTN)).toBeVisible()
+    await ctx.close()
+  })
+}
+
 // Client coordinates of a rendered sensor marker (same lookup as fullscreen-sheet.spec.js).
 const markerPoint = (page) => page.evaluate(() => {
   const map = document.querySelector('[data-island="map"]').__map
