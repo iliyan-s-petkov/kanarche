@@ -24,3 +24,19 @@ func (d Deps) handleAreaPollen(w http.ResponseWriter, r *http.Request) {
 	}
 	serveBody(w, r, body, cachePublic, int(d.Config.Cache.DataMaxAge.Seconds()))
 }
+
+// handlePollenMap serves today's worst level per province for the map layer.
+// Publicly cacheable for the same reason as the per-area table.
+func (d Deps) handlePollenMap(w http.ResponseWriter, r *http.Request) {
+	snap := d.Snapshots.Load()
+	if snap == nil {
+		writeUnavailable(w)
+		return
+	}
+	body, ok := snap.PollenMapBody()
+	if !ok {
+		writeUnavailable(w)
+		return
+	}
+	serveBody(w, r, body, cachePublic, int(d.Config.Cache.DataMaxAge.Seconds()))
+}

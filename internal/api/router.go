@@ -156,6 +156,7 @@ func (d Deps) handlers() map[string]http.HandlerFunc {
 		"GET /api/v1/area/{slug}/sensors": d.handleAreaSensors,
 		"GET /api/v1/area/{slug}/series":  d.handleAreaSeries,
 		"GET /api/v1/area/{slug}/pollen":  d.handleAreaPollen,
+		"GET /api/v1/pollen":              d.handlePollenMap,
 		"GET /api/v1/sensor/{id}/series":  d.handleSensorSeries,
 		"GET /api/v1/sensor/{id}/locate":  d.handleSensorLocate,
 		"GET /api/v1/locate":              d.handleLocate,

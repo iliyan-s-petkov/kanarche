@@ -170,3 +170,44 @@ func TestNewHolderTakesPollenAsAnOption(t *testing.T) {
 		t.Errorf("WithPollen not applied: %+v", h.pollen)
 	}
 }
+
+// The map layer carries one level per province: today's worst across species,
+// country-tier areas only, and nothing for an area with no summary.
+func TestPollenMapPayloadKeepsTodaysWorstPerProvince(t *testing.T) {
+	days := []string{"2026-10-04", "2026-10-05", "2026-10-06"}
+	views := pollenViews([]store.AreaPollenDay{
+		{Slug: "sofia", Species: "ragweed", Day: "2026-10-04", Mean: 40},
+		{Slug: "sofia", Species: "grass", Day: "2026-10-04", Mean: 5},
+		{Slug: "burgas", Species: "grass", Day: "2026-10-04", Mean: 0},
+		{Slug: "lozenets", Species: "ragweed", Day: "2026-10-04", Mean: 900},
+		{Slug: "varna", Species: "ragweed", Day: "2026-10-05", Mean: 900},
+	}, pollenTestConfig(), days)
+	known := map[string]AreaMeta{
+		"sofia": {Kind: "oblast"}, "burgas": {Kind: "oblast"}, "varna": {Kind: "oblast"},
+		"lozenets": {Kind: "neighbourhood"},
+	}
+	at := time.Date(2026, 10, 4, 9, 20, 0, 0, time.UTC)
+	p := pollenMapPayloadFrom(at, at, days[0], views, known)
+	if p.Date != "2026-10-04" || !p.Forecast || len(p.Levels) != 5 || p.Attribution.URL == "" {
+		t.Errorf("header = %+v", p)
+	}
+	if len(p.Areas) != 2 {
+		t.Fatalf("areas = %+v, want burgas and sofia only", p.Areas)
+	}
+	if a := p.Areas[0]; a.Slug != "burgas" || a.Level != "none" || a.Species != nil {
+		t.Errorf("areas[0] = %+v, want burgas none with no species", a)
+	}
+	if a := p.Areas[1]; a.Slug != "sofia" || a.Level != "high" || a.Species == nil || *a.Species != "ragweed" {
+		t.Errorf("areas[1] = %+v, want sofia high from ragweed", a)
+	}
+	b, err := json.Marshal(pollenMapPayloadFrom(at, at, days[0], nil, known))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var empty struct {
+		Areas []pollenMapArea `json:"areas"`
+	}
+	if err := json.Unmarshal(b, &empty); err != nil || empty.Areas == nil {
+		t.Errorf("no views: areas = %s, want []", b)
+	}
+}

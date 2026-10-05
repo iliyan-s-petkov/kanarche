@@ -78,3 +78,33 @@ func TestAttributionsCreditCAMSForPollen(t *testing.T) {
 	}
 	t.Error("no open-meteo attribution")
 }
+
+func TestPollenMapServesTodaysLevelPerProvince(t *testing.T) {
+	rec := serve(t, deps(t, withPollen(t, fixture(t))), get("/api/v1/pollen", "203.0.113.9"))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body.String())
+	}
+	var got struct {
+		Date  string `json:"date"`
+		Areas []struct {
+			Slug  string `json:"slug"`
+			Level string `json:"level"`
+		} `json:"areas"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("body: %v", err)
+	}
+	if got.Date != "2026-10-04" || len(got.Areas) != 1 || got.Areas[0].Slug != "sofia" || got.Areas[0].Level != "moderate" {
+		t.Errorf("body = %+v", got)
+	}
+	if cc := rec.Header().Get("Cache-Control"); !strings.HasPrefix(cc, "public") {
+		t.Errorf("Cache-Control = %q, want public", cc)
+	}
+}
+
+func TestPollenMapWithoutAForecastIs503(t *testing.T) {
+	rec := serve(t, deps(t, fixture(t)), get("/api/v1/pollen", "203.0.113.9"))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want 503", rec.Code)
+	}
+}
