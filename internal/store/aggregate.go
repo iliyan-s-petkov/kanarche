@@ -535,7 +535,9 @@ SELECT b, min(v), percentile_cont(0.5) WITHIN GROUP (ORDER BY v), max(v)
 // areaHourlySeriesSQL is the same over the rollup. reading_hourly carries no
 // quality column — the rollup is built from readings that already passed the
 // filter, so re-filtering here would be impossible AND unnecessary.
-var areaHourlyPerSensorSQL = `(SELECT ` + bucketed("h.bucket", 4) + ` AS b, h.sensor_id, avg(h.avg_value) AS v
+// Per-sensor step is weighted by sample_count; the median across sensors stays
+// unweighted, one vote per sensor.
+var areaHourlyPerSensorSQL = `(SELECT ` + bucketed("h.bucket", 4) + ` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -592,7 +594,7 @@ SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
 // filter.
 var allAreaHourlySeriesSQL = `
 SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
-  FROM (SELECT a.slug, ` + bucketed("h.bucket", 3) + ` AS b, h.sensor_id, avg(h.avg_value) AS v
+  FROM (SELECT a.slug, ` + bucketed("h.bucket", 3) + ` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug

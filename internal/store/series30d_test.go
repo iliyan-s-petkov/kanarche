@@ -98,3 +98,45 @@ func TestSensorSeriesRebucketsHourlyWeightedBySampleCount(t *testing.T) {
 		t.Errorf("value = %v, want 28 (20 is the unweighted mean of means)", pts[0].Value)
 	}
 }
+
+// An area's per-sensor value over a re-bucketed hour range must weight by
+// sample_count, as the sensor series does. 1 sample at 10 and 9 at 30 are 28.
+// One sensor, so the cross-sensor median does not mask the per-sensor step.
+func TestAreaHourlySeriesWeightsSensorHoursBySampleCount(t *testing.T) {
+	ctx, pool := migrated(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+
+	seedArea(t, ctx, pool, "weighted", "oblast", 23.0, 42.0)
+	seedSensor(t, ctx, pool, 33, 23.0, 42.0)
+	assignAreas(t, ctx, pool)
+	day := time.Now().UTC().Add(-10 * 24 * time.Hour).Truncate(24 * time.Hour)
+	seedHourly(t, ctx, pool, 33, "P2", day.Add(time.Hour), 10, 1)
+	seedHourly(t, ctx, pool, 33, "P2", day.Add(2*time.Hour), 30, 9)
+
+	check := func(name string, got float64) {
+		t.Helper()
+		if math.Abs(got-28) > 1e-9 {
+			t.Errorf("%s = %v, want 28 (20 is the unweighted mean of means)", name, got)
+		}
+	}
+
+	pts, err := s.AreaSeries(ctx, "weighted", "P2", day, nil, true, 6*time.Hour)
+	if err != nil || len(pts) != 1 {
+		t.Fatalf("AreaSeries: %v, %d points", err, len(pts))
+	}
+	check("AreaSeries", pts[0].Value)
+
+	band, err := s.AreaSeriesBand(ctx, "weighted", "P2", day, nil, true, 6*time.Hour)
+	if err != nil || len(band) != 1 {
+		t.Fatalf("AreaSeriesBand: %v, %d rows", err, len(band))
+	}
+	check("band median", band[0].Median)
+	check("band min", band[0].Low)
+	check("band max", band[0].High)
+
+	all, err := s.AllAreaSeries(ctx, "P2", day, true, 6*time.Hour)
+	if err != nil || len(all["weighted"]) != 1 {
+		t.Fatalf("AllAreaSeries: %v, %v", err, all)
+	}
+	check("AllAreaSeries", all["weighted"][0].Value)
+}
