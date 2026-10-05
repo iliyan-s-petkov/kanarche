@@ -267,6 +267,16 @@ type Store struct {
 	// about an hour after it closes, so an official reading is already older
 	// than FreshnessWindow when it arrives and the layer never shows at all.
 	OfficialFreshnessWindow time.Duration
+	// Faulty is read from the quality block; the store applies it.
+	Faulty Faulty
+}
+
+// Faulty: a sensor is faulty for a metric when at least Share of its readings
+// over Window were unusable and it had at least MinReadings of them.
+type Faulty struct {
+	Window      time.Duration
+	Share       float64
+	MinReadings int
 }
 
 type Series struct {
@@ -589,6 +599,11 @@ func resolve(r *raw) Config {
 			CoverageThreshold:       *r.Store.CoverageThreshold,
 			FreshnessWindow:         r.Store.FreshnessWindow.Std(),
 			OfficialFreshnessWindow: r.Store.OfficialFreshnessWindow.Std(),
+			Faulty: Faulty{
+				Window:      r.Quality.FaultyWindow.Std(),
+				Share:       *r.Quality.FaultyShare,
+				MinReadings: *r.Quality.FaultyMinReadings,
+			},
 		},
 		Series: Series{
 			DefaultMetric: *r.Series.DefaultMetric,

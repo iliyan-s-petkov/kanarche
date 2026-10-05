@@ -676,6 +676,11 @@ func (c Config) validateQuality(p *problems) {
 			p.addf("quality.clamp_sentinels.%s = %v equals quality.ranges.%s.max; the sentinel must sit outside the range or strictly inside it", metric, s, metric)
 		}
 	}
+	p.positive("quality.faulty_window", c.Store.Faulty.Window)
+	if sh := c.Store.Faulty.Share; sh <= 0 || sh > 1 {
+		p.addf("quality.faulty_share = %v, must be in (0, 1]", sh)
+	}
+	p.positiveInt("quality.faulty_min_readings", c.Store.Faulty.MinReadings)
 	f := c.Backfill.HighRejectionFraction
 	if f <= 0 || f > 1 {
 		p.addf("backfill.high_rejection_fraction = %v, must be in (0, 1]", f)

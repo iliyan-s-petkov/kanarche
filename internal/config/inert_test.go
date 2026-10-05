@@ -82,6 +82,7 @@ func TestShippedValuesMatchPhase2Behaviour(t *testing.T) {
 			{"upstream.poll_interval", cfg.Upstream.PollInterval, 5 * time.Minute},
 			{"upstream.min_poll_interval", cfg.Upstream.MinPollInterval, 30 * time.Second},
 			{"store.freshness_window", cfg.Store.FreshnessWindow, 2 * time.Hour},
+			{"quality.faulty_window", cfg.Store.Faulty.Window, 24 * time.Hour},
 			{"series.default_window", cfg.Series.DefaultWindow, 24 * time.Hour},
 		} {
 			if tt.got != tt.want {
@@ -119,6 +120,8 @@ func TestShippedValuesMatchPhase2Behaviour(t *testing.T) {
 			{"ratelimit.shard_count", float64(cfg.RateLimit.ShardCount), 32},
 			{"upstream.max_payload_bytes", float64(cfg.Upstream.MaxPayloadBytes), 64 << 20},
 			{"store.coverage_threshold", float64(cfg.Store.CoverageThreshold), 3},
+			{"quality.faulty_share", cfg.Store.Faulty.Share, 0.5},
+			{"quality.faulty_min_readings", float64(cfg.Store.Faulty.MinReadings), 6},
 			{"quality.min_neighbours", float64(cfg.Quality.MinNeighbours), 3},
 			{"quality.mad_scale", cfg.Quality.MADScale, 1.4826},
 			{"quality.mad_threshold", cfg.Quality.MADThreshold, 3.5},

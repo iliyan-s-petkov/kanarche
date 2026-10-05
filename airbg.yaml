@@ -397,6 +397,11 @@ quality:
   # either: it is genuinely local and has no spatial expectation at all, so it
   # is never spatially checked. Adding a key for either is a strict-decode
   # error, because which metrics are smooth is a code fact, not a setting.
+  # A sensor is faulty for a metric when at least faulty_share of its readings
+  # in faulty_window were flagged and it had faulty_min_readings of them.
+  faulty_window: "24h"
+  faulty_share: 0.5
+  faulty_min_readings: 6
   smooth_field_floors:
     temperature: 1.5
     humidity: 8.0

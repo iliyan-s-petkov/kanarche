@@ -52,6 +52,10 @@ func TestValidateRejects(t *testing.T) {
 		{"metrics addr private network", func(c *Config) { c.Listen.MetricsAddr = "10.0.0.5:9090" }, "must be loopback"},
 		{"zero temperature frozen tolerance", func(c *Config) { c.Quality.TemperatureFrozenTolerance = 0 }, "quality.temperature_frozen_tolerance"},
 		{"zero history seed window", func(c *Config) { c.Quality.HistorySeedWindow = 0 }, "quality.history_seed_window"},
+		{"zero faulty window", func(c *Config) { c.Store.Faulty.Window = 0 }, "quality.faulty_window"},
+		{"zero faulty share", func(c *Config) { c.Store.Faulty.Share = 0 }, "quality.faulty_share"},
+		{"faulty share above one", func(c *Config) { c.Store.Faulty.Share = 1.01 }, "quality.faulty_share"},
+		{"zero faulty min readings", func(c *Config) { c.Store.Faulty.MinReadings = 0 }, "quality.faulty_min_readings"},
 		{"geocoder url with ftp scheme", func(c *Config) { c.Geocoder.URL = "ftp://nominatim.example" }, "geocoder.url"},
 		{"geocoder url relative", func(c *Config) { c.Geocoder.URL = "nominatim.example" }, "geocoder.url"},
 		{"geocoder url with query", func(c *Config) { c.Geocoder.URL = "https://nominatim.example/?q=x" }, "geocoder.url"},
@@ -192,6 +196,15 @@ func TestValidateAcceptsPollIntervalAtTheFloor(t *testing.T) {
 	cfg.Cache.DataMaxAge = cfg.Upstream.PollInterval / 2
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("Validate() error = %v, want poll_interval == min_poll_interval accepted", err)
+	}
+}
+
+// faulty_share is (0,1]: every reading flagged is the strictest rule allowed.
+func TestValidateAcceptsFaultyShareOfOne(t *testing.T) {
+	cfg := good(t)
+	cfg.Store.Faulty.Share = 1
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("Validate() error = %v, want faulty_share = 1 accepted", err)
 	}
 }
 
