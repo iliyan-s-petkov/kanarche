@@ -484,7 +484,6 @@
   "pollen.note": "A model forecast for orientation, not a measurement and not medical advice.",
   "pollen.credit": "Contains modified Copernicus Atmosphere Monitoring Service information, via Open-Meteo.com (CC BY 4.0)",
   "pollen.chip": "Pollen today: {level} · {species}",
-  "pollen.chip.quiet": "Pollen today: very little",
   "footer.brand.tagline": "Air quality in Bulgaria, live.",
   "brand.wordmark": "kanarche",
   "footer.brand.disclaimer": "Indicative low-cost sensors, not reference-method measurements.",

@@ -484,7 +484,6 @@
   "pollen.note": "Моделна прогноза за ориентация, не е измерване и не е медицински съвет.",
   "pollen.credit": "Съдържа преработена информация от Copernicus Atmosphere Monitoring Service, чрез Open-Meteo.com (CC BY 4.0)",
   "pollen.chip": "Прашец днес: {level} · {species}",
-  "pollen.chip.quiet": "Прашец днес: съвсем малко",
   "footer.brand.tagline": "Качество на въздуха в България, на живо.",
   "brand.wordmark": "канарче",
   "footer.brand.disclaimer": "Индикативни данни от евтини сензори, не измервания по референтен метод.",

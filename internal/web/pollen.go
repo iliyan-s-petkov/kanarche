@@ -11,7 +11,7 @@ import (
 type PollenBlock struct {
 	Days []PollenDayHead
 	Rows []PollenRow
-	// Chip is the toolbar summary; empty when today has no value.
+	// Chip is the toolbar summary; empty when today has no value or is off season.
 	Chip string
 }
 
@@ -56,15 +56,12 @@ func (rr *Renderer) pollenBlock(v *snapshot.PollenView, lang string) *PollenBloc
 		}
 		b.Rows = append(b.Rows, row)
 	}
-	if s := v.Summary; s != nil {
-		if s.Species == "" {
-			b.Chip = t("pollen.chip.quiet")
-		} else {
-			b.Chip = strings.NewReplacer(
-				"{level}", strings.ToLower(t("pollen.level."+s.Level)),
-				"{species}", t("pollen.species."+s.Species),
-			).Replace(t("pollen.chip"))
-		}
+	// Off season (worst level none) the chip is left out; the table stays.
+	if s := v.Summary; s != nil && s.Species != "" {
+		b.Chip = strings.NewReplacer(
+			"{level}", strings.ToLower(t("pollen.level."+s.Level)),
+			"{species}", t("pollen.species."+s.Species),
+		).Replace(t("pollen.chip"))
 	}
 	return b
 }

@@ -49,17 +49,17 @@ func TestAreaPageRendersThePollenTableAndChip(t *testing.T) {
 	}
 }
 
-// Today's forecast is below every bound: the chip says so instead of naming a species.
-func TestPollenChipIsQuietOffSeason(t *testing.T) {
+// Today's forecast is below every bound: no chip, the table still renders.
+func TestPollenChipIsHiddenOffSeason(t *testing.T) {
 	rr := renderer(t, pollenSnap(t, []store.AreaPollenDay{
 		{Slug: "sofia", Species: "birch", Day: "2026-08-09", Mean: 0.01, Max: 0.1},
 	}))
 	body := fetch(t, rr, "/en/area/sofia").Body.String()
-	if !strings.Contains(body, "Pollen today: very little") {
-		t.Error("off-season chip missing")
+	if strings.Contains(body, `href="#pollen"`) {
+		t.Error("chip rendered although today's worst level is none")
 	}
-	if strings.Contains(body, "· Birch") {
-		t.Error("off-season chip names a species")
+	if !strings.Contains(body, `id="pollen"`) {
+		t.Error("table missing off-season")
 	}
 }
 
