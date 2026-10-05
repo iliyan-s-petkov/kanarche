@@ -7,6 +7,16 @@ around it or goose splits it on the semicolons inside.
 The reasoning behind a migration lives here, not in the file. Numbers below are
 the ones documented so far.
 
+## 00014 — `bathing_site`, `bathing_class`, `bathing_sample`, `bathing_import`
+
+EEA bathing-water data for the Sea layer (`internal/upstream/bathing/README.md`,
+OpenProject #668). Small (about 100 sites, 4,000 samples), refreshed weekly and
+replaced whole in one transaction, so plain tables with cascading foreign keys.
+Censored lab results ("< 15") keep the number and set `*_below_detection`, so
+the panel can print the bound without inventing a value. Retired sites are not
+stored. `bathing_import` records each successful run; the loop reads its newest
+row to decide when the next refresh is due, so redeploys do not re-fetch.
+
 ## 00013 — `visitor_daily`
 
 Daily unique-visitor counts from Cloudflare's GraphQL analytics API

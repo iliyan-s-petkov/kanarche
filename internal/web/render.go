@@ -227,6 +227,7 @@ type PageData struct {
 	ChartLineColour    string
 	ChartCompareColour string
 	ChartSeriesColours string
+	SeaClassColours    string
 	ZoomCity           int
 	ZoomSensor         int
 	DefaultMetric      string
@@ -988,6 +989,7 @@ func (rr *Renderer) newPageData(lang, path string, generatedAt time.Time) PageDa
 		ChartLineColour:    rr.frontend.ChartLineColour,
 		ChartCompareColour: rr.frontend.ChartCompareColour,
 		ChartSeriesColours: rr.frontend.ChartSeriesColours,
+		SeaClassColours:    rr.frontend.SeaClassColours,
 		ZoomCity:           rr.frontend.ZoomCity,
 		ZoomSensor:         rr.frontend.ZoomSensor,
 		DefaultMetric:      rr.defaultMetric,

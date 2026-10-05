@@ -18,6 +18,7 @@ type raw struct {
 	Wind       *rawWind       `yaml:"wind"`
 	EEA        *rawEEA        `yaml:"eea"`
 	Cloudflare *rawCloudflare `yaml:"cloudflare"`
+	Sea        *rawSea        `yaml:"sea"`
 	Geocoder   *rawGeocoder   `yaml:"geocoder"`
 	Store      *rawStore      `yaml:"store"`
 	Series     *rawSeries     `yaml:"series"`
@@ -167,6 +168,17 @@ type rawCloudflare struct {
 	PollInterval   *Duration `yaml:"poll_interval"`
 }
 
+// rawSea configures the EEA bathing-water import. See internal/upstream/bathing/README.md.
+type rawSea struct {
+	Enabled         *bool     `yaml:"enabled"`
+	URL             *string   `yaml:"url"`
+	Country         *string   `yaml:"country"`
+	RequestTimeout  *Duration `yaml:"request_timeout"`
+	RefreshInterval *Duration `yaml:"refresh_interval"`
+	MaxPayloadBytes *int64    `yaml:"max_payload_bytes"`
+	MaxRows         *int      `yaml:"max_rows"`
+}
+
 // rawGeocoder configures the address-search proxy. The upstream is Nominatim
 // by default; url is the only key an operator normally overrides.
 type rawGeocoder struct {
@@ -274,6 +286,7 @@ type rawFrontend struct {
 	ChartLineColour    *string  `yaml:"chart_line_colour"`
 	ChartCompareColour *string  `yaml:"chart_compare_colour"`
 	ChartSeriesColours *string  `yaml:"chart_series_colours"`
+	SeaClassColours    *string  `yaml:"sea_class_colours"`
 	ZoomCity           *int     `yaml:"zoom_city"`
 	ZoomSensor         *int     `yaml:"zoom_sensor"`
 	// The national fallback view. One home for it, because it is rendered into

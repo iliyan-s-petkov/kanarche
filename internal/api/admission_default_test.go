@@ -48,6 +48,14 @@ func (s *blockingSource) VisitorDailyLast(_ context.Context, _ int) ([]store.Vis
 	return nil, nil
 }
 
+func (s *blockingSource) LoadBathing(_ context.Context) (store.BathingData, error) {
+	return store.BathingData{}, nil
+}
+
+func (s *blockingSource) BathingLastImport(_ context.Context) (time.Time, bool, error) {
+	return time.Time{}, false, nil
+}
+
 // trustedLocateHandler builds ONE router, wrapped so the Cloudflare headers are
 // honoured. Built once rather than per request because the sharing test needs
 // two distinct routers and must control exactly how many exist.

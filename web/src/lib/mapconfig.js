@@ -1,5 +1,6 @@
 import { parseMetricList, splitAttr, byMetric } from './metrics.js'
 import { LAYER_ORDER } from './maplayers.js'
+import { seaColours, readSeaTexts } from './sea.js'
 
 // Whether the colour key is unrolled. Its own key, not part of the layers
 // menu's state: the menu decides whether the key exists, this decides whether
@@ -106,6 +107,9 @@ export function readConfig(el) {
     // layer, and a fallback here that agreed with today's airbg.yaml would hide
     // a server that stopped rendering the attribute.
     hexOpacity: Number(d.hexOpacity),
+    // Bathing-water marker colours by class (frontend.sea_class_colours) and the EEA credit link.
+    seaColours: seaColours(splitAttr(d.seaColours)),
+    seaCreditURL: d.seaCreditUrl || '',
     // One positional list, in WINDOW_CHOICES order — the same idiom as
     // data-metric-labels, and for the same reason a per-window attribute cannot
     // work: data-t-window-24h arrives in the dataset as tWindow-24h.
@@ -205,6 +209,7 @@ export function readConfig(el) {
       windNote: d.tWindNote || '',
       windAttribution: d.tWindAttribution || '',
       windCredit: d.tWindCredit || '',
+      sea: readSeaTexts(d),
       // MapLibre's own UI strings (canvas name, attribution toggle), see map.js.
       mapTitle: d.tMapTitle || '',
       attributionToggle: d.tAttributionToggle || '',

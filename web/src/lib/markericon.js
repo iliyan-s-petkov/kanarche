@@ -24,6 +24,18 @@ function distance(x, y, radius) {
 }
 
 export function diamondImage(size = DIAMOND_PX) {
+  return sdfImage(size, (x, y, scale) => distance(x, y, RADIUS * scale))
+}
+
+// The bathing-water marker: a square, so a site never reads as a station.
+// Half-side 9 gives about the diamond's area.
+export const SQUARE_HALF_PX = 9
+
+export function squareImage(size = DIAMOND_PX) {
+  return sdfImage(size, (x, y, scale) => Math.max(Math.abs(x), Math.abs(y)) - SQUARE_HALF_PX * scale)
+}
+
+function sdfImage(size, dist) {
   const data = new Uint8Array(size * size * 4)
   // Every length is a fraction of the nominal image, so a larger size is the
   // same glyph at a higher resolution and not a fatter one.
@@ -31,7 +43,7 @@ export function diamondImage(size = DIAMOND_PX) {
   const half = size / 2
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const d = distance(x + 0.5 - half, y + 0.5 - half, RADIUS * scale)
+      const d = dist(x + 0.5 - half, y + 0.5 - half, scale)
       const a = 255 - 255 * (d / (SPREAD * scale) + 0.25)
       const i = (y * size + x) * 4
       data[i + 3] = Math.max(0, Math.min(255, Math.round(a)))

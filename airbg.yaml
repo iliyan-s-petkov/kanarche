@@ -251,6 +251,18 @@ cloudflare:
   # days to catch late-arriving/corrected data.
   poll_interval: "24h"
 
+# EEA bathing-water layer (Discodata WISE_BWD, CC BY 4.0). See
+# internal/upstream/bathing/README.md for the refresh cadence.
+sea:
+  enabled: true
+  url: "https://discodata.eea.europa.eu/sql"
+  country: "BG"
+  request_timeout: "60s"
+  # Weekly: the EEA publishes once a year; a restart waits out the rest of the interval.
+  refresh_interval: "168h"
+  max_payload_bytes: 8388608
+  max_rows: 20000
+
 store:
   # Minimum sensors before an area gets a value at all. Below it the area is
   # painted "no data" — one sensor must never be presented as an oblast.
@@ -441,6 +453,9 @@ frontend:
   chart_compare_colour: "#8a3ffc"
   # The third line onwards; the panel's palette is the two above then these.
   chart_series_colours: "#0f9d58,#d97706,#dc2626,#0891b2,#a16207"
+  # Bathing-water markers, in order: excellent, good, sufficient, poor, not
+  # classified. Blues and a violet so no site reads as an air-quality band.
+  sea_class_colours: "#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c,#9ca3af"
   # How solidly the hex density grid paints over the basemap. The reading is
   # what the page is for, so the cell has to win against a busy street map; the
   # streets stay legible around it and through it. See docs/map-rendering.md.

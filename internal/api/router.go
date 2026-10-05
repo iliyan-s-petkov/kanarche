@@ -33,6 +33,8 @@ type DataSource interface {
 	AreaSeries(ctx context.Context, slug, metric string, since time.Time, until *time.Time, hourly bool, bucket time.Duration) ([]store.Point, error)
 	AreaSeriesBand(ctx context.Context, slug, metric string, since time.Time, until *time.Time, hourly bool, bucket time.Duration) ([]store.AreaBand, error)
 	VisitorDailyLast(ctx context.Context, n int) ([]store.VisitorDaily, error)
+	LoadBathing(ctx context.Context) (store.BathingData, error)
+	BathingLastImport(ctx context.Context) (time.Time, bool, error)
 }
 
 type Deps struct {
@@ -71,6 +73,7 @@ type Deps struct {
 
 	// visitors is set by NewRouter, one per router.
 	visitors *visitorCache
+	sea      *seaCache
 }
 
 // Cache visibility. This is a security control, not a performance knob.
@@ -124,6 +127,7 @@ func NewRouter(d Deps) *http.ServeMux {
 	}
 
 	d.visitors = &visitorCache{}
+	d.sea = &seaCache{}
 
 	mux := http.NewServeMux()
 	for pattern, h := range d.handlers() {
@@ -147,6 +151,8 @@ func (d Deps) handlers() map[string]http.HandlerFunc {
 		"GET /api/v1/meta":                d.handleMeta,
 		"GET /api/v1/scales":              d.handleScales,
 		"GET /api/v1/visitors":            d.handleVisitors,
+		"GET /api/v1/sea/sites":           d.handleSeaSites,
+		"GET /api/v1/sea/sites/{id}":      d.handleSeaSite,
 		"GET /api/v1/area/{slug}/sensors": d.handleAreaSensors,
 		"GET /api/v1/area/{slug}/series":  d.handleAreaSeries,
 		"GET /api/v1/sensor/{id}/series":  d.handleSensorSeries,

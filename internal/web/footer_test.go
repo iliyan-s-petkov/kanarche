@@ -140,6 +140,7 @@ func TestFooterCarriesTheRequiredAttributions(t *testing.T) {
 			`href="https://maps.sensor.community/"`,
 			`href="https://eea.government.bg/kav/"`,
 			`href="https://open-meteo.com/"`,
+			`href="https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water"`,
 			`href="https://hostellation.com/"`,
 			"ODbL",
 			"CC BY 4.0",
@@ -268,6 +269,7 @@ func TestLicencesPageListsEverySourceAndTheCodeLicence(t *testing.T) {
 		"https://maps.sensor.community/",
 		"https://eea.government.bg/kav/",
 		"Open-Meteo", "CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/",
+		"https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
 		"© OpenStreetMap contributors", "https://www.openstreetmap.org/copyright",
 		"MIT", "https://github.com/iliyan-s-petkov/kanarche/blob/master/LICENSE",
 	} {

@@ -1,3 +1,4 @@
+import { SEA_CLASSES } from './sea.js'
 import { rampGradient } from './ramp.js'
 
 // The map legend: the ramp, and what a dot means at the current zoom.
@@ -254,6 +255,27 @@ export function buildWindRow(label) {
   text.textContent = label
   row.append(windGlyph('streaks'), text)
   wrap.appendChild(row)
+  return wrap
+}
+
+// The bathing-water key: a heading and one swatch per EEA class, hidden until the layer is on.
+export function buildSeaRows(t, colours) {
+  const wrap = document.createElement('div')
+  wrap.className = 'scale__sea'
+  wrap.hidden = true
+  const head = document.createElement('p')
+  head.className = 'scale__sea-head'
+  head.textContent = t.legend
+  wrap.appendChild(head)
+  for (const k of SEA_CLASSES) {
+    const row = document.createElement('span')
+    row.className = 'legend__row'
+    const text = document.createElement('span')
+    text.className = 'legend__label'
+    text.textContent = t.classes[k]
+    row.append(swatch(colours[k], 'legend-swatch legend-swatch--sea'), text)
+    wrap.appendChild(row)
+  }
   return wrap
 }
 

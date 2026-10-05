@@ -602,6 +602,14 @@ func (b *blockingSeriesStore) VisitorDailyLast(ctx context.Context, n int) ([]st
 	return nil, errors.New("blockingSeriesStore: VisitorDailyLast unexpectedly called")
 }
 
+func (b *blockingSeriesStore) LoadBathing(ctx context.Context) (store.BathingData, error) {
+	return store.BathingData{}, errors.New("blockingSeriesStore: LoadBathing unexpectedly called")
+}
+
+func (b *blockingSeriesStore) BathingLastImport(ctx context.Context) (time.Time, bool, error) {
+	return time.Time{}, false, errors.New("blockingSeriesStore: BathingLastImport unexpectedly called")
+}
+
 // TestSeriesAdmissionCapComesFromConfiguredMaxInflight proves
 // Config.Database.MaxInflight — not a package constant — is the size of the
 // admission semaphore server.New builds in front of the database-backed

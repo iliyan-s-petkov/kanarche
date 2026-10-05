@@ -19,6 +19,7 @@ type Config struct {
 	Wind       Wind
 	EEA        EEA
 	Cloudflare Cloudflare
+	Sea        Sea
 	Geocoder   Geocoder
 	Store      Store
 	Series     Series
@@ -194,6 +195,21 @@ type Cloudflare struct {
 	PollInterval   time.Duration
 }
 
+// Sea configures the EEA bathing-water import. See internal/upstream/bathing/README.md.
+type Sea struct {
+	Enabled bool
+	// URL is the Discodata SQL endpoint; Country is the only value interpolated into its queries.
+	URL     string
+	Country string
+	// UserAgent is derived from Listen.BaseURL.
+	UserAgent       string
+	RequestTimeout  time.Duration
+	RefreshInterval time.Duration
+	MaxPayloadBytes int64
+	// MaxRows is the nrOfHits page size; a page that comes back full is treated as truncated.
+	MaxRows int
+}
+
 // Geocoder configures the address-search proxy. See internal/geocode.
 type Geocoder struct {
 	URL string
@@ -286,8 +302,10 @@ type Frontend struct {
 	// The third line onwards, comma-separated: the panel draws as many metrics
 	// as the reader ticks, and the two above only name two of them.
 	ChartSeriesColours string
-	ZoomCity           int
-	ZoomSensor         int
+	// Bathing-water markers: excellent, good, sufficient, poor, not classified.
+	SeaClassColours string
+	ZoomCity        int
+	ZoomSensor      int
 	// The national fallback view: roughly Bulgaria's centre, at a zoom that
 	// fits the country. Used for the home page's map and for a visitor whose
 	// location cannot be determined (internal/api/locate.go).
@@ -494,6 +512,16 @@ func resolve(r *raw) Config {
 			RequestTimeout: r.Cloudflare.RequestTimeout.Std(),
 			PollInterval:   r.Cloudflare.PollInterval.Std(),
 		},
+		Sea: Sea{
+			Enabled:         *r.Sea.Enabled,
+			URL:             *r.Sea.URL,
+			Country:         *r.Sea.Country,
+			UserAgent:       CollectorUserAgent(*r.Listen.BaseURL),
+			RequestTimeout:  r.Sea.RequestTimeout.Std(),
+			RefreshInterval: r.Sea.RefreshInterval.Std(),
+			MaxPayloadBytes: *r.Sea.MaxPayloadBytes,
+			MaxRows:         *r.Sea.MaxRows,
+		},
 		Geocoder: Geocoder{
 			URL:               *r.Geocoder.URL,
 			UserAgent:         CollectorUserAgent(*r.Listen.BaseURL),
@@ -561,6 +589,7 @@ func resolve(r *raw) Config {
 			ChartLineColour:    *r.Frontend.ChartLineColour,
 			ChartCompareColour: *r.Frontend.ChartCompareColour,
 			ChartSeriesColours: *r.Frontend.ChartSeriesColours,
+			SeaClassColours:    *r.Frontend.SeaClassColours,
 			ZoomCity:           *r.Frontend.ZoomCity,
 			ZoomSensor:         *r.Frontend.ZoomSensor,
 			DefaultZoom:        *r.Frontend.DefaultZoom,

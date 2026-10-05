@@ -75,6 +75,7 @@ func (c Config) Validate() error {
 	c.validateWind(&p)
 	c.validateEEA(&p)
 	c.validateCloudflare(&p)
+	c.validateSea(&p)
 	c.validateGeocoder(&p)
 	c.validateStoreAndSeries(&p)
 	c.validateQuality(&p)
@@ -434,6 +435,31 @@ func (c Config) validateCloudflare(p *problems) {
 	p.positive("cloudflare.poll_interval", c.Cloudflare.PollInterval)
 }
 
+// validateSea runs whether or not the import is enabled. Country is spliced
+// into the Discodata SQL, so IsCountryCode is also the injection guard.
+func (c Config) validateSea(p *problems) {
+	u, err := url.Parse(c.Sea.URL)
+	if err != nil {
+		p.addf("sea.url = %q is not a URL: %v", c.Sea.URL, err)
+	} else {
+		if u.Scheme != "https" {
+			p.addf("sea.url = %q must use https", c.Sea.URL)
+		}
+		if u.Host == "" {
+			p.addf("sea.url = %q must be absolute", c.Sea.URL)
+		}
+	}
+	if !IsCountryCode(c.Sea.Country) {
+		p.addf("sea.country = %q must be two uppercase letters", c.Sea.Country)
+	}
+	p.positive("sea.request_timeout", c.Sea.RequestTimeout)
+	p.positive("sea.refresh_interval", c.Sea.RefreshInterval)
+	if c.Sea.MaxPayloadBytes <= 0 {
+		p.addf("sea.max_payload_bytes must be positive, got %d", c.Sea.MaxPayloadBytes)
+	}
+	p.positiveInt("sea.max_rows", c.Sea.MaxRows)
+}
+
 func (c Config) validateStoreAndSeries(p *problems) {
 	if c.Store.CoverageThreshold < 1 {
 		p.addf("store.coverage_threshold = %d, must be at least 1; below that a single sensor would be painted as a whole area", c.Store.CoverageThreshold)
@@ -567,6 +593,16 @@ func (c Config) validateFrontend(p *problems) {
 		colour = strings.TrimSpace(colour)
 		if !colourPattern.MatchString(colour) {
 			p.addf("frontend.chart_series_colours[%d] = %q, must be a six-digit hex colour such as #9ca3af", i, colour)
+		}
+	}
+	// Positional, one per bathing class; the frontend reads them by index.
+	seaColours := strings.Split(c.Frontend.SeaClassColours, ",")
+	if len(seaColours) != 5 {
+		p.addf("frontend.sea_class_colours has %d entries, want 5 (excellent, good, sufficient, poor, not classified)", len(seaColours))
+	}
+	for i, colour := range seaColours {
+		if !colourPattern.MatchString(strings.TrimSpace(colour)) {
+			p.addf("frontend.sea_class_colours[%d] = %q, must be a six-digit hex colour such as #9ca3af", i, colour)
 		}
 	}
 	for path, zoom := range map[string]int{

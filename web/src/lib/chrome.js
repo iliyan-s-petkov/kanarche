@@ -2,7 +2,7 @@
 // banner, the control cluster and the player UI beside the MapLibre canvas,
 // and returns the handle mount() threads to everything else. Kept separate so
 // the pure builders it calls stay importable on their own.
-import { LEGEND_CLASSES, buildWindRow, legendRows, legendTitle, renderLegend, setWindRow } from './legend.js'
+import { LEGEND_CLASSES, buildSeaRows, buildWindRow, legendRows, legendTitle, renderLegend, setWindRow } from './legend.js'
 import { createScaleDialog } from './scaledialog.js'
 import { mountFullscreen, mountZoom, mountLocate, mountOrientation } from './mapcontrols.js'
 import { mountLayers } from './maplayers.js'
@@ -463,6 +463,7 @@ export function mountChrome(el, cfg) {
 
   // renderLegend clears the key, so the wind row is re-inserted after each repaint.
   const windRow = buildWindRow(cfg.t.legendWind)
+  const seaRows = cfg.t.sea ? buildSeaRows(cfg.t.sea, cfg.seaColours ?? {}) : null
   const showLegend = ({ bands, tier, metric, scale }) => {
     if (scale) scaleDialog.prime(scale)
     renderLegend(legend, {
@@ -484,6 +485,7 @@ export function mountChrome(el, cfg) {
       info: scale ? { label: cfg.t.legendAbout, onOpen: () => scaleDialog.show(scale) } : null,
     })
     legend.insertBefore(windRow, legend.querySelector(':scope > .scale__info'))
+    if (seaRows) legend.insertBefore(seaRows, legend.querySelector(':scope > .scale__info'))
     // Bootstrap call: keep the server-rendered caption.
     if (tier === null) return
     const text = cfg.t.tier[tier] ?? ''
@@ -521,6 +523,9 @@ export function mountChrome(el, cfg) {
     dispose() { live.abort() },
     // Both halves move together: the disclosure is shown exactly when the
     // arrows are, so no caller can turn one on without the other.
+    showSea(on) {
+      if (seaRows) seaRows.hidden = !on
+    },
     showWind(on, text, mode = 'streaks') {
       setWindRow(windRow, { on, mode })
       windText.textContent = on ? text : ''

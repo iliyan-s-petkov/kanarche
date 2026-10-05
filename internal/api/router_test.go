@@ -71,6 +71,22 @@ type stubSource struct {
 	visitors     []store.VisitorDaily
 	visitorsErr  error
 	visitorCalls int
+
+	// bathing is what LoadBathing returns; bathingCalls counts loads for the cache tests.
+	bathing      store.BathingData
+	bathingAt    time.Time
+	bathingHas   bool
+	bathingErr   error
+	bathingCalls int
+}
+
+func (s *stubSource) LoadBathing(_ context.Context) (store.BathingData, error) {
+	s.bathingCalls++
+	return s.bathing, s.bathingErr
+}
+
+func (s *stubSource) BathingLastImport(_ context.Context) (time.Time, bool, error) {
+	return s.bathingAt, s.bathingHas, s.bathingErr
 }
 
 func (s *stubSource) VisitorDailyLast(_ context.Context, n int) ([]store.VisitorDaily, error) {
