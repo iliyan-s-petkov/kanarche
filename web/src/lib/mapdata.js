@@ -219,9 +219,11 @@ export async function refresh(map, state, cfg, chrome, force = false, { defer = 
     // The raw payload, not areaFeatures' output: features drop `zoom`
     // entirely and fold lon/lat into GeoJSON geometry, but locateMe needs
     // exactly {slug, lon, lat, zoom} per area (see nearestArea's signature).
-    state.areas = body?.areas ?? []
-    setMapAreas(state.areas)
+    publishAreas(state, body?.areas ?? [])
+    if (effective === 'city') state.cityAreas = state.areas
   }
+  // Locate, address and area jumps skip the city tier; the finder still wants its list.
+  if (effective === 'sensors') showCityAreas(state)
 
   const features = effective === 'sensors'
     ? filterBySource(
@@ -235,6 +237,38 @@ export async function refresh(map, state, cfg, chrome, force = false, { defer = 
   const paint = () => paintSource(map, SOURCE_ID, features)
   if (defer) return paint
   paint()
+}
+
+// publishAreas hands one area list to both readers: the locate lookup and the finder.
+export function publishAreas(state, list) {
+  state.areas = list
+  setMapAreas(list)
+}
+
+// loadCityAreas fetches the city-tier list once per session and keeps it on state.
+// The in-flight promise is kept too, so two passes do not ask twice.
+export function loadCityAreas(state, fetchJSON = getJSON) {
+  if (state.cityAreas) return Promise.resolve(state.cityAreas)
+  state.cityLoad ??= fetchJSON(urlFor('city'))
+    .then((body) => {
+      if (body?.areas?.length) state.cityAreas = body.areas
+      return state.cityAreas ?? null
+    })
+    .catch(() => null)
+    .finally(() => { state.cityLoad = null })
+  return state.cityLoad
+}
+
+// showCityAreas puts the city list in front of the finder when a sensor-tier pass
+// left another one there. Not awaited by refresh; a zoom out meanwhile wins.
+function showCityAreas(state) {
+  if (state.cityAreas) {
+    if (state.areas !== state.cityAreas) publishAreas(state, state.cityAreas)
+    return
+  }
+  loadCityAreas(state).then((list) => {
+    if (list && state.tier?.startsWith('sensors:') && state.areas !== list) publishAreas(state, list)
+  })
 }
 
 // The registry's own dedup key: the slug and window it was loaded for.

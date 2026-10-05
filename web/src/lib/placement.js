@@ -2,9 +2,8 @@ import { getJSON } from './api.js'
 import { applyLocate } from './locate.js'
 import { findSensor, getSensors, setSensors } from './sensors.svelte.js'
 import { nearestArea, nearestSensor } from './nearest.js'
-import { setMapAreas } from './mapareas.svelte.js'
 import { POINT_TIER_MIN_ZOOM } from './hexes.js'
-import { refresh, refreshHexes, urlFor } from './mapdata.js'
+import { refresh, refreshHexes, urlFor, loadCityAreas, publishAreas } from './mapdata.js'
 
 // locateVisitor asks the server where the visitor is and, only for a genuine
 // "geoip" placement (see applyLocate's own comment on why "default" must
@@ -118,11 +117,8 @@ export async function openDeepLinkedSensor(map, state, cfg, chrome, vs, fetchJSO
   // strip has no way to turn the adopted slug into a place name — it falls back
   // to counting sensors without saying where.
   if (slug && (!state.areas || state.areas.length === 0)) {
-    const overview = await fetchJSON(urlFor('city')).catch(() => null)
-    if (overview?.areas?.length) {
-      state.areas = overview.areas
-      setMapAreas(state.areas)
-    }
+    const list = await loadCityAreas(state, fetchJSON)
+    if (list) publishAreas(state, list)
   }
   // Only a real slug: a sensor outside every area still deserves the flight,
   // and adopting '' would make refresh() ask for an area page that cannot exist.
