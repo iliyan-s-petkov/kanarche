@@ -89,6 +89,9 @@ type sensorColumns struct {
 	// flag, mapped to that flag. Same length as ID; {} for a healthy sensor.
 	// Quality is only the worst flag across metrics and cannot say which failed.
 	Flags []map[string]string `json:"flags"`
+	// Faulty is, per sensor, the metrics store.RefreshFaulty's 24h rule marks
+	// faulty. Same length as ID; [] for a healthy sensor.
+	Faulty [][]string `json:"faulty"`
 	// Station names the physical site each sensor stands at — see stationIDs.
 	// Same length as ID, and for a sensor standing alone it is that sensor's
 	// own id.
@@ -137,6 +140,7 @@ func (c sensorColumns) MarshalJSON() ([]byte, error) {
 		"lat":          c.Lat,
 		"quality":      c.Quality,
 		"flags":        c.Flags,
+		"faulty":       c.Faulty,
 		"station":      c.Station,
 		"measures":     c.Measures,
 		"first_seen":   c.FirstSeen,
@@ -318,10 +322,12 @@ func buildHexes(snap *Snapshot, sensors []store.SensorReading, now time.Time) er
 	// so a coarse bin is not the union of the fine bins under it. What makes
 	// serving several resolutions no more revealing than the finest one is that
 	// the finest one is published outright; see HexResolutionKM.
-	snap.coverage = coverageFrom(sensors)
+	// Faulty metrics leave the medians and coverage; points keep them.
+	usable := withoutFaulty(sensors)
+	snap.coverage = coverageFrom(usable)
 	snap.hexTiers = make(map[float64]hexPayload, len(HexTiersKM))
 	for _, res := range HexTiersKM {
-		p := hexPayloadFrom(now, sensors, res)
+		p := hexPayloadFrom(now, usable, res)
 		p.Coverage = snap.coverage
 		snap.hexTiers[res] = p
 	}
@@ -467,6 +473,7 @@ func sensorPayloadFrom(now time.Time, sensors []store.SensorReading) sensorPaylo
 		Lat:       make([]float64, 0, n),
 		Quality:   make([]string, 0, n),
 		Flags:     make([]map[string]string, 0, n),
+		Faulty:    make([][]string, 0, n),
 		Measures:  make([][]string, 0, n),
 		FirstSeen: make([]time.Time, 0, n),
 		LastSeen:  make([]time.Time, 0, n),
@@ -498,6 +505,11 @@ func sensorPayloadFrom(now time.Time, sensors []store.SensorReading) sensorPaylo
 			flags = map[string]string{}
 		}
 		cols.Flags = append(cols.Flags, flags)
+		faulty := sr.Faulty
+		if faulty == nil {
+			faulty = []string{}
+		}
+		cols.Faulty = append(cols.Faulty, faulty)
 		cols.Measures = append(cols.Measures, measuresOf(sr, metrics))
 		cols.FirstSeen = append(cols.FirstSeen, sr.FirstSeen)
 		cols.LastSeen = append(cols.LastSeen, sr.LastSeen)

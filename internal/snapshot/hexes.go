@@ -305,6 +305,26 @@ func coverageFrom(sensors []store.SensorReading) map[string]map[string]int {
 	return cov
 }
 
+// withoutFaulty copies rows with faulty metrics, dropping those metrics from
+// Values; the input rows are shared and stay untouched.
+func withoutFaulty(sensors []store.SensorReading) []store.SensorReading {
+	out := make([]store.SensorReading, len(sensors))
+	for i, sr := range sensors {
+		if len(sr.Faulty) > 0 {
+			vals := make(map[string]float64, len(sr.Values))
+			for m, v := range sr.Values {
+				vals[m] = v
+			}
+			for _, m := range sr.Faulty {
+				delete(vals, m)
+			}
+			sr.Values = vals
+		}
+		out[i] = sr
+	}
+	return out
+}
+
 // bodyKey identifies one encoded answer: the snapped tier, the quantised box,
 // and which of the two builders produced it. Comparable, so it is the map key
 // itself rather than a string somebody has to keep in sync with it.
