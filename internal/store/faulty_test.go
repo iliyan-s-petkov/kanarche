@@ -128,7 +128,7 @@ func TestFaultySensorLeavesTheAreaMedianForThatMetricOnly(t *testing.T) {
 	for i, v := range []float64{10, 12, 14} {
 		id := int64(i + 1)
 		seedSensorReading(t, ctx, pool, id, 23.3+float64(i)*0.001, 42.7, "P2", v, "ok", now.Add(-time.Minute))
-		seedSensorReading(t, ctx, pool, id, 23.3+float64(i)*0.001, 42.7, "temperature", 20, "ok", now.Add(-time.Minute))
+		seedSensorReading(t, ctx, pool, id, 23.3+float64(i)*0.001, 42.7, "temperature", 18+2*float64(i), "ok", now.Add(-time.Minute))
 	}
 	seedSensorReading(t, ctx, pool, 4, 23.31, 42.7, "P2", 900, "ok", now.Add(-time.Minute))
 	seedReadingWithQuality(t, ctx, pool, 4, "temperature", 30, "ok", now.Add(-time.Minute))
@@ -146,8 +146,8 @@ func TestFaultySensorLeavesTheAreaMedianForThatMetricOnly(t *testing.T) {
 	if got := aggs[0].Values["P2"]; got != 12 {
 		t.Errorf("P2 median = %v, want 12 — the faulty sensor's ok 900 must not count", got)
 	}
-	if got := aggs[0].Values["temperature"]; got != 20 {
-		t.Errorf("temperature median = %v, want 20 (median of 20,20,20,30) — sensor 4 is not faulty for temperature", got)
+	if got := aggs[0].Values["temperature"]; got != 21 {
+		t.Errorf("temperature median = %v, want 21 (median of 18,20,22,30) — sensor 4 is not faulty for temperature", got)
 	}
 
 	points, err := s.AreaSeries(ctx, "sofia", "P2", now.Add(-10*time.Minute), nil, false, time.Hour)
