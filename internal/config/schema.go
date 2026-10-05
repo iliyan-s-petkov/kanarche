@@ -255,8 +255,10 @@ type rawQuality struct {
 	PMRatioThreshold           *float64   `yaml:"pm_ratio_threshold"`
 	PMAbsoluteThreshold        *float64   `yaml:"pm_absolute_threshold"`
 	SmoothFieldFloors          *rawFloors `yaml:"smooth_field_floors"`
-	Ranges                     *rawRanges `yaml:"ranges"`
-	ClampSentinels             *rawClamps `yaml:"clamp_sentinels"`
+	// LoneCaps is optional: absent means no cap. See airbg.yaml quality.lone_caps.
+	LoneCaps       map[string]float64 `yaml:"lone_caps"`
+	Ranges         *rawRanges         `yaml:"ranges"`
+	ClampSentinels *rawClamps         `yaml:"clamp_sentinels"`
 	// The faulty-sensor rule; see airbg.yaml quality.faulty_window.
 	FaultyWindow      *Duration `yaml:"faulty_window"`
 	FaultyShare       *float64  `yaml:"faulty_share"`

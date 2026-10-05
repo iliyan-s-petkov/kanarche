@@ -2,6 +2,7 @@ package quality
 
 import (
 	"math"
+	"slices"
 
 	"airbg.org/internal/config"
 	"airbg.org/internal/upstream"
@@ -56,17 +57,32 @@ func (s *Scorer) Score(readings []upstream.Reading, hist *History) []Scored {
 		reference[metric] = valid
 	}
 
+	// A capped lone reading is out_of_range, so like the others it stays out of
+	// the history and the neighbour reference population.
+	lone := s.loneCapped(readings, reference)
+	if len(lone) > 0 {
+		for metric, group := range reference {
+			reference[metric] = slices.DeleteFunc(group, func(r upstream.Reading) bool {
+				return lone[sensorMetric{r.SensorID, r.Metric}]
+			})
+		}
+	}
+
 	// Observe every in-range reading before judging any, so a rule that needs a
 	// sibling metric (humidity vs temperature) sees this poll's value of it.
 	// Clamped and out-of-range readings never enter the history.
 	for _, r := range readings {
-		if !s.IsClamped(r.Metric, r.Value) && s.InRange(r.Metric, r.Value) {
+		if !s.IsClamped(r.Metric, r.Value) && s.InRange(r.Metric, r.Value) && !lone[sensorMetric{r.SensorID, r.Metric}] {
 			hist.Observe(r.SensorID, r.Metric, r.Value)
 		}
 	}
 
 	out := make([]Scored, 0, len(readings))
 	for _, r := range readings {
+		if lone[sensorMetric{r.SensorID, r.Metric}] {
+			out = append(out, Scored{Reading: r, Flag: FlagOutOfRange})
+			continue
+		}
 		out = append(out, Scored{Reading: r, Flag: s.scoreOne(r, reference[r.Metric], hist)})
 	}
 	return out
@@ -85,6 +101,10 @@ func (s *Scorer) scoreOne(r upstream.Reading, population []upstream.Reading, his
 		return FlagStuck
 	}
 
+	return s.SpatialCheck(r.Metric, r.Value, s.neighboursOf(r, population))
+}
+
+func (s *Scorer) neighboursOf(r upstream.Reading, population []upstream.Reading) []Neighbour {
 	neighbours := make([]Neighbour, 0, 8)
 	for _, other := range population {
 		if other.SensorID == r.SensorID {
@@ -95,7 +115,32 @@ func (s *Scorer) scoreOne(r upstream.Reading, population []upstream.Reading, his
 		}
 		neighbours = append(neighbours, Neighbour{Lon: other.Lon, Lat: other.Lat, Value: other.Value})
 	}
-	return s.SpatialCheck(r.Metric, r.Value, neighbours)
+	return neighbours
+}
+
+type sensorMetric struct {
+	sensor int64
+	metric string
+}
+
+// loneCapped finds in-range readings above their metric's lone cap that have
+// fewer than min_neighbours neighbours; the spatial check cannot judge them.
+// Strictly greater than the cap: a reading equal to it stays no_neighbours.
+func (s *Scorer) loneCapped(readings []upstream.Reading, reference map[string][]upstream.Reading) map[sensorMetric]bool {
+	var lone map[sensorMetric]bool
+	for _, r := range readings {
+		limit, ok := s.cfg.LoneCaps[r.Metric]
+		if !ok || r.Value <= limit || s.IsClamped(r.Metric, r.Value) || !s.InRange(r.Metric, r.Value) {
+			continue
+		}
+		if len(s.neighboursOf(r, reference[r.Metric])) < s.cfg.MinNeighbours {
+			if lone == nil {
+				lone = make(map[sensorMetric]bool)
+			}
+			lone[sensorMetric{r.SensorID, r.Metric}] = true
+		}
+	}
+	return lone
 }
 
 // haversineMetres returns great-circle distance. Accurate enough at the 15 km

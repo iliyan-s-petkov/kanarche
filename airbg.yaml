@@ -402,6 +402,11 @@ quality:
   faulty_window: "24h"
   faulty_share: 0.5
   faulty_min_readings: 6
+  # A reading with fewer than min_neighbours neighbours, above its cap here, is
+  # out_of_range instead of no_neighbours. Unset metrics have no cap. Evidence:
+  # one lone sensor reading ~970 µg/m³ PM2.5 for a week (OpenProject #676).
+  lone_caps:
+    P2: 500.0
   smooth_field_floors:
     temperature: 1.5
     humidity: 8.0

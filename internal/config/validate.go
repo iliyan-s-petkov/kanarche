@@ -657,6 +657,13 @@ func (c Config) validateQuality(p *problems) {
 	for _, metric := range []string{"temperature", "humidity", "pressure"} {
 		p.positiveFloat("quality.smooth_field_floors."+metric, q.SmoothFieldFloors[metric])
 	}
+	for metric, limit := range q.LoneCaps {
+		if !canonicalMetrics[metric] {
+			p.addf("quality.lone_caps has unknown metric %q", metric)
+			continue
+		}
+		p.positiveFloat("quality.lone_caps."+metric, limit)
+	}
 	for metric := range canonicalMetrics {
 		rng, ok := q.Ranges[metric]
 		if !ok {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"maps"
 	"strings"
 	"time"
 )
@@ -319,6 +320,9 @@ type Quality struct {
 	// metrics that vary smoothly across space. Membership is meaningful: a
 	// metric absent from this map has no spatial expectation at all.
 	SmoothFieldFloors map[string]float64
+	// LoneCaps maps a metric to the value above which a reading with too few
+	// neighbours is out_of_range. Empty or nil means no cap.
+	LoneCaps map[string]float64
 	// Ranges is keyed by canonical metric name.
 	Ranges map[string]Range
 	// ClampSentinels is keyed by canonical metric name. Membership is
@@ -626,6 +630,7 @@ func resolve(r *raw) Config {
 				"humidity":    *r.Quality.SmoothFieldFloors.Humidity,
 				"pressure":    *r.Quality.SmoothFieldFloors.Pressure,
 			},
+			LoneCaps: maps.Clone(r.Quality.LoneCaps),
 			Ranges: map[string]Range{
 				"P1":           resolveRange(r.Quality.Ranges.P1),
 				"P2":           resolveRange(r.Quality.Ranges.P2),
