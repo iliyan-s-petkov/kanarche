@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.js'
+import { test, expect, mapSettled } from './fixtures.js'
 
 // OpenProject #683: star a sensor so the home map opens on it.
 // The helpers below are the ones sidedock.spec.js uses.
@@ -8,14 +8,18 @@ const PHONE = { width: 390, height: 844, isMobile: true, hasTouch: true }
 const shot = (page, name) => process.env.E2E_SHOT_DIR && page.screenshot({ path: `${process.env.E2E_SHOT_DIR}/${name}.png` })
 
 async function prepareMap(page, path = '/en/') {
+  // The opening camera (favourite, saved view, geoip) is placed before the first
+  // hex paint, and the style can report loaded and idle before that jump runs.
+  // The first hexes response marks the camera as placed; an area page has its own.
+  const placed = path.includes('/area/') ? null : page.waitForResponse(/\/api\/v1\/hexes/)
   await page.goto(path)
-  await page.waitForFunction(() => document.querySelector('[data-island="map"]')?.__map?.isStyleLoaded?.())
-  await page.waitForTimeout(1000)
-  await expect.poll(() => page.evaluate(() => document.querySelector('[data-island="map"]').__map.isMoving())).toBe(false)
+  await placed
+  await mapSettled(page)
   await page.evaluate(() => {
     document.querySelector('.map-shell').scrollIntoView({ block: 'start', behavior: 'instant' })
     document.querySelector('[data-island="map"]').__map.jumpTo({ center: [23.32, 42.69], zoom: 11 })
   })
+  await mapSettled(page)
 }
 
 // Client points of hex cells naming one station, clear of the map's edges and
@@ -41,12 +45,18 @@ const hexPoints = (page, skip) => page.evaluate((skip) => {
   return out
 }, skip)
 
+// Points are re-read for every click: a fullscreen resize or a late tile can
+// move the hex between the read and the click, and a stale point misses it.
 async function tapHex(page, skip = []) {
-  let pts = []
-  await expect.poll(async () => { pts = await hexPoints(page, skip); return pts.length }, { timeout: 20000 }).toBeGreaterThan(0)
-  await page.mouse.click(pts[0].x, pts[0].y)
-  await expect(page).toHaveURL(/#.*sensor=\d+/)
-  return pts[0].id
+  let id = null
+  await expect(async () => {
+    const pts = await hexPoints(page, skip)
+    expect(pts.length).toBeGreaterThan(0)
+    await page.mouse.click(pts[0].x, pts[0].y)
+    await expect(page).toHaveURL(/#.*sensor=\d+/, { timeout: 2000 })
+    id = pts[0].id
+  }).toPass({ timeout: 20000 })
+  return id
 }
 
 
@@ -91,7 +101,7 @@ test('1440: exactly one star, in the dock, and it works there', async ({ browser
   await expect(page.locator('.map-dock .panel-star')).toBeVisible()
   await page.locator('.map-dock .panel-star').click()
   await expect(page.locator('.map-dock .panel-star')).toHaveAttribute('aria-pressed', 'true')
-  expect(await stored(page)).toBe(String(id))
+  await expect.poll(() => stored(page)).toBe(String(id))
   await shot(page, 'favourite-desktop')
   // Back under the map the same state shows on the one star there.
   await page.setViewportSize({ width: 900, height: 700 })
@@ -108,13 +118,15 @@ test('phone fullscreen: the sheet shows one star and it works', async ({ browser
   await prepareMap(page, '/en/area/sofia')
   await page.locator('.map__full').click()
   await expect.poll(() => page.evaluate(() => !!document.querySelector('.map:fullscreen, .map--faux-full'))).toBe(true)
+  await expect(page.locator('.map__full')).toHaveAttribute('aria-pressed', 'true')
+  await mapSettled(page)
   const id = await tapHex(page)
   await expect(page.locator('.map-sensor-sheet')).toBeVisible()
   await expect(visibleStars(page)).toHaveCount(1)
   await expect(page.locator('.map-sensor-sheet .panel-star')).toBeVisible()
   await page.locator('.map-sensor-sheet .panel-star').click()
   await expect(page.locator('.map-sensor-sheet .panel-star')).toHaveAttribute('aria-pressed', 'true')
-  expect(await stored(page)).toBe(String(id))
+  await expect.poll(() => stored(page)).toBe(String(id))
   await shot(page, 'favourite-phone-sheet')
   await context.close()
 })
@@ -143,9 +155,11 @@ test('a favourite that is no longer in the data is ignored and the key stays', a
   const context = await browser.newContext(WIDE)
   const page = await context.newPage()
   await page.addInitScript((k) => localStorage.setItem(k, '999999999'), KEY)
+  // The favourite is resolved before the first hex paint, so that response means it was ignored.
+  const placed = page.waitForResponse(/\/api\/v1\/hexes/)
   await page.goto('/en/')
-  await page.waitForFunction(() => document.querySelector('[data-island="map"]')?.__map?.isStyleLoaded?.())
-  await page.waitForTimeout(2000)
+  await placed
+  await mapSettled(page)
   await expect(page.locator('.sensor-panel')).toHaveCount(0)
   expect(page.url()).not.toContain('sensor=')
   expect(await stored(page)).toBe('999999999')
@@ -171,8 +185,7 @@ test('the embed has no star', async ({ browser }, testInfo) => {
   const context = await browser.newContext(WIDE)
   const page = await context.newPage()
   await page.goto('/embed#sensor=101')
-  await page.waitForFunction(() => document.querySelector('[data-island="map"]')?.__map?.isStyleLoaded?.())
-  await page.waitForTimeout(1500)
+  await mapSettled(page)
   await expect(page.locator('.panel-star')).toHaveCount(0)
   await context.close()
 })

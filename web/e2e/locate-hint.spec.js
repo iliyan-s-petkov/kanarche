@@ -53,10 +53,13 @@ test('1440 with the map docked: the tip still sits over the locate button', asyn
   await expect(hint(page)).toBeVisible()
   // The docked class must not move the hint off the button.
   await page.evaluate(() => document.querySelector('.map-shell').classList.add('map-shell--docked'))
-  const h = await box(hint(page))
-  const locate = await box(page.locator('.map-locate'))
-  expect(Math.abs(h.x + h.width - (locate.x + locate.width))).toBeLessThan(2)
-  expect(h.x).toBeGreaterThanOrEqual(0)
+  // Layout follows the class on the next frame, so measure both until they agree.
+  await expect.poll(async () => {
+    const h = await hint(page).boundingBox()
+    const locate = await page.locator('.map-locate').boundingBox()
+    if (!h || !locate) return null
+    return h.x >= 0 && Math.abs(h.x + h.width - (locate.x + locate.width)) < 2
+  }).toBe(true)
   await shot(page, 'locatehint-docked')
   await context.close()
 })
@@ -74,9 +77,12 @@ test('a real wheel zoom on the map dismisses it', async ({ browser }) => {
   const { context, page } = await visit(browser, sizes.desktop)
   await expect(hint(page)).toBeVisible()
   const m = await box(page.locator('#map'))
-  await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2)
-  await page.mouse.wheel(0, -400)
-  await expect(hint(page)).toHaveCount(0)
+  // A wheel sent while the map is still easing is swallowed, so send it until it lands.
+  await expect(async () => {
+    await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2)
+    await page.mouse.wheel(0, -400)
+    await expect(hint(page)).toHaveCount(0, { timeout: 1500 })
+  }).toPass({ timeout: 15_000 })
   await context.close()
 })
 
@@ -89,8 +95,12 @@ test('a click on the locate button dismisses it', async ({ browser }) => {
 })
 
 test('it goes by itself after eight seconds', async ({ browser }) => {
-  const { context, page } = await visit(browser, sizes.desktop)
-  await expect(hint(page)).toBeVisible()
+  // No settle wait first: the eight seconds start when the hint mounts, and a
+  // slow settle on a busy runner could spend them before the first assertion.
+  const context = await browser.newContext({ viewport: sizes.desktop })
+  const page = await context.newPage()
+  await page.goto('/en/')
+  await expect(hint(page)).toBeVisible({ timeout: 30_000 })
   await expect(hint(page)).toHaveCount(0, { timeout: 12_000 })
   await context.close()
 })

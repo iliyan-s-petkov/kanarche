@@ -14,6 +14,9 @@ const test = base.extend({
 // leaks a WebGL context into the next test on this shared worker context.
 test.afterEach(async ({ mobileCtx }) => {
   for (const p of mobileCtx.pages()) {
+    // This context is not the shared one, so fixtures.js does not clear it:
+    // a legend fold or layer choice persisted by one test would start the next open.
+    if (!p.isClosed()) await p.evaluate(() => localStorage.clear()).catch(() => {})
     if (!p.isClosed()) await p.close().catch(() => {})
   }
 })
@@ -186,6 +189,7 @@ test.describe('phone layout does not widen the viewport', () => {
   // freshness row above it by 8px. All three fixed by one padding/offset pass.
   test('/en folded legend pill: 44px tall, small label, clear of the freshness row', async ({ mobileCtx }) => {
     const page = await mobileCtx.newPage()
+    await page.addInitScript(() => localStorage.removeItem('kanarche:legend-open'))
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/en')
     const scale = page.locator('.scale--onmap')
