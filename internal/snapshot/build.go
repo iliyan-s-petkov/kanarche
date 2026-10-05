@@ -185,8 +185,8 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 	}
 
 	// The forecast overlay, read from our own table rather than fetched here:
-	// the met model updates hourly and the ingest cycle runs every five
-	// minutes. A failure is logged and leaves Wind empty rather than failing
+	// the collector stores hourly rows every few hours and the ingest cycle runs
+	// every five minutes. A failure is logged and leaves Wind empty rather than failing
 	// the build — the PM map is the site, and an optional layer must not be
 	// able to take it down. See docs/wind-overlay.md.
 	if h.wind.Enabled {

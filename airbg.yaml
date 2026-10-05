@@ -203,7 +203,8 @@ wind:
   # (internal/snapshot/windgrid.go), so it must match the model.
   resolution_deg: 0.25
   request_timeout: "30s"
-  poll_interval: "1h"
+  # ECMWF IFS updates four times a day; each run's 24 hourly rows cover the gap.
+  poll_interval: "3h"
   forecast_hours: 24
   points_per_request: 100
   # 16 MiB.

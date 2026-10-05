@@ -81,7 +81,9 @@ Black Sea coast have wind. A sensor-driven set left the Danube plain and the
 north-east thin or empty.
 
 Points are batched per request (`points_per_request`, 100), so a collection is
-6 requests, once an hour.
+6 requests, every three hours. ECMWF IFS updates four times a day, and each
+run writes 24 hourly rows, so the current hour is served from the last run until
+the next one lands.
 
 ## Rendering
 

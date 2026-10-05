@@ -780,3 +780,24 @@ func TestPollenRunTimesAreSorted(t *testing.T) {
 		t.Errorf("RunTimes = %v, want %v", got, want)
 	}
 }
+
+// ECMWF IFS updates four times a day; polling hourly spent Open-Meteo quota on unchanged runs.
+func TestWindPollsEveryThreeHours(t *testing.T) {
+	if got := validConfig(t).Wind.PollInterval; got != 3*time.Hour {
+		t.Errorf("wind.poll_interval = %v, want 3h", got)
+	}
+}
+
+// Each run covers forecast_hours from its fetch; a longer gap would leave hours with no row.
+func TestWindForecastMustOutlastThePollInterval(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Wind.PollInterval = time.Duration(cfg.Wind.ForecastHours) * time.Hour
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "wind.poll_interval") {
+		t.Errorf("Validate() = %v, want a wind.poll_interval coverage error", err)
+	}
+	cfg.Wind.PollInterval = time.Duration(cfg.Wind.ForecastHours-1) * time.Hour
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("Validate() = %v, want an interval inside the forecast accepted", err)
+	}
+}

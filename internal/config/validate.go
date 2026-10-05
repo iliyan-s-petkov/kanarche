@@ -337,6 +337,10 @@ func (c Config) validateWind(p *problems) {
 	if h := time.Duration(c.Wind.ForecastHours) * time.Hour; c.Wind.Retention < h {
 		p.addf("wind.retention (%v) is shorter than wind.forecast_hours (%v); stored forecasts would expire while still being served", c.Wind.Retention, h)
 	}
+	// Each run writes forecast_hours from its fetch hour; the next run must land inside that span.
+	if h := time.Duration(c.Wind.ForecastHours) * time.Hour; c.Wind.PollInterval >= h {
+		p.addf("wind.poll_interval (%v) is not shorter than wind.forecast_hours (%v); hours past the last run would have no forecast", c.Wind.PollInterval, h)
+	}
 }
 
 // PollenSpeciesNames are the CAMS species the migration's CHECK admits.

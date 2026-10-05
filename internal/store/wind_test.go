@@ -73,6 +73,27 @@ func TestCurrentWindReadsTheHourContainingNow(t *testing.T) {
 	}
 }
 
+// The collector polls every 3h; until the next run the current hour comes from the last run's later rows.
+func TestCurrentWindServesALaterHourOfTheLastRun(t *testing.T) {
+	ctx, _, s := newStore(t)
+	fetched := time.Date(2026, 9, 5, 14, 0, 0, 0, time.UTC)
+	var run []store.WindForecast
+	for i := 0; i < 4; i++ {
+		run = append(run, store.WindForecast{Q: 0, R: 0, ValidAt: fetched.Add(time.Duration(i) * time.Hour), SpeedMS: float64(i + 1), Direction: 90})
+	}
+	if _, err := s.WriteForecasts(ctx, run, 15, "ecmwf_ifs025", fetched); err != nil {
+		t.Fatalf("WriteForecasts: %v", err)
+	}
+
+	vs, validAt, _, err := s.CurrentWind(ctx, fetched.Add(2*time.Hour+59*time.Minute), 15)
+	if err != nil {
+		t.Fatalf("CurrentWind: %v", err)
+	}
+	if want := fetched.Add(2 * time.Hour); len(vs) != 1 || !validAt.Equal(want) || vs[0].SpeedMS != 3 {
+		t.Errorf("got %+v at %v, want the run's 16:00 row", vs, validAt)
+	}
+}
+
 // A hex coordinate names a cell of a particular size, so rows from another grid
 // would place their vectors on the wrong part of the map.
 func TestCurrentWindExcludesAnotherResolutionsRows(t *testing.T) {
