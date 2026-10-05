@@ -130,9 +130,9 @@ export function windLabel(body, t, formatTime = defaultFormatTime, lang = 'bg') 
 
 // windIsStale asks whether the held forecast is still the current hour's.
 //
-// The model publishes hourly (wind.poll_interval, airbg.yaml) and the snapshot
-// serves the row for the hour containing now, so a forecast only ever changes
-// on an hour boundary. Anything else the refresh button reloads changes every
+// Forecast rows are hourly (polled every wind.poll_interval, airbg.yaml) and the
+// snapshot serves the row for the hour containing now, so a forecast only ever
+// changes on an hour boundary, however old the run. Anything else the refresh button reloads changes every
 // five minutes; this one would return a byte-identical national grid.
 //
 // No body and no valid_at are both "not stale": there is nothing held to drop,

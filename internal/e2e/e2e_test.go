@@ -264,6 +264,20 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	if _, err := st.RollupAll(ctx); err != nil {
 		t.Fatalf("RollupAll: %v", err)
 	}
+
+	// Pollen at one cell inside the fixture area, a day back and three ahead:
+	// ragweed high, grass low.
+	var pollen []store.PollenForecast
+	start := now.Truncate(time.Hour).Add(-24 * time.Hour)
+	for i := 0; i < 96; i++ {
+		at := start.Add(time.Duration(i) * time.Hour)
+		pollen = append(pollen,
+			store.PollenForecast{LonC: 2330, LatC: 4270, Species: "ragweed", ValidAt: at, Grains: 40},
+			store.PollenForecast{LonC: 2330, LatC: 4270, Species: "grass", ValidAt: at, Grains: 5})
+	}
+	if _, err := st.WritePollen(ctx, pollen, now.Add(-time.Hour)); err != nil {
+		t.Fatalf("WritePollen: %v", err)
+	}
 }
 
 // seedSensor upserts one sensor at (lon, lat). Every value travels as a bound

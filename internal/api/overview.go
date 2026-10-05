@@ -42,8 +42,9 @@ func Attributions() []Attribution {
 		},
 		{
 			Source: "open-meteo",
-			Text:   "Wind forecast data by Open-Meteo.com, CC BY 4.0",
-			URL:    "https://open-meteo.com/",
+			Text: "Wind forecast data by Open-Meteo.com, CC BY 4.0; pollen forecast contains modified " +
+				"Copernicus Atmosphere Monitoring Service information, via Open-Meteo.com",
+			URL: "https://open-meteo.com/",
 		},
 		{
 			Source: "eea-bathing",

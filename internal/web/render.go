@@ -184,6 +184,8 @@ type PageData struct {
 	// (stale, uncovered, no value, or no DayRange).
 	AreaNowHTML template.HTML
 	AreaDayHTML template.HTML
+	// AreaPollen is the pollen table and chip; nil without a forecast.
+	AreaPollen *PollenBlock
 
 	TitleKey string
 	BodyKey  string

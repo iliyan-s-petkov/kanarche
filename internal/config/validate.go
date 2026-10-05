@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"regexp"
@@ -73,6 +74,7 @@ func (c Config) Validate() error {
 	c.validateRateLimit(&p)
 	c.validateUpstreamAndCache(&p)
 	c.validateWind(&p)
+	c.validatePollen(&p)
 	c.validateEEA(&p)
 	c.validateCloudflare(&p)
 	c.validateSea(&p)
@@ -335,6 +337,113 @@ func (c Config) validateWind(p *problems) {
 	if h := time.Duration(c.Wind.ForecastHours) * time.Hour; c.Wind.Retention < h {
 		p.addf("wind.retention (%v) is shorter than wind.forecast_hours (%v); stored forecasts would expire while still being served", c.Wind.Retention, h)
 	}
+	// Each run writes forecast_hours from its fetch hour; the next run must land inside that span.
+	if h := time.Duration(c.Wind.ForecastHours) * time.Hour; c.Wind.PollInterval >= h {
+		p.addf("wind.poll_interval (%v) is not shorter than wind.forecast_hours (%v); hours past the last run would have no forecast", c.Wind.PollInterval, h)
+	}
+}
+
+// PollenSpeciesNames are the CAMS species the migration's CHECK admits.
+var PollenSpeciesNames = map[string]bool{
+	"alder": true, "birch": true, "grass": true, "mugwort": true, "olive": true, "ragweed": true,
+}
+
+// validatePollen checks the block even when disabled, like validateWind.
+func (c Config) validatePollen(p *problems) {
+	pc := c.Pollen
+	if u, err := url.Parse(pc.URL); err != nil {
+		p.addf("pollen.url = %q is not a URL: %s", pc.URL, parseErrorReason(err))
+	} else if u.Scheme != "https" {
+		p.addf("pollen.url = %q must use https", pc.URL)
+	} else if u.Host == "" {
+		p.addf("pollen.url = %q must be absolute", pc.URL)
+	} else if u.RawQuery != "" {
+		p.addf("pollen.url = %q must carry no query string; the client builds every parameter", pc.URL)
+	}
+	if pc.Domain == "" {
+		p.addf("pollen.domain is empty")
+	}
+	if pc.Country == "" {
+		p.addf("pollen.country is empty")
+	}
+	// The CAMS Europe grid is 0.1 degrees; a step off it samples between cells.
+	if steps := pc.LatticeDeg / 0.1; pc.LatticeDeg <= 0 || math.Abs(steps-math.Round(steps)) > 1e-9 {
+		p.addf("pollen.lattice_deg = %v, must be a positive multiple of 0.1", pc.LatticeDeg)
+	}
+	if pc.LatticeMarginKm < 0 {
+		p.addf("pollen.lattice_margin_km = %v, must not be negative", pc.LatticeMarginKm)
+	}
+	p.positiveFloat("pollen.cell_reach_km", pc.CellReachKm)
+	if len(pc.RunAtUTC) == 0 {
+		p.addf("pollen.run_at_utc is empty")
+	}
+	for _, s := range pc.RunAtUTC {
+		if _, ok := parseClock(s); !ok {
+			p.addf("pollen.run_at_utc entry %q, must be HH:MM", s)
+		}
+	}
+	p.positive("pollen.stale_after", pc.StaleAfter)
+	p.positive("pollen.request_timeout", pc.RequestTimeout)
+	if pc.PastDays < 0 {
+		p.addf("pollen.past_days = %d, must not be negative", pc.PastDays)
+	}
+	p.positiveInt("pollen.forecast_days", pc.ForecastDays)
+	p.positiveInt("pollen.days_shown", pc.DaysShown)
+	if pc.DaysShown > pc.ForecastDays {
+		p.addf("pollen.days_shown (%d) exceeds pollen.forecast_days (%d)", pc.DaysShown, pc.ForecastDays)
+	}
+	if pc.MinHours <= 0 || pc.MinHours > 24 {
+		p.addf("pollen.min_hours = %d, must be between 1 and 24", pc.MinHours)
+	}
+	p.positiveInt("pollen.points_per_request", pc.PointsPerReq)
+	if pc.MaxPayloadBytes <= 0 {
+		p.addf("pollen.max_payload_bytes must be positive, got %d", pc.MaxPayloadBytes)
+	}
+	if len(pc.Species) == 0 {
+		p.addf("pollen.species is empty")
+	}
+	seen := map[string]bool{}
+	for i, s := range pc.Species {
+		if !PollenSpeciesNames[s.Name] {
+			p.addf("pollen.species[%d].name = %q is not a CAMS species", i, s.Name)
+		}
+		if seen[s.Name] {
+			p.addf("pollen.species[%d].name = %q is listed twice", i, s.Name)
+		}
+		seen[s.Name] = true
+		if len(s.Levels) != 4 {
+			p.addf("pollen.species[%d].levels has %d entries, want 4 (low, moderate, high, very high)", i, len(s.Levels))
+			continue
+		}
+		for j, v := range s.Levels {
+			if v <= 0 || (j > 0 && v <= s.Levels[j-1]) {
+				p.addf("pollen.species[%d].levels = %v, must be positive and strictly ascending", i, s.Levels)
+				break
+			}
+		}
+	}
+}
+
+// parseClock reads "HH:MM" as an offset from midnight.
+func parseClock(s string) (time.Duration, bool) {
+	t, err := time.Parse("15:04", s)
+	if err != nil || len(s) != 5 {
+		return 0, false
+	}
+	return time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute, true
+}
+
+// RunTimes returns RunAtUTC as sorted offsets from UTC midnight. Validate
+// rejects unparseable entries, so none are dropped here in practice.
+func (pc Pollen) RunTimes() []time.Duration {
+	out := make([]time.Duration, 0, len(pc.RunAtUTC))
+	for _, s := range pc.RunAtUTC {
+		if d, ok := parseClock(s); ok {
+			out = append(out, d)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	return out
 }
 
 // validateGeocoder takes http as well as https so a local stub can stand in for

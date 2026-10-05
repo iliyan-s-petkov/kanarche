@@ -17,6 +17,7 @@ type Config struct {
 	Cache      Cache
 	Upstream   Upstream
 	Wind       Wind
+	Pollen     Pollen
 	EEA        EEA
 	Cloudflare Cloudflare
 	Sea        Sea
@@ -157,6 +158,40 @@ type Wind struct {
 	PointsPerReq    int
 	MaxPayloadBytes int64
 	Retention       time.Duration
+}
+
+// Pollen configures the CAMS pollen forecast collector and table.
+type Pollen struct {
+	Enabled bool
+	URL     string
+	// UserAgent is derived from Listen.BaseURL.
+	UserAgent string
+	Domain    string
+	// Country is the area.country_code whose extent the lattice covers.
+	Country         string
+	LatticeDeg      float64
+	LatticeMarginKm float64
+	// CellReachKm bounds the nearest-cell fallback for areas with no cell inside.
+	CellReachKm float64
+	// RunAtUTC are "HH:MM" times of day the collector fetches.
+	RunAtUTC        []string
+	StaleAfter      time.Duration
+	PastDays        int
+	ForecastDays    int
+	DaysShown       int
+	MinHours        int
+	RequestTimeout  time.Duration
+	PointsPerReq    int
+	MaxPayloadBytes int64
+	// Species in display order.
+	Species []PollenSpecies
+}
+
+// PollenSpecies holds the lower bounds of low, moderate, high and very high
+// in grains/m3.
+type PollenSpecies struct {
+	Name   string
+	Levels []float64
 }
 
 // EEA configures the official-station feed. See internal/upstream/eea/README.md.
@@ -491,6 +526,26 @@ func resolve(r *raw) Config {
 			MaxPayloadBytes: *r.Wind.MaxPayloadBytes,
 			Retention:       r.Wind.Retention.Std(),
 		},
+		Pollen: Pollen{
+			Enabled:         *r.Pollen.Enabled,
+			URL:             *r.Pollen.URL,
+			UserAgent:       CollectorUserAgent(*r.Listen.BaseURL),
+			Domain:          *r.Pollen.Domain,
+			Country:         *r.Pollen.Country,
+			LatticeDeg:      *r.Pollen.LatticeDeg,
+			LatticeMarginKm: *r.Pollen.LatticeMarginKm,
+			CellReachKm:     *r.Pollen.CellReachKm,
+			RunAtUTC:        *r.Pollen.RunAtUTC,
+			StaleAfter:      r.Pollen.StaleAfter.Std(),
+			PastDays:        *r.Pollen.PastDays,
+			ForecastDays:    *r.Pollen.ForecastDays,
+			DaysShown:       *r.Pollen.DaysShown,
+			MinHours:        *r.Pollen.MinHours,
+			RequestTimeout:  r.Pollen.RequestTimeout.Std(),
+			PointsPerReq:    *r.Pollen.PointsPerReq,
+			MaxPayloadBytes: *r.Pollen.MaxPayloadBytes,
+			Species:         resolvePollenSpecies(r.Pollen.Species),
+		},
 		EEA: EEA{
 			UserAgent:        CollectorUserAgent(*r.Listen.BaseURL),
 			Enabled:          *r.EEA.Enabled,
@@ -655,4 +710,12 @@ func resolveSeriesBucket(b *rawSeriesBucket) SeriesBucket {
 
 func resolveRange(r *rawRange) Range {
 	return Range{Min: *r.Min, Max: *r.Max}
+}
+
+func resolvePollenSpecies(raw []rawPollenSpecies) []PollenSpecies {
+	out := make([]PollenSpecies, 0, len(raw))
+	for _, s := range raw {
+		out = append(out, PollenSpecies{Name: *s.Name, Levels: *s.Levels})
+	}
+	return out
 }

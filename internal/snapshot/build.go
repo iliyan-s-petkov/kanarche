@@ -185,8 +185,8 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 	}
 
 	// The forecast overlay, read from our own table rather than fetched here:
-	// the met model updates hourly and the ingest cycle runs every five
-	// minutes. A failure is logged and leaves Wind empty rather than failing
+	// the collector stores hourly rows every few hours and the ingest cycle runs
+	// every five minutes. A failure is logged and leaves Wind empty rather than failing
 	// the build — the PM map is the site, and an optional layer must not be
 	// able to take it down. See docs/wind-overlay.md.
 	if h.wind.Enabled {
@@ -200,6 +200,12 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 			if snap.Wind, err = encode(windPayloadFrom(now, validAt, model, h.wind.ResolutionDeg, vectors)); err != nil {
 				return nil, fmt.Errorf("snapshot: encode wind: %w", err)
 			}
+		}
+	}
+
+	if h.pollen.Enabled {
+		if err := buildPollen(ctx, s, h, h.Load(), snap, now); err != nil {
+			return nil, err
 		}
 	}
 
