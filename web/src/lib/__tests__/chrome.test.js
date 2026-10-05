@@ -178,6 +178,37 @@ describe('the bathing-water key', () => {
   })
 })
 
+describe('the pollen key', () => {
+  const mount = (layer) => {
+    const el = document.createElement('div')
+    el.className = 'map'
+    if (layer) el.dataset.pollenLayer = 'true'
+    el.dataset.tPollenLegend = 'Pollen forecast'
+    el.dataset.tPollenLevelHigh = 'High'
+    document.body.appendChild(el)
+    return { el, c: mountChrome(el, readConfig(el)) }
+  }
+
+  it('shows with the layer and survives a legend repaint', () => {
+    const { el, c } = mount(true)
+    const key = () => el.querySelector('.scale__pollen')
+    expect(key().hidden).toBe(true)
+    c.showPollen(true)
+    c.showLegend({ bands: [], tier: null, metric: 'pm25', scale: null })
+    expect(key().hidden).toBe(false)
+    expect(key().querySelectorAll('.legend__row')).toHaveLength(5)
+    expect(key().textContent).toContain('High')
+    c.showPollen(false)
+    expect(key().hidden).toBe(true)
+  })
+
+  it('is absent from a map that does not offer the layer', () => {
+    const { el, c } = mount(false)
+    c.showPollen(true)
+    expect(el.querySelector('.scale__pollen')).toBeNull()
+  })
+})
+
 // The disclosure is why an unmeasured forecast layer is allowed on a map of
 // measurements, so it is never dismissible — but two sentences and a model name
 // unrolled over the map is most of a phone screen. Folded, it is a line the

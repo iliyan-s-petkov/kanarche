@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi } from 'vitest'
-import { LEGEND_CLASSES, buildSeaRows, buildWindRow, legendRows, legendTitle, rampGradient, renderLegend, setWindRow } from '../legend.js'
+import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows, legendTitle, rampGradient, renderLegend, setWindRow } from '../legend.js'
 
 // Shaped like /api/v1/scales: ascending, upper INCLUSIVE, the top band open
 // (upper === null), and both label languages present — internal/api/scales.go
@@ -340,6 +340,29 @@ describe('sea legend rows', () => {
     const rows = [...el.querySelectorAll('.legend__row')]
     expect(rows.map((r) => r.textContent)).toEqual(['Excellent', 'Good', 'Sufficient', 'Poor', 'Not classified'])
     expect(rows.map((r) => r.querySelector('rect').getAttribute('fill'))).toEqual(Object.values(colours))
+  })
+})
+
+describe('pollen legend rows', () => {
+  const t = {
+    legend: 'Pollen forecast',
+    levels: { none: 'None', low: 'Low', moderate: 'Moderate', high: 'High', very_high: 'Very high' },
+  }
+
+  it('names the five levels in rank order, each with its own swatch class, and starts hidden', () => {
+    const el = buildPollenRows(t)
+    expect(el.hidden).toBe(true)
+    expect(el.classList.contains('scale__pollen')).toBe(true)
+    expect(el.querySelector('.scale__pollen-head').textContent).toBe('Pollen forecast')
+    const rows = [...el.querySelectorAll('.legend__row')]
+    expect(rows.map((r) => r.textContent)).toEqual(['None', 'Low', 'Moderate', 'High', 'Very high'])
+    expect(rows.map((r) => r.querySelector('svg').getAttribute('class'))).toEqual([
+      'legend-swatch legend-swatch--pollen legend-swatch--pollen-none',
+      'legend-swatch legend-swatch--pollen legend-swatch--pollen-low',
+      'legend-swatch legend-swatch--pollen legend-swatch--pollen-moderate',
+      'legend-swatch legend-swatch--pollen legend-swatch--pollen-high',
+      'legend-swatch legend-swatch--pollen legend-swatch--pollen-very-high',
+    ])
   })
 })
 

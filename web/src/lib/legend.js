@@ -1,4 +1,5 @@
 import { SEA_CLASSES } from './sea.js'
+import { POLLEN_LEVELS, pollenVar } from './pollen.js'
 import { rampGradient } from './ramp.js'
 
 // The map legend: the ramp, and what a dot means at the current zoom.
@@ -274,6 +275,27 @@ export function buildSeaRows(t, colours) {
     text.className = 'legend__label'
     text.textContent = t.classes[k]
     row.append(swatch(colours[k], 'legend-swatch legend-swatch--sea'), text)
+    wrap.appendChild(row)
+  }
+  return wrap
+}
+
+// The pollen key: a heading and one swatch per level; app.css colours each from its --pollen-* token.
+export function buildPollenRows(t) {
+  const wrap = document.createElement('div')
+  wrap.className = 'scale__pollen'
+  wrap.hidden = true
+  const head = document.createElement('p')
+  head.className = 'scale__pollen-head'
+  head.textContent = t.legend
+  wrap.appendChild(head)
+  for (const l of POLLEN_LEVELS) {
+    const row = document.createElement('span')
+    row.className = 'legend__row'
+    const text = document.createElement('span')
+    text.className = 'legend__label'
+    text.textContent = t.levels[l]
+    row.append(swatch('currentColor', `legend-swatch legend-swatch--pollen legend-swatch--${pollenVar(l).slice(2)}`), text)
     wrap.appendChild(row)
   }
   return wrap

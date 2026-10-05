@@ -1,6 +1,7 @@
 import { parseMetricList, splitAttr, byMetric } from './metrics.js'
 import { LAYER_ORDER } from './maplayers.js'
 import { seaColours, readSeaTexts } from './sea.js'
+import { readPollenTexts } from './pollen.js'
 
 // Whether the colour key is unrolled. Its own key, not part of the layers
 // menu's state: the menu decides whether the key exists, this decides whether
@@ -110,6 +111,9 @@ export function readConfig(el) {
     // Bathing-water marker colours by class (frontend.sea_class_colours) and the EEA credit link.
     seaColours: seaColours(splitAttr(d.seaColours)),
     seaCreditURL: d.seaCreditUrl || '',
+    // Home map only: the pollen layer and the CAMS credit link it carries.
+    pollenLayer: d.pollenLayer === 'true',
+    pollenCreditURL: d.pollenCreditUrl || '',
     // One positional list, in WINDOW_CHOICES order — the same idiom as
     // data-metric-labels, and for the same reason a per-window attribute cannot
     // work: data-t-window-24h arrives in the dataset as tWindow-24h.
@@ -210,6 +214,7 @@ export function readConfig(el) {
       windAttribution: d.tWindAttribution || '',
       windCredit: d.tWindCredit || '',
       sea: readSeaTexts(d),
+      pollen: readPollenTexts(d),
       // MapLibre's own UI strings (canvas name, attribution toggle), see map.js.
       mapTitle: d.tMapTitle || '',
       attributionToggle: d.tAttributionToggle || '',

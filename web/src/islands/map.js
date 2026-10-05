@@ -32,6 +32,7 @@ import { installMapLoad } from '../lib/mapload.js'
 import { findSensor } from '../lib/sensors.svelte.js'
 import { createSeaPanel } from '../lib/seapanel.svelte.js'
 import { SEA_LAYER_ID } from '../lib/sea.js'
+import { POLLEN_FILL_LAYER_ID, pollenHref } from '../lib/pollen.js'
 
 // The flat cells and their tilted columns: one feature, two ways of drawing it.
 const HEX_CELL_LAYERS = [HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID]
@@ -155,6 +156,8 @@ export function mount(el) {
   // The bathing sites: one fetch per page like the wind, and a card of their own beside the sensor panel.
   const seaPanel = createSeaPanel(el, cfg)
   const seaState = { on: false, body: null, loading: false, closePanel: seaPanel.close }
+  // The pollen provinces: one fetch per page, home map only (cfg.pollenLayer).
+  const pollenState = { on: false, body: null, loading: false }
 
   chrome.locateButton.addEventListener('click', () => locateMe(map, state, cfg, chrome))
   installLocateHint(map, chrome.locateButton, cfg, {
@@ -194,7 +197,7 @@ export function mount(el) {
   // One object rather than four `let`s because the handler is async: by the
   // time it runs, mount() has returned and cannot receive them.
   const subs = {}
-  installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState, onMoveEnd, subs })
+  installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState, pollenState, onMoveEnd, subs })
 
   map.on('moveend', onMoveEnd)
   trackLastView(map, cfg)
@@ -328,7 +331,7 @@ export function mount(el) {
   // more specific claim — a dot is a station, a cell is a bin — and this is
   // what the ground between them means.
   map.on('click', (e) => {
-    if (!boundaryState.on) return
+    if (!boundaryState.on || pollenState.on) return
     if (hit(map, e.point, [LAYER_ID, ...HEX_CELL_LAYERS, SEA_LAYER_ID]).length) return
     const slug = boundaryChoice(state, hit(map, e.point, [BOUNDARY_FILL_LAYER_ID])[0])
     if (!slug) return
@@ -338,6 +341,16 @@ export function mount(el) {
     const bounds = boundsOf(findBoundary(boundaryState.body, slug))
     if (bounds) map.fitBounds(bounds, { padding: BOUNDARY_FIT_PADDING })
   })
+
+  // With pollen on, a province opens its area page; a marker or bathing site still claims its own click.
+  map.on('click', (e) => {
+    if (!pollenState.on) return
+    if (hit(map, e.point, [LAYER_ID, FAULTY_LAYER_ID, SEA_LAYER_ID]).length) return
+    const href = pollenHref(hit(map, e.point, [POLLEN_FILL_LAYER_ID])[0], cfg.langPrefix)
+    if (href) window.location.assign(href)
+  })
+  map.on('mouseenter', POLLEN_FILL_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer' })
+  map.on('mouseleave', POLLEN_FILL_LAYER_ID, () => { map.getCanvas().style.cursor = '' })
 
   return {
     map,
