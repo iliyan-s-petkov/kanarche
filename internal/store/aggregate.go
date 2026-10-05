@@ -70,6 +70,8 @@ type AreaAggregate struct {
 const freshnessPredicate = `r.time >= $1
        AND (r.sensor_id >= %d OR r.time >= $%d)`
 
+// latestCTE feeds the area summaries, so faulty pairs are left out here; the
+// marker query (latestSensorsCTE) keeps them and reports them instead.
 func latestCTE(communityCutoff int) string {
 	return fmt.Sprintf(`
 latest AS (
@@ -78,6 +80,7 @@ latest AS (
       FROM reading r
      WHERE `+freshnessPredicate+`
        AND r.quality = ANY($2::quality_flag[])
+       AND `+notFaulty+`
      ORDER BY r.sensor_id, r.metric, r.time DESC
 )`, OfficialSensorIDFloor, communityCutoff)
 }
@@ -255,6 +258,9 @@ type SensorReading struct {
 	// (see quality.Flag.Usable). Empty for a healthy sensor; Quality alone cannot
 	// say which metric failed.
 	Flags map[string]string
+	// Faulty names the metrics this device is faulty for over the configured
+	// window (see RefreshFaulty). Its values still appear in Values.
+	Faulty []string
 	// Measures names the metrics this device produced a fresh reading for, of
 	// any quality — what the hardware measures, as opposed to Values, which is
 	// what it currently has a USABLE reading for. The two differ exactly when a
@@ -341,7 +347,11 @@ SELECT s.sensor_id, s.sensor_type,
        COALESCE(s.station_type, ''), COALESCE(s.station_area, ''),
        -- Per-metric unusable flags; the usable pair is the same list as usableQuality.
        jsonb_object_agg(m.metric, m.quality::text)
-           FILTER (WHERE m.quality <> ALL($2::quality_flag[]))
+           FILTER (WHERE m.quality <> ALL($2::quality_flag[])),
+       COALESCE(
+           (SELECT array_agg(f.metric ORDER BY f.metric)
+              FROM sensor_faulty f WHERE f.sensor_id = s.sensor_id),
+           ARRAY[]::text[])
   FROM sensor s
   JOIN measured m ON m.sensor_id = s.sensor_id
   LEFT JOIN latest l ON l.sensor_id = m.sensor_id AND l.metric = m.metric
@@ -380,7 +390,7 @@ func scanSensorReadings(rows pgx.Rows) ([]SensorReading, error) {
 		if err := rows.Scan(&sr.SensorID, &sr.SensorType, &sr.Lon, &sr.Lat,
 			&sr.Country, &sr.AreaSlugs, &sr.Quality, &values, &sr.Measures,
 			&sr.FirstSeen, &sr.LastSeen, &sr.Source, &sr.StationCode,
-			&sr.StationName, &sr.StationType, &sr.StationArea, &flags); err != nil {
+			&sr.StationName, &sr.StationType, &sr.StationArea, &flags, &sr.Faulty); err != nil {
 			return nil, fmt.Errorf("store: scan sensor: %w", err)
 		}
 		if values == nil {
@@ -514,6 +524,7 @@ var areaRawPerSensorSQL = `(SELECT ` + bucketed("r.time", 5) + ` AS b, r.sensor_
            AND r.time  >= $3
            AND r.quality = ANY($4::quality_flag[])
            AND ($6::timestamptz IS NULL OR r.time < $6)
+           AND ` + notFaulty + `
          GROUP BY b, r.sensor_id) per_sensor`
 
 var areaRawSeriesSQL = `
@@ -584,6 +595,7 @@ SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
          WHERE r.metric = $1
            AND r.time  >= $2
            AND r.quality = ANY($3::quality_flag[])
+           AND ` + notFaulty + `
          GROUP BY a.slug, b, r.sensor_id) per_sensor
  GROUP BY slug, b
  ORDER BY slug, b
@@ -831,6 +843,7 @@ SELECT slug, b, count(*)
          WHERE r.metric = $1
            AND r.time  >= $2
            AND r.quality = ANY($3::quality_flag[])
+           AND ` + notFaulty + `
          GROUP BY a.slug, b, r.sensor_id) per_sensor
  GROUP BY slug, b
  ORDER BY slug, b

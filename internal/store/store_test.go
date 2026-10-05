@@ -24,6 +24,7 @@ func testStoreConfig() config.Store {
 		CoverageThreshold:       3,
 		FreshnessWindow:         2 * time.Hour,
 		OfficialFreshnessWindow: 12 * time.Hour,
+		Faulty:                  config.Faulty{Window: 24 * time.Hour, Share: 0.5, MinReadings: 6},
 	}
 }
 

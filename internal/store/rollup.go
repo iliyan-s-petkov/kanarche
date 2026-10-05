@@ -10,19 +10,28 @@ import (
 
 // rollupSQL takes the quality filter as $2 rather than inlining it: usableQuality
 // in aggregate.go is the single definition of which flags may move a published
-// number, and a second literal here could drift from it silently.
-const rollupSQL = `INSERT INTO reading_hourly
+// number, and a second literal here could drift from it silently. Pairs faulty
+// over the window ending with this bucket are left out ($3-$5, see faulty.go).
+var rollupSQL = `WITH faulty AS (` + faultyPairsSQL("($1::timestamptz + interval '1 hour')", "$3", "$4", "$5") + `)
+	 INSERT INTO reading_hourly
 	     (bucket, sensor_id, metric, avg_value, min_value, max_value, sample_count)
-	 SELECT $1, sensor_id, metric, avg(value), min(value), max(value), count(*)
-	 FROM reading
-	 WHERE time >= $1 AND time < $1 + interval '1 hour'
-	   AND quality = ANY($2::quality_flag[])
-	 GROUP BY sensor_id, metric
+	 SELECT $1, r.sensor_id, r.metric, avg(r.value), min(r.value), max(r.value), count(*)
+	 FROM reading r
+	 WHERE r.time >= $1 AND r.time < $1 + interval '1 hour'
+	   AND r.quality = ANY($2::quality_flag[])
+	   AND NOT EXISTS (SELECT 1 FROM faulty f WHERE f.sensor_id = r.sensor_id AND f.metric = r.metric)
+	 GROUP BY r.sensor_id, r.metric
 	 ON CONFLICT (sensor_id, metric, bucket) DO UPDATE
 	   SET avg_value = EXCLUDED.avg_value,
 	       min_value = EXCLUDED.min_value,
 	       max_value = EXCLUDED.max_value,
 	       sample_count = EXCLUDED.sample_count`
+
+// rollupDropFaultySQL removes a row an earlier pass wrote before its pair
+// went faulty; rollupSQL only upserts.
+var rollupDropFaultySQL = `DELETE FROM reading_hourly h
+	 USING (` + faultyPairsSQL("($1::timestamptz + interval '1 hour')", "$2", "$3", "$4") + `) f
+	 WHERE h.bucket = $1 AND h.sensor_id = f.sensor_id AND h.metric = f.metric`
 
 // watermarkSQL upserts the singleton rollup_watermark row. The WHERE guard on
 // the UPDATE makes the advance monotonic: even if this were ever called with
@@ -49,8 +58,31 @@ const watermarkSQL = `INSERT INTO rollup_watermark (id, bucket, updated_at)
 // advance in lockstep with the data (the ingest loop's backlog drain) should
 // use RollupBacklog instead, which performs both under a single transaction.
 func (s *Store) RollupHour(ctx context.Context, bucket time.Time) (int64, error) {
-	bucket = TruncateHour(bucket)
-	tag, err := s.pool.Exec(ctx, rollupSQL, bucket, usableQuality)
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // no-op after a successful Commit
+
+	n, err := s.rollupBucket(ctx, tx, TruncateHour(bucket))
+	if err != nil {
+		return 0, err
+	}
+	return n, tx.Commit(ctx)
+}
+
+// rollupBucket counts the bucket's readings by quality, then rolls it up with
+// the faulty pairs those counts imply left out. Counts first, so the bucket's
+// own flagged readings count toward its faulty set.
+func (s *Store) rollupBucket(ctx context.Context, tx pgx.Tx, bucket time.Time) (int64, error) {
+	if _, err := tx.Exec(ctx, qualityCountsSQL, bucket, usableQuality); err != nil {
+		return 0, err
+	}
+	w, share, minReadings := s.faultyArgs()
+	if _, err := tx.Exec(ctx, rollupDropFaultySQL, bucket, w, share, minReadings); err != nil {
+		return 0, err
+	}
+	tag, err := tx.Exec(ctx, rollupSQL, bucket, usableQuality, w, share, minReadings)
 	if err != nil {
 		return 0, err
 	}
@@ -122,7 +154,7 @@ func (s *Store) rollupAndAdvance(ctx context.Context, bucket time.Time) (int64, 
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // no-op after a successful Commit
 
-	tag, err := tx.Exec(ctx, rollupSQL, bucket, usableQuality)
+	n, err := s.rollupBucket(ctx, tx, bucket)
 	if err != nil {
 		return 0, err
 	}
@@ -132,7 +164,7 @@ func (s *Store) rollupAndAdvance(ctx context.Context, bucket time.Time) (int64, 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, err
 	}
-	return tag.RowsAffected(), nil
+	return n, nil
 }
 
 // rollupBacklogHook, when non-nil, is invoked after each bucket in

@@ -7,6 +7,24 @@ around it or goose splits it on the semicolons inside.
 The reasoning behind a migration lives here, not in the file. Numbers below are
 the ones documented so far.
 
+## 00016 — `reading_quality_hourly`, `sensor_faulty`
+
+The faulty-sensor rule (`quality.faulty_*` in `airbg.yaml`, OpenProject #676):
+a sensor is faulty for a metric when at least `faulty_share` of its readings
+in `faulty_window` were flagged unusable. The rollup records, per sensor, hour
+and metric, the total and flagged reading counts, so the 24h share is a sum
+over at most 24 small rows instead of a scan of raw readings.
+
+A separate table rather than columns on `reading_hourly`: that table only has
+rows for hours with usable readings, and every reader of it assumes
+`avg_value` is a real mean. An hour where every reading was flagged has counts
+but no mean.
+
+`sensor_faulty` is the current faulty set, replaced once per ingest cycle after
+the rollup. Read paths join it (a handful of rows) instead of recomputing the
+share per request. Retention of the counts matches raw readings (32 days),
+since they can only be recomputed from them.
+
 ## 00014 — `bathing_site`, `bathing_class`, `bathing_sample`, `bathing_import`
 
 EEA bathing-water data for the Sea layer (`internal/upstream/bathing/README.md`,

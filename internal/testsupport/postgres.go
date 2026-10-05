@@ -18,7 +18,10 @@ import (
 // StoreConfig mirrors airbg.yaml's store: block, the same threshold every
 // other package's local testStoreConfig helper already duplicates.
 func StoreConfig() config.Store {
-	return config.Store{CoverageThreshold: 3, FreshnessWindow: 2 * time.Hour}
+	return config.Store{
+		CoverageThreshold: 3, FreshnessWindow: 2 * time.Hour,
+		Faulty: config.Faulty{Window: 24 * time.Hour, Share: 0.5, MinReadings: 6},
+	}
 }
 
 // testDatabaseConfig mirrors airbg.yaml's database.statement_timeouts. URL is
