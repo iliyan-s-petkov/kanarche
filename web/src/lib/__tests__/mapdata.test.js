@@ -9,6 +9,7 @@ import {
   setSourceViewAvailability, metricNote, cellTier, urlFor, refresh,
 } from '../mapdata.js'
 import { getSensors, getSensorArea, setSensors } from '../sensors.svelte.js'
+import { getMapAreas, setMapAreas } from '../mapareas.svelte.js'
 import { hintController } from '../chrome.js'
 import { placeVisitor } from '../placement.js'
 import { clearCache } from '../api.js'
@@ -1011,5 +1012,83 @@ describe('viewport-aware hex tier', () => {
 
     expect(fetchJSON).toHaveBeenCalledTimes(2)
     expect(fetchJSON.mock.calls[1][0]).toContain('resolution_km=14.3531')
+  })
+})
+
+// The finder lists whatever area list was published last. Locate and address
+// jumps reach the sensor tier without passing the city tier, so the sensor tier
+// has to publish the city list itself, once.
+describe('the finder area list after skipping the city tier', () => {
+  const country = { areas: [{ slug: 'sofia-oblast', lon: 23.3, lat: 42.7, zoom: 9, values: { P2: 5 } }] }
+  const city = { areas: [{ slug: 'sofia', lon: 23.3, lat: 42.7, zoom: 11, values: { P2: 5 } }, { slug: 'mladost', lon: 23.4, lat: 42.6, zoom: 13, values: { P2: 6 } }] }
+  const sensors = { generated_at: '2026-09-27T00:00:00Z', sensors: { id: [1], lon: [23.3], lat: [42.7], P2: [5] } }
+  const cfg = {
+    slug: null, zoomCity: 9, zoomSensor: 11, metric: 'P2', noDataColour: '#9ca3af',
+    t: { hint: 'h', unavailable: 'u', noSources: 'n' },
+  }
+  const chrome = () => ({ showHint: vi.fn(), showError: vi.fn(), showNote: vi.fn(), showLegend: vi.fn() })
+  const fakeMap = (zoom) => ({ getZoom: () => zoom, getSource: () => ({ setData: () => {} }) })
+  const newState = () => ({ slug: 'sofia', tier: null, scales: null, window: '', sensorBody: null, areas: null })
+  const stubFetch = () => vi.fn(async (url) => ({
+    ok: true, status: 200, headers: new Headers(),
+    json: async () => (url.includes('/sensors') ? sensors : url.includes('tier=city') ? city : country),
+  }))
+  const cityCalls = (fetch) => fetch.mock.calls.filter(([url]) => url.includes('tier=city'))
+
+  beforeEach(() => { clearCache(); setMapAreas([]) })
+  afterEach(() => { clearCache(); setMapAreas([]) })
+
+  it('publishes the city list on a sensor-tier pass entered from the country tier', async () => {
+    const fetch = stubFetch()
+    vi.stubGlobal('fetch', fetch)
+    const state = newState()
+
+    await refresh(fakeMap(5), state, cfg, chrome())
+    expect(getMapAreas().map((a) => a.slug)).toEqual(['sofia-oblast'])
+    await refresh(fakeMap(12), state, cfg, chrome())
+
+    await vi.waitFor(() => expect(getMapAreas().map((a) => a.slug)).toEqual(['sofia', 'mladost']))
+    expect(state.areas.map((a) => a.slug)).toEqual(['sofia', 'mladost'])
+  })
+
+  it('asks for the city list once across repeated sensor-tier passes', async () => {
+    const fetch = stubFetch()
+    vi.stubGlobal('fetch', fetch)
+    const state = newState()
+
+    await refresh(fakeMap(12), state, cfg, chrome())
+    await vi.waitFor(() => expect(getMapAreas()).toHaveLength(2))
+    clearCache()
+    await refresh(fakeMap(12), state, cfg, chrome(), true)
+    await refresh(fakeMap(12), state, cfg, chrome(), true)
+    await new Promise((resolve) => setTimeout(resolve, 5))
+
+    expect(cityCalls(fetch)).toHaveLength(1)
+  })
+
+  it('makes no extra request when the city tier was already passed', async () => {
+    const fetch = stubFetch()
+    vi.stubGlobal('fetch', fetch)
+    const state = newState()
+
+    await refresh(fakeMap(10), state, cfg, chrome())
+    clearCache()
+    await refresh(fakeMap(12), state, cfg, chrome())
+    await new Promise((resolve) => setTimeout(resolve, 5))
+
+    expect(cityCalls(fetch)).toHaveLength(1)
+    expect(getMapAreas()).toHaveLength(2)
+  })
+
+  it('publishes the country list again on zooming back out', async () => {
+    const fetch = stubFetch()
+    vi.stubGlobal('fetch', fetch)
+    const state = newState()
+
+    await refresh(fakeMap(12), state, cfg, chrome())
+    await vi.waitFor(() => expect(getMapAreas()).toHaveLength(2))
+    await refresh(fakeMap(5), state, cfg, chrome())
+
+    expect(getMapAreas().map((a) => a.slug)).toEqual(['sofia-oblast'])
   })
 })
