@@ -402,6 +402,9 @@ quality:
   faulty_window: "24h"
   faulty_share: 0.5
   faulty_min_readings: 6
+  # Lone readings (under min_neighbours) above the cap are out_of_range; unset metrics uncapped.
+  lone_caps:
+    P2: 500.0
   smooth_field_floors:
     temperature: 1.5
     humidity: 8.0

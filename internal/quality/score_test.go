@@ -369,3 +369,106 @@ func TestPropertyAddingMedianNeighbourNeverCausesAFlag(t *testing.T) {
 		}
 	}
 }
+
+func loneCapScorer() *Scorer {
+	q := testQuality()
+	q.LoneCaps = map[string]float64{"P2": 500}
+	return NewScorer(q)
+}
+
+func TestLoneCapFlagsHighLoneP2OutOfRange(t *testing.T) {
+	scored := loneCapScorer().Score([]upstream.Reading{at(1, "P2", 501, 0)}, NewHistory(12))
+	if got := flagOf(t, scored, 1); got != FlagOutOfRange {
+		t.Errorf("flag = %v, want %v", got, FlagOutOfRange)
+	}
+}
+
+func TestLoneCapBoundaryIsExclusive(t *testing.T) {
+	// The cap itself is still a plausible reading; only values above it are cut.
+	scored := loneCapScorer().Score([]upstream.Reading{at(1, "P2", 500, 0)}, NewHistory(12))
+	if got := flagOf(t, scored, 1); got != FlagNoNeighbours {
+		t.Errorf("flag = %v, want %v", got, FlagNoNeighbours)
+	}
+}
+
+func TestLoneCapIgnoresOtherMetrics(t *testing.T) {
+	scored := loneCapScorer().Score([]upstream.Reading{
+		at(1, "P1", 900, 0),
+		at(1, "temperature", 55, 0),
+	}, NewHistory(12))
+	for _, sc := range scored {
+		if sc.Flag != FlagNoNeighbours {
+			t.Errorf("%s flag = %v, want %v", sc.Reading.Metric, sc.Flag, FlagNoNeighbours)
+		}
+	}
+}
+
+func TestLoneCapLeavesSensorsWithNeighboursToSpatialRule(t *testing.T) {
+	// Three neighbours at 580-620: the median is far above the PM ratio, so the
+	// spatial rule passes the reading; the cap must not fire.
+	readings := []upstream.Reading{
+		at(1, "P2", 600, 0),
+		at(2, "P2", 580, 0.005),
+		at(3, "P2", 590, 0.010),
+		at(4, "P2", 620, 0.015),
+	}
+	scored := loneCapScorer().Score(readings, NewHistory(12))
+	if got := flagOf(t, scored, 1); got != FlagOK {
+		t.Errorf("flag = %v, want %v", got, FlagOK)
+	}
+}
+
+func TestLoneCapAloneDoesNotAlterOthersVerdicts(t *testing.T) {
+	// Sensor 5 is far away and capped; sensors 1-4 are a normal cluster. The
+	// capped reading must not alter anyone else's verdict.
+	readings := []upstream.Reading{
+		at(1, "P2", 10, 0),
+		at(2, "P2", 11, 0.005),
+		at(3, "P2", 12, 0.010),
+		at(4, "P2", 10, 0.015),
+		at(5, "P2", 970, 5),
+	}
+	scored := loneCapScorer().Score(readings, NewHistory(12))
+	if got := flagOf(t, scored, 5); got != FlagOutOfRange {
+		t.Errorf("sensor 5 flag = %v, want %v", got, FlagOutOfRange)
+	}
+	if got := flagOf(t, scored, 1); got != FlagOK {
+		t.Errorf("sensor 1 flag = %v, want %v", got, FlagOK)
+	}
+}
+
+func TestLoneCapReadingIsNotANeighbour(t *testing.T) {
+	// Sensor 1 has two clean neighbours plus the capped sensor 4. Counting the
+	// capped reading would reach min_neighbours; leaving it out, like any
+	// out_of_range reading, leaves sensor 1 with too few.
+	readings := []upstream.Reading{
+		at(1, "P2", 10, 0),
+		at(2, "P2", 11, -0.10),
+		at(3, "P2", 12, -0.11),
+		at(4, "P2", 970, 0.12), // ~10 km east of 1, ~18 km from 2 and 3: lone
+	}
+	scored := loneCapScorer().Score(readings, NewHistory(12))
+	if got := flagOf(t, scored, 4); got != FlagOutOfRange {
+		t.Errorf("sensor 4 flag = %v, want %v", got, FlagOutOfRange)
+	}
+	if got := flagOf(t, scored, 1); got != FlagNoNeighbours {
+		t.Errorf("sensor 1 flag = %v, want %v", got, FlagNoNeighbours)
+	}
+}
+
+func TestLoneCapAbsentMeansNoCap(t *testing.T) {
+	scored := testScorer().Score([]upstream.Reading{at(1, "P2", 970, 0)}, NewHistory(12))
+	if got := flagOf(t, scored, 1); got != FlagNoNeighbours {
+		t.Errorf("flag = %v, want %v", got, FlagNoNeighbours)
+	}
+}
+
+func TestLoneCapReadingStaysOutOfHistory(t *testing.T) {
+	hist := NewHistory(3)
+	for range 3 {
+		loneCapScorer().Score([]upstream.Reading{at(1, "P2", 970, 0)}, hist)
+	}
+	if _, ok := hist.Constant(1, "P2"); ok {
+		t.Errorf("capped reading was observed into history")
+	}
+}

@@ -145,3 +145,20 @@ func TestResolvePeriodOrderPreservation(t *testing.T) {
 		}
 	}
 }
+
+// The shipped file caps lone PM2.5 at 500 and nothing else; a file without the
+// key resolves to no caps.
+func TestResolveLoneCaps(t *testing.T) {
+	r, err := readRaw(filepath.Join("..", "..", "airbg.yaml"))
+	if err != nil {
+		t.Fatalf("readRaw error = %v, want nil", err)
+	}
+	got := resolve(r).Quality.LoneCaps
+	if len(got) != 1 || got["P2"] != 500 {
+		t.Errorf("LoneCaps = %v, want map[P2:500]", got)
+	}
+	r.Quality.LoneCaps = nil
+	if got := resolve(r).Quality.LoneCaps; len(got) != 0 {
+		t.Errorf("LoneCaps with the key absent = %v, want empty", got)
+	}
+}
