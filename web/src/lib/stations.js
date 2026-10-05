@@ -24,6 +24,7 @@
 //   quality  - the sensor's own data-quality flag, exposed to the panel as
 //              `flag` because it is metadata ABOUT the readings
 //   flags    - per-metric unusable flags, see flagsAt
+//   faulty   - metrics the server's 24h rule marks faulty, see isFaultyAt
 //   station  - the address join key, this file's own subject
 //   measures - what each device's hardware measures, see measuresAt
 //   first_seen / last_seen
@@ -37,7 +38,7 @@
 // metrics — is what lets a metric added server-side reach the panel with no
 // frontend change.
 export const META_COLUMNS = new Set([
-  'id', 'type', 'lon', 'lat', 'quality', 'flags', 'station', 'measures', 'first_seen', 'last_seen',
+  'id', 'type', 'lon', 'lat', 'quality', 'flags', 'faulty', 'station', 'measures', 'first_seen', 'last_seen',
   'source', 'station_code', 'station_name', 'station_type', 'station_area',
 ])
 
@@ -146,12 +147,30 @@ export function flagsAt(body, indices) {
   return out
 }
 
-// A station is faulty for a metric when it has no usable reading and a member
-// carries a non-usable flag for it. The server only lists non-usable flags, so
-// the check here guards a hand-built body.
+// serverFaultyAt: every member measuring the metric is in the server's faulty
+// column (the 24h flagged-share rule). False for a body without the column.
+function serverFaultyAt(body, indices, metric) {
+  const faulty = body?.sensors?.faulty
+  if (!Array.isArray(faulty)) return false
+  const measures = body?.sensors?.measures
+  let relevant = 0
+  for (const i of indices) {
+    const isFaulty = (faulty[i] ?? []).includes(metric)
+    const measured = Array.isArray(measures) ? (measures[i] ?? []).includes(metric) : true
+    if (!isFaulty && !measured) continue
+    if (!isFaulty) return false
+    relevant++
+  }
+  return relevant > 0
+}
+
+// A station is faulty for a metric when the server says so for every member
+// measuring it, or, as a fallback, when it has no usable reading and a member
+// carries a non-usable flag for it.
 const USABLE_FLAGS = new Set(['', 'ok', 'no_neighbours'])
 
 export function isFaultyAt(body, indices, metric) {
+  if (serverFaultyAt(body, indices, metric)) return true
   if (readingAt(body, indices, metric).value !== null) return false
   const flag = flagsAt(body, indices)[metric]
   return !!flag && !USABLE_FLAGS.has(flag)

@@ -33,7 +33,7 @@ export function filterFaulty(features, showFaulty) {
 }
 
 // Faulty stations are shown whenever the toggle is on, whatever the with-data
-// status says: they never have a value, and the status filter would drop them.
+// status says: the status filter does not speak for them, value or not.
 export function filterSensorFeatures(features, status, showFaulty) {
   const healthy = filterByStatus(features.filter((f) => !f.properties.faulty), status)
   return showFaulty ? healthy.concat(features.filter((f) => f.properties.faulty)) : healthy
