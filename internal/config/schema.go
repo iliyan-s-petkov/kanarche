@@ -257,6 +257,10 @@ type rawQuality struct {
 	SmoothFieldFloors          *rawFloors `yaml:"smooth_field_floors"`
 	Ranges                     *rawRanges `yaml:"ranges"`
 	ClampSentinels             *rawClamps `yaml:"clamp_sentinels"`
+	// The faulty-sensor rule; see airbg.yaml quality.faulty_window.
+	FaultyWindow      *Duration `yaml:"faulty_window"`
+	FaultyShare       *float64  `yaml:"faulty_share"`
+	FaultyMinReadings *int      `yaml:"faulty_min_readings"`
 }
 
 // rawClamps is a fixed struct for the same reason rawRanges is: only the PM

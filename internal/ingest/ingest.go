@@ -305,6 +305,10 @@ func (i *Ingester) RunOnce(ctx context.Context) (Stats, error) {
 	// failed, or returned nothing), so it cannot depend on batch data being
 	// present (task-16 review finding 2).
 	rollupErr := i.rollupBacklog(ctx, i.now())
+	// After the rollup, which counts this hour's flags; before the publish, which reads the set.
+	if _, err := i.store.RefreshFaulty(ctx, i.now()); err != nil {
+		rollupErr = errors.Join(rollupErr, err)
+	}
 
 	// fetchErr, pipelineErr and rollupErr are independent failures — joined
 	// so none is silently dropped when more than one fires the same cycle.

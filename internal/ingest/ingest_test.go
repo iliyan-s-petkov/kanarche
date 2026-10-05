@@ -59,7 +59,10 @@ func testScorer() *quality.Scorer {
 // arbitrary literal, so a reader never has to wonder whether a mismatch here
 // is deliberate.
 func testStoreConfig() config.Store {
-	return config.Store{CoverageThreshold: 3, FreshnessWindow: 2 * time.Hour}
+	return config.Store{
+		CoverageThreshold: 3, FreshnessWindow: 2 * time.Hour,
+		Faulty: config.Faulty{Window: 24 * time.Hour, Share: 0.5, MinReadings: 6},
+	}
 }
 
 // testSeriesTimeout and testAssignTimeout mirror airbg.yaml's
@@ -289,6 +292,40 @@ func TestRunOnceUpdatesRollup(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("sample_count = %d, want 1", count)
+	}
+}
+
+// Each cycle refreshes the faulty set after the rollup has counted this hour.
+func TestRunOnceRefreshesTheFaultySet(t *testing.T) {
+	ts := store.TruncateHour(time.Now()).Add(30 * time.Minute)
+	ctx, st, ing := newIngester(t, stubFetcher{})
+	restore := ing.SetClockForTesting(func() time.Time { return ts })
+	defer restore()
+
+	if _, err := st.Pool().Exec(ctx,
+		`INSERT INTO sensor (sensor_id, sensor_type, location)
+		 VALUES (9, 'SDS011', ST_SetSRID(ST_MakePoint(23.33, 42.69), 4326)::geography)`); err != nil {
+		t.Fatalf("seed sensor: %v", err)
+	}
+	for i := range 6 {
+		if _, err := st.Pool().Exec(ctx,
+			`INSERT INTO reading (time, sensor_id, metric, value, quality) VALUES ($1, 9, 'P2', 900, 'stuck')`,
+			ts.Add(-time.Duration(i+1)*time.Minute)); err != nil {
+			t.Fatalf("seed reading: %v", err)
+		}
+	}
+
+	if _, err := ing.RunOnce(ctx); err != nil {
+		t.Fatalf("RunOnce: %v", err)
+	}
+
+	var n int
+	if err := st.Pool().QueryRow(ctx,
+		`SELECT count(*) FROM sensor_faulty WHERE sensor_id = 9 AND metric = 'P2'`).Scan(&n); err != nil {
+		t.Fatalf("read faulty: %v", err)
+	}
+	if n != 1 {
+		t.Errorf("sensor_faulty has %d rows for 9/P2 after a cycle, want 1", n)
 	}
 }
 

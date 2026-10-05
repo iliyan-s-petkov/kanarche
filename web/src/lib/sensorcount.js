@@ -31,8 +31,9 @@ export function countSensors(responseBody, metric, { showFaulty = true } = {}) {
   let active = 0
   let faulty = 0
   for (const { indices } of stations) {
-    if (readingAt(responseBody, indices, metric).value !== null) active++
-    else if (isFaultyAt(responseBody, indices, metric)) faulty++
+    // Faulty first: a server-faulty station can still carry a value.
+    if (isFaultyAt(responseBody, indices, metric)) faulty++
+    else if (readingAt(responseBody, indices, metric).value !== null) active++
   }
   // faulty counts only stations still in `total`, i.e. drawn as rings.
   return { total, active, silent: total - active, faulty }
