@@ -151,6 +151,9 @@ func TestPollenDaysAreLocal(t *testing.T) {
 	if !from.Equal(time.Date(2026, 10, 3, 21, 0, 0, 0, time.UTC)) {
 		t.Errorf("from = %v, want local midnight of the 4th", from)
 	}
+	if !to.Equal(time.Date(2026, 10, 6, 21, 0, 0, 0, time.UTC)) {
+		t.Errorf("to = %v, want local midnight of the 7th", to)
+	}
 	// The 25th of October 2026 has 25 hours in Sofia: the span is by calendar.
 	_, from, to = pollenDays(time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC), sofia, 2)
 	if to.Sub(from) != 49*time.Hour {
