@@ -881,11 +881,14 @@ strong, b { font-weight: var(--weight-emphasis); }
 .readout.card .readout__value { display: inline-flex; align-items: baseline; gap: var(--space-1); }
 /* Which network a breakdown card counts, above its label and quieter than it. */
 .readout__group { color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
-/* A card whose figure sits in a gauge ring is 108px tall, and the cards beside
-   it match that height. At the kit's 2rem the bare number floated in the middle
-   of all that space reading as an afterthought, so a figure with no ring around
-   it is drawn at the ring's own scale. */
-.readout.card > .readout__value { font-size: var(--text-page); }
+/* A bare figure (no ring) is centred in the 1fr track between caption and footer, on the
+   ring's own centre line, and sized from the card's width: 5 tabular glyphs ("1 234") fit. */
+.readout.card { container-type: inline-size; }
+.readout.card > .readout__value {
+  align-self: center; white-space: nowrap; line-height: 1; font-variant-numeric: tabular-nums;
+  font-size: clamp(2rem, 36cqi, 5.5rem);
+}
+.readout.card > .readout__value .readout__unit { font-size: 0.4em; font-weight: var(--weight-body); color: var(--fg-2); }
 
 /* The arc is drawn with SVG presentation attributes (see base.gohtml): style-src
    forbids the inline custom properties this would otherwise use. */
