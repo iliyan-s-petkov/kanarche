@@ -1,7 +1,6 @@
 package area_test
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -37,7 +36,7 @@ func TestPurgeOutsideBoundaryAppliesTheGivenTimeout(t *testing.T) {
 
 	if _, err := area.PurgeOutsideBoundary(ctx, pool, 1*time.Millisecond); err == nil {
 		t.Fatal("PurgeOutsideBoundary with a 1ms timeout succeeded against 200,000 scattered sensors — the configured timeout is not reaching the session")
-	} else if !strings.Contains(err.Error(), "canceling statement due to statement timeout") {
-		t.Errorf("err = %v, want a statement timeout cancellation", err)
+	} else if !isQueryCanceled(err) {
+		t.Errorf("err = %v, want a query cancellation (SQLSTATE 57014)", err)
 	}
 }

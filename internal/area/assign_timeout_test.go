@@ -1,11 +1,12 @@
 package area_test
 
 import (
-	"strings"
+	"errors"
 	"testing"
 	"time"
 
 	"airbg.org/internal/area"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // TestAssignSensorsAppliesTheGivenTimeout proves assignTimeout genuinely
@@ -35,7 +36,15 @@ func TestAssignSensorsAppliesTheGivenTimeout(t *testing.T) {
 
 	if _, _, err := area.AssignSensors(ctx, pool, 1*time.Millisecond); err == nil {
 		t.Fatal("AssignSensors with a 1ms timeout succeeded against a 200,000-row join — the configured timeout is not reaching the session")
-	} else if !strings.Contains(err.Error(), "canceling statement due to statement timeout") {
-		t.Errorf("err = %v, want a statement timeout cancellation", err)
+	} else if !isQueryCanceled(err) {
+		t.Errorf("err = %v, want a query cancellation (SQLSTATE 57014)", err)
 	}
+}
+
+// isQueryCanceled matches on SQLSTATE 57014, not message text. The test ctx has
+// no deadline, so only statement_timeout can cancel; parallel workers may
+// report it as "user request" instead of "statement timeout".
+func isQueryCanceled(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "57014"
 }
