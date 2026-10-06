@@ -107,7 +107,34 @@ for (const shape of [
   })
 }
 
-test('the area page map offers no pollen layer', async ({ browser }) => {
+// Every visible legend section after the first carries the rule; the first has none.
+for (const shape of [
+  { name: 'desktop', path: '/en/', sea: 'Bathing water', pollen: 'Pollen', context: { viewport: { width: 1440, height: 900 } } },
+  { name: 'mobile', path: '/', sea: 'Води за къпане', pollen: 'Прашец', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+]) {
+  test(`${shape.name}: bathing waters and pollen are separated by a rule in the legend`, async ({ browser }, testInfo) => {
+    testInfo.setTimeout(60000)
+    const context = await browser.newContext(shape.context)
+    const page = await context.newPage()
+    await prepareMap(page, shape.path)
+    await togglePollen(page, shape.sea)
+    await togglePollen(page, shape.pollen)
+    await page.locator('.scale--onmap > .scale__toggle').click()
+    const sea = page.locator('.scale--onmap .scale__sea')
+    const pollen = page.locator('.scale--onmap .scale__pollen')
+    await expect(sea).toBeVisible()
+    await expect(pollen).toBeVisible()
+    const top = (loc) => loc.evaluate((e) => getComputedStyle(e).borderTopWidth)
+    expect(await top(sea)).toBe('0px')
+    expect(await top(pollen)).toBe('1px')
+    if (process.env.AIRBG_SHOT_DIR) {
+      await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/legend-sep-${shape.name}.png` })
+    }
+    await context.close()
+  })
+}
+
+test('the area page map offers no pollen layer',async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const page = await context.newPage()
   await page.goto('/en/area/sofia-oblast')
