@@ -126,3 +126,36 @@ for (const size of SIZES) {
     await context.close()
   })
 }
+
+// The columns follow time-lapse playback: the pre-play grid must not stay frozen under the moving frames.
+test('tilted playback moves the column heights frame to frame', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(90000)
+  const context = await browser.newContext({ viewport: SIZES[0] })
+  const page = await context.newPage()
+  await prepareMap(page)
+  await expect.poll(async () => (await columns(page)).flatValues, { timeout: 20000 }).toBeGreaterThan(1)
+  await pitchTo(page, 50)
+  await settledColumns(page)
+
+  const signature = async () => (await columns(page)).cells
+    .filter((c) => c.value !== null)
+    .map((c) => c.height)
+    .sort((a, b) => a - b)
+    .join(',')
+  const live = await signature()
+
+  await page.locator('.map-play__btn[aria-pressed]').click()
+  await expect(page.locator('.map-play--open')).toHaveCount(1)
+
+  // Distinct column heights across frames: the live grid's heights are not the only ones seen.
+  const seen = new Set()
+  await expect.poll(async () => {
+    seen.add(await signature())
+    return seen.size
+  }, { timeout: 40000, intervals: [250] }).toBeGreaterThan(2)
+
+  // Back to live: the columns return to the live grid's heights.
+  await page.locator('.map-play__exit').click()
+  await expect.poll(signature, { timeout: 20000 }).toBe(live)
+  await context.close()
+})
