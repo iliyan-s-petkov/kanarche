@@ -472,6 +472,10 @@ export function mountChrome(el, cfg) {
     const on = !pollenRows.hidden
     setPollenLegend(legend, on, on ? cfg.t.pollen.legend : metricTitle)
   }
+  // The caption describes the hex cells, which pollen replaces.
+  const applyTierLine = () => {
+    tierLine.hidden = !tierLine.textContent || (pollenRows ? !pollenRows.hidden : false)
+  }
   const showLegend = ({ bands, tier, metric, scale }) => {
     if (scale) scaleDialog.prime(scale)
     metricTitle = legendTitle({
@@ -501,7 +505,7 @@ export function mountChrome(el, cfg) {
     if (tier === null) return
     const text = cfg.t.tier[tier] ?? ''
     tierLine.textContent = text
-    tierLine.hidden = !text
+    applyTierLine()
   }
 
   // Drawn once at mount, before any scales have loaded, so the key is never an
@@ -540,6 +544,7 @@ export function mountChrome(el, cfg) {
     showPollen(on) {
       if (pollenRows) pollenRows.hidden = !on
       applyPollenLegend()
+      applyTierLine()
     },
     showWind(on, text, mode = 'streaks') {
       setWindRow(windRow, { on, mode })

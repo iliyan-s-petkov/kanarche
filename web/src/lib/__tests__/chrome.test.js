@@ -226,6 +226,30 @@ describe('the pollen key', () => {
     expect(toggleLabel()).toBe(metricTitle)
   })
 
+  // The caption describes the hex cells, which pollen replaces; it hides with them and returns when pollen is off.
+  it('hides the hex-grid caption while pollen is on, through repaints, and restores it when off', () => {
+    const shell = document.createElement('div')
+    shell.className = 'map-shell'
+    const el = document.createElement('div')
+    el.className = 'map'
+    el.dataset.pollenLayer = 'true'
+    el.dataset.tPollenLegend = 'Pollen forecast'
+    el.dataset.tPollenLevelHigh = 'High'
+    shell.appendChild(el)
+    const tier = document.createElement('p')
+    tier.className = 'legend__tier map-tier'
+    tier.textContent = 'Всяка клетка е медиана за площта под нея'
+    document.body.append(shell, tier)
+    const c = mountChrome(el, readConfig(el))
+    expect(tier.hidden).toBe(false)
+    c.showPollen(true)
+    expect(tier.hidden).toBe(true)
+    c.showLegend({ bands: [], tier: null, metric: 'pm25', scale: null })
+    expect(tier.hidden).toBe(true)
+    c.showPollen(false)
+    expect(tier.hidden).toBe(false)
+  })
+
   it('is absent from a map that does not offer the layer', () => {
     const { el, c } = mount(false)
     c.showPollen(true)

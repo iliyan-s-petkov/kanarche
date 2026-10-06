@@ -53,8 +53,12 @@ for (const shape of [
     await prepareMap(page, shape.path)
 
     const key = page.locator('.scale--onmap .scale__pollen')
+    // The hex-grid caption under the map describes cells that pollen replaces.
+    const caption = page.locator('.map-tier')
     await expect(key).toBeHidden()
+    await expect(caption).toBeVisible()
     await togglePollen(page, shape.label)
+    await expect(caption).toBeHidden()
     await expect(key).not.toHaveAttribute('hidden')
     await expect(key.locator('.legend__row')).toHaveText(shape.levels)
 
@@ -83,6 +87,7 @@ for (const shape of [
 
     // Pollen off brings the metric key back and takes the pollen key away.
     await togglePollen(page, shape.label, false)
+    await expect(caption).toBeVisible()
     await expect(pill).not.toHaveText(shape.title)
     await toggle.click()
     for (const part of metricKey(page)) await expect(part).toBeVisible()
