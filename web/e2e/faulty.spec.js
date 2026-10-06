@@ -29,7 +29,7 @@ test.describe.serial('the faulty stations toggle', () => {
 
   test('faulty stations are hidden by default, and not counted', async () => {
     expect((await sensorIds(page)).map((s) => s.id)).not.toContain(104)
-    await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 3 of 4 sensors — 1 with no recent readings')
+    await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 3 of 4 sensors, 1 with no recent readings')
     await page.getByRole('button', { name: 'Layers' }).click()
     await expect(page.getByRole('checkbox', { name: 'Faulty stations', exact: true })).not.toBeChecked()
   })
@@ -37,7 +37,7 @@ test.describe.serial('the faulty stations toggle', () => {
   test('the toggle draws them as a hollow ring and counts them as silent', async () => {
     await page.getByRole('checkbox', { name: 'Faulty stations', exact: true }).check()
     await expect.poll(async () => (await sensorIds(page)).find((s) => s.id === 104)?.faulty).toBe(true)
-    await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 4 of 5 sensors — 2 with no recent readings')
+    await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 4 of 5 sensors, 2 with no recent readings')
     const ring = await page.evaluate(() => {
       const map = document.querySelector('[data-island="map"]').__map
       return map.getLayer('airbg-markers-faulty').type

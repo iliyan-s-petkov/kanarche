@@ -165,6 +165,6 @@ describe('countSensors', () => {
   it('adds the drawn faulty stations to the with-data line', () => {
     const texts = { shown: 'Showing', of: 'of', sensors: 'sensors', silent: 'silent' }
     const counts = countSensors(body, 'P2', { showFaulty: true })
-    expect(sensorCountLine(texts, counts, 'active')).toBe('Showing 3 of 3 sensors — 1 silent')
+    expect(sensorCountLine(texts, counts, 'active')).toBe('Showing 3 of 3 sensors, 1 silent')
   })
 })

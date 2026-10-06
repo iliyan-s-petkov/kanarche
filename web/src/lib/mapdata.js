@@ -368,7 +368,7 @@ export function setSourceViewAvailability(chrome, metric, t, coverage) {
     const n = per[metric] ?? 0
     // Composed from catalogue parts: i18n.Catalogue.T takes no parameters, so a
     // sentence built from two strings is assembled here.
-    span.textContent = n > 0 ? t[id] : `${t[id]} — ${t.notMeasured}`
+    span.textContent = n > 0 ? t[id] : `${t[id]}: ${t.notMeasured}`
   }
 }
 

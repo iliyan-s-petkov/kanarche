@@ -41,7 +41,7 @@ test.describe.serial('the network layers', () => {
     // A network with data carries the bare label; the count was dropped from
     // the option (see setSourceViewAvailability in map.js).
     await expect(page.getByText('Citizen sensors', { exact: true })).toBeVisible()
-    await expect(page.getByText(/Official stations — does not measure this/)).toBeVisible()
+    await expect(page.getByText(/Official stations: does not measure this/)).toBeVisible()
     await expect(page.getByRole('checkbox', { name: /Official stations/ })).toBeEnabled()
   })
 
@@ -52,7 +52,7 @@ test.describe.serial('the network layers', () => {
     // picking a metric there closes the layers panel (mountLayers' own
     // outside-mousedown handler) — reopen it to reach the label.
     await page.getByRole('button', { name: 'Layers' }).click()
-    await expect(page.getByText(/Citizen sensors — does not measure this/)).toBeVisible()
+    await expect(page.getByText(/Citizen sensors: does not measure this/)).toBeVisible()
     await expect(page.getByRole('checkbox', { name: /Citizen sensors/ })).toBeEnabled()
     await expect(page.getByText('Official stations', { exact: true })).toBeVisible()
   })

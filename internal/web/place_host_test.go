@@ -68,7 +68,7 @@ func TestSensorPanelCarriesTheSourceInvalidFlagLabel(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
 	body := fetch(t, rr, "/en/area/high").Body.String()
 
-	if !strings.Contains(body, `data-t-flag-source-invalid="The newest reading was rejected by its source; this is the last accepted one."`) {
+	if !strings.Contains(body, `data-t-flag-source-invalid="The newest reading was rejected by its source. This is the last accepted one."`) {
 		t.Error("the area page is missing the source_invalid flag label")
 	}
 }

@@ -71,7 +71,7 @@ export function applyRows(tbody, all, visible) {
 // of the whole table, not of the page: it is a fact about the network, and a
 // number that changed as the reader paged would be describing the page instead.
 export function countLine(texts, shown, total, silent) {
-  return `${texts.shown} ${shown} ${texts.of} ${total} ${texts.areas} — ${silent} ${texts.silent}`
+  return `${texts.shown} ${shown} ${texts.of} ${total} ${texts.areas}, ${silent} ${texts.silent}`
 }
 
 export function mount(el, doc = document) {

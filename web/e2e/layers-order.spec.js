@@ -12,8 +12,8 @@ test('the layers menu lists Inactive stations directly above Faulty stations', a
   await expect(panel).toBeVisible()
 
   const labels = await panel.locator('.colmenu__opt--view').allInnerTexts()
-  // A row can carry a suffix such as "— does not measure this"; compare the name only.
-  const names = labels.map((s) => s.split(' — ')[0].trim())
+  // A row can carry a suffix such as ": does not measure this"; compare the name only.
+  const names = labels.map((s) => s.split(': ')[0].trim())
   const expected = [
     'Scale', 'Cell values', 'OpenStreetMap', 'Citizen sensors', 'Official stations',
     'Inactive stations', 'Faulty stations', 'Wind', 'Bathing water', 'Pollen', 'Province outlines',

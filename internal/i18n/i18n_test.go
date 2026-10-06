@@ -1,6 +1,7 @@
 package i18n_test
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -46,6 +47,27 @@ func TestCataloguesHaveIdenticalKeys(t *testing.T) {
 		for _, lang := range c.Languages() {
 			if !c.Has(lang, key) {
 				t.Errorf("key %q is missing from the %q catalogue", key, lang)
+			}
+		}
+	}
+}
+
+// TestCopyHasNoSemicolonsOrDashes holds the copy rule: user-facing strings use
+// separate sentences, commas or colons, never ';', an em dash or an en dash.
+// A digit-to-digit en dash (a numeric range such as 0–35) is not punctuation.
+func TestCopyHasNoSemicolonsOrDashes(t *testing.T) {
+	c := loaded(t)
+	numericRange := regexp.MustCompile(`[0-9]–[0-9]`)
+
+	for _, lang := range c.Languages() {
+		for _, key := range c.Keys() {
+			if !c.Has(lang, key) {
+				continue
+			}
+			// Drop numeric ranges first so only punctuation dashes remain.
+			text := numericRange.ReplaceAllString(c.T(lang, key), "")
+			if strings.ContainsAny(text, ";—–") {
+				t.Errorf("%s %q contains ';', '—' or '–': %q", lang, key, c.T(lang, key))
 			}
 		}
 	}

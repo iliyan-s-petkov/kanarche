@@ -270,7 +270,7 @@
        the first click. The order is stated by aria-sort on the sorted column,
        by the caret the reader can see, and by the note below for the order the
        page arrives in. */}}
-  <caption>{{.T (printf "metric.%s" .DefaultMetric)}}, {{.T (printf "unit.%s" .DefaultMetric)}} — {{.T "areas.tier"}}</caption>
+  <caption>{{.T (printf "metric.%s" .DefaultMetric)}}, {{.T (printf "unit.%s" .DefaultMetric)}}: {{.T "areas.tier"}}</caption>
   {{/* data-sort-key names the column for the table island; aria-sort states the
        order the server actually rendered, which is true with or without
        JavaScript. The headers are plain text here on purpose — the island turns
@@ -324,7 +324,7 @@
 {{/* What the table is showing, under it. role="status" because the filter and
      the pager now change this line: a reader who cannot see the table needs to
      hear how many rows the control they just pressed left behind. */}}
-<p class="meta" role="status">{{len .Areas}} {{.T "table.meta.areas"}} — {{.SilentAreas}} {{.T "table.meta.silent"}}</p>
+<p class="meta" role="status">{{len .Areas}} {{.T "table.meta.areas"}}, {{.SilentAreas}} {{.T "table.meta.silent"}}</p>
 
 {{/* The ordering rule, stated rather than left to be inferred from the rows:
      the list is ranked by the reading and the silent provinces sit at the end,
