@@ -79,5 +79,13 @@ export function readSeaTexts(d) {
     profile: s('tSeaProfile'),
     close: s('tSeaClose'),
     failed: s('tSeaFailed'),
+    // The legend (i) dialog, see infodialog.js.
+    info: {
+      label: s('tSeaInfoLabel'),
+      title: s('tSeaInfoTitle'),
+      body: s('tSeaInfoBody'),
+      linkMap: s('tSeaInfoLinkMap'),
+      linkEea: s('tSeaInfoLinkEea'),
+    },
   }
 }

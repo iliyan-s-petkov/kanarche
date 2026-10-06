@@ -259,8 +259,19 @@ export function buildWindRow(label) {
   return wrap
 }
 
+// A section's own (i), named by aria-label; nested, so setPollenLegend (direct children only) leaves it alone.
+function sectionInfo(info, onInfo) {
+  if (!info?.label || !onInfo) return null
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'scale__info'
+  button.setAttribute('aria-label', info.label)
+  button.addEventListener('click', onInfo)
+  return button
+}
+
 // The bathing-water key: a heading and one swatch per EEA class, hidden until the layer is on.
-export function buildSeaRows(t, colours) {
+export function buildSeaRows(t, colours, onInfo) {
   const wrap = document.createElement('div')
   wrap.className = 'scale__sea'
   wrap.hidden = true
@@ -277,11 +288,13 @@ export function buildSeaRows(t, colours) {
     row.append(swatch(colours[k], 'legend-swatch legend-swatch--sea'), text)
     wrap.appendChild(row)
   }
+  const info = sectionInfo(t.info, onInfo)
+  if (info) wrap.appendChild(info)
   return wrap
 }
 
 // The pollen key: a heading and one swatch per level; app.css colours each from its --pollen-* token.
-export function buildPollenRows(t) {
+export function buildPollenRows(t, onInfo) {
   const wrap = document.createElement('div')
   wrap.className = 'scale__pollen'
   wrap.hidden = true
@@ -298,10 +311,12 @@ export function buildPollenRows(t) {
     row.append(swatch('currentColor', `legend-swatch legend-swatch--pollen legend-swatch--${pollenVar(l).slice(2)}`), text)
     wrap.appendChild(row)
   }
+  const info = sectionInfo(t.info, onInfo)
+  if (info) wrap.appendChild(info)
   return wrap
 }
 
-// Pollen on: the metric's title, bar, no-data row and (i) step aside, and the folded pill names `title`.
+// Pollen on: the metric's title, bar, no-data row and (i) step aside (the pollen section has its own (i)), and the folded pill names `title`.
 export function setPollenLegend(el, on, title) {
   el.classList.toggle('scale--pollen', on)
   for (const s of ['.scale__label', '.scale__bands', '.scale__none', '.scale__info']) {

@@ -47,6 +47,11 @@ func Attributions() []Attribution {
 			URL: "https://open-meteo.com/",
 		},
 		{
+			Source: "cams-pollen",
+			Text:   "Pollen forecast: Copernicus Atmosphere Monitoring Service (CAMS) European air quality ensemble, via Open-Meteo.com, CC BY 4.0",
+			URL:    "https://atmosphere.copernicus.eu/charts/packages/cams_air_quality/products/europe-air-quality-forecast-pollens",
+		},
+		{
 			Source: "eea-bathing",
 			Text:   "Bathing water quality: European Environment Agency (EEA), WISE Bathing Water Directive data, CC BY 4.0",
 			URL:    "https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
