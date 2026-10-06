@@ -14,7 +14,7 @@ import { hexFeatures, resolutionForZoom } from './hexes.js'
 import { HEX_SOURCE_ID } from './mapids.js'
 import { PLAY_SPEED_KEY } from './mapconfig.js'
 import { bandsFor } from './mappaint.js'
-import { refreshHexes, mapInlineSize } from './mapdata.js'
+import { refreshHexes, mapInlineSize, paintSource } from './mapdata.js'
 
 // installTimelapse swaps a past hour's numbers into the hex layer the map
 // already draws, and nothing else — state.hexBody is never written, so the live
@@ -124,10 +124,8 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
       // no source column, so there is nothing to filter it by.
       resolutionForZoom(Math.round(map.getZoom()), mapInlineSize(map)), null,
     )
-    map.getSource(HEX_SOURCE_ID)?.setData({
-      type: 'FeatureCollection',
-      features: markArrivals(filterByStatus(features, getSensorStatus())),
-    })
+    // Through paintSource, not setData: its airbg:paint event is what refills the 3D column source.
+    paintSource(map, HEX_SOURCE_ID, markArrivals(filterByStatus(features, getSensorStatus())))
     const t = frameTime(body, i)
     ui.at(i, t ? clock.format(t) : '')
     // The frame still draws. A near-empty map under a confident clock reads as
