@@ -415,7 +415,7 @@ describe('legend section separators', () => {
 
   it('restores the rule on a pollen-mode section that follows a visible one', () => {
     for (const next of ['.scale__sea', '.scale__pollen']) {
-      const re = new RegExp(`\\.scale--pollen > [^{]*:not\\(\\[hidden\\]\\) ~ \\.scale__${next.slice(8)}[^{]*\\{[^}]*border-block-start:\\s*1px solid`)
+      const re = new RegExp(`\\.scale--pollen > [^{]*:not\\(\\[hidden\\]\\) ~ \\.scale__${next.slice(8)}(?![\\w-])[^{]*\\{[^}]*border-block-start:\\s*1px solid`)
       expect(re.test(css), `no separator restored above ${next}`).toBe(true)
     }
   })
