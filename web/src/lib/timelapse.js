@@ -8,19 +8,10 @@ export const SPANS = contract.spans.map((s) => s.span)
 // A day passes in about eight seconds at full speed.
 export const FRAME_MS = 320
 
-// Eight seconds for a day is quick if you are following one cell, so the
-// player can be slowed. Multipliers rather than millisecond values: FRAME_MS
-// stays the one place the base rate is written down.
-export const SPEEDS = [1, 0.5, 0.25]
-export const DEFAULT_SPEED = SPEEDS[0]
-
-// Unknown speeds reset rather than pass through: a preference stored by an
-// older build, or edited by hand, must not leave the button on a value it can
-// never cycle out of. indexOf gives -1 for those, and -1 + 1 is the default's
-// own index — so the reset needs no branch of its own.
-export function nextSpeed(speed) {
-  return SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]
-}
+// Multipliers rather than millisecond values: FRAME_MS stays the one place the
+// base rate is written down.
+export const SPEEDS = [0.25, 0.5, 1, 2]
+export const DEFAULT_SPEED = 0.5
 
 // Slower is a LONGER gap between frames. Dividing the other way round would
 // make the slow setting the fast one.
@@ -154,14 +145,38 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
   note.hidden = true
 
   // Text, not an icon: "half speed" has no glyph a reader would recognise, and
-  // the current speed has to be readable without pressing anything to find out.
+  // the current speed has to be readable without opening the menu.
+  const speedBox = doc.createElement('div')
+  speedBox.className = 'colmenu map-play__speedmenu'
+  speedBox.hidden = true
   const speed = doc.createElement('button')
   speed.type = 'button'
   speed.className = 'btn map-play__btn map-play__speed'
   speed.setAttribute('aria-label', speedName)
   speed.setAttribute('title', speedName)
+  speed.setAttribute('aria-haspopup', 'menu')
+  speed.setAttribute('aria-expanded', 'false')
   speed.textContent = speedLabel(DEFAULT_SPEED)
   speed.hidden = true
+  const speedPanel = doc.createElement('div')
+  speedPanel.className = 'colmenu__panel map-play__speedpanel'
+  speedPanel.setAttribute('role', 'menu')
+  speedPanel.setAttribute('aria-label', speedName)
+  speedPanel.hidden = true
+  const speedItems = SPEEDS.map((s) => {
+    const item = doc.createElement('button')
+    item.type = 'button'
+    item.className = 'colmenu__opt map-play__speeditem'
+    item.setAttribute('role', 'menuitemradio')
+    item.setAttribute('aria-checked', 'false')
+    item.tabIndex = -1
+    item.textContent = speedLabel(s)
+    item.dataset.speed = String(s)
+    speedPanel.appendChild(item)
+    return item
+  })
+  speedBox.appendChild(speed)
+  speedBox.appendChild(speedPanel)
 
   // Its own button rather than a second meaning for the play button: pressing
   // play from a scrubbed frame replays, so without this there is no control that
@@ -200,8 +215,52 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
   const scrubs = []
   const exits = []
   const speeds = []
+  const menuOpen = (yes) => {
+    speed.setAttribute('aria-expanded', String(yes))
+    speedPanel.hidden = !yes
+  }
+  const focusItem = (i) => speedItems[(i + speedItems.length) % speedItems.length].focus()
+  const checkedIndex = () => Math.max(0, speedItems.findIndex((it) => it.getAttribute('aria-checked') === 'true'))
   speed.addEventListener('click', () => {
-    for (const fn of speeds) fn()
+    const yes = speedPanel.hidden
+    menuOpen(yes)
+    if (yes) focusItem(checkedIndex())
+  })
+  // Enter and Space already click a button; the arrows open it as well.
+  speed.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+    e.preventDefault()
+    menuOpen(true)
+    focusItem(e.key === 'ArrowUp' ? speedItems.length - 1 : checkedIndex())
+  })
+  speedItems.forEach((item, i) => {
+    item.addEventListener('click', () => {
+      menuOpen(false)
+      speed.focus()
+      for (const fn of speeds) fn(SPEEDS[i])
+    })
+    item.addEventListener('keydown', (e) => {
+      const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]
+      if (step) {
+        e.preventDefault()
+        focusItem(i + step)
+      } else if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault()
+        focusItem(e.key === 'Home' ? 0 : speedItems.length - 1)
+      } else if (e.key === 'Tab') {
+        menuOpen(false)
+      }
+    })
+  })
+  speedBox.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || speedPanel.hidden) return
+    e.stopPropagation()
+    menuOpen(false)
+    speed.focus()
+  })
+  // pointerdown covers touch and mouse; a touch on the map closes the menu.
+  doc.addEventListener('pointerdown', (e) => {
+    if (!speedPanel.hidden && !speedBox.contains(e.target)) menuOpen(false)
   })
   button.addEventListener('click', () => {
     for (const fn of toggles) fn()
@@ -220,12 +279,12 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
   root.appendChild(slider)
   root.appendChild(clock)
   root.appendChild(note)
-  root.appendChild(speed)
+  root.appendChild(speedBox)
   root.appendChild(exit)
   host.appendChild(root)
 
   return {
-    root, button, slider, clock, note, speed, exit,
+    root, button, slider, clock, note, speed, speedPanel, speedItems, exit,
     playing,
     say: (text) => {
       note.textContent = text ?? ''
@@ -239,6 +298,8 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
       slider.hidden = count <= 0
       clock.hidden = count <= 0
       speed.hidden = count <= 0
+      speedBox.hidden = count <= 0
+      if (count <= 0) menuOpen(false)
       exit.hidden = count <= 0
       root.classList.toggle('map-play--open', count > 0)
     },
@@ -249,6 +310,7 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
     atSpeed: (s) => {
       speed.textContent = speedLabel(s)
       speed.setAttribute('aria-label', `${speedName}, ${speedLabel(s)}`)
+      for (const item of speedItems) item.setAttribute('aria-checked', String(item.dataset.speed === String(s)))
     },
     ontoggle: (fn) => toggles.push(fn),
     onspeed: (fn) => speeds.push(fn),

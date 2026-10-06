@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   FRAME_MS, SPANS, knownSpan, spanFor, timelapseURL, frameBody, frameCount, frameTime,
   cursor, step, seek, mountPlayer, frameCoverage, hasHistory, thinFrames, fillForward,
-  DEFAULT_SPEED, SPEEDS, frameDelay, nextSpeed, speedLabel,
+  DEFAULT_SPEED, SPEEDS, frameDelay, speedLabel,
 } from '../timelapse.js'
 
 const BODY = {
@@ -428,25 +428,13 @@ describe('fillForward', () => {
 // The animation ran at one speed, eight seconds for a day, which is quick if
 // you are trying to follow one cell across the country.
 describe('playback speed', () => {
-  it('cycles through the three speeds and wraps', () => {
-    expect(SPEEDS).toEqual([1, 0.5, 0.25])
-    expect(nextSpeed(1)).toBe(0.5)
-    expect(nextSpeed(0.5)).toBe(0.25)
-    expect(nextSpeed(0.25)).toBe(1)
+  it('offers four speeds, slowest first', () => {
+    expect(SPEEDS).toEqual([0.25, 0.5, 1, 2])
   })
 
-  // A stored preference from an older build, or a hand-edited one, must not
-  // leave the player on a speed it cannot cycle out of.
-  it('treats an unknown speed as the default', () => {
-    expect(nextSpeed(3)).toBe(DEFAULT_SPEED)
-    expect(nextSpeed(null)).toBe(DEFAULT_SPEED)
-    expect(nextSpeed(undefined)).toBe(DEFAULT_SPEED)
-    expect(nextSpeed('0.5')).toBe(DEFAULT_SPEED)
-  })
-
-  it('opens at full speed', () => {
-    expect(DEFAULT_SPEED).toBe(1)
-    expect(SPEEDS[0]).toBe(DEFAULT_SPEED)
+  it('opens at half speed', () => {
+    expect(DEFAULT_SPEED).toBe(0.5)
+    expect(SPEEDS).toContain(DEFAULT_SPEED)
   })
 
   // Slower means a LONGER gap between frames. Inverting this is the one bug
@@ -455,6 +443,7 @@ describe('playback speed', () => {
     expect(frameDelay(1)).toBe(FRAME_MS)
     expect(frameDelay(0.5)).toBe(FRAME_MS * 2)
     expect(frameDelay(0.25)).toBe(FRAME_MS * 4)
+    expect(frameDelay(2)).toBe(FRAME_MS / 2)
     expect(frameDelay(0.5)).toBeGreaterThan(frameDelay(1))
   })
 
@@ -468,6 +457,7 @@ describe('playback speed', () => {
     expect(speedLabel(1)).toBe('1\u00d7')
     expect(speedLabel(0.5)).toBe('0.5\u00d7')
     expect(speedLabel(0.25)).toBe('0.25\u00d7')
+    expect(speedLabel(2)).toBe('2\u00d7')
   })
 })
 
@@ -481,10 +471,10 @@ describe('mountPlayer speed button', () => {
     })
   }
 
-  it('starts hidden, at full speed, named', () => {
+  it('starts hidden, at the default speed, named', () => {
     const ui = mountSpeed()
     expect(ui.speed.hidden).toBe(true)
-    expect(ui.speed.textContent).toBe('1\u00d7')
+    expect(ui.speed.textContent).toBe('0.5\u00d7')
     expect(ui.speed.getAttribute('aria-label')).toBe('Playback speed')
     expect(ui.speed.getAttribute('title')).toBe('Playback speed')
     expect(ui.speed.type).toBe('button')
@@ -515,13 +505,97 @@ describe('mountPlayer speed button', () => {
     expect(label).toContain('0.5')
   })
 
-  it('reports a press to whoever asked', () => {
+  it('reports the chosen speed to whoever asked', () => {
     const ui = mountSpeed()
-    const presses = []
-    ui.onspeed(() => presses.push(true))
+    const picks = []
+    ui.onspeed((v) => picks.push(v))
     ui.speed.click()
+    ui.speedItems[3].click()
+    expect(picks).toEqual([2])
+  })
+})
+
+// The speed button opens a small menu: current speed marked, Escape and an
+// outside press close it, and closing hands focus back to the button.
+describe('mountPlayer speed menu', () => {
+  const mountMenu = () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const ui = mountPlayer(host, { label: 'Time', playLabel: 'Play', pauseLabel: 'Pause', exitLabel: 'Now', speedLabel: 'Speed' })
+    ui.show(3)
+    ui.atSpeed(0.5)
+    return ui
+  }
+  const key = (el, k) => el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }))
+
+  it('lists every speed as a radio item with the current one checked', () => {
+    const ui = mountMenu()
+    expect(ui.speedItems.map((i) => i.textContent)).toEqual(['0.25\u00d7', '0.5\u00d7', '1\u00d7', '2\u00d7'])
+    expect(ui.speedItems.every((i) => i.getAttribute('role') === 'menuitemradio')).toBe(true)
+    expect(ui.speedItems.map((i) => i.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false', 'false'])
+    ui.atSpeed(2)
+    expect(ui.speedItems.map((i) => i.getAttribute('aria-checked'))).toEqual(['false', 'false', 'false', 'true'])
+  })
+
+  it('opens on press and focuses the current item', () => {
+    const ui = mountMenu()
+    expect(ui.speedPanel.hidden).toBe(true)
     ui.speed.click()
-    expect(presses).toHaveLength(2)
+    expect(ui.speedPanel.hidden).toBe(false)
+    expect(ui.speed.getAttribute('aria-expanded')).toBe('true')
+    expect(document.activeElement).toBe(ui.speedItems[1])
+  })
+
+  it('moves with the arrow keys and wraps', () => {
+    const ui = mountMenu()
+    ui.speed.click()
+    key(ui.speedItems[1], 'ArrowDown')
+    expect(document.activeElement).toBe(ui.speedItems[2])
+    key(ui.speedItems[3], 'ArrowDown')
+    expect(document.activeElement).toBe(ui.speedItems[0])
+    key(ui.speedItems[0], 'ArrowUp')
+    expect(document.activeElement).toBe(ui.speedItems[3])
+  })
+
+  it('opens from the arrow key on the button', () => {
+    const ui = mountMenu()
+    key(ui.speed, 'ArrowDown')
+    expect(ui.speedPanel.hidden).toBe(false)
+  })
+
+  it('closes on Escape and returns focus to the button', () => {
+    const ui = mountMenu()
+    ui.speed.click()
+    key(ui.speedItems[1], 'Escape')
+    expect(ui.speedPanel.hidden).toBe(true)
+    expect(document.activeElement).toBe(ui.speed)
+  })
+
+  it('closes on a press outside, not on one inside', () => {
+    const ui = mountMenu()
+    ui.speed.click()
+    ui.speedPanel.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(ui.speedPanel.hidden).toBe(false)
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(ui.speedPanel.hidden).toBe(true)
+  })
+
+  it('choosing an item reports it and closes', () => {
+    const ui = mountMenu()
+    const picks = []
+    ui.onspeed((v) => picks.push(v))
+    ui.speed.click()
+    ui.speedItems[0].click()
+    expect(picks).toEqual([0.25])
+    expect(ui.speedPanel.hidden).toBe(true)
+    expect(document.activeElement).toBe(ui.speed)
+  })
+
+  it('closes when the replay goes away', () => {
+    const ui = mountMenu()
+    ui.speed.click()
+    ui.show(0)
+    expect(ui.speedPanel.hidden).toBe(true)
   })
 })
 

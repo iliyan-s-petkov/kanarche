@@ -8,7 +8,7 @@ import { filterByStatus, getSensorStatus } from './sensorfilter.svelte.js'
 import { readChoice, writeChoice } from './storage.js'
 import {
   DEFAULT_SPEED, SPEEDS, cursor, fillForward, frameBody, frameCount, frameTime, frameDelay,
-  hasHistory, nextSpeed, seek, step, thinFrames, timelapseURL,
+  hasHistory, seek, step, thinFrames, timelapseURL,
 } from './timelapse.js'
 import { hexFeatures, resolutionForZoom } from './hexes.js'
 import { HEX_SOURCE_ID } from './mapids.js'
@@ -303,8 +303,9 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
 
   // A press while paused is a question about the next play, not a request to
   // start one — so the clock is only rebuilt if it was already running.
-  ui.onspeed(() => {
-    speed = nextSpeed(speed)
+  ui.onspeed((next) => {
+    if (!SPEEDS.includes(next)) return
+    speed = next
     writeChoice(PLAY_SPEED_KEY, speed, chrome.storage)
     ui.atSpeed(speed)
     if (running) run()
