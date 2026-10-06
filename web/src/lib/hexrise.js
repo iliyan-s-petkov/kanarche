@@ -49,6 +49,9 @@ const collection = (features) => ({ type: 'FeatureCollection', features })
 // Mirrors the painted hex cells onto the column source while tilted and drives `rise` from the pitch,
 // at most once per animation frame.
 export function installHexRise(map, { raf = globalThis.requestAnimationFrame, reducedMotion = prefersReducedMotion } = {}) {
+  // The last painted features, unfiltered: playback paints a frame per tick, and the polygon filter is
+  // only worth running when the columns are actually up.
+  let painted = []
   let cells = []
   let factor = 0
   let queued = false
@@ -58,6 +61,10 @@ export function installHexRise(map, { raf = globalThis.requestAnimationFrame, re
   }
   const fill = (features) => map.getSource(HEX_COLUMN_SOURCE_ID)?.setData(collection(features))
 
+  const syncCells = () => {
+    cells = painted.filter((f) => f.geometry?.type === 'Polygon' && f.id != null)
+  }
+
   const apply = () => {
     queued = false
     const next = riseFactor(map.getPitch?.() ?? 0, reducedMotion())
@@ -65,7 +72,10 @@ export function installHexRise(map, { raf = globalThis.requestAnimationFrame, re
     const wasFlat = factor === 0
     factor = next
     // Rising: load the columns at the current factor. Flattening: hide them and drop the data.
-    if (wasFlat) fill(cells)
+    if (wasFlat) {
+      syncCells()
+      fill(cells)
+    }
     setRise()
     if (wasFlat || factor === 0) {
       map.setPaintProperty(HEX_EXTRUSION_LAYER_ID, 'fill-extrusion-opacity', factor > 0 ? HEX_EXTRUDED_OPACITY : 0)
@@ -81,8 +91,9 @@ export function installHexRise(map, { raf = globalThis.requestAnimationFrame, re
 
   map.getContainer?.()?.addEventListener?.('airbg:paint', (e) => {
     if (e.detail?.source !== HEX_SOURCE_ID) return
-    cells = (e.detail.features ?? []).filter((f) => f.geometry?.type === 'Polygon' && f.id != null)
+    painted = e.detail.features ?? []
     if (factor === 0) return
+    syncCells()
     fill(cells)
     setRise()
   })
