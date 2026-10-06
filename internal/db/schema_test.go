@@ -73,7 +73,8 @@ func TestReadingIsHypertable(t *testing.T) {
 
 func TestReadingRejectsDuplicateSamples(t *testing.T) {
 	ctx, pool := migrated(t)
-	ts := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	// Recent timestamp: a fixed past date is outside the 32-day retention window and gets dropped.
+	ts := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
 
 	mustInsertSensor(t, ctx, pool, 1)
 
