@@ -70,5 +70,14 @@ export function readPollenTexts(d) {
       moderate: s('tPollenLevelModerate'),
       high: s('tPollenLevelHigh'),
     },
+    // The legend (i) dialog, see infodialog.js.
+    info: {
+      label: s('tPollenInfoLabel'),
+      title: s('tPollenInfoTitle'),
+      body: s('tPollenInfoBody'),
+      hourly: s('tPollenInfoMean'),
+      linkThresholds: s('tPollenInfoLinkThresholds'),
+      linkChart: s('tPollenInfoLinkChart'),
+    },
   }
 }

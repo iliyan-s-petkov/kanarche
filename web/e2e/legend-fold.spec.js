@@ -169,7 +169,7 @@ for (const vp of VIEWPORTS) {
       await mapSettled(page)
 
       const legend = page.locator('.scale--onmap')
-      const info = legend.locator('.scale__info')
+      const info = legend.locator('> .scale__info')
       await expect(legend).toHaveAttribute('open', '')
 
       if (await info.count()) {

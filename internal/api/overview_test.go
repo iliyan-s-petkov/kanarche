@@ -14,6 +14,7 @@ func TestAttributionsNameBothNetworksAndTheirMaps(t *testing.T) {
 		"eea":              "https://eea.government.bg/kav/",
 		"open-meteo":       "https://open-meteo.com/",
 		"eea-bathing":      "https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
+		"cams-pollen":      "https://atmosphere.copernicus.eu/charts/packages/cams_air_quality/products/europe-air-quality-forecast-pollens",
 	}
 	seen := map[string]bool{}
 	for _, a := range got {

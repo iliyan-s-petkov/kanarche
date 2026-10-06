@@ -1069,6 +1069,8 @@ html:has(> body.embed) { block-size: 100%; }
    letter in the markup would be read out twice. */
 .scale__info::before { content: "i"; font-weight: var(--weight-emphasis); font-style: italic; }
 .scale__info:focus-visible { box-shadow: var(--focus-ring); }
+/* A section's own (i), under its swatches: the grid's gap already spaces it. */
+:is(.scale__sea, .scale__pollen) > .scale__info { margin-block-start: 0; justify-self: start; }
 
 .scaleinfo {
   position: relative;
