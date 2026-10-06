@@ -236,21 +236,21 @@ pollen:
   request_timeout: "60s"
   points_per_request: 100
   max_payload_bytes: 33554432
-  # levels: lower bounds of low, moderate, high, very high in grains/m3.
-  # List order is the table's row order.
+  # levels: [season start, peak] in grains/m3; low below the first, high from the second.
+  # Source and caveats: internal/pollen/README.md. List order is the table's row order.
   species:
     - name: "ragweed"
-      levels: [0.2, 10, 30, 100]
+      levels: [3, 50]
     - name: "mugwort"
-      levels: [0.2, 10, 50, 100]
+      levels: [10, 100]
     - name: "grass"
-      levels: [0.2, 10, 30, 100]
+      levels: [3, 50]
     - name: "birch"
-      levels: [0.2, 10, 100, 500]
+      levels: [10, 100]
     - name: "alder"
-      levels: [0.2, 10, 100, 500]
+      levels: [10, 100]
     - name: "olive"
-      levels: [0.2, 10, 100, 500]
+      levels: [10, 100]
 
 # The official reference stations. See internal/upstream/eea/README.md.
 eea:

@@ -346,22 +346,20 @@ describe('sea legend rows', () => {
 describe('pollen legend rows', () => {
   const t = {
     legend: 'Pollen forecast',
-    levels: { none: 'None', low: 'Low', moderate: 'Moderate', high: 'High', very_high: 'Very high' },
+    levels: { low: 'Low', moderate: 'Moderate', high: 'High' },
   }
 
-  it('names the five levels in rank order, each with its own swatch class, and starts hidden', () => {
+  it('names the three levels in rank order, each with its own swatch class, and starts hidden', () => {
     const el = buildPollenRows(t)
     expect(el.hidden).toBe(true)
     expect(el.classList.contains('scale__pollen')).toBe(true)
     expect(el.querySelector('.scale__pollen-head').textContent).toBe('Pollen forecast')
     const rows = [...el.querySelectorAll('.legend__row')]
-    expect(rows.map((r) => r.textContent)).toEqual(['None', 'Low', 'Moderate', 'High', 'Very high'])
+    expect(rows.map((r) => r.textContent)).toEqual(['Low', 'Moderate', 'High'])
     expect(rows.map((r) => r.querySelector('svg').getAttribute('class'))).toEqual([
-      'legend-swatch legend-swatch--pollen legend-swatch--pollen-none',
       'legend-swatch legend-swatch--pollen legend-swatch--pollen-low',
       'legend-swatch legend-swatch--pollen legend-swatch--pollen-moderate',
       'legend-swatch legend-swatch--pollen legend-swatch--pollen-high',
-      'legend-swatch legend-swatch--pollen legend-swatch--pollen-very-high',
     ])
   })
 })

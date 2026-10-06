@@ -411,8 +411,8 @@ func (c Config) validatePollen(p *problems) {
 			p.addf("pollen.species[%d].name = %q is listed twice", i, s.Name)
 		}
 		seen[s.Name] = true
-		if len(s.Levels) != 4 {
-			p.addf("pollen.species[%d].levels has %d entries, want 4 (low, moderate, high, very high)", i, len(s.Levels))
+		if len(s.Levels) != 2 {
+			p.addf("pollen.species[%d].levels has %d entries, want 2 (season start, peak)", i, len(s.Levels))
 			continue
 		}
 		for j, v := range s.Levels {

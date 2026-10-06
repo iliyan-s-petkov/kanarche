@@ -43,8 +43,8 @@ const hexVisibility = (page) => page.evaluate(() =>
   document.querySelector('[data-island="map"]').__map.getLayoutProperty('airbg-hex-fill', 'visibility'))
 
 for (const shape of [
-  { name: 'desktop', path: '/en/', label: 'Pollen', title: 'Pollen forecast', levels: ['None', 'Low', 'Moderate', 'High', 'Very high'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },
-  { name: 'mobile', path: '/', label: 'Прашец', title: 'Прогноза за прашец', levels: ['Няма', 'Нисък', 'Умерен', 'Висок', 'Много висок'], prefix: '', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+  { name: 'desktop', path: '/en/', label: 'Pollen', title: 'Pollen forecast', levels: ['Low', 'Moderate', 'High'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },
+  { name: 'mobile', path: '/', label: 'Прашец', title: 'Прогноза за прашец', levels: ['Нисък', 'Умерен', 'Висок'], prefix: '', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
 ]) {
   test(`${shape.name}: the pollen layer colours the province and opens its area page`, async ({ browser }, testInfo) => {
     testInfo.setTimeout(60000)

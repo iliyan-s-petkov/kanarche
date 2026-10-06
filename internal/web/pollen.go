@@ -56,7 +56,7 @@ func (rr *Renderer) pollenBlock(v *snapshot.PollenView, lang string) *PollenBloc
 		}
 		b.Rows = append(b.Rows, row)
 	}
-	// Off season (worst level none) the chip is left out; the table stays.
+	// All species low the chip is left out; the table stays.
 	if s := v.Summary; s != nil && s.Species != "" {
 		b.Chip = strings.NewReplacer(
 			"{level}", strings.ToLower(t("pollen.level."+s.Level)),

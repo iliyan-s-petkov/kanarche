@@ -36,8 +36,8 @@ func testConfig() config.Pollen {
 		PointsPerReq:    100,
 		MaxPayloadBytes: 1 << 20,
 		Species: []config.PollenSpecies{
-			{Name: "ragweed", Levels: []float64{0.2, 10, 30, 100}},
-			{Name: "birch", Levels: []float64{0.2, 10, 100, 500}},
+			{Name: "ragweed", Levels: []float64{3, 50}},
+			{Name: "birch", Levels: []float64{10, 100}},
 		},
 	}
 }
