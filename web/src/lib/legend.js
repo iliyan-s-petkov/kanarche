@@ -1,4 +1,5 @@
 import { SEA_CLASSES } from './sea.js'
+import { POLLEN_LEVELS, pollenVar } from './pollen.js'
 import { rampGradient } from './ramp.js'
 
 // The map legend: the ramp, and what a dot means at the current zoom.
@@ -277,6 +278,38 @@ export function buildSeaRows(t, colours) {
     wrap.appendChild(row)
   }
   return wrap
+}
+
+// The pollen key: a heading and one swatch per level; app.css colours each from its --pollen-* token.
+export function buildPollenRows(t) {
+  const wrap = document.createElement('div')
+  wrap.className = 'scale__pollen'
+  wrap.hidden = true
+  const head = document.createElement('p')
+  head.className = 'scale__pollen-head'
+  head.textContent = t.legend
+  wrap.appendChild(head)
+  for (const l of POLLEN_LEVELS) {
+    const row = document.createElement('span')
+    row.className = 'legend__row'
+    const text = document.createElement('span')
+    text.className = 'legend__label'
+    text.textContent = t.levels[l]
+    row.append(swatch('currentColor', `legend-swatch legend-swatch--pollen legend-swatch--${pollenVar(l).slice(2)}`), text)
+    wrap.appendChild(row)
+  }
+  return wrap
+}
+
+// Pollen on: the metric's title, bar, no-data row and (i) step aside, and the folded pill names `title`.
+export function setPollenLegend(el, on, title) {
+  el.classList.toggle('scale--pollen', on)
+  for (const s of ['.scale__label', '.scale__bands', '.scale__none', '.scale__info']) {
+    const part = el.querySelector(`:scope > ${s}`)
+    if (part) part.hidden = on
+  }
+  const label = el.querySelector(':scope > .scale__toggle .scale__toggle-label')
+  if (label && title) label.textContent = title
 }
 
 // Shows or hides the row and swaps the glyph to match the active wind mode.

@@ -112,6 +112,13 @@
 
   /* Wind legend glyph; the streak blue. This fallback has no dark theme. */
   --wind-glyph: rgb(24, 58, 170);
+
+  /* Pollen levels: the area page's bar colours; the home map's pollen layer reads them. */
+  --pollen-none: var(--muted);
+  --pollen-low: var(--accent);
+  --pollen-moderate: var(--accent);
+  --pollen-high: var(--warn);
+  --pollen-very-high: var(--danger);
 }
 
 @media (min-width: 672px) {

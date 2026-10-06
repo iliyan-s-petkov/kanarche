@@ -2,7 +2,7 @@
 // banner, the control cluster and the player UI beside the MapLibre canvas,
 // and returns the handle mount() threads to everything else. Kept separate so
 // the pure builders it calls stay importable on their own.
-import { LEGEND_CLASSES, buildSeaRows, buildWindRow, legendRows, legendTitle, renderLegend, setWindRow } from './legend.js'
+import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows, legendTitle, renderLegend, setPollenLegend, setWindRow } from './legend.js'
 import { createScaleDialog } from './scaledialog.js'
 import { mountFullscreen, mountZoom, mountLocate, mountOrientation } from './mapcontrols.js'
 import { mountLayers } from './maplayers.js'
@@ -464,16 +464,25 @@ export function mountChrome(el, cfg) {
   // renderLegend clears the key, so the wind row is re-inserted after each repaint.
   const windRow = buildWindRow(cfg.t.legendWind)
   const seaRows = cfg.t.sea ? buildSeaRows(cfg.t.sea, cfg.seaColours ?? {}) : null
+  const pollenRows = cfg.pollenLayer && cfg.t.pollen ? buildPollenRows(cfg.t.pollen) : null
+  // The metric key's title, kept so switching pollen off can put it back on the folded pill.
+  let metricTitle = ''
+  const applyPollenLegend = () => {
+    if (!pollenRows) return
+    const on = !pollenRows.hidden
+    setPollenLegend(legend, on, on ? cfg.t.pollen.legend : metricTitle)
+  }
   const showLegend = ({ bands, tier, metric, scale }) => {
     if (scale) scaleDialog.prime(scale)
+    metricTitle = legendTitle({
+      label: cfg.metricLabels[metric],
+      unit: cfg.metricUnits[metric],
+      fallback: cfg.t.legend,
+    })
     renderLegend(legend, {
       // Repainted with the bands, which is the only way it stays right: the
       // bands change with the metric, and so does the name of what they band.
-      title: legendTitle({
-        label: cfg.metricLabels[metric],
-        unit: cfg.metricUnits[metric],
-        fallback: cfg.t.legend,
-      }),
+      title: metricTitle,
       toggleLabel: cfg.t.legendToggle,
       ...legendRows(bands, {
         noDataColour: cfg.noDataColour,
@@ -486,6 +495,8 @@ export function mountChrome(el, cfg) {
     })
     legend.insertBefore(windRow, legend.querySelector(':scope > .scale__info'))
     if (seaRows) legend.insertBefore(seaRows, legend.querySelector(':scope > .scale__info'))
+    if (pollenRows) legend.insertBefore(pollenRows, legend.querySelector(':scope > .scale__info'))
+    applyPollenLegend()
     // Bootstrap call: keep the server-rendered caption.
     if (tier === null) return
     const text = cfg.t.tier[tier] ?? ''
@@ -525,6 +536,10 @@ export function mountChrome(el, cfg) {
     // arrows are, so no caller can turn one on without the other.
     showSea(on) {
       if (seaRows) seaRows.hidden = !on
+    },
+    showPollen(on) {
+      if (pollenRows) pollenRows.hidden = !on
+      applyPollenLegend()
     },
     showWind(on, text, mode = 'streaks') {
       setWindRow(windRow, { on, mode })

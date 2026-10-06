@@ -1,6 +1,7 @@
 package snapshot_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -37,6 +38,10 @@ func TestBuildServesPollenPerAreaAndCarriesItForward(t *testing.T) {
 	v := snap.Pollen("sofia")
 	if v == nil || v.Summary == nil || v.Summary.Level != "high" || v.Summary.Species != "ragweed" {
 		t.Fatalf("Pollen(sofia) summary = %+v, want high ragweed", v)
+	}
+	mapBody, ok := snap.PollenMapBody()
+	if !ok || !strings.Contains(string(mapBody.JSON), `"slug":"sofia","level":"high"`) {
+		t.Errorf("PollenMapBody = %s, %v; want sofia at high", mapBody.JSON, ok)
 	}
 	// plovdiv is far from the only cell.
 	if _, ok := snap.PollenBody("plovdiv"); ok {

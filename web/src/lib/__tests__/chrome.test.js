@@ -178,6 +178,61 @@ describe('the bathing-water key', () => {
   })
 })
 
+describe('the pollen key', () => {
+  const mount = (layer) => {
+    const el = document.createElement('div')
+    el.className = 'map'
+    if (layer) el.dataset.pollenLayer = 'true'
+    el.dataset.tPollenLegend = 'Pollen forecast'
+    el.dataset.tPollenLevelHigh = 'High'
+    el.dataset.tLegend = 'Air quality'
+    document.body.appendChild(el)
+    return { el, c: mountChrome(el, readConfig(el)) }
+  }
+
+  it('shows with the layer and survives a legend repaint', () => {
+    const { el, c } = mount(true)
+    const key = () => el.querySelector('.scale__pollen')
+    expect(key().hidden).toBe(true)
+    c.showPollen(true)
+    c.showLegend({ bands: [], tier: null, metric: 'pm25', scale: null })
+    expect(key().hidden).toBe(false)
+    expect(key().querySelectorAll('.legend__row')).toHaveLength(5)
+    expect(key().textContent).toContain('High')
+    c.showPollen(false)
+    expect(key().hidden).toBe(true)
+  })
+
+  // The owner's rule: with pollen on, the key is pollen only; the metric's title, bar and no-data row go.
+  it('hides the metric key while pollen is on, through repaints, and restores it when off', () => {
+    const { el, c } = mount(true)
+    const legend = el.querySelector('.scale--onmap')
+    const bands = [{ upper: 15, colour: '#3c9', label: 'Good', label_bg: 'Добро' }, { upper: null, colour: '#c33', label: 'Poor', label_bg: 'Лошо' }]
+    const metricParts = () => ['.scale__label', '.scale__bands', '.scale__none'].map((s) => legend.querySelector(`:scope > ${s}`))
+    const toggleLabel = () => legend.querySelector('.scale__toggle-label').textContent
+    c.showLegend({ bands, tier: null, metric: 'P2', scale: null })
+    const metricTitle = toggleLabel()
+    expect(metricTitle).toBe('Air quality')
+    c.showPollen(true)
+    expect(legend.classList.contains('scale--pollen')).toBe(true)
+    for (const part of metricParts()) expect(part.hidden).toBe(true)
+    expect(toggleLabel()).toBe('Pollen forecast')
+    c.showLegend({ bands, tier: null, metric: 'P2', scale: null })
+    for (const part of metricParts()) expect(part.hidden).toBe(true)
+    expect(toggleLabel()).toBe('Pollen forecast')
+    c.showPollen(false)
+    expect(legend.classList.contains('scale--pollen')).toBe(false)
+    for (const part of metricParts()) expect(part.hidden).toBe(false)
+    expect(toggleLabel()).toBe(metricTitle)
+  })
+
+  it('is absent from a map that does not offer the layer', () => {
+    const { el, c } = mount(false)
+    c.showPollen(true)
+    expect(el.querySelector('.scale__pollen')).toBeNull()
+  })
+})
+
 // The disclosure is why an unmeasured forecast layer is allowed on a map of
 // measurements, so it is never dismissible — but two sentences and a model name
 // unrolled over the map is most of a phone screen. Folded, it is a line the

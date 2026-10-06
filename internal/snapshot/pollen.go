@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"sort"
 	"time"
 
 	"airbg.org/internal/config"
@@ -218,6 +220,8 @@ type pollenState struct {
 	key    string
 	bodies map[string]Body
 	views  map[string]*PollenView
+	// mapBody is GET /api/v1/pollen.
+	mapBody Body
 }
 
 // buildPollen fills the pollen fields. A failure is logged and leaves them
@@ -258,8 +262,63 @@ func buildPollen(ctx context.Context, s *store.Store, h *Holder, prev, snap *Sna
 		}
 		st.bodies[slug], st.views[slug] = b, v
 	}
+	if st.mapBody, err = encode(pollenMapPayloadFrom(now, fetchedAt, days[0], st.views, snap.KnownSlugs)); err != nil {
+		return fmt.Errorf("snapshot: encode pollen map: %w", err)
+	}
 	snap.pollen = st
 	return nil
+}
+
+// pollenMapPayload is GET /api/v1/pollen: today's worst level per province, for the map layer.
+type pollenMapPayload struct {
+	GeneratedAt time.Time         `json:"generated_at"`
+	FetchedAt   time.Time         `json:"fetched_at"`
+	Date        string            `json:"date"`
+	Forecast    bool              `json:"forecast"`
+	Levels      []string          `json:"levels"`
+	Areas       []pollenMapArea   `json:"areas"`
+	Attribution pollenAttribution `json:"attribution"`
+}
+
+type pollenMapArea struct {
+	Slug    string  `json:"slug"`
+	Level   string  `json:"level"`
+	Species *string `json:"species"`
+}
+
+func (p pollenMapPayload) withoutGeneratedAt() any {
+	p.GeneratedAt = time.Time{}
+	return p
+}
+
+var _ canonicalisable = pollenMapPayload{}
+
+// pollenMapPayloadFrom keeps the country-tier areas (the outlines /api/v1/boundaries
+// draws) that have a summary for today, sorted by slug.
+func pollenMapPayloadFrom(now, fetchedAt time.Time, today string, views map[string]*PollenView, known map[string]AreaMeta) pollenMapPayload {
+	p := pollenMapPayload{
+		GeneratedAt: now, FetchedAt: fetchedAt, Date: today, Forecast: true,
+		Levels: PollenLevels, Areas: []pollenMapArea{},
+		Attribution: pollenAttribution{Text: PollenAttributionText(fetchedAt.Year()), URL: pollenAttributionURL},
+	}
+	for slug, v := range views {
+		if v.Summary == nil || !slices.Contains(countryKinds, known[slug].Kind) {
+			continue
+		}
+		a := pollenMapArea{Slug: slug, Level: v.Summary.Level}
+		if v.Summary.Species != "" {
+			species := v.Summary.Species
+			a.Species = &species
+		}
+		p.Areas = append(p.Areas, a)
+	}
+	sort.Slice(p.Areas, func(i, j int) bool { return p.Areas[i].Slug < p.Areas[j].Slug })
+	return p
+}
+
+// PollenMapBody is the encoded per-province summary; false when there is no forecast.
+func (s *Snapshot) PollenMapBody() (Body, bool) {
+	return s.pollen.mapBody, s.pollen.mapBody.JSON != nil
 }
 
 // PollenBody is the encoded table for slug; false when there is none.
@@ -284,7 +343,8 @@ func (s *Snapshot) SetPollenForTesting(slug string, v *PollenView, cfg config.Po
 		s.pollen = pollenState{bodies: map[string]Body{}, views: map[string]*PollenView{}}
 	}
 	s.pollen.bodies[slug], s.pollen.views[slug] = b, v
-	return nil
+	s.pollen.mapBody, err = encode(pollenMapPayloadFrom(fetchedAt, fetchedAt, v.Days[0], s.pollen.views, s.KnownSlugs))
+	return err
 }
 
 // PollenViewForTesting builds a view from daily rows, as Build does.

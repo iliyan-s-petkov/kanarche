@@ -64,4 +64,11 @@
   --map-panel-h: 0px;
   /* The panel's open height; the dock overrides it on .map-dock with the height dragged to. */
   --map-dock-h: min(24rem, max(45%, 14rem));
+
+  /* Pollen levels: the area page's bar colours; the home map's pollen layer reads them. */
+  --pollen-none: var(--muted);
+  --pollen-low: var(--accent);
+  --pollen-moderate: var(--accent);
+  --pollen-high: var(--warn);
+  --pollen-very-high: var(--danger);
 }

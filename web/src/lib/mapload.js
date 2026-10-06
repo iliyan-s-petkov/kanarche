@@ -39,6 +39,10 @@ import { setWind, refreshWind } from './mapwind.js'
 import { setBoundaries } from './mapboundaries.js'
 import { seaLayout, seaPaint, setSea } from './mapsea.js'
 import { SEA_IMAGE_ID, SEA_LAYER_ID, SEA_SOURCE_ID } from './sea.js'
+import { setPollen } from './mappollen.js'
+import {
+  POLLEN_FILL_LAYER_ID, POLLEN_LINE_LAYER_ID, POLLEN_SOURCE_ID, pollenAttribution,
+} from './pollen.js'
 import {
   refresh, refreshHexes, onMetricChange, applyMetricColours, initData,
   mapHint, repaintSensors, setSourceViewAvailability,
@@ -53,7 +57,7 @@ import { hexExtrusionPaint, installHexRise } from './hexrise.js'
 
 // Named rather than positional: windState and boundaryState are structurally
 // identical objects, so a transposed pair would be silent here and at runtime.
-export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState = {}, onMoveEnd, subs }) {
+export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState = {}, pollenState = {}, onMoveEnd, subs }) {
   map.on('load', async () => {
     // Not awaited: the metric subscription below must be registered before
     // this handler's first await, and the ground is detail the map does
@@ -180,6 +184,29 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       filter: selectedFilter(state.slug),
       paint: boundarySelectedPaint(cfg),
     })
+
+    // Pollen provinces: under the markers, over the hidden grid. Added empty and hidden; the toggle fills it.
+    if (cfg.pollenLayer) {
+      map.addSource(POLLEN_SOURCE_ID, {
+        type: 'geojson',
+        data: emptyCollection(),
+        attribution: pollenAttribution(cfg.t.pollen.credit, cfg.pollenCreditURL),
+      })
+      map.addLayer({
+        id: POLLEN_FILL_LAYER_ID,
+        type: 'fill',
+        source: POLLEN_SOURCE_ID,
+        layout: { visibility: 'none' },
+        paint: { 'fill-opacity': 0 },
+      })
+      map.addLayer({
+        id: POLLEN_LINE_LAYER_ID,
+        type: 'line',
+        source: POLLEN_SOURCE_ID,
+        layout: { visibility: 'none' },
+        paint: boundaryLinePaint(cfg),
+      })
+    }
 
     map.addSource(SOURCE_ID, { type: 'geojson', data: emptyCollection() })
     map.addLayer({
@@ -348,6 +375,14 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       apply: (on) => setSea(map, cfg, chrome, seaState, on),
     }
 
+    // Off until asked for, and home map only: it recolours the provinces rather than adding to them.
+    const pollenViews = cfg.pollenLayer ? [{
+      id: 'pollen',
+      label: cfg.t.pollen.toggle,
+      defaultOff: true,
+      apply: (on) => setPollen(map, cfg, chrome, pollenState, on),
+    }] : []
+
     // Here and not in mountChrome: the options are the style's own groups, and
     // map.getStyle() has no layers to report until the style has loaded. A menu
     // built any earlier is a menu of nothing, which is why it stays hidden
@@ -355,7 +390,7 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     installLayers(map, chrome.layersUI, {
       labels: cfg.t.layers,
       caption: cfg.t.layersCaption,
-      views: [...chrome.layerViews, ...sourceViews, chrome.inactiveView, faultyView, windView, seaView, boundaryView],
+      views: [...chrome.layerViews, ...sourceViews, chrome.inactiveView, faultyView, windView, seaView, ...pollenViews, boundaryView],
     })
 
     setSourceViewAvailability(chrome, cfg.metric, cfg.t, state.coverage)
