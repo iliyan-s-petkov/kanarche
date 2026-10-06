@@ -108,8 +108,8 @@ func TestAboutEmbedCodeIsKeyboardScrollable(t *testing.T) {
 func TestHomeHasOneHiddenH1AndNoVisibleHero(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	cases := map[string]string{
-		"/":    "Канарче — Качество на въздуха в България: карта на живо",
-		"/en/": "Kanarche — Bulgaria air quality map: PM2.5 and PM10 now",
+		"/":    "Канарче, качество на въздуха в България: карта на живо",
+		"/en/": "Kanarche, Bulgaria air quality map: PM2.5 and PM10 now",
 	}
 	for path, want := range cases {
 		body := fetch(t, rr, path).Body.String()

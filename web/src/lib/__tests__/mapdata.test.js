@@ -883,7 +883,7 @@ describe('setSourceViewAvailability', () => {
     const { chrome, boxes } = menu()
     setSourceViewAvailability(chrome, 'O3', t, coverage)
 
-    expect(boxes.communitySensors.span.textContent).toBe('Citizen sensors — does not measure this')
+    expect(boxes.communitySensors.span.textContent).toBe('Citizen sensors: does not measure this')
     expect(boxes.communitySensors.input.disabled).toBe(false)
     expect(boxes.officialStations.span.textContent).toBe('Official stations')
   })

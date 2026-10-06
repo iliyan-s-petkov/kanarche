@@ -56,7 +56,7 @@ for (const [name, vp] of [['desktop', DESKTOP], ['phone', PHONE]]) {
     await expect(page.locator('.page-head')).toHaveCount(0)
     const h1 = page.locator('h1')
     await expect(h1).toHaveCount(1)
-    await expect(h1).toHaveText('Kanarche — Bulgaria air quality map: PM2.5 and PM10 now')
+    await expect(h1).toHaveText('Kanarche, Bulgaria air quality map: PM2.5 and PM10 now')
     await expect.poll(async () => {
       const box = await h1.boundingBox()
       return box.width * box.height

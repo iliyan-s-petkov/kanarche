@@ -57,7 +57,7 @@ const PANEL_ATTR_FIXTURES = {
   tFlagStuck: 'This reading has not changed in a while.',
   tFlagClamped: 'The sensor is saturated.',
   tFlagSpatialOutlier: 'This reading disagrees with nearby sensors.',
-  tFlagSourceInvalid: 'The newest reading was rejected by its source; this is the last accepted one.',
+  tFlagSourceInvalid: 'The newest reading was rejected by its source. This is the last accepted one.',
   tChartTime: 'Time',
   tChartEmpty: 'empty',
   tChartUnavailable: 'unavailable',
@@ -360,7 +360,7 @@ describe('flagTextFor', () => {
     out_of_range: 'This reading is out of the expected range.',
     stuck: 'This reading has not changed in a while.',
     spatial_outlier: 'This reading disagrees with nearby sensors.',
-    source_invalid: 'The newest reading was rejected by its source; this is the last accepted one.',
+    source_invalid: 'The newest reading was rejected by its source. This is the last accepted one.',
   }
 
   it('renders the matching warning for a real flag', () => {

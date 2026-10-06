@@ -71,7 +71,7 @@ function page(provinces = PROVINCES) {
 
   const meta = document.createElement('p')
   meta.className = 'meta'
-  meta.textContent = '4 области — 1 без скорошни данни'
+  meta.textContent = '4 области, 1 без скорошни данни'
   document.body.appendChild(meta)
 
   return el
@@ -122,7 +122,7 @@ describe('markSorted', () => {
 describe('countLine', () => {
   it('says how many rows of how many, and how many are silent', () => {
     const texts = { shown: 'Показани', of: 'от', areas: 'области', silent: 'без скорошни данни' }
-    expect(countLine(texts, 14, 28, 8)).toBe('Показани 14 от 28 области — 8 без скорошни данни')
+    expect(countLine(texts, 14, 28, 8)).toBe('Показани 14 от 28 области, 8 без скорошни данни')
   })
 })
 
@@ -186,7 +186,7 @@ describe('table island', () => {
     withData.dispatchEvent(new Event('change', { bubbles: true }))
     flushSync()
     expect(shownNames()).toEqual(['Пловдив', 'София', 'Габрово'])
-    expect(document.querySelector('.meta').textContent).toBe('Показани 3 от 4 области — 1 без скорошни данни')
+    expect(document.querySelector('.meta').textContent).toBe('Показани 3 от 4 области, 1 без скорошни данни')
   })
 
   it('states the absence when a filter leaves no rows', () => {
@@ -302,7 +302,7 @@ describe('the table search', () => {
     component = mount(page())
     type('плов')
     expect(document.querySelector('.meta').textContent).toBe(
-      'Показани 1 от 4 области — 1 без скорошни данни',
+      'Показани 1 от 4 области, 1 без скорошни данни',
     )
   })
 

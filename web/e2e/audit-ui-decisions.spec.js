@@ -23,7 +23,7 @@ test.describe('S03: home heading', () => {
       await page.setViewportSize(size)
       await page.goto('/en')
       await expect(page.locator('h1')).toHaveCount(1)
-      await expect(page.locator('h1')).toHaveText('Kanarche — Bulgaria air quality map: PM2.5 and PM10 now')
+      await expect(page.locator('h1')).toHaveText('Kanarche, Bulgaria air quality map: PM2.5 and PM10 now')
       await expect(page.locator('h1')).toHaveClass('visually-hidden')
       await expect(page.locator('.page-head')).toHaveCount(0)
       await page.close()

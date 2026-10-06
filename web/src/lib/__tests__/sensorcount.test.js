@@ -40,7 +40,7 @@ describe('sensorCountLine', () => {
 
   it('shows the total when nothing is filtered', () => {
     expect(sensorCountLine(texts, counts, 'all')).toBe(
-      'Showing 10 of 10 sensors — 4 with no recent readings',
+      'Showing 10 of 10 sensors, 4 with no recent readings',
     )
   })
 
