@@ -74,7 +74,9 @@ const STEPS = {
     const panel = await box(page, '.map__layers .colmenu__panel')
     const btn = await box(page, '.map__layers .colmenu__btn')
     await annotate(page, [{ ...btn, n: 1 }, { ...panel, n: 2 }])
-    return { x: map.x - 16, y: map.y - 8, width: W, height: H }
+    // The menu now lists enough layers (down to Pollen) to overflow 460px, so capture taller and let toWebp scale down.
+    const height = Math.ceil(panel.y + panel.h + 12 - (map.y - 8))
+    return { x: map.x - 16, y: map.y - 8, width: Math.round((height * W) / H), height }
   },
   async window(page, { prefix }) {
     await page.setViewportSize({ width: 1280, height: 800 })
@@ -112,8 +114,8 @@ async function toWebp(page, png) {
   for (const q of [0.82, 0.74, 0.66, 0.58, 0.5]) {
     const b64 = await page.evaluate(async ({ data, quality }) => {
       const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${data}`)).blob())
-      const c = new OffscreenCanvas(bmp.width, bmp.height)
-      c.getContext('2d').drawImage(bmp, 0, 0)
+      const c = new OffscreenCanvas(560, 460)
+      c.getContext('2d').drawImage(bmp, 0, 0, 560, 460)
       const blob = await c.convertToBlob({ type: 'image/webp', quality })
       const buf = new Uint8Array(await blob.arrayBuffer())
       let s = ''
