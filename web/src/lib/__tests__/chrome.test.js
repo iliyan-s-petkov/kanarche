@@ -185,6 +185,7 @@ describe('the pollen key', () => {
     if (layer) el.dataset.pollenLayer = 'true'
     el.dataset.tPollenLegend = 'Pollen forecast'
     el.dataset.tPollenLevelHigh = 'High'
+    el.dataset.tLegend = 'Air quality'
     document.body.appendChild(el)
     return { el, c: mountChrome(el, readConfig(el)) }
   }
@@ -200,6 +201,29 @@ describe('the pollen key', () => {
     expect(key().textContent).toContain('High')
     c.showPollen(false)
     expect(key().hidden).toBe(true)
+  })
+
+  // The owner's rule: with pollen on, the key is pollen only; the metric's title, bar and no-data row go.
+  it('hides the metric key while pollen is on, through repaints, and restores it when off', () => {
+    const { el, c } = mount(true)
+    const legend = el.querySelector('.scale--onmap')
+    const bands = [{ upper: 15, colour: '#3c9', label: 'Good', label_bg: 'Добро' }, { upper: null, colour: '#c33', label: 'Poor', label_bg: 'Лошо' }]
+    const metricParts = () => ['.scale__label', '.scale__bands', '.scale__none'].map((s) => legend.querySelector(`:scope > ${s}`))
+    const toggleLabel = () => legend.querySelector('.scale__toggle-label').textContent
+    c.showLegend({ bands, tier: null, metric: 'P2', scale: null })
+    const metricTitle = toggleLabel()
+    expect(metricTitle).toBe('Air quality')
+    c.showPollen(true)
+    expect(legend.classList.contains('scale--pollen')).toBe(true)
+    for (const part of metricParts()) expect(part.hidden).toBe(true)
+    expect(toggleLabel()).toBe('Pollen forecast')
+    c.showLegend({ bands, tier: null, metric: 'P2', scale: null })
+    for (const part of metricParts()) expect(part.hidden).toBe(true)
+    expect(toggleLabel()).toBe('Pollen forecast')
+    c.showPollen(false)
+    expect(legend.classList.contains('scale--pollen')).toBe(false)
+    for (const part of metricParts()) expect(part.hidden).toBe(false)
+    expect(toggleLabel()).toBe(metricTitle)
   })
 
   it('is absent from a map that does not offer the layer', () => {

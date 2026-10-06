@@ -17,11 +17,17 @@ async function prepareMap(page, path) {
   }, CENTRE)
 }
 
-async function togglePollen(page, label) {
+async function togglePollen(page, label, on = true) {
   await page.locator('.map__layers .colmenu__btn').click()
-  await page.locator('.map__layers').getByLabel(label, { exact: true }).check()
+  const box = page.locator('.map__layers').getByLabel(label, { exact: true })
+  if (on) await box.check()
+  else await box.uncheck()
   await page.keyboard.press('Escape')
 }
+
+// The metric key's own parts: the unit title, the colour bar and the no-data row.
+const metricKey = (page) => ['.scale__label', '.scale__bands', '.scale__none']
+  .map((s) => page.locator(`.scale--onmap > ${s}`))
 
 // The level painted under CLICK, and that point on the page; null until the fill renders.
 const pollenAt = (page) => page.evaluate((c) => {
@@ -37,8 +43,8 @@ const hexVisibility = (page) => page.evaluate(() =>
   document.querySelector('[data-island="map"]').__map.getLayoutProperty('airbg-hex-fill', 'visibility'))
 
 for (const shape of [
-  { name: 'desktop', path: '/en/', label: 'Pollen', levels: ['None', 'Low', 'Moderate', 'High', 'Very high'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },
-  { name: 'mobile', path: '/', label: 'Прашец', levels: ['Няма', 'Нисък', 'Умерен', 'Висок', 'Много висок'], prefix: '', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+  { name: 'desktop', path: '/en/', label: 'Pollen', title: 'Pollen forecast', levels: ['None', 'Low', 'Moderate', 'High', 'Very high'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },
+  { name: 'mobile', path: '/', label: 'Прашец', title: 'Прогноза за прашец', levels: ['Няма', 'Нисък', 'Умерен', 'Висок', 'Много висок'], prefix: '', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
 ]) {
   test(`${shape.name}: the pollen layer colours the province and opens its area page`, async ({ browser }, testInfo) => {
     testInfo.setTimeout(60000)
@@ -62,14 +68,30 @@ for (const shape of [
       .querySourceFeatures('pollen-areas').filter((f) => f.properties.slug !== 'sofia-oblast' && f.properties.level).length)
     expect(others).toBe(0)
 
-    // The key shows in the opened legend; folded again so it cannot cover the click below.
+    // Pollen on: the opened legend is the pollen key alone, and the folded pill names it.
     const toggle = page.locator('.scale--onmap > .scale__toggle')
+    const pill = toggle.locator('.scale__toggle-label')
+    await expect(pill).toHaveText(shape.title)
     await toggle.click()
     await expect(key).toBeVisible()
+    for (const part of metricKey(page)) await expect(part).toBeHidden()
     if (process.env.AIRBG_SHOT_DIR) {
       await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/pollen-layer-${shape.name}.png` })
     }
     await toggle.click()
+    await expect(key).toBeHidden()
+
+    // Pollen off brings the metric key back and takes the pollen key away.
+    await togglePollen(page, shape.label, false)
+    await expect(pill).not.toHaveText(shape.title)
+    await toggle.click()
+    for (const part of metricKey(page)) await expect(part).toBeVisible()
+    await expect(key).toBeHidden()
+    await toggle.click()
+
+    // On again for the click; the legend stays folded so it cannot cover the point.
+    await togglePollen(page, shape.label, true)
+    await expect(pill).toHaveText(shape.title)
     await expect(key).toBeHidden()
 
     if (shape.context.hasTouch) await page.touchscreen.tap(at.x, at.y)

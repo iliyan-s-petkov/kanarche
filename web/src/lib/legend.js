@@ -301,6 +301,17 @@ export function buildPollenRows(t) {
   return wrap
 }
 
+// Pollen on: the metric's title, bar, no-data row and (i) step aside, and the folded pill names `title`.
+export function setPollenLegend(el, on, title) {
+  el.classList.toggle('scale--pollen', on)
+  for (const s of ['.scale__label', '.scale__bands', '.scale__none', '.scale__info']) {
+    const part = el.querySelector(`:scope > ${s}`)
+    if (part) part.hidden = on
+  }
+  const label = el.querySelector(':scope > .scale__toggle .scale__toggle-label')
+  if (label && title) label.textContent = title
+}
+
 // Shows or hides the row and swaps the glyph to match the active wind mode.
 export function setWindRow(row, { on, mode }) {
   row.hidden = !on
