@@ -4,6 +4,7 @@
 // the pure builders it calls stay importable on their own.
 import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows, legendTitle, renderLegend, setPollenLegend, setWindRow } from './legend.js'
 import { createScaleDialog } from './scaledialog.js'
+import { createInfoDialog, pollenInfoContent, seaInfoContent } from './infodialog.js'
 import { mountFullscreen, mountZoom, mountLocate, mountOrientation } from './mapcontrols.js'
 import { mountLayers } from './maplayers.js'
 import { setSensorStatus } from './sensorfilter.svelte.js'
@@ -186,6 +187,9 @@ export function mountChrome(el, cfg) {
     lang: cfg.lang,
   })
   el.appendChild(scaleDialog.el)
+  // The pollen and bathing-water sections' (i) share one dialog.
+  const infoDialog = createInfoDialog(el.ownerDocument, { closeLabel: cfg.t.close })
+  el.appendChild(infoDialog.el)
 
   // What a dot aggregates at this zoom. Under the map as prose, not inside the
   // key: the key is an overlay with no panel behind it (the kit's §5.2d — a box
@@ -463,8 +467,12 @@ export function mountChrome(el, cfg) {
 
   // renderLegend clears the key, so the wind row is re-inserted after each repaint.
   const windRow = buildWindRow(cfg.t.legendWind)
-  const seaRows = cfg.t.sea ? buildSeaRows(cfg.t.sea, cfg.seaColours ?? {}) : null
-  const pollenRows = cfg.pollenLayer && cfg.t.pollen ? buildPollenRows(cfg.t.pollen) : null
+  const seaRows = cfg.t.sea
+    ? buildSeaRows(cfg.t.sea, cfg.seaColours ?? {}, () => infoDialog.show(seaInfoContent(cfg.t.sea.info)))
+    : null
+  const pollenRows = cfg.pollenLayer && cfg.t.pollen
+    ? buildPollenRows(cfg.t.pollen, () => infoDialog.show(pollenInfoContent(cfg.t.pollen.info)))
+    : null
   // The metric key's title, kept so switching pollen off can put it back on the folded pill.
   let metricTitle = ''
   const applyPollenLegend = () => {
