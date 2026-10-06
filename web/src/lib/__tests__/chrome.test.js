@@ -197,7 +197,7 @@ describe('the pollen key', () => {
     c.showPollen(true)
     c.showLegend({ bands: [], tier: null, metric: 'pm25', scale: null })
     expect(key().hidden).toBe(false)
-    expect(key().querySelectorAll('.legend__row')).toHaveLength(5)
+    expect(key().querySelectorAll('.legend__row')).toHaveLength(3)
     expect(key().textContent).toContain('High')
     c.showPollen(false)
     expect(key().hidden).toBe(true)

@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,25 +14,43 @@ func pollenTestConfig() config.Pollen {
 	return config.Pollen{
 		Enabled: true, Domain: "cams_europe", DaysShown: 3,
 		Species: []config.PollenSpecies{
-			{Name: "ragweed", Levels: []float64{0.2, 10, 30, 100}},
-			{Name: "grass", Levels: []float64{0.2, 10, 30, 100}},
-			{Name: "birch", Levels: []float64{0.2, 10, 100, 500}},
+			{Name: "ragweed", Levels: []float64{3, 50}},
+			{Name: "grass", Levels: []float64{3, 50}},
+			{Name: "birch", Levels: []float64{10, 100}},
 		},
 	}
 }
 
-func TestPollenLevelCountsTheBoundsReached(t *testing.T) {
-	bounds := []float64{0.2, 10, 30, 100}
+// Each boundary is inclusive: season start gives moderate, peak gives high.
+func TestPollenLevelPinsEachBoundary(t *testing.T) {
+	grass := []float64{3, 50}
+	tree := []float64{10, 100}
 	for _, tc := range []struct {
-		v    float64
-		want string
+		name   string
+		v      float64
+		bounds []float64
+		want   string
 	}{
-		{0, "none"}, {0.19, "none"}, {0.2, "low"}, {9.9, "low"}, {10, "moderate"},
-		{29.9, "moderate"}, {30, "high"}, {100, "very_high"}, {5000, "very_high"},
+		{"ragweed zero", 0, grass, "low"},
+		{"ragweed below season", 2.9, grass, "low"},
+		{"ragweed season start", 3, grass, "moderate"},
+		{"ragweed below peak", 49.9, grass, "moderate"},
+		{"ragweed peak", 50, grass, "high"},
+		{"ragweed far above", 5000, grass, "high"},
+		{"birch below season", 9.9, tree, "low"},
+		{"birch season start", 10, tree, "moderate"},
+		{"birch below peak", 99.9, tree, "moderate"},
+		{"birch peak", 100, tree, "high"},
 	} {
-		if got := pollenLevel(tc.v, bounds); got != tc.want {
-			t.Errorf("pollenLevel(%v) = %q, want %q", tc.v, got, tc.want)
+		if got := pollenLevel(tc.v, tc.bounds); got != tc.want {
+			t.Errorf("%s: pollenLevel(%v, %v) = %q, want %q", tc.name, tc.v, tc.bounds, got, tc.want)
 		}
+	}
+}
+
+func TestPollenLevelsAreThree(t *testing.T) {
+	if got := strings.Join(PollenLevels, ","); got != "low,moderate,high" {
+		t.Errorf("PollenLevels = %s", got)
 	}
 }
 
@@ -39,7 +58,7 @@ func TestPollenViewsBuildsTheTableAndSummary(t *testing.T) {
 	days := []string{"2026-10-04", "2026-10-05", "2026-10-06"}
 	rows := []store.AreaPollenDay{
 		{Slug: "sofia", Species: "ragweed", Day: "2026-10-04", Mean: 12.34, Max: 40},
-		{Slug: "sofia", Species: "grass", Day: "2026-10-04", Mean: 45, Max: 80},
+		{Slug: "sofia", Species: "grass", Day: "2026-10-04", Mean: 55, Max: 80},
 		{Slug: "sofia", Species: "ragweed", Day: "2026-10-05", Mean: 0.1, Max: 0.3},
 		// Outside the days shown: ignored.
 		{Slug: "sofia", Species: "ragweed", Day: "2026-10-07", Mean: 900, Max: 900},
@@ -55,7 +74,7 @@ func TestPollenViewsBuildsTheTableAndSummary(t *testing.T) {
 		t.Fatalf("species = %+v, want config order ragweed, grass, birch", v.Species)
 	}
 	rw := v.Species[0].Days
-	if len(rw) != 3 || rw[0].Level != "moderate" || rw[0].Mean != 12.3 || rw[1].Level != "none" || rw[2].Has {
+	if len(rw) != 3 || rw[0].Level != "moderate" || rw[0].Mean != 12.3 || rw[1].Level != "low" || rw[2].Has {
 		t.Errorf("ragweed days = %+v", rw)
 	}
 	if v.Species[2].Days[0].Has {
@@ -66,16 +85,16 @@ func TestPollenViewsBuildsTheTableAndSummary(t *testing.T) {
 	}
 }
 
-// A summary names a species only when something is in the air; an all-none
-// day is a summary of "none", and a day with no data at all is no summary.
+// A summary names a species only when one is above low; an all-low
+// day is a summary of "low", and a day with no data at all is no summary.
 func TestPollenSummaryEdges(t *testing.T) {
 	days := []string{"2026-10-04", "2026-10-05", "2026-10-06"}
 	quiet := pollenViews([]store.AreaPollenDay{
 		{Slug: "a", Species: "ragweed", Day: "2026-10-04", Mean: 0.01},
 		{Slug: "a", Species: "grass", Day: "2026-10-04", Mean: 0},
 	}, pollenTestConfig(), days)["a"]
-	if quiet.Summary == nil || quiet.Summary.Level != "none" || quiet.Summary.Species != "" {
-		t.Errorf("quiet summary = %+v, want none with no species", quiet.Summary)
+	if quiet.Summary == nil || quiet.Summary.Level != "low" || quiet.Summary.Species != "" {
+		t.Errorf("quiet summary = %+v, want low with no species", quiet.Summary)
 	}
 	later := pollenViews([]store.AreaPollenDay{
 		{Slug: "b", Species: "ragweed", Day: "2026-10-05", Mean: 50},
@@ -89,8 +108,8 @@ func TestPollenSummaryEdges(t *testing.T) {
 func TestPollenSummaryTieGoesToConfigOrder(t *testing.T) {
 	days := []string{"2026-10-04"}
 	v := pollenViews([]store.AreaPollenDay{
-		{Slug: "a", Species: "grass", Day: "2026-10-04", Mean: 15},
-		{Slug: "a", Species: "ragweed", Day: "2026-10-04", Mean: 12},
+		{Slug: "a", Species: "grass", Day: "2026-10-04", Mean: 30},
+		{Slug: "a", Species: "ragweed", Day: "2026-10-04", Mean: 20},
 	}, pollenTestConfig(), days)["a"]
 	if v.Summary.Species != "ragweed" {
 		t.Errorf("summary species = %q, want ragweed (first in config at the same level)", v.Summary.Species)
@@ -100,7 +119,7 @@ func TestPollenSummaryTieGoesToConfigOrder(t *testing.T) {
 func TestPollenPayloadCarriesAttributionAndNulls(t *testing.T) {
 	days := []string{"2026-10-04", "2026-10-05"}
 	cfg := pollenTestConfig()
-	v := pollenViews([]store.AreaPollenDay{{Slug: "sofia", Species: "ragweed", Day: "2026-10-04", Mean: 3, Max: 9}}, cfg, days)["sofia"]
+	v := pollenViews([]store.AreaPollenDay{{Slug: "sofia", Species: "ragweed", Day: "2026-10-04", Mean: 2, Max: 9}}, cfg, days)["sofia"]
 	fetched := time.Date(2026, 10, 4, 9, 20, 0, 0, time.UTC)
 	body, err := encode(pollenPayloadFrom(time.Now(), "sofia", fetched, cfg, days, v))
 	if err != nil {
@@ -176,7 +195,7 @@ func TestNewHolderTakesPollenAsAnOption(t *testing.T) {
 func TestPollenMapPayloadKeepsTodaysWorstPerProvince(t *testing.T) {
 	days := []string{"2026-10-04", "2026-10-05", "2026-10-06"}
 	views := pollenViews([]store.AreaPollenDay{
-		{Slug: "sofia", Species: "ragweed", Day: "2026-10-04", Mean: 40},
+		{Slug: "sofia", Species: "ragweed", Day: "2026-10-04", Mean: 60},
 		{Slug: "sofia", Species: "grass", Day: "2026-10-04", Mean: 5},
 		{Slug: "burgas", Species: "grass", Day: "2026-10-04", Mean: 0},
 		{Slug: "lozenets", Species: "ragweed", Day: "2026-10-04", Mean: 900},
@@ -188,14 +207,14 @@ func TestPollenMapPayloadKeepsTodaysWorstPerProvince(t *testing.T) {
 	}
 	at := time.Date(2026, 10, 4, 9, 20, 0, 0, time.UTC)
 	p := pollenMapPayloadFrom(at, at, days[0], views, known)
-	if p.Date != "2026-10-04" || !p.Forecast || len(p.Levels) != 5 || p.Attribution.URL == "" {
+	if p.Date != "2026-10-04" || !p.Forecast || len(p.Levels) != 3 || p.Attribution.URL == "" {
 		t.Errorf("header = %+v", p)
 	}
 	if len(p.Areas) != 2 {
 		t.Fatalf("areas = %+v, want burgas and sofia only", p.Areas)
 	}
-	if a := p.Areas[0]; a.Slug != "burgas" || a.Level != "none" || a.Species != nil {
-		t.Errorf("areas[0] = %+v, want burgas none with no species", a)
+	if a := p.Areas[0]; a.Slug != "burgas" || a.Level != "low" || a.Species != nil {
+		t.Errorf("areas[0] = %+v, want burgas low with no species", a)
 	}
 	if a := p.Areas[1]; a.Slug != "sofia" || a.Level != "high" || a.Species == nil || *a.Species != "ragweed" {
 		t.Errorf("areas[1] = %+v, want sofia high from ragweed", a)

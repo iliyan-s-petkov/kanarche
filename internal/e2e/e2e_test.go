@@ -272,8 +272,8 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	for i := 0; i < 96; i++ {
 		at := start.Add(time.Duration(i) * time.Hour)
 		pollen = append(pollen,
-			store.PollenForecast{LonC: 2330, LatC: 4270, Species: "ragweed", ValidAt: at, Grains: 40},
-			store.PollenForecast{LonC: 2330, LatC: 4270, Species: "grass", ValidAt: at, Grains: 5})
+			store.PollenForecast{LonC: 2330, LatC: 4270, Species: "ragweed", ValidAt: at, Grains: 60},
+			store.PollenForecast{LonC: 2330, LatC: 4270, Species: "grass", ValidAt: at, Grains: 1})
 	}
 	if _, err := st.WritePollen(ctx, pollen, now.Add(-time.Hour)); err != nil {
 		t.Fatalf("WritePollen: %v", err)

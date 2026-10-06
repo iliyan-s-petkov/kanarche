@@ -12,8 +12,8 @@ import (
 	"airbg.org/internal/store"
 )
 
-// PollenLevels names the bands, indexed by how many configured bounds a value reaches.
-var PollenLevels = []string{"none", "low", "moderate", "high", "very_high"}
+// PollenLevels names the bands, indexed by how many of the two bounds (season start, peak) a value reaches.
+var PollenLevels = []string{"low", "moderate", "high"}
 
 const (
 	pollenUnit           = "grains/m³"
@@ -44,7 +44,7 @@ type PollenDayView struct {
 	Mean, Max float64
 }
 
-// PollenSummary is the chip: Species is empty when Level is "none".
+// PollenSummary is the chip: Species is empty when every species is low.
 type PollenSummary struct {
 	Date    string
 	Level   string

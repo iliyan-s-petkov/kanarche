@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures.js'
 
 // The pollen fixture (internal/e2e/e2e_test.go): one cell inside "sofia",
-// ragweed at 40 grains/m³ (high) and grass at 5 (low).
+// ragweed at 60 grains/m³ (high) and grass at 1 (low).
 test('the area page shows the pollen table, its credit and the chip', async ({ page }) => {
   await page.goto('/en/area/sofia')
   const chip = page.locator('.toolbar .pollen-chip')

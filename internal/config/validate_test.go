@@ -763,9 +763,14 @@ func TestPollenValidationRejectsBadSettings(t *testing.T) {
 		"no species":               func(c *Config) { c.Pollen.Species = nil },
 		"unknown species":          func(c *Config) { c.Pollen.Species[0].Name = "oak" },
 		"duplicate species":        func(c *Config) { c.Pollen.Species[1].Name = c.Pollen.Species[0].Name },
-		"three levels":             func(c *Config) { c.Pollen.Species[0].Levels = []float64{1, 2, 3} },
-		"levels not ascending":     func(c *Config) { c.Pollen.Species[0].Levels = []float64{1, 10, 10, 50} },
-		"zero first level":         func(c *Config) { c.Pollen.Species[0].Levels = []float64{0, 10, 30, 100} },
+		"one level":                func(c *Config) { c.Pollen.Species[0].Levels = []float64{3} },
+		"three levels":             func(c *Config) { c.Pollen.Species[0].Levels = []float64{3, 50, 100} },
+		"four levels":              func(c *Config) { c.Pollen.Species[0].Levels = []float64{0.2, 10, 30, 100} },
+		"no levels":                func(c *Config) { c.Pollen.Species[0].Levels = nil },
+		"levels equal":             func(c *Config) { c.Pollen.Species[0].Levels = []float64{10, 10} },
+		"levels descending":        func(c *Config) { c.Pollen.Species[0].Levels = []float64{50, 3} },
+		"zero season start":        func(c *Config) { c.Pollen.Species[0].Levels = []float64{0, 50} },
+		"negative season start":    func(c *Config) { c.Pollen.Species[0].Levels = []float64{-1, 50} },
 	} {
 		t.Run(name, func(t *testing.T) {
 			c := validConfig(t)

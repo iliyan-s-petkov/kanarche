@@ -5,14 +5,14 @@ export const POLLEN_FILL_LAYER_ID = 'pollen-fill'
 export const POLLEN_LINE_LAYER_ID = 'pollen-line'
 
 // The server's snapshot.PollenLevels, in rank order.
-export const POLLEN_LEVELS = ['none', 'low', 'moderate', 'high', 'very_high']
+export const POLLEN_LEVELS = ['low', 'moderate', 'high']
 
 // Low and moderate share the area page's accent; opacity separates them, as the bar width does there.
-export const POLLEN_OPACITY = { none: 0.3, low: 0.35, moderate: 0.7, high: 0.7, very_high: 0.7 }
+export const POLLEN_OPACITY = { low: 0.35, moderate: 0.7, high: 0.7 }
 
-// The theme token for a level: very_high reads --pollen-very-high.
+// The theme token for a level.
 export function pollenVar(level) {
-  return `--pollen-${level.replace('_', '-')}`
+  return `--pollen-${level}`
 }
 
 // Level to colour, read from the theme; `read` returns a custom property's value.
@@ -66,11 +66,9 @@ export function readPollenTexts(d) {
     legend: s('tPollenLegend'),
     credit: s('tPollenCredit'),
     levels: {
-      none: s('tPollenLevelNone'),
       low: s('tPollenLevelLow'),
       moderate: s('tPollenLevelModerate'),
       high: s('tPollenLevelHigh'),
-      very_high: s('tPollenLevelVeryHigh'),
     },
   }
 }
