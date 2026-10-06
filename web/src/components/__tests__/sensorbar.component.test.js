@@ -60,7 +60,7 @@ describe('SensorBar', () => {
 
   it('counts nothing before the map has published its sensors', () => {
     const el = render()
-    expect(line(el)).toBe('Showing 0 of 0 sensors — 0 with no recent readings')
+    expect(line(el)).toBe('Showing 0 of 0 sensors, 0 with no recent readings')
   })
 
   // The bar mounts before the map's fetch resolves; a count frozen at mount
@@ -69,7 +69,7 @@ describe('SensorBar', () => {
     const el = render()
     setSensors(body)
     flushSync()
-    expect(line(el)).toBe('Showing 2 of 4 sensors — 2 with no recent readings')
+    expect(line(el)).toBe('Showing 2 of 4 sensors, 2 with no recent readings')
   })
 
   it('narrows the shown count when a status is picked', () => {
@@ -87,7 +87,7 @@ describe('SensorBar', () => {
     const el = render('P1')
     setSensors(body)
     flushSync()
-    expect(line(el)).toBe('Showing 4 of 4 sensors — 0 with no recent readings')
+    expect(line(el)).toBe('Showing 4 of 4 sensors, 0 with no recent readings')
   })
 
   // The numbers change as a result of the reader's own click on the radios

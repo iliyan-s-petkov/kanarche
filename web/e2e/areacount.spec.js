@@ -8,7 +8,7 @@ test('an oblast page counts its sensors below the sensor tier', async ({ ctx }) 
 
   // Faulty stations are hidden by default and not counted: 104's P2 is flagged
   // stuck, so four remain. 101-103 report; the EEA station has no P2.
-  await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 3 of 4 sensors — 1 with no recent readings')
+  await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 3 of 4 sensors, 1 with no recent readings')
 
   // The count came without the map drawing sensor dots at this tier: the marker
   // source holds area aggregates (slug), never sensors (id).

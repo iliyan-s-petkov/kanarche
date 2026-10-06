@@ -51,5 +51,5 @@ export function sensorCountLine(texts, counts, status) {
   // Drawn faulty rings show under every status, so they count as shown.
   const shown =
     status === 'active' ? counts.active + (counts.faulty ?? 0) : status === 'inactive' ? counts.silent : counts.total
-  return `${texts.shown} ${shown} ${texts.of} ${counts.total} ${texts.sensors} — ${counts.silent} ${texts.silent}`
+  return `${texts.shown} ${shown} ${texts.of} ${counts.total} ${texts.sensors}, ${counts.silent} ${texts.silent}`
 }

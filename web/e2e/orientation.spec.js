@@ -94,7 +94,7 @@ test('orientation gestures are enabled and strings follow the language', async (
     }
   })
   expect(gestures).toEqual({ dragRotate: true, touchPitch: true, touchZoomRotate: true, maxPitch: 60 })
-  await expect(page.locator('.map-orient__tip')).toHaveText('Right-drag or Ctrl+drag to tilt and rotate; on touch, use two fingers.')
+  await expect(page.locator('.map-orient__tip')).toHaveText('Right-drag or Ctrl+drag to tilt and rotate. On touch, use two fingers.')
   await expect(page.locator('.map-orient__north-btn')).toHaveText('Reset to north')
 
   await page.goto('/')
