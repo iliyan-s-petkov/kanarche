@@ -1838,6 +1838,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   border-block-start: 1px solid var(--border, currentColor);
 }
 .footer__bar p, .footer .footer__bar .footer__sponsor { margin: 0; }
+.footer__bar .footer__reference { flex-basis: 100%; }
 @media (max-width: 671px) {
   .footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
   .footer__brand, .footer__social { grid-column: 1 / -1; }
