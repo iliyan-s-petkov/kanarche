@@ -43,8 +43,8 @@ const hexVisibility = (page) => page.evaluate(() =>
   document.querySelector('[data-island="map"]').__map.getLayoutProperty('airbg-hex-fill', 'visibility'))
 
 for (const shape of [
-  { name: 'desktop', path: '/en/', label: 'Pollen', title: 'Pollen forecast', levels: ['None', 'Low', 'Moderate', 'High', 'Very high'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },
-  { name: 'mobile', path: '/', label: 'Прашец', title: 'Прогноза за прашец', levels: ['Няма', 'Нисък', 'Умерен', 'Висок', 'Много висок'], prefix: '', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+  { name: 'desktop', path: '/en/', label: 'Pollen', title: 'Pollen forecast', levels: ['Low', 'Moderate', 'High'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },
+  { name: 'mobile', path: '/', label: 'Прашец', title: 'Прогноза за прашец', levels: ['Нисък', 'Умерен', 'Висок'], prefix: '', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
 ]) {
   test(`${shape.name}: the pollen layer colours the province and opens its area page`, async ({ browser }, testInfo) => {
     testInfo.setTimeout(60000)
@@ -53,8 +53,12 @@ for (const shape of [
     await prepareMap(page, shape.path)
 
     const key = page.locator('.scale--onmap .scale__pollen')
+    // The hex-grid caption under the map describes cells that pollen replaces.
+    const caption = page.locator('.map-tier')
     await expect(key).toBeHidden()
+    await expect(caption).toBeVisible()
     await togglePollen(page, shape.label)
+    await expect(caption).toBeHidden()
     await expect(key).not.toHaveAttribute('hidden')
     await expect(key.locator('.legend__row')).toHaveText(shape.levels)
 
@@ -83,6 +87,7 @@ for (const shape of [
 
     // Pollen off brings the metric key back and takes the pollen key away.
     await togglePollen(page, shape.label, false)
+    await expect(caption).toBeVisible()
     await expect(pill).not.toHaveText(shape.title)
     await toggle.click()
     for (const part of metricKey(page)) await expect(part).toBeVisible()
@@ -102,7 +107,34 @@ for (const shape of [
   })
 }
 
-test('the area page map offers no pollen layer', async ({ browser }) => {
+// Every visible legend section after the first carries the rule; the first has none.
+for (const shape of [
+  { name: 'desktop', path: '/en/', sea: 'Bathing water', pollen: 'Pollen', context: { viewport: { width: 1440, height: 900 } } },
+  { name: 'mobile', path: '/', sea: 'Води за къпане', pollen: 'Прашец', context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+]) {
+  test(`${shape.name}: bathing waters and pollen are separated by a rule in the legend`, async ({ browser }, testInfo) => {
+    testInfo.setTimeout(60000)
+    const context = await browser.newContext(shape.context)
+    const page = await context.newPage()
+    await prepareMap(page, shape.path)
+    await togglePollen(page, shape.sea)
+    await togglePollen(page, shape.pollen)
+    await page.locator('.scale--onmap > .scale__toggle').click()
+    const sea = page.locator('.scale--onmap .scale__sea')
+    const pollen = page.locator('.scale--onmap .scale__pollen')
+    await expect(sea).toBeVisible()
+    await expect(pollen).toBeVisible()
+    const top = (loc) => loc.evaluate((e) => getComputedStyle(e).borderTopWidth)
+    expect(await top(sea)).toBe('0px')
+    expect(await top(pollen)).toBe('1px')
+    if (process.env.AIRBG_SHOT_DIR) {
+      await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/legend-sep-${shape.name}.png` })
+    }
+    await context.close()
+  })
+}
+
+test('the area page map offers no pollen layer',async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const page = await context.newPage()
   await page.goto('/en/area/sofia-oblast')

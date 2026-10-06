@@ -18,18 +18,17 @@ function evalMatch(expr, level) {
 }
 
 const theme = {
-  '--pollen-none': '#6f6f6f',
   '--pollen-low': '#0f62fe',
   '--pollen-moderate': '#0f62fe',
   '--pollen-high': '#f1c21b',
-  '--pollen-very-high': '#da1e28',
 }
 
 describe('pollen colours', () => {
-  it('reads one theme token per level, very_high as --pollen-very-high', () => {
-    expect(pollenVar('very_high')).toBe('--pollen-very-high')
+  it('reads one theme token per level', () => {
+    expect(POLLEN_LEVELS).toEqual(['low', 'moderate', 'high'])
+    expect(pollenVar('high')).toBe('--pollen-high')
     expect(pollenColours((n) => ` ${theme[n]} `, 'grey')).toEqual({
-      none: '#6f6f6f', low: '#0f62fe', moderate: '#0f62fe', high: '#f1c21b', very_high: '#da1e28',
+      low: '#0f62fe', moderate: '#0f62fe', high: '#f1c21b',
     })
   })
 
@@ -39,9 +38,7 @@ describe('pollen colours', () => {
 
   it('fills each level in its own colour and leaves no-data unfilled', () => {
     const paint = pollenFillPaint(pollenColours((n) => theme[n], 'grey'), 'grey')
-    expect(evalMatch(paint['fill-color'], 'none')).toBe('#6f6f6f')
     expect(evalMatch(paint['fill-color'], 'high')).toBe('#f1c21b')
-    expect(evalMatch(paint['fill-color'], 'very_high')).toBe('#da1e28')
     expect(evalMatch(paint['fill-opacity'], null)).toBe(0)
     // Low and moderate share a colour; the opacity tells them apart.
     expect(evalMatch(paint['fill-opacity'], 'low')).toBeLessThan(evalMatch(paint['fill-opacity'], 'moderate'))
@@ -97,10 +94,10 @@ describe('pollenAttribution', () => {
 
 describe('readPollenTexts', () => {
   it('groups the data-t-pollen-* attributes', () => {
-    const t = readPollenTexts({ tPollenToggle: 'Pollen', tPollenLegend: 'Pollen forecast', tPollenLevelVeryHigh: 'Very high' })
+    const t = readPollenTexts({ tPollenToggle: 'Pollen', tPollenLegend: 'Pollen forecast', tPollenLevelHigh: 'High' })
     expect(t.toggle).toBe('Pollen')
     expect(t.legend).toBe('Pollen forecast')
-    expect(t.levels.very_high).toBe('Very high')
-    expect(t.levels.none).toBe('')
+    expect(t.levels.high).toBe('High')
+    expect(t.levels.low).toBe('')
   })
 })

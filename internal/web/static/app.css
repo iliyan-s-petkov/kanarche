@@ -140,11 +140,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 .pollen-bar { display: block; block-size: 4px; inline-size: 0; margin-block: 2px; border-radius: var(--radius-pill); background: var(--pollen-low); }
 .pollen-value { color: var(--muted); font-variant-numeric: tabular-nums; }
 .pollen-none { color: var(--muted); }
-[data-level="none"] .pollen-level { color: var(--pollen-none); }
-[data-level="low"] .pollen-bar { inline-size: 25%; }
-[data-level="moderate"] .pollen-bar { inline-size: 50%; background: var(--pollen-moderate); }
-[data-level="high"] .pollen-bar { inline-size: 75%; background: var(--pollen-high); }
-[data-level="very_high"] .pollen-bar { inline-size: 100%; background: var(--pollen-very-high); }
+[data-level="low"] .pollen-bar { inline-size: 33%; }
+[data-level="moderate"] .pollen-bar { inline-size: 66%; background: var(--pollen-moderate); }
+[data-level="high"] .pollen-bar { inline-size: 100%; background: var(--pollen-high); }
 .pollen-note, .pollen-credit { font-size: var(--text-caption); color: var(--muted); margin-block-start: var(--space-2); }
 .pollen-chip { display: inline-block; flex: 0 1 auto; min-inline-size: 0; max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; line-height: calc(var(--control-height) - 2px); padding-inline: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); color: var(--fg); font-size: var(--text-compact); text-decoration: none; white-space: nowrap; }
 .pollen-chip:hover { border-color: var(--accent); }
@@ -286,14 +284,14 @@ strong, b { font-weight: var(--weight-emphasis); }
 .scale__pollen-head { margin: 0; color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
 /* Pollen on: the key is pollen only (setPollenLegend hides the metric's parts); the folded pill drops its ramp. */
 .scale--onmap.scale--pollen > .scale__label, .scale--onmap.scale--pollen > .scale__bands, .scale--onmap.scale--pollen > .scale__none, .scale--onmap.scale--pollen > .scale__info { display: none; }
-.scale--pollen > .scale__pollen { margin-block-start: 0; padding-block-start: 0; border-block-start: 0; }
+/* Pollen on: the metric key is gone, so the first visible section has no rule above it; each later one keeps it. */
+.scale--pollen > :is(.scale__wind, .scale__sea, .scale__pollen) { margin-block-start: 0; padding-block-start: 0; border-block-start: 0; }
+.scale--pollen > .scale__wind:not([hidden]) ~ .scale__sea, .scale--pollen > :is(.scale__wind, .scale__sea):not([hidden]) ~ .scale__pollen { margin-block-start: var(--space-3); padding-block-start: var(--space-2); border-block-start: 1px solid var(--border); }
 .scale--onmap.scale--pollen:not([open]) .scale__toggle::after { content: none; }
 .legend-swatch--pollen { clip-path: none; block-size: 12px; fill-opacity: 0.7; }
-.legend-swatch--pollen-none { color: var(--pollen-none); fill-opacity: 0.3; }
 .legend-swatch--pollen-low { color: var(--pollen-low); fill-opacity: 0.35; }
 .legend-swatch--pollen-moderate { color: var(--pollen-moderate); }
 .legend-swatch--pollen-high { color: var(--pollen-high); }
-.legend-swatch--pollen-very-high { color: var(--pollen-very-high); }
 .legend-wind-glyph { inline-size: 24px; block-size: 16px; flex: none; color: var(--wind-glyph); }
 /* Two corrections to the kit's .scale--progressive, both of which follow from
    the same difference: the kit places its numbers by VALUE on a piecewise axis
@@ -1838,6 +1836,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   border-block-start: 1px solid var(--border, currentColor);
 }
 .footer__bar p, .footer .footer__bar .footer__sponsor { margin: 0; }
+.footer__bar .footer__reference { flex-basis: 100%; }
 @media (max-width: 671px) {
   .footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
   .footer__brand, .footer__social { grid-column: 1 / -1; }

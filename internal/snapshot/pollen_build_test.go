@@ -20,7 +20,7 @@ func TestBuildServesPollenPerAreaAndCarriesItForward(t *testing.T) {
 	from := time.Date(2026, 10, 3, 21, 0, 0, 0, time.UTC)
 	rows := make([]store.PollenForecast, 0, 72)
 	for i := 0; i < 72; i++ {
-		rows = append(rows, store.PollenForecast{LonC: 2340, LatC: 4270, Species: "ragweed", ValidAt: from.Add(time.Duration(i) * time.Hour), Grains: 40})
+		rows = append(rows, store.PollenForecast{LonC: 2340, LatC: 4270, Species: "ragweed", ValidAt: from.Add(time.Duration(i) * time.Hour), Grains: 60})
 	}
 	if _, err := st.WritePollen(ctx, rows, now.Add(-time.Hour)); err != nil {
 		t.Fatalf("WritePollen: %v", err)
