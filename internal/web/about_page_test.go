@@ -182,8 +182,8 @@ func TestAboutStartScreenshots(t *testing.T) {
 		start := body[strings.Index(body, `id="start"`):]
 		start = start[:strings.Index(start, `id="privacy"`)]
 		imgs := imgTagRe.FindAllString(start, -1)
-		if len(imgs) != 8 {
-			t.Fatalf("%s: %d screenshots in #start, want 8 (4 steps x light and dark)", p, len(imgs))
+		if len(imgs) != 10 {
+			t.Fatalf("%s: %d screenshots in #start, want 10 (5 steps x light and dark)", p, len(imgs))
 		}
 		for _, tag := range imgs {
 			a := map[string]string{}

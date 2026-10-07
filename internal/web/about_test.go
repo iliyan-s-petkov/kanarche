@@ -195,3 +195,31 @@ func splitCityList(s string) []string {
 	sort.Strings(out)
 	return out
 }
+
+// TestAboutStartTiltCard. The Getting started section explains tilting and
+// turning the map; the card must render its title and both theme images in
+// each language, and every image it points at must be served.
+func TestAboutStartTiltCard(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, tc := range []struct{ path, lang, title string }{
+		{"/en/about", "en", "Tilt and turn the map"},
+		{"/about", "bg", "Наклонете и завъртете картата"},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			body := fetch(t, rr, tc.path).Body.String()
+			if !strings.Contains(body, "<h3>"+tc.title+"</h3>") {
+				t.Fatalf("no card titled %q", tc.title)
+			}
+			for _, theme := range []string{"light", "dark"} {
+				re := regexp.MustCompile(`src="(/static/about/start-tilt-` + tc.lang + `-` + theme + `[^"]*\.webp[^"]*)"`)
+				m := re.FindStringSubmatch(body)
+				if m == nil {
+					t.Fatalf("no %s tilt image in the page", theme)
+				}
+				if rec := fetch(t, rr, m[1]); rec.Code != http.StatusOK {
+					t.Errorf("GET %s = %d, want 200", m[1], rec.Code)
+				}
+			}
+		})
+	}
+}

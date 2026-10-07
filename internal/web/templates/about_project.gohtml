@@ -78,6 +78,16 @@
     </li>
     <li>
       <div class="about-step__text">
+        <h3>{{.T "about.start.tilt.title"}}</h3>
+        <p>{{.T "about.start.tilt.body"}}</p>
+      </div>
+      <figure class="about-shot">
+        <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-tilt-%s-light.webp" .Lang)}}" alt="{{.T "about.start.tilt.alt"}}" width="560" height="460" loading="lazy" decoding="async">
+        <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-tilt-%s-dark.webp" .Lang)}}" alt="{{.T "about.start.tilt.alt"}}" width="560" height="460" loading="lazy" decoding="async">
+      </figure>
+    </li>
+    <li>
+      <div class="about-step__text">
         <h3>{{.T "about.start.areas.title"}}</h3>
         <p>{{.T "about.start.areas.body"}}</p>
       </div>
