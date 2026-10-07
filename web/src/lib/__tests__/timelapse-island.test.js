@@ -702,9 +702,9 @@ describe('installTimelapse', () => {
     ui.button.click()
   })
 
-  // The frame on screen is a past hour's. Pressing stop must put the live grid
-  // back, which only happens if the dedup key refreshHexes holds is cleared.
-  it('goes back to the live grid when stopped', async () => {
+  // The frame on screen is a past hour's. Exit must put the live grid back,
+  // which only happens if the dedup key refreshHexes holds is cleared.
+  it('goes back to the live grid on exit', async () => {
     const LIVE = { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: 99 } }] }
     const fetchJSON = async (url) => (url.includes('timelapse') ? BODY : LIVE)
     const { ui, painted, state, map } = harness(fetchJSON)
@@ -717,9 +717,43 @@ describe('installTimelapse', () => {
     ui.button.click()
     await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(10))
 
-    ui.button.click()
+    ui.exit.click()
     await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(99))
     expect(ui.button.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  // The clock still shows the paused hour, so the map must too.
+  it('keeps the paused frame on the map, not the live grid', async () => {
+    const LIVE = { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: 99 } }] }
+    const fetchJSON = async (url) => (url.includes('timelapse') ? BODY : LIVE)
+    const { ui, painted, state, map } = harness(fetchJSON)
+
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(10))
+    const before = painted.length
+    ui.button.click()
+    await new Promise((r) => setTimeout(r, 20))
+
+    expect(ui.button.getAttribute('aria-pressed')).toBe('false')
+    expect(painted).toHaveLength(before)
+    expect(painted.at(-1).features[0].properties.value).toBe(10)
+  })
+
+  it('scrubs while paused, then resumes from the paused frame', async () => {
+    const { ui, painted } = harness(async () => BODY)
+
+    ui.button.click()
+    await vi.waitFor(() => expect(painted.length).toBeGreaterThan(0))
+    ui.button.click()
+    ui.slider.value = '1'
+    ui.slider.dispatchEvent(new Event('input'))
+    expect(painted.at(-1).features[0].properties.value).toBe(20)
+
+    ui.button.click()
+    await vi.waitFor(() => expect(ui.button.getAttribute('aria-pressed')).toBe('true'))
+    expect(painted.at(-1).features[0].properties.value).toBe(20)
+    ui.button.click()
   })
 
   // Dragging is a request to look at one hour; leaving the timer running would
@@ -877,10 +911,7 @@ describe('installTimelapse', () => {
 
     ui.button.click()
     await vi.waitFor(() => expect(painted.length).toBeGreaterThan(0))
-    // Pause restores the live grid, which is itself a paint — settle it first,
-    // or the repaint being measured is that one.
     ui.button.click()
-    await vi.waitFor(() => expect(painted.length).toBeGreaterThan(1))
     const before = painted.length
 
     map.setZoom(12.4)
@@ -913,22 +944,35 @@ describe('installTimelapse', () => {
     }
   })
 
-  // Pause puts the live grid back on screen. A zoom is not a press of play, so
-  // it must not drag a replay frame back over it — the new tier is fetched and
-  // held, and the next press of play or drag of the scrubber draws it.
-  it('does not redraw a frame over the live grid while paused', async () => {
+  // The paused frame is still on screen, so a zoom onto a new tier redraws it
+  // at that tier rather than leaving the old cells or the live grid.
+  it('repaints the paused frame at the new tier on zoom', async () => {
     const asked = []
     const { ui, painted, map } = harness(async (url) => { asked.push(url); return BODY })
 
     ui.button.click()
     await vi.waitFor(() => expect(painted.length).toBeGreaterThan(0))
     ui.button.click()
-    await vi.waitFor(() => expect(painted.length).toBeGreaterThan(1))
     const before = painted.length
 
     map.setZoom(2)
     await vi.waitFor(() => expect(asked.filter((u) => u.includes('timelapse'))).toHaveLength(2))
-    await Promise.resolve()
+    await vi.waitFor(() => expect(painted.length).toBeGreaterThan(before))
+    expect(painted.at(-1).features[0].properties.value).toBe(10)
+  })
+
+  it('does not repaint a paused frame on zoom after exit', async () => {
+    const { ui, painted, map } = harness(async (url) => (url.includes('timelapse') ? BODY : { resolution_km: 15, hexes: [] }))
+
+    ui.button.click()
+    await vi.waitFor(() => expect(painted.length).toBeGreaterThan(0))
+    ui.button.click()
+    ui.exit.click()
+    await vi.waitFor(() => expect(painted.length).toBeGreaterThan(1))
+    const before = painted.length
+
+    map.setZoom(2)
+    await new Promise((r) => setTimeout(r, 20))
     expect(painted).toHaveLength(before)
   })
 
