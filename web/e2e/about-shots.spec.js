@@ -53,14 +53,20 @@ async function composite(encoder, shots, backdrop, theme) {
   const imgs = shots.map((b) => `<img src="data:image/png;base64,${b.toString('base64')}">`).join('')
   const edge = theme === 'dark' ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.18)'
   const shadow = theme === 'dark' ? 'rgba(0,0,0,.6)' : 'rgba(20,30,40,.25)'
-  await encoder.setViewportSize({ width: W, height: H })
-  await encoder.setContent(`<!doctype html><style>
-    html,body{margin:0;width:${W}px;height:${H}px;background:${backdrop}}
-    body{display:flex;justify-content:space-evenly;align-items:center}
-    img{height:368px;border-radius:16px;box-shadow:0 0 0 1px ${edge},0 6px 16px ${shadow}}
-  </style>${imgs}`)
-  await encoder.evaluate(() => Promise.all([...document.images].map((i) => i.decode())))
-  return encoder.screenshot()
+  // A plain desktop context: the phone context's mobile emulation would lay this page out at 980 px.
+  const ctx = await encoder.context().browser().newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2 })
+  try {
+    const page = await ctx.newPage()
+    await page.setContent(`<!doctype html><style>
+      html,body{margin:0;width:${W}px;height:${H}px;background:${backdrop}}
+      body{display:flex;justify-content:space-evenly;align-items:center}
+      img{height:368px;border-radius:16px;box-shadow:0 0 0 1px ${edge},0 6px 16px ${shadow}}
+    </style>${imgs}`)
+    await page.evaluate(() => Promise.all([...document.images].map((i) => i.decode())))
+    return await page.screenshot()
+  } finally {
+    await ctx.close()
+  }
 }
 
 async function mapReady(page) {
@@ -423,7 +429,10 @@ const SCENES = {
       await expect(page.locator('.scroll-cue')).toBeVisible()
       shots.push(await page.screenshot())
 
-      // 2. Sensor 101 tapped; the point is read again on every try because the layout can move it.
+      // 2. Full screen, then sensor 101 tapped; the point is read again on every try because the resize can move it.
+      await page.locator('.map__full').click()
+      await expect(page.locator('.map__full')).toHaveAttribute('aria-pressed', 'true')
+      await mapReady(page)
       await expect(async () => {
         const pt = await page.evaluate(() => {
           const map = document.querySelector('[data-island="map"]').__map
@@ -439,13 +448,14 @@ const SCENES = {
         await page.touchscreen.tap(pt.x, pt.y)
         await expect(page.locator('.map-sensor-sheet')).toBeVisible({ timeout: 2000 })
       }).toPass({ timeout: 20_000 })
-      await expect(page.locator('.map-sensor-sheet .chart-frame')).toBeVisible({ timeout: 20_000 })
+      await expect(page.locator('.sensor-panel .chart-frame')).toBeVisible({ timeout: 20_000 })
       await page.waitForTimeout(2000)
       shots.push(await page.screenshot())
 
-      // 3. The readouts and charts under the map, on a fresh load so no sheet covers them.
+      // 3. The chart and the readout cards under the map, on a fresh load so no sheet covers them.
       await load()
-      await page.locator('.readout').first().evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
+      await expect(page.locator('#chart .chart-frame')).toBeVisible({ timeout: 20_000 })
+      await page.locator('#chart').evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + scrollY - 4))
       await page.waitForTimeout(2000)
       shots.push(await page.screenshot())
 
