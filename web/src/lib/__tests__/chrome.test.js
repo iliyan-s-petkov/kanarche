@@ -36,7 +36,8 @@ describe('the averaging selector', () => {
     const { windowMenu } = mountChrome(el, readConfig(el))
     expect(windowMenu, 'no window menu in the chrome').toBeTruthy()
     expect(windowMenu.root.parentElement).toBe(el)
-    expect(windowMenu.button.getAttribute('aria-label')).toBe('Averaging period')
+    // Accessible name includes both label and visible text (WCAG 2.5.3).
+    expect(windowMenu.button.getAttribute('aria-label')).toBe('Averaging period: Now')
     const radios = [...windowMenu.panel.querySelectorAll('input[type="radio"]')]
     expect(radios.map((r) => r.value)).toEqual(['', '24h', '48h', '7d'])
     expect(radios.map((r) => r.nextElementSibling.textContent))
@@ -1175,6 +1176,45 @@ describe('mountChrome() folds the open legend on a tap anywhere inside it', () =
 
     expect(legend.open).toBe(false)
     expect(document.activeElement).toBe(legend.querySelector(':scope > .scale__toggle'))
+  })
+})
+
+// Accessibility: aria-label must match visible text (WCAG 2.5.3).
+describe('Accessible names for controls', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('legend toggle has no aria-label (relies on visible metric title)', () => {
+    const shell = document.createElement('div')
+    shell.className = 'map-shell'
+    const el = document.createElement('div')
+    el.className = 'map'
+    el.dataset.tMetricLabels = 'ФПЧ10,ФПЧ2.5'
+    el.dataset.tMetricUnits = 'µg/m³,µg/m³'
+    shell.appendChild(el)
+    document.body.appendChild(shell)
+
+    const chrome = mountChrome(el, readConfig(el))
+    chrome.showLegend({ bands: [], tier: null, metric: 'P2', scale: null })
+    const legend = shell.querySelector('details.scale')
+    const toggle = legend.querySelector(':scope > .scale__toggle')
+
+    expect(toggle.getAttribute('aria-label')).toBeNull()
+  })
+
+  it('window button aria-label changes with selection (WCAG 2.5.3)', () => {
+    const el = document.createElement('div')
+    el.dataset.tWindowLabel = 'Averaging period'
+    el.dataset.tWindows = 'Now,Last 24 hours,Last 48 hours,Last week'
+    document.body.appendChild(el)
+    const { windowMenu } = mountChrome(el, readConfig(el))
+    const initialLabel = windowMenu.button.getAttribute('aria-label')
+
+    // Pick "Last 24 hours"
+    windowMenu.panel.querySelectorAll('input[type="radio"]')[1].click()
+    const updatedLabel = windowMenu.button.getAttribute('aria-label')
+
+    expect(initialLabel).toBe('Averaging period: Now')
+    expect(updatedLabel).toBe('Averaging period: Last 24 hours')
   })
 })
 
