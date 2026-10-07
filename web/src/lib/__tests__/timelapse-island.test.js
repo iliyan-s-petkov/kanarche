@@ -19,7 +19,14 @@ describe('installTimelapse', () => {
     frames: [{ t: '2026-09-08T06:00:00Z', v: [10] }, { t: '2026-09-08T07:00:00Z', v: [20] }],
   }
 
-  function harness(fetchJSON, t, storage, width) {
+  // Most cases time the animation in FRAME_MS units, so they start from a
+  // stored 1x rather than the half-speed default.
+  const oneX = () => {
+    const kv = new Map([[PLAY_SPEED_KEY, '1']])
+    return { getItem: (k) => (kv.has(k) ? kv.get(k) : null), setItem: (k, v) => kv.set(k, v) }
+  }
+
+  function harness(fetchJSON, t, storage = oneX(), width) {
     const painted = []
     let zoom = 12
     const zoomHandlers = []
@@ -80,17 +87,20 @@ describe('installTimelapse', () => {
       return { kv, getItem: (k) => (kv.has(k) ? kv.get(k) : null), setItem: (k, v) => kv.set(k, v) }
     }
 
-    it('opens at full speed and cycles on each press', async () => {
-      const { ui } = harness(async () => BODY, T)
+    const pick = (ui, speed) => {
+      ui.speed.click()
+      ui.speedItems[[0.25, 0.5, 1, 2].indexOf(speed)].click()
+    }
+
+    it('opens at half speed and follows the menu choice', async () => {
+      const { ui } = harness(async () => BODY, T, storageFor())
       ui.button.click()
       await vi.waitFor(() => expect(ui.speed.hidden).toBe(false))
-      expect(ui.speed.textContent).toBe('1\u00d7')
-      ui.speed.click()
       expect(ui.speed.textContent).toBe('0.5\u00d7')
-      ui.speed.click()
+      pick(ui, 2)
+      expect(ui.speed.textContent).toBe('2\u00d7')
+      pick(ui, 0.25)
       expect(ui.speed.textContent).toBe('0.25\u00d7')
-      ui.speed.click()
-      expect(ui.speed.textContent).toBe('1\u00d7')
     })
 
     it('remembers the speed for the next visit', async () => {
@@ -98,8 +108,17 @@ describe('installTimelapse', () => {
       const { ui } = harness(async () => BODY, T, store)
       ui.button.click()
       await vi.waitFor(() => expect(ui.speed.hidden).toBe(false))
-      ui.speed.click()
-      expect(store.kv.get(PLAY_SPEED_KEY)).toBe('0.5')
+      pick(ui, 2)
+      expect(store.kv.get(PLAY_SPEED_KEY)).toBe('2')
+    })
+
+    it('falls back to half speed for a stored value it does not know', async () => {
+      for (const raw of ['3', 'fast', '', '0.5x']) {
+        const { ui } = harness(async () => BODY, T, storageFor(raw))
+        ui.button.click()
+        await vi.waitFor(() => expect(ui.speed.hidden).toBe(false))
+        expect(ui.speed.textContent, `stored ${JSON.stringify(raw)}`).toBe('0.5\u00d7')
+      }
     })
 
     it('opens at the remembered speed', async () => {
@@ -137,13 +156,14 @@ describe('installTimelapse', () => {
         ui.button.click()
         await vi.waitFor(() => expect(painted.length).toBeGreaterThan(0))
         ui.speed.click()
+        ui.speedItems[0].click()
         const after = painted.length
-        await vi.advanceTimersByTimeAsync(FRAME_MS)
-        expect(painted.length, 'still on the old fast timer').toBe(after)
+        await vi.advanceTimersByTimeAsync(FRAME_MS * 2)
+        expect(painted.length, 'still on the old timer').toBe(after)
         // +16: the fake clock's rAF ticks land on its own 16ms grid, not on
         // this delay's boundary, so the tick that crosses it can be up to one
         // frame later than the exact millisecond.
-        await vi.advanceTimersByTimeAsync(FRAME_MS + 16)
+        await vi.advanceTimersByTimeAsync(FRAME_MS * 2 + 16)
         expect(painted.length).toBeGreaterThan(after)
         ui.exit.click()
       } finally {
@@ -161,6 +181,7 @@ describe('installTimelapse', () => {
       await vi.waitFor(() => expect(ui.button.getAttribute('aria-pressed')).toBe('false'))
       const after = painted.length
       ui.speed.click()
+      ui.speedItems[3].click()
       expect(ui.button.getAttribute('aria-pressed')).toBe('false')
       expect(painted.length).toBe(after)
     })
@@ -227,7 +248,7 @@ describe('installTimelapse', () => {
         ui.button.click()
         await vi.waitFor(() => expect(painted.length).toBeGreaterThan(0))
         const after = painted.length
-        await vi.advanceTimersByTimeAsync(FRAME_MS + 16)
+        await vi.advanceTimersByTimeAsync(FRAME_MS * 2 + 16)
         expect(painted.length).toBeGreaterThan(after)
         ui.exit.click()
       } finally {

@@ -1387,6 +1387,7 @@ describe('mountChrome storage handle', () => {
 
     // Change the speed
     ui.speed.click()
+    ui.speedItems[0].click()
     expect(ui.speed.textContent).toBe('0.25×')
 
     // Verify it was written to the fake storage

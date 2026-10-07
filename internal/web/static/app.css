@@ -262,6 +262,25 @@ strong, b { font-weight: var(--weight-emphasis); }
   inline-size: auto; min-inline-size: 2.75rem; padding-inline: var(--space-1);
 }
 
+/* Opens upward like the window menu: the bar sits at the bottom of the map. */
+.map-play__speedpanel {
+  inset-block-start: auto; inset-block-end: calc(100% + var(--space-2));
+  inset-inline-end: 0; min-inline-size: 0; inline-size: max-content;
+  padding: var(--space-1);
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border);
+}
+.map-play__speeditem {
+  inline-size: 100%; margin-inline: 0; justify-content: flex-start;
+  background: none; border: 0; border-radius: var(--radius-sm); color: var(--fg);
+  font-size: var(--text-caption); font-variant-numeric: tabular-nums;
+}
+.map-play__speeditem:focus-visible { box-shadow: var(--focus-ring); }
+.map-play__speeditem[aria-checked="true"] { font-weight: 600; background: var(--surface-2); }
+.map-play__speeditem[aria-checked="true"]::before { content: "\2713"; inline-size: 1em; }
+.map-play__speeditem[aria-checked="false"]::before { content: ""; inline-size: 1em; }
+@media (max-width: 480px) { .map-play__speeditem { min-block-size: 44px; } }
+
 /* The no-data swatch carries a server-defined colour as an SVG fill attribute,
    so it needs a size here and nothing else — see renderLegend on why a styled
    span cannot work under the CSP. The BAND swatches need nothing: the kit sizes
