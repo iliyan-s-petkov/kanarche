@@ -1046,6 +1046,13 @@ describe('the cell-values toggle', () => {
 // with them. A button of its own in the corner said it was a different kind of
 // thing, and left the corner carrying two stacked buttons and a disclosure.
 describe('the wind toggle lives in the layers menu, not in the corner', () => {
+  // The layer starts after the first render and fetches its forecast, so the fetch is stubbed here rather than inherited.
+  beforeEach(() => {
+    clearCache()
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({}) })))
+  })
+  afterEach(() => { vi.unstubAllGlobals() })
+
   it('mounts no wind button of its own', () => {
     const el = document.createElement('div')
     mountChrome(el, chromeCfg({ t: { tier: {}, windToggle: 'Вятър' } }))
@@ -1077,6 +1084,34 @@ describe('the wind toggle lives in the layers menu, not in the corner', () => {
     } finally { vi.unstubAllGlobals() }
   })
 
+  it('holds the layer back until the map is idle, then shows the arrows', async () => {
+    const { map, el } = mountTestMap({ metric: 'P2', load: false })
+    // A map that never reports idle keeps the layer waiting, and lets the test fire idle itself.
+    map.once = vi.fn()
+    map.handlers.load()
+    // Counted on this map, not on fetch: earlier tests' maps share the stubbed fetch.
+    const shown = () => map.setLayoutProperty.mock.calls.filter((c) => c[0] === WIND_LAYER_ID && c[2] === 'visible')
+    await vi.waitFor(() => expect(map.once).toHaveBeenCalledWith('idle', expect.any(Function)))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(shown()).toHaveLength(0)
+    // Re-ticking while the start is pending must not pull it forward.
+    el.querySelector('[data-layer-key="view:wind"]').dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(shown()).toHaveLength(0)
+
+    map.once.mock.calls[0][1]()
+    await vi.waitFor(() => expect(shown()).toHaveLength(1), { timeout: 4000 })
+  })
+
+  it('does not start the layer if it was switched off before the deferred start', async () => {
+    const { map, el } = mountTestMap({ metric: 'P2' })
+    const box = el.querySelector('[data-layer-key="view:wind"]')
+    box.checked = false
+    box.dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 800))
+    expect(map.setLayoutProperty).not.toHaveBeenCalledWith(WIND_LAYER_ID, 'visibility', 'visible')
+  })
+
   it('shows the arrows when the option is ticked', async () => {
     const { map, el } = mountTestMap({ metric: 'P2' })
     const box = el.querySelector('[data-layer-key="view:wind"]')
@@ -1085,7 +1120,7 @@ describe('the wind toggle lives in the layers menu, not in the corner', () => {
     box.dispatchEvent(new Event('change'))
     await vi.waitFor(() => {
       expect(map.setLayoutProperty).toHaveBeenCalledWith(WIND_LAYER_ID, 'visibility', 'visible')
-    })
+    }, { timeout: 4000 })
   })
 
   // The arrow lattice is sized to the viewport, so the arrows a zoomed-in map
@@ -1101,7 +1136,7 @@ describe('the wind toggle lives in the layers menu, not in the corner', () => {
 
     box.checked = true
     box.dispatchEvent(new Event('change'))
-    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled())
+    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled(), { timeout: 4000 })
 
     source.setData.mockClear()
     map.getZoom.mockReturnValue(14)
@@ -1123,7 +1158,7 @@ describe('the wind toggle lives in the layers menu, not in the corner', () => {
 
     box.checked = true
     box.dispatchEvent(new Event('change'))
-    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled())
+    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled(), { timeout: 4000 })
     box.checked = false
     box.dispatchEvent(new Event('change'))
     source.setData.mockClear()
@@ -1153,6 +1188,8 @@ describe('a move paints its layers in one pass', () => {
     }))
 
     const { map } = mountTestMap({ metric: 'P2' })
+    // The wind layer starts after the first render, so let it land before counting paints.
+    await vi.waitFor(() => expect(map.painted).toContain('airbg-wind'), { timeout: 4000 })
     await vi.waitFor(() => expect(map.painted).toContain('airbg-data'))
 
     let release
@@ -1229,7 +1266,7 @@ describe('the sensor status filter', () => {
     const source = withStableSource(map)
 
     await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
-    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled())
+    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled(), { timeout: 4000 })
     expect(drawn(source).map((f) => f.properties.id)).toEqual([42])
   })
 
