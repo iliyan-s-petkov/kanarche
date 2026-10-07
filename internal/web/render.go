@@ -1127,3 +1127,14 @@ func (rr *Renderer) RenderError(w http.ResponseWriter, r *http.Request, status i
 	// overwrite bug hid — it looked handled at this level and was undone below.
 	rr.render(w, r, status, "error", data)
 }
+
+// AboutStep is the data one Getting started card renders from: the page data
+// (for T, Static, Lang) plus the card name that keys its copy and images.
+type AboutStep struct {
+	PageData
+	Name string
+}
+
+// Step returns the data for the "about-step" template, since templates cannot
+// build a struct of their own.
+func (p PageData) Step(name string) AboutStep { return AboutStep{PageData: p, Name: name} }

@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -207,7 +208,7 @@ func TestAboutStartTiltCard(t *testing.T) {
 	} {
 		t.Run(tc.path, func(t *testing.T) {
 			body := fetch(t, rr, tc.path).Body.String()
-			if !strings.Contains(body, "<h3>"+tc.title+"</h3>") {
+			if !strings.Contains(body, "<h4>"+tc.title+"</h4>") {
 				t.Fatalf("no card titled %q", tc.title)
 			}
 			for _, theme := range []string{"light", "dark"} {
@@ -221,5 +222,172 @@ func TestAboutStartTiltCard(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// aboutGuide is the Getting started layout: groups in page order, cards in
+// order inside each group. The template is checked against this list, so a
+// card dropped from a group or a group moved fails here.
+var aboutGuide = []struct {
+	group string
+	cards []string
+}{
+	{"read", []string{"layers", "metrics", "legend", "window", "inactive"}},
+	{"find", []string{"search", "areas", "below", "phone"}},
+	{"move", []string{"tilt", "locate"}},
+	{"layers", []string{"pollen", "sea", "wind", "official"}},
+	{"history", []string{"replay", "charts"}},
+	{"keep", []string{"favourite", "share", "embed", "table"}},
+}
+
+// catalogueKey reads one key straight from the catalogue file, so the tests
+// compare the page against the copy and not against a literal.
+func catalogueKey(t *testing.T, lang, key string) string {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "i18n", lang+".json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]string
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	v, ok := m[key]
+	if !ok {
+		t.Fatalf("%s.json has no key %q", lang, key)
+	}
+	return v
+}
+
+// TestAboutGuideCards. Each card renders its h4 title and four images
+// (en/bg x light/dark), and each image file exists on disk. Images land from a
+// separate branch: a missing file is skipped only when
+// AIRBG_ABOUT_IMAGES_PENDING=1, otherwise it fails.
+func TestAboutGuideCards(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	pages := map[string]string{
+		"en": fetch(t, rr, "/en/about").Body.String(),
+		"bg": fetch(t, rr, "/about").Body.String(),
+	}
+	for _, g := range aboutGuide {
+		for _, name := range g.cards {
+			t.Run(name, func(t *testing.T) {
+				for lang, body := range pages {
+					title := catalogueKey(t, lang, "about.start."+name+".title")
+					if !strings.Contains(body, "<h4>"+title+"</h4>") {
+						t.Errorf("%s page has no <h4> for card %q (%q)", lang, name, title)
+					}
+				}
+				for _, lang := range []string{"en", "bg"} {
+					for _, theme := range []string{"light", "dark"} {
+						file := "start-" + name + "-" + lang + "-" + theme
+						re := regexp.MustCompile(`src="/static/about/` + file + `[^"]*\.webp[^"]*"`)
+						if !re.MatchString(pages[lang]) {
+							t.Errorf("%s page has no src for %s", lang, file)
+						}
+						t.Run("file/"+file, func(t *testing.T) {
+							_, err := os.Stat(filepath.Join("static", "about", file+".webp"))
+							if err == nil {
+								return
+							}
+							if os.IsNotExist(err) && os.Getenv("AIRBG_ABOUT_IMAGES_PENDING") == "1" {
+								t.Skipf("image pending: %s.webp", file)
+							}
+							t.Errorf("image missing: %v", err)
+						})
+					}
+				}
+			})
+		}
+	}
+}
+
+// TestAboutGuideGroups. Group headings render in the specified order, each
+// carries the anchor the table of contents points at, and each group holds
+// exactly its cards between its heading and the next one.
+func TestAboutGuideGroups(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, lang := range []struct{ path, code string }{{"/en/about", "en"}, {"/about", "bg"}} {
+		t.Run(lang.code, func(t *testing.T) {
+			body := fetch(t, rr, lang.path).Body.String()
+			last := strings.Index(body, `id="start"`)
+			if last < 0 {
+				t.Fatal("no #start section")
+			}
+			// The privacy section follows the guide and bounds the last group.
+			guideEnd := strings.Index(body, `id="privacy"`)
+			for i, g := range aboutGuide {
+				marker := `<h3 id="start-` + g.group + `" class="about-group">` + catalogueKey(t, lang.code, "about.start.group."+g.group+".title") + `</h3>`
+				at := strings.Index(body, marker)
+				if at < 0 {
+					t.Fatalf("no group heading %s", marker)
+				}
+				if at < last {
+					t.Errorf("group %q is out of order", g.group)
+				}
+				end := guideEnd
+				if i+1 < len(aboutGuide) {
+					end = strings.Index(body, `id="start-`+aboutGuide[i+1].group+`"`)
+				}
+				if n := strings.Count(body[at:end], "<h4>"); n != len(g.cards) {
+					t.Errorf("group %q has %d cards, want %d", g.group, n, len(g.cards))
+				}
+				last = at
+			}
+		})
+	}
+}
+
+// TestAboutTOCLinksToGroupsAndInvolved. The nav lists each group anchor and
+// the involved section, and the page carries the involved target.
+func TestAboutTOCLinksToGroupsAndInvolved(t *testing.T) {
+	body := fetch(t, renderer(t, fixture(t)), "/en/about").Body.String()
+	nav := body[strings.Index(body, `class="about-toc"`):]
+	nav = nav[:strings.Index(nav, "</nav>")]
+	for _, g := range aboutGuide {
+		if !strings.Contains(nav, `href="#start-`+g.group+`"`) {
+			t.Errorf("TOC has no link to #start-%s", g.group)
+		}
+	}
+	if !strings.Contains(nav, `href="#involved"`) {
+		t.Error("TOC has no link to #involved")
+	}
+	if !strings.Contains(body, `id="involved"`) {
+		t.Error("page has no #involved section")
+	}
+}
+
+// TestAboutInvolvedLinks. The section links to the repository and its issue
+// tracker, both derived from SourceRepoURL, and sits before #more.
+func TestAboutInvolvedLinks(t *testing.T) {
+	body := fetch(t, renderer(t, fixture(t)), "/en/about").Body.String()
+	at := strings.Index(body, `id="involved"`)
+	more := strings.Index(body, `id="more"`)
+	if at < 0 || more < 0 || at > more {
+		t.Fatalf("#involved must exist and come before #more (involved=%d more=%d)", at, more)
+	}
+	hrefs := regexp.MustCompile(`<a href="([^"]+)"[^>]*>`).FindAllStringSubmatch(body[at:more], -1)
+	if len(hrefs) != 2 {
+		t.Fatalf("#involved has %d links, want 2", len(hrefs))
+	}
+	repo, issues := hrefs[0][1], hrefs[1][1]
+	if !strings.HasPrefix(repo, "https://") || strings.HasSuffix(repo, "/") {
+		t.Errorf("repo link %q is not a bare repository URL", repo)
+	}
+	if issues != repo+"/issues" {
+		t.Errorf("issues link = %q, want %q", issues, repo+"/issues")
+	}
+	if !strings.Contains(body[more:], `<a href="`+repo+`"`) {
+		t.Errorf("repo link %q differs from the SourceRepoURL used in #more", repo)
+	}
+}
+
+// TestAboutValuesIncludePhone. The values strip gains a phone item.
+func TestAboutValuesIncludePhone(t *testing.T) {
+	body := fetch(t, renderer(t, fixture(t)), "/en/about").Body.String()
+	for _, k := range []string{"title", "body"} {
+		if v := catalogueKey(t, "en", "about.values.phone."+k); !strings.Contains(body, v) {
+			t.Errorf("values strip lacks about.values.phone.%s", k)
+		}
 	}
 }
