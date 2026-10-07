@@ -85,6 +85,7 @@ type Book struct {
 	sheets   []sheetRef
 	shared   string // shared-strings part, "" when absent
 
+	lim        limits
 	strs       []string // loaded on first Rows call
 	strsLoaded bool
 }
@@ -112,7 +113,7 @@ func Open(r io.ReaderAt, size int64) (*Book, error) {
 	if len(zr.File) > MaxEntries {
 		return nil, fmt.Errorf("%w: %d > %d", ErrTooManyEntries, len(zr.File), MaxEntries)
 	}
-	b := &Book{files: make(map[string]*zip.File, len(zr.File)), maxTotal: MaxTotalBytes}
+	b := &Book{files: make(map[string]*zip.File, len(zr.File)), maxTotal: MaxTotalBytes, lim: defaultLimits}
 	for _, f := range zr.File {
 		if err := checkName(f.Name); err != nil {
 			return nil, err
