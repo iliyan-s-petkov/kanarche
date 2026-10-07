@@ -391,3 +391,30 @@ func TestAboutValuesIncludePhone(t *testing.T) {
 		}
 	}
 }
+
+// TestAboutInvolvedBodyRendersInlineLinks. The sentence carries {repo} and
+// {issues}; they must become the two anchors with the catalogue's link text,
+// the surrounding words must be present, and no placeholder may leak.
+func TestAboutInvolvedBodyRendersInlineLinks(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, lang := range []struct{ path, code string }{{"/en/about", "en"}, {"/about", "bg"}} {
+		t.Run(lang.code, func(t *testing.T) {
+			body := fetch(t, rr, lang.path).Body.String()
+			sec := body[strings.Index(body, `id="involved"`):strings.Index(body, `id="more"`)]
+			if strings.Contains(sec, "{repo}") || strings.Contains(sec, "{issues}") {
+				t.Errorf("placeholder left in the section:\n%s", sec)
+			}
+			for _, key := range []string{"repo", "issues"} {
+				label := catalogueKey(t, lang.code, "about.involved."+key)
+				if !strings.Contains(sec, `rel="noopener noreferrer">`+label+`</a>`) {
+					t.Errorf("no anchor with text %q", label)
+				}
+			}
+			// The opening words of the sentence, up to its first placeholder.
+			lead, _, _ := strings.Cut(catalogueKey(t, lang.code, "about.involved.body"), "{")
+			if !strings.Contains(sec, lead) {
+				t.Errorf("section lacks the sentence's opening text %q", lead)
+			}
+		})
+	}
+}

@@ -154,8 +154,8 @@
 
 <section class="about-section" id="involved" aria-labelledby="involved-h">
   <h2 id="involved-h">{{.T "about.involved.heading"}}</h2>
-  <p>{{.T "about.involved.body"}}</p>
-  <p><a href="{{.SourceRepoURL}}" rel="noopener noreferrer">{{.T "about.involved.repo"}}</a> <a href="{{.SourceRepoURL}}/issues" rel="noopener noreferrer">{{.T "about.involved.issues"}}</a></p>
+  {{/* The sentence carries {repo} and {issues}; InvolvedParts splits it so the links are real anchors and every run is escaped text. */}}
+  <p>{{range .InvolvedParts}}{{if .Href}}<a href="{{.Href}}" rel="noopener noreferrer">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
 </section>
 
 <section class="about-section" id="more" aria-labelledby="more-h">

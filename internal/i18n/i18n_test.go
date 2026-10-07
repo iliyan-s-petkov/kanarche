@@ -203,3 +203,16 @@ func TestSeaNoteContainsEEALagStatement(t *testing.T) {
 		t.Errorf("bg sea.note = %q does not contain EEA lag statement", bg)
 	}
 }
+
+// TestNoDraftPlaceholdersRemain. "DRAFT" marks copy that has not been written
+// yet; shipping it would put the word on the page in every language.
+func TestNoDraftPlaceholdersRemain(t *testing.T) {
+	c := loaded(t)
+	for _, lang := range c.Languages() {
+		for _, key := range c.Keys() {
+			if c.Has(lang, key) && c.T(lang, key) == "DRAFT" {
+				t.Errorf("%s %q is still the DRAFT placeholder", lang, key)
+			}
+		}
+	}
+}
