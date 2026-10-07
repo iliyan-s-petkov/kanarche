@@ -23,6 +23,25 @@ func framed(t *testing.T, rr *web.Renderer, path string) *httptest.ResponseRecor
 	return rec
 }
 
+// The frame is noindex by header; a canonical pointing at the indexable map
+// page would contradict that, so the document carries neither canonical nor
+// hreflang alternates.
+func TestEmbedIsNoindexWithoutCanonical(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, path := range []string{"/embed", "/en/embed"} {
+		rec := framed(t, rr, path)
+		if got := rec.Header().Get("X-Robots-Tag"); !strings.Contains(got, "noindex") {
+			t.Errorf("%s: X-Robots-Tag = %q, want noindex", path, got)
+		}
+		body := rec.Body.String()
+		for _, unwanted := range []string{`rel="canonical"`, `rel="alternate"`} {
+			if strings.Contains(body, unwanted) {
+				t.Errorf("%s: embed carries %s", path, unwanted)
+			}
+		}
+	}
+}
+
 // The route exists, in every language, and says a partner may frame it.
 func TestEmbedRouteIsFramable(t *testing.T) {
 	rr := renderer(t, fixture(t))
