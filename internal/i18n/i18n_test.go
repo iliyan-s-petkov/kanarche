@@ -187,3 +187,19 @@ func TestAboutStationCardCopyExistsInEveryLanguage(t *testing.T) {
 		t.Errorf("bg about.station.map = %q", got)
 	}
 }
+
+// TestSeaNoteContainsEEALagStatement verifies that the sea bathing note includes
+// the statement about EEA publication lag in both languages.
+func TestSeaNoteContainsEEALagStatement(t *testing.T) {
+	c := loaded(t)
+
+	en := c.T("en", "sea.note")
+	if !strings.Contains(en, "The EEA publishes each season's results the following year") {
+		t.Errorf("en sea.note = %q does not contain EEA lag statement", en)
+	}
+
+	bg := c.T("bg", "sea.note")
+	if !strings.Contains(bg, "ЕАОС публикува резултатите от всеки сезон през следващата година") {
+		t.Errorf("bg sea.note = %q does not contain EEA lag statement", bg)
+	}
+}
