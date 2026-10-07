@@ -186,7 +186,7 @@ func applyEnv(v reflect.Value, prefix string) error {
 			}
 			continue
 		}
-		val, ok := os.LookupEnv(envName(path))
+		val, ok := LookupEnv(envName(path))
 		if !ok {
 			continue
 		}
@@ -276,10 +276,10 @@ const (
 // line; only surrounding whitespace is trimmed, so a stray second line ends up
 // inside the DSN.
 func databaseURLFromEnv() (string, error) {
-	if v := os.Getenv(DatabaseURLEnv); v != "" {
+	if v := Getenv(DatabaseURLEnv); v != "" {
 		return v, nil
 	}
-	path := os.Getenv(DatabaseURLFileEnv)
+	path := Getenv(DatabaseURLFileEnv)
 	if path == "" {
 		return "", nil
 	}
@@ -303,7 +303,7 @@ func databaseURLFromEnv() (string, error) {
 // Load reads the configuration named by AIRBG_CONFIG. There is no fallback
 // path: guessing one would be a default, and this project keeps none.
 func Load() (Config, error) {
-	path := os.Getenv(PathEnv)
+	path := Getenv(PathEnv)
 	if path == "" {
 		return Config{}, fmt.Errorf("config: %s is not set; it must name the airbg.yaml to load", PathEnv)
 	}

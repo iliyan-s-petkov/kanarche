@@ -122,7 +122,7 @@ func main() {
 		}
 		if cfg.Cloudflare.Enabled {
 			cfStore := store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)
-			go cloudflare.NewCollector(cfg.Cloudflare, os.Getenv(cloudflare.TokenEnv), cfStore).Loop(ctx)
+			go cloudflare.NewCollector(cfg.Cloudflare, config.Getenv(cloudflare.TokenEnv), cfStore).Loop(ctx)
 		}
 		if cfg.Sea.Enabled {
 			seaCollector := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series))
@@ -454,7 +454,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// see internal/upstream/cloudflare/README.md.
 	cfDone := make(chan struct{})
 	if cfg.Cloudflare.Enabled {
-		cc := cloudflare.NewCollector(cfg.Cloudflare, os.Getenv(cloudflare.TokenEnv), collectorStore)
+		cc := cloudflare.NewCollector(cfg.Cloudflare, config.Getenv(cloudflare.TokenEnv), collectorStore)
 		go func() {
 			defer close(cfDone)
 			cc.Loop(pollCtx)
