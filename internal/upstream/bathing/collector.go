@@ -3,7 +3,6 @@ package bathing
 import (
 	"context"
 	"log/slog"
-	"net/url"
 	"time"
 
 	"airbg.org/internal/config"
@@ -13,14 +12,8 @@ import (
 // retryAfter is the wait after a failed import, capped by refresh_interval.
 const retryAfter = time.Hour
 
-// extractHost extracts the hostname from a URL string, or returns the empty string on parse error.
-func extractHost(urlStr string) string {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return ""
-	}
-	return u.Hostname()
-}
+// watchEvery is the gap between new-edition probes. Imports run more often.
+const watchEvery = 7 * 24 * time.Hour
 
 // Sink is the store side of an import.
 type Sink interface {
@@ -43,6 +36,9 @@ type Collector struct {
 	sink   Sink
 	clock  func() time.Time
 	sup    *Supplement
+	// watch probes for a newer Datahub edition. Nil disables it.
+	watch     func(context.Context) error
+	lastWatch time.Time
 }
 
 func NewCollector(cfg config.Sea, sink Sink) *Collector {
@@ -54,6 +50,26 @@ func (c *Collector) SetClockForTesting(clock func() time.Time) { c.clock = clock
 
 // SetSupplement sets the class fill. Nil, the default, imports Discodata only.
 func (c *Collector) SetSupplement(sup *Supplement) { c.sup = sup }
+
+// SetEditionWatch sets the new-edition probe. Nil, the default, disables it.
+func (c *Collector) SetEditionWatch(fn func(context.Context) error) { c.watch = fn }
+
+// WatchEdition runs the probe if the last one is a week old or more. A failed
+// probe counts, so an outage is retried next week and is only logged. It never
+// blocks the import.
+func (c *Collector) WatchEdition(ctx context.Context) {
+	if c.watch == nil {
+		return
+	}
+	now := c.clock()
+	if !c.lastWatch.IsZero() && now.Sub(c.lastWatch) < watchEvery {
+		return
+	}
+	c.lastWatch = now
+	if err := c.watch(ctx); err != nil {
+		slog.Warn("sea datahub watch failed", "error", err)
+	}
+}
 
 // RunOnce fetches, validates and replaces the stored set. Nothing is written on failure.
 func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
@@ -122,11 +138,7 @@ func (c *Collector) Loop(ctx context.Context) {
 			"supplement_applied", st.Supplement.Applied, "supplement_shadowed", st.Supplement.Shadowed,
 			"supplement_inactive", st.Supplement.Inactive)
 
-		// Check for a newer edition of the Datahub after successful import
-		if err := watchDatahubEdition(ctx, c.cfg.Datahub.URL, c.cfg.Datahub.RequestTimeout); err != nil {
-			slog.Error("sea datahub watch failed", "error", err)
-		}
-
+		c.WatchEdition(ctx)
 		wait = c.cfg.RefreshInterval
 	}
 }

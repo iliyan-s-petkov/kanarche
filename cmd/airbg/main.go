@@ -127,6 +127,7 @@ func main() {
 		if cfg.Sea.Enabled {
 			seaCollector := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series))
 			seaCollector.SetSupplement(loadSupplement(cfg))
+			seaCollector.SetEditionWatch(editionWatch(cfg))
 			go seaCollector.Loop(ctx)
 		}
 		client := upstream.New(cfg.Upstream)
@@ -467,6 +468,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	if cfg.Sea.Enabled {
 		sc := bathing.NewCollector(cfg.Sea, collectorStore)
 		sc.SetSupplement(sup)
+		sc.SetEditionWatch(editionWatch(cfg))
 		go func() {
 			defer close(seaDone)
 			sc.Loop(pollCtx)

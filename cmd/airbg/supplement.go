@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -38,4 +39,14 @@ func seaSupplementMeta(sup *bathing.Supplement) api.SeaSupplementMeta {
 		return api.SeaSupplementMeta{}
 	}
 	return api.SeaSupplementMeta{Published: sup.Published, URL: sup.URL}
+}
+
+// editionWatch probes the Datahub for a newer edition than the pinned one.
+func editionWatch(cfg config.Config) func(context.Context) error {
+	d := cfg.Sea.Datahub
+	fc := datahub.FetchConfig{URL: d.URL, AllowedHosts: d.AllowedHosts, Timeout: d.RequestTimeout}
+	return func(ctx context.Context) error {
+		_, err := datahub.Watch(ctx, fc)
+		return err
+	}
 }

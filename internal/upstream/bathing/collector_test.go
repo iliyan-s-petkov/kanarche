@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"airbg.org/internal/config"
 	"airbg.org/internal/store"
 	"airbg.org/internal/upstream/bathing"
 )
@@ -203,4 +204,48 @@ func TestLoopWaitsWithoutSupplement(t *testing.T) {
 	if n := runLoop(t, c, sink, 300*time.Millisecond); n != 0 {
 		t.Errorf("%d writes, want none", n)
 	}
+}
+
+func watchCollector(t *testing.T, now *time.Time, calls *int, err error) *bathing.Collector {
+	t.Helper()
+	c := bathing.NewCollector(config.Sea{}, &fakeSink{})
+	c.SetClockForTesting(func() time.Time { return *now })
+	c.SetEditionWatch(func(context.Context) error { *calls++; return err })
+	return c
+}
+
+// The probe is weekly, though imports run more often.
+func TestEditionWatchRunsWeekly(t *testing.T) {
+	now := time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)
+	calls := 0
+	c := watchCollector(t, &now, &calls, nil)
+	c.WatchEdition(context.Background())
+	now = now.Add(24 * time.Hour)
+	c.WatchEdition(context.Background())
+	now = now.Add(5 * 24 * time.Hour)
+	c.WatchEdition(context.Background())
+	if calls != 1 {
+		t.Fatalf("calls inside 7 days = %d, want 1", calls)
+	}
+	now = now.Add(25 * time.Hour)
+	c.WatchEdition(context.Background())
+	if calls != 2 {
+		t.Errorf("calls after 7 days = %d, want 2", calls)
+	}
+}
+
+// A failed probe still counts, so an outage is retried next week, not every import.
+func TestEditionWatchFailureStillThrottled(t *testing.T) {
+	now := time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)
+	calls := 0
+	c := watchCollector(t, &now, &calls, errors.New("boom"))
+	c.WatchEdition(context.Background())
+	c.WatchEdition(context.Background())
+	if calls != 1 {
+		t.Errorf("calls = %d, want 1", calls)
+	}
+}
+
+func TestEditionWatchUnsetIsNoop(t *testing.T) {
+	bathing.NewCollector(config.Sea{}, &fakeSink{}).WatchEdition(context.Background())
 }
