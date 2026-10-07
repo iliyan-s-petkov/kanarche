@@ -112,6 +112,16 @@ func QualityKey(label string) (string, bool) {
 	return q, ok
 }
 
+// ValidQualityKey reports whether key is a stored class key, not an EEA label.
+func ValidQualityKey(key string) bool {
+	for _, k := range qualities {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
+
 // ValidSiteID reports whether id fits the bathing_site CHECK and carries the country prefix.
 func ValidSiteID(id, country string) bool {
 	return siteIDPattern.MatchString(id) && strings.HasPrefix(id, country)
