@@ -178,6 +178,40 @@ describe('the bathing-water key', () => {
   })
 })
 
+describe('the bathing-water key info dialog', () => {
+  const mount = () => {
+    const el = document.createElement('div')
+    el.className = 'map'
+    el.dataset.tSeaLegend = 'Bathing water'
+    el.dataset.tSeaInfoLabel = 'What the classes mean'
+    el.dataset.tSeaInfoLinkMap = 'Map'
+    el.dataset.tSeaInfoLinkEea = 'EEA'
+    el.dataset.tSeaInfoLinkDatahub = 'Dataset'
+    el.dataset.seaColours = '#0b4f9c,#3a8fd9,#8cc5e8,#8e3a9c,#9ca3af'
+    document.body.appendChild(el)
+    const c = mountChrome(el, readConfig(el))
+    // Several dialogs live in the frame; the one the click opens is the one that reports open.
+    const dialogs = [...el.querySelectorAll('dialog')]
+    for (const d of dialogs) d.showModal = vi.fn(function () { this.open = true })
+    c.showSea(true)
+    const open = () => {
+      el.querySelector('.scale__sea button.scale__info').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      return [...dialogs.find((d) => d.open).querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')])
+    }
+    return { c, open }
+  }
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('links the Datahub dataset only after the API gave a supplement url', () => {
+    const { c, open } = mount()
+    expect(open().map(([l]) => l)).toEqual(['Map', 'EEA'])
+    c.setSeaSupplement('https://example.test/d')
+    expect(open()).toContainEqual(['Dataset', 'https://example.test/d'])
+    c.setSeaSupplement('')
+    expect(open().map(([l]) => l)).toEqual(['Map', 'EEA'])
+  })
+})
+
 describe('the pollen key', () => {
   const mount = (layer) => {
     const el = document.createElement('div')

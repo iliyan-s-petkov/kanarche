@@ -1,6 +1,6 @@
 <script>
   // One bathing site: the EEA's annual class first, then the samples against the zone's limits.
-  import { seaClass, seaLevel, seaName, fillSeason } from '../lib/sea.js'
+  import { seaClass, seaLevel, seaName, fillSeason, fillSlots } from '../lib/sea.js'
 
   let { view, t, lang, colours, creditURL, onclose } = $props()
 
@@ -11,6 +11,14 @@
 
   const qualityLabel = (q) => t.classes[q ?? 'not_classified'] || t.classes.not_classified || q || ''
   const formatDate = (iso) => dateFmt.format(new Date(`${iso}T00:00:00Z`))
+  // Classes from the EEA annual dataset are marked. Their lab samples arrive later, so the
+  // note shows while no sample of that season is listed.
+  const fromDatahub = (c) => c?.source === 'datahub'
+  const sourceText = (c) => fillSlots(t.classSourceDatahub, { year: c.season })
+  const samplesPending = $derived(fromDatahub(current) && !d?.samples?.some((s) => s.season === current.season))
+  const supplement = $derived(d?.supplement ?? null)
+  // The edition's publish date is an ISO day; anything else is shown as sent.
+  const publishedText = (iso) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? formatDate(iso) : iso)
   const MARKS = ['', '▲', '▲▲']
   const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : '')
 
@@ -53,17 +61,22 @@
       {@render swatch(colours[seaClass(current?.quality ?? null)])}
       <strong>{qualityLabel(current?.quality)}</strong>
       {#if current}<span class="sea-panel__season">{fillSeason(t.season, current.season)}</span>{/if}
+      {#if fromDatahub(current)}<span class="sea-panel__source">{sourceText(current)}</span>{/if}
     </p>
     {#if earlier.length}
       <h3 class="sea-panel__h">{t.history}</h3>
       <ul class="sea-panel__history">
         {#each earlier as c (c.season)}
-          <li>{@render swatch(colours[seaClass(c.quality)])}{c.season}: {qualityLabel(c.quality)}</li>
+          <li>{@render swatch(colours[seaClass(c.quality)])}{c.season}: {qualityLabel(c.quality)}{#if fromDatahub(c)} <span class="sea-panel__source">{sourceText(c)}</span>{/if}</li>
         {/each}
       </ul>
     {/if}
+    {#if supplement}
+      <p class="sea-panel__supplement">{fillSlots(t.supplementNote, { edition: supplement.edition, published: publishedText(supplement.published) })}</p>
+    {/if}
 
     <h3 class="sea-panel__h">{t.samples}</h3>
+    {#if samplesPending}<p class="sea-panel__pending">{fillSlots(t.samplesPending, { season: current.season })}</p>{/if}
     <p class="sea-panel__limits">
       {t.limits} ({t.unit}): {t.eColi} {d.limits.e_coli[0]} / {d.limits.e_coli[1]}, {t.enterococci} {d.limits.enterococci[0]} / {d.limits.enterococci[1]}
     </p>

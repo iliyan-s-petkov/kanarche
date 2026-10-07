@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SEA_CLASSES, seaClass, seaColours, seaFeatures, seaLevel, seaName, fillSeason, readSeaTexts,
+  SEA_CLASSES, seaClass, seaColours, seaFeatures, seaLevel, seaName, fillSeason, fillSlots, readSeaTexts,
 } from '../sea.js'
 
 const COLOURS = ['#0b4f9c', '#3a8fd9', '#8cc5e8', '#8e3a9c', '#9ca3af']
@@ -75,6 +75,30 @@ describe('seaName', () => {
 describe('fillSeason', () => {
   it('substitutes the season', () => {
     expect(fillSeason('Class for {season}', 2024)).toBe('Class for 2024')
+  })
+})
+
+describe('fillSlots', () => {
+  it('substitutes every named slot and leaves unknown ones', () => {
+    expect(fillSlots('Edition {edition}, published {published} {x}', { edition: '2025 v1.0', published: '30 Sept 2026' }))
+      .toBe('Edition 2025 v1.0, published 30 Sept 2026 {x}')
+  })
+})
+
+describe('readSeaTexts datahub copy', () => {
+  it('reads the datahub keys, and the legend link under info', () => {
+    const t = readSeaTexts({
+      tSeaClassSourceDatahub: 'From the EEA {year} report', tSeaSamplesPending: 'Pending {season}',
+      tSeaSupplementNote: 'Edition {edition}', tSeaInfoLinkDatahub: 'Dataset',
+    })
+    expect(t.classSourceDatahub).toBe('From the EEA {year} report')
+    expect(t.samplesPending).toBe('Pending {season}')
+    expect(t.supplementNote).toBe('Edition {edition}')
+    expect(t.info.linkDatahub).toBe('Dataset')
+  })
+  it('reads missing keys as empty text', () => {
+    const t = readSeaTexts({})
+    expect([t.classSourceDatahub, t.samplesPending, t.supplementNote, t.info.linkDatahub]).toEqual(['', '', '', ''])
   })
 })
 

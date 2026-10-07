@@ -25,16 +25,17 @@ export function pollenInfoContent(info) {
   }
 }
 
-// Dialog content from the data-t-sea-info-* texts.
-export function seaInfoContent(info) {
-  return {
-    title: info.title,
-    paragraphs: [info.body],
-    links: [
-      { label: info.linkMap, href: SEA_LINKS.map },
-      { label: info.linkEea, href: SEA_LINKS.eea },
-    ],
+// Dialog content from the data-t-sea-info-* texts. The Datahub dataset link
+// exists only when the API reported a supplement, and only for an https url.
+export function seaInfoContent(info, supplementURL = '') {
+  const links = [
+    { label: info.linkMap, href: SEA_LINKS.map },
+    { label: info.linkEea, href: SEA_LINKS.eea },
+  ]
+  if (typeof supplementURL === 'string' && supplementURL.startsWith('https://')) {
+    links.push({ label: info.linkDatahub, href: supplementURL })
   }
+  return { title: info.title, paragraphs: [info.body], links }
 }
 
 // Built once; `show` repaints it from a content object and opens it.

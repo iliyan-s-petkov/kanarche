@@ -45,6 +45,8 @@ export async function setSea(map, cfg, chrome, st, on, fetchJSON = getJSON) {
       st.loading = false
     }
   }
+  // The legend's dataset link follows the supplement the API sent, if any.
+  chrome.setSeaSupplement?.(st.body?.supplement?.url ?? '')
   map.getSource?.(SEA_SOURCE_ID)?.setData(seaFeatures(st.body, cfg.seaColours))
   setVisibility(map, 'visible')
   st.on = true

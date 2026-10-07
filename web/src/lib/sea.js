@@ -46,6 +46,11 @@ export function fillSeason(template, season) {
   return String(template || '').replace('{season}', String(season))
 }
 
+// Fills {name} slots from `values`; a slot with no value stays as written.
+export function fillSlots(template, values) {
+  return String(template || '').replace(/\{(\w+)\}/g, (slot, name) => (name in values ? String(values[name]) : slot))
+}
+
 // The data-t-sea-* attributes, grouped. Missing ones read as ''.
 export function readSeaTexts(d) {
   const s = (k) => d[k] || ''
@@ -79,6 +84,10 @@ export function readSeaTexts(d) {
     profile: s('tSeaProfile'),
     close: s('tSeaClose'),
     failed: s('tSeaFailed'),
+    // Provenance of classes that come from the EEA annual dataset instead of Discodata.
+    classSourceDatahub: s('tSeaClassSourceDatahub'),
+    samplesPending: s('tSeaSamplesPending'),
+    supplementNote: s('tSeaSupplementNote'),
     // The legend (i) dialog, see infodialog.js.
     info: {
       label: s('tSeaInfoLabel'),
@@ -86,6 +95,7 @@ export function readSeaTexts(d) {
       body: s('tSeaInfoBody'),
       linkMap: s('tSeaInfoLinkMap'),
       linkEea: s('tSeaInfoLinkEea'),
+      linkDatahub: s('tSeaInfoLinkDatahub'),
     },
   }
 }

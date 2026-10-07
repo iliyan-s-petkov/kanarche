@@ -18,7 +18,18 @@ function fakeMap() {
     setLayoutProperty: (id, k, v) => { vis[id] = v },
   }
 }
-const fakeChrome = () => ({ showSea: vi.fn() })
+const fakeChrome = () => ({ showSea: vi.fn(), setSeaSupplement: vi.fn() })
+
+describe('setSea supplement', () => {
+  it('hands the supplement url to the legend, and clears it when the body has none', async () => {
+    const chrome = fakeChrome()
+    const sup = { edition: '2025 v1.0', published: '2026-09-30', url: 'https://example.test/d' }
+    await setSea(fakeMap(), cfg, chrome, {}, true, async () => ({ ...body, supplement: sup }))
+    expect(chrome.setSeaSupplement).toHaveBeenLastCalledWith('https://example.test/d')
+    await setSea(fakeMap(), cfg, chrome, {}, true, async () => body)
+    expect(chrome.setSeaSupplement).toHaveBeenLastCalledWith('')
+  })
+})
 
 describe('setSea', () => {
   it('fetches once, paints the sites and shows the key', async () => {
