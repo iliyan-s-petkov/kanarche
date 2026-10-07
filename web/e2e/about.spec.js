@@ -45,8 +45,8 @@ for (const [w, h] of [[390, 844], [1280, 800]]) {
     await page.setViewportSize({ width: w, height: h })
     await page.goto('/en/about')
     const shots = page.locator('#start .about-shot__img--light')
-    await expect(shots).toHaveCount(4)
-    for (let i = 0; i < 4; i++) {
+    await expect(shots).toHaveCount(5)
+    for (let i = 0; i < 5; i++) {
       await shots.nth(i).scrollIntoViewIfNeeded()
       await expect.poll(() => shots.nth(i).evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
     }
