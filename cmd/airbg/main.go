@@ -37,7 +37,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|validate-config|contract|healthz>")
+		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|extract-bathing-datahub|validate-config|contract|healthz>")
 		os.Exit(2)
 	}
 
@@ -46,6 +46,12 @@ func main() {
 	// rather than at server start.
 	if os.Args[1] == "validate-config" {
 		os.Exit(runValidateConfig(os.Stdout, os.Stderr))
+	}
+
+	// extract-bathing-datahub reads a pinned file and writes a JSON snapshot. It
+	// needs no database, so it runs before the pool is opened.
+	if os.Args[1] == "extract-bathing-datahub" {
+		os.Exit(runExtractDatahub(os.Args[2:], os.Stdout, os.Stderr))
 	}
 
 	// contract emits the constants the frontend generates from. Checked before

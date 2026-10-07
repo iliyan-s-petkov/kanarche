@@ -32,7 +32,10 @@ type Config struct {
 	Tiles      Tiles
 	I18n       I18n
 	DesignKit  DesignKit
-	Social     Social
+
+	// offline is set by LoadFileOffline: no database credential is required.
+	offline bool
+	Social  Social
 }
 
 type Listen struct {

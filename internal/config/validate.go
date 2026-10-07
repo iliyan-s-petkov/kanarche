@@ -191,7 +191,7 @@ func (c Config) validateTimeouts(p *problems) {
 }
 
 func (c Config) validateDatabase(p *problems) {
-	if c.Database.URL == "" {
+	if c.Database.URL == "" && !c.offline {
 		p.addf("%s is not set in the environment (directly, or via %s naming a file); it is required and must never be written to the config file", DatabaseURLEnv, DatabaseURLFileEnv)
 	}
 	if c.Database.APIConns <= 0 {

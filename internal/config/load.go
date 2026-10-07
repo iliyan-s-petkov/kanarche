@@ -310,6 +310,30 @@ func Load() (Config, error) {
 	return LoadFile(path)
 }
 
+// LoadOffline reads the file named by AIRBG_CONFIG without a database credential.
+func LoadOffline() (Config, error) {
+	path := os.Getenv(PathEnv)
+	if path == "" {
+		return Config{}, fmt.Errorf("config: %s is not set; it must name the airbg.yaml to load", PathEnv)
+	}
+	return LoadFileOffline(path)
+}
+
+// LoadFileOffline is LoadFile for commands that never open a database, so
+// the credential is neither read nor required. All other rules still apply.
+func LoadFileOffline(path string) (Config, error) {
+	r, err := readRaw(path)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg := resolve(r)
+	cfg.offline = true
+	if err := cfg.Validate(); err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
+}
+
 func LoadFile(path string) (Config, error) {
 	r, err := readRaw(path)
 	if err != nil {

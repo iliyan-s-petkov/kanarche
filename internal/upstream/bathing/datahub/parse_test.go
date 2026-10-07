@@ -217,3 +217,49 @@ func TestParseRealFile(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// The committed sample is cut from the real EEA workbook by
+// extract-bathing-datahub --emit-sample, with no hand edits.
+func TestParseRealSample(t *testing.T) {
+	data, err := os.ReadFile("testdata/datahub_bg_sample.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := xlsx.Open(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap, rej, err := ParseWith(b, "BG", now, small)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snap.Classes) != 42 || rej.Country != 42 || rej.OtherCountry != 5 || rej.Rejected() != 0 {
+		t.Fatalf("classes=%d rej=%+v, want 42 classes, 5 other-country rows, 0 rejects", len(snap.Classes), rej)
+	}
+	perSeason := map[int]int{}
+	for _, c := range snap.Classes {
+		perSeason[c.Season]++
+	}
+	for _, s := range []int{2023, 2024, 2025} {
+		if perSeason[s] != 14 {
+			t.Errorf("season %d has %d classes, want 14", s, perSeason[s])
+		}
+	}
+	got := map[Class]bool{}
+	for _, c := range snap.Classes {
+		got[c] = true
+	}
+	for _, want := range []Class{
+		{"BG3242661710017001", 2023, "excellent"},
+		{"BG3242661710017001", 2024, "excellent"},
+		{"BG3412181178002022", 2025, "good"},
+		{"BG3412758356002032", 2025, "excellent"},
+	} {
+		if !got[want] {
+			t.Errorf("class %v missing", want)
+		}
+	}
+	if first := snap.Classes[0]; first.SiteID != "BG3242661710017001" || first.Season != 2023 {
+		t.Errorf("first class = %v, want the sorted first", first)
+	}
+}
