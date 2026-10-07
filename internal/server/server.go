@@ -175,7 +175,7 @@ func New(opts Options) (*Server, error) {
 	s := &Server{
 		public: &http.Server{
 			Addr:              opts.Config.Listen.Addr,
-			Handler:           chain.Wrap(metrics.Instrument(root)),
+			Handler:           chain.Wrap(metrics.Instrument(httpx.WWWToApex(root, opts.Config.Listen.BaseURL))),
 			ReadHeaderTimeout: opts.Config.Timeouts.ReadHeader,
 			ReadTimeout:       opts.Config.Timeouts.Read,
 			WriteTimeout:      opts.Config.Timeouts.Write,

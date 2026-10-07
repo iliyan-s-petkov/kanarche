@@ -135,14 +135,13 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
 
   const stop = async (restore = true) => {
     pauseClock()
-    // The live grid goes back up here, so the next press of play opens on a
-    // screen the replay did not draw — its first frame is not an arrival.
+    // The live grid goes back up here (exit or reset), so the next press of
+    // play opens on a screen the replay did not draw: its first frame is not
+    // an arrival. A plain pause never gets here and keeps its arrival state.
     forgetFrames()
     head.playing = false
     ui.playing(false)
-    // open is already false by the time exit/reset call this — a plain pause
-    // (ontoggle) never touches it, so the zoom follow-along above keeps
-    // working while paused.
+    // open is already false by the time exit/reset call this.
     if (!open) map.off('zoom', onZoom)
     // No refetch: refreshHexes' dedup skips a URL it holds and repaints from the
     // live body it kept, which this never wrote over.
@@ -197,13 +196,12 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   // the page's whole life — load()'s url === loaded check is what turns
   // a run of zoom events during a flyTo into at most one request.
   const onZoom = () => {
-    // Refetch always, repaint only when the body actually changed AND the
-    // animation is running: a flyTo fires a zoom event per frame, and pause
-    // has already put the live grid back — redrawing a frame over it would
-    // undo the reader's own press of pause.
+    // Refetch always, repaint only when the body actually changed: a flyTo
+    // fires a zoom event per frame. Paused counts too, the paused frame is
+    // still on screen and must follow the tier. open drops on exit.
     const was = loaded
     load(true).then((ok) => {
-      if (ok && loaded !== was && head.playing) paint(head.i)
+      if (ok && loaded !== was && open) paint(head.i)
     })
   }
 
@@ -277,9 +275,16 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
     raf = document.hidden ? null : requestAnimationFrame(tick)
   }
 
+  // A plain pause leaves the paused frame painted, so the numbers keep matching the clock.
+  const pause = () => {
+    pauseClock()
+    head.playing = false
+    ui.playing(false)
+  }
+
   ui.ontoggle(async () => {
     if (running) {
-      await stop()
+      pause()
       return
     }
     if (!await load()) return
@@ -312,11 +317,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   // A drag is a request to look at one hour: leaving the clock going would move
   // the map off that frame a third of a second later.
   ui.onscrub((i) => {
-    if (running) {
-      pauseClock()
-      head.playing = false
-      ui.playing(false)
-    }
+    if (running) pause()
     if (head.count > 0) paint(seek(head, i))
   })
 

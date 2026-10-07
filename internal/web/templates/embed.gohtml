@@ -9,8 +9,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.T "seo.title_brand"}}</title>
-{{/* The canonical page is the map on the site, not this frame of it. */}}
-<link rel="canonical" href="{{.BaseURL}}{{.Path "/"}}">
+{{/* No canonical: the frame is noindex, and a canonical to an indexable page contradicts that. */}}
 <meta name="robots" content="noindex">
 <link rel="icon" href="{{.Static "favicon.svg"}}" type="image/svg+xml">
 <link rel="icon" href="{{.Static "favicon-32.png"}}" type="image/png" sizes="32x32">
