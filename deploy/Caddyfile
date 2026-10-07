@@ -33,6 +33,10 @@ tiles.airbg.org {
 	# DNS-only (grey cloud) per docs/tiles.md: browsers connect straight here,
 	# so this must NOT require a client certificate. It is served the same
 	# certificate as above, which carries this name. README.md.
+
+	@tiles_dynamic path /glyphs/* /style.json
+	encode @tiles_dynamic zstd gzip
+
 	reverse_proxy app:8082
 
 	# The real gap without this: no edge in front, so this is the one
@@ -65,6 +69,9 @@ kanarche.eu, www.kanarche.eu {
 
 # DNS-only like tiles.airbg.org, so no client certificate.
 tiles.kanarche.eu {
+	@tiles_dynamic path /glyphs/* /style.json
+	encode @tiles_dynamic zstd gzip
+
 	reverse_proxy app:8082
 
 	header Strict-Transport-Security "max-age=300"
