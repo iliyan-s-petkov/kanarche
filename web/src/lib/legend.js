@@ -129,7 +129,7 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info }) {
     toggleName.className = 'scale__toggle-label'
     toggle.appendChild(toggleName)
   }
-  toggle.setAttribute('aria-label', toggleLabel)
+  // Accessible name: visible text (title) is sufficient; aria-label would conflict (WCAG 2.5.3).
   toggle.querySelector('.scale__toggle-label').textContent = title
   el.appendChild(toggle)
 

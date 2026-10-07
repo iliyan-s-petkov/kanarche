@@ -173,7 +173,11 @@ export function mountWindow(frame, { label, options, value, host = frame, footer
   button.appendChild(caret)
 
   const listeners = []
-  const say = (opt) => { label_.textContent = opt.text }
+  const say = (opt) => {
+    label_.textContent = opt.text
+    // Accessible name must contain visible text (WCAG 2.5.3).
+    button.setAttribute('aria-label', `${label}: ${opt.text}`)
+  }
 
   for (const opt of options) {
     const wrap = doc.createElement('label')

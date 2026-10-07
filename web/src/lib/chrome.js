@@ -434,6 +434,8 @@ export function mountChrome(el, cfg) {
   const windSummaryText = document.createElement('span')
   windSummaryText.className = 'map-wind-label__text-label'
   windSummaryText.textContent = cfg.t.windAbout || cfg.t.windToggle
+  // Accessible name must match visible text (WCAG 2.5.3).
+  windSummary.setAttribute('aria-label', windSummaryText.textContent)
   windSummary.appendChild(windSummaryText)
   const windText = document.createElement('div')
   windText.className = 'map-wind-label__text'
