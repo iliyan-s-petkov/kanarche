@@ -2,6 +2,7 @@ package config
 
 import (
 	"maps"
+	"slices"
 	"strings"
 	"time"
 )
@@ -244,6 +245,21 @@ type Sea struct {
 	MaxPayloadBytes int64
 	// MaxRows is the nrOfHits page size; a page that comes back full is treated as truncated.
 	MaxRows int
+	Datahub SeaDatahub
+}
+
+// SeaDatahub pins the yearly EEA Excel release. SHA256 and Size are the pins:
+// a different file is a deliberate config change.
+type SeaDatahub struct {
+	URL              string
+	SHA256           string
+	Size             int64
+	AllowedHosts     []string
+	RequestTimeout   time.Duration
+	MaxDownloadBytes int64
+	// Merge guard thresholds, ratios in (0,1].
+	MaxDisagree     float64
+	MinSiteCoverage float64
 }
 
 // Geocoder configures the address-search proxy. See internal/geocode.
@@ -590,6 +606,16 @@ func resolve(r *raw) Config {
 			RefreshInterval: r.Sea.RefreshInterval.Std(),
 			MaxPayloadBytes: *r.Sea.MaxPayloadBytes,
 			MaxRows:         *r.Sea.MaxRows,
+			Datahub: SeaDatahub{
+				URL:              *r.Sea.Datahub.URL,
+				SHA256:           *r.Sea.Datahub.SHA256,
+				Size:             *r.Sea.Datahub.Size,
+				AllowedHosts:     slices.Clone(*r.Sea.Datahub.AllowedHosts),
+				RequestTimeout:   r.Sea.Datahub.RequestTimeout.Std(),
+				MaxDownloadBytes: *r.Sea.Datahub.MaxDownloadBytes,
+				MaxDisagree:      *r.Sea.Datahub.MaxDisagree,
+				MinSiteCoverage:  *r.Sea.Datahub.MinSiteCoverage,
+			},
 		},
 		Geocoder: Geocoder{
 			URL:               *r.Geocoder.URL,

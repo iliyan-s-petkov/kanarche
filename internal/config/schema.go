@@ -199,13 +199,26 @@ type rawCloudflare struct {
 
 // rawSea configures the EEA bathing-water import. See internal/upstream/bathing/README.md.
 type rawSea struct {
-	Enabled         *bool     `yaml:"enabled"`
-	URL             *string   `yaml:"url"`
-	Country         *string   `yaml:"country"`
-	RequestTimeout  *Duration `yaml:"request_timeout"`
-	RefreshInterval *Duration `yaml:"refresh_interval"`
-	MaxPayloadBytes *int64    `yaml:"max_payload_bytes"`
-	MaxRows         *int      `yaml:"max_rows"`
+	Enabled         *bool          `yaml:"enabled"`
+	URL             *string        `yaml:"url"`
+	Country         *string        `yaml:"country"`
+	RequestTimeout  *Duration      `yaml:"request_timeout"`
+	RefreshInterval *Duration      `yaml:"refresh_interval"`
+	MaxPayloadBytes *int64         `yaml:"max_payload_bytes"`
+	MaxRows         *int           `yaml:"max_rows"`
+	Datahub         *rawSeaDatahub `yaml:"datahub"`
+}
+
+// rawSeaDatahub pins the yearly EEA Excel release read by extract-bathing-datahub.
+type rawSeaDatahub struct {
+	URL              *string   `yaml:"url"`
+	SHA256           *string   `yaml:"sha256"`
+	Size             *int64    `yaml:"size"`
+	AllowedHosts     *[]string `yaml:"allowed_hosts"`
+	RequestTimeout   *Duration `yaml:"request_timeout"`
+	MaxDownloadBytes *int64    `yaml:"max_download_bytes"`
+	MaxDisagree      *float64  `yaml:"max_disagree"`
+	MinSiteCoverage  *float64  `yaml:"min_site_coverage"`
 }
 
 // rawGeocoder configures the address-search proxy. The upstream is Nominatim
