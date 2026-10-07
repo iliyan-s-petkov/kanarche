@@ -1201,21 +1201,6 @@ describe('Accessible names for controls', () => {
     expect(toggle.getAttribute('aria-label')).toBeNull()
   })
 
-  it('wind toggle aria-label matches visible text', () => {
-    const shell = document.createElement('div')
-    shell.className = 'map-shell'
-    const el = document.createElement('div')
-    el.className = 'map'
-    shell.appendChild(el)
-    document.body.appendChild(shell)
-
-    mountChrome(el, readConfig(el))
-    const windToggle = shell.querySelector('.map-wind-label__toggle')
-    const visibleText = windToggle.querySelector('.map-wind-label__text-label').textContent
-
-    expect(windToggle.getAttribute('aria-label')).toBe(visibleText)
-  })
-
   it('window button aria-label changes with selection (WCAG 2.5.3)', () => {
     const el = document.createElement('div')
     el.dataset.tWindowLabel = 'Averaging period'

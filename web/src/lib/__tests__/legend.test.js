@@ -109,9 +109,9 @@ describe('renderLegend', () => {
   // Icon-only on desktop (app.css hides .scale__toggle-label there), and an
   // icon-only control still has to be announced as something — aria-label.
   // On a phone the same span becomes the folded pill's own visible name.
-  it('names the fold via aria-label, and carries the metric label in a span for phones', () => {
+  it('names the fold by its visible text, and carries the metric label in a span for phones', () => {
     const toggle = draw().querySelector('summary')
-    expect(toggle.getAttribute('aria-label')).toBe('Легенда')
+    expect(toggle.hasAttribute('aria-label')).toBe(false)
     const label = toggle.querySelector('.scale__toggle-label')
     expect(label.textContent).toBe('Качество на въздуха')
   })
