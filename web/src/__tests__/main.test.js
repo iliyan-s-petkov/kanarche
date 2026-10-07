@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { resolveLoader, runIsland } from '../main.js'
+import { resolveLoader, runIsland, deferIsland } from '../main.js'
 
 // Importing main.js at all is the first assertion: it must not throw when
 // `document` does not exist (this test runs under Vitest's node environment,
@@ -67,5 +67,27 @@ describe('runIsland', () => {
 
     expect(a).toBe(false)
     expect(b).toBe(true)
+  })
+})
+
+// deferIsland decides which islands wait for the map to finish mounting.
+describe('deferIsland', () => {
+  it('keeps the map and the controls on the map at load', () => {
+    for (const name of ['map', 'switcher', 'finder', 'freshness', 'refresh', 'theme', 'chart', 'sensorbar']) {
+      expect(deferIsland(name, '')).toBe(false)
+    }
+  })
+  it('defers the islands below the map', () => {
+    for (const name of ['panel', 'readouts', 'table', 'visitors', 'copycode', 'clearsettings']) {
+      expect(deferIsland(name, '')).toBe(true)
+    }
+  })
+  it('mounts the sensor card and readouts at load when the URL names a sensor', () => {
+    expect(deferIsland('panel', '#metric=P2&sensor=42')).toBe(false)
+    expect(deferIsland('readouts', '#sensor=42')).toBe(false)
+    expect(deferIsland('table', '#sensor=42')).toBe(true)
+  })
+  it('does not mistake a longer key for a sensor', () => {
+    expect(deferIsland('panel', '#nosensor=1')).toBe(true)
   })
 })
