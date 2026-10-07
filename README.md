@@ -56,16 +56,15 @@ more of them join.
 
 ## Data and attribution
 
-| Data | Source | Licence | Updated |
-|---|---|---|---|
-| Particle sensors | [sensor.community](https://sensor.community/) contributors | ODbL 1.0 | Real-time |
-| Official air quality | Executive Environment Agency (ИАОС) via [EEA](https://www.eea.europa.eu/) | CC BY 4.0 | Weekly |
-| Bathing-water classes | EEA Excel workbook (2025 edition) | CC BY 4.0 | Yearly |
-| Wind forecast | [Open-Meteo](https://open-meteo.com/) ECMWF IFS model | CC BY 4.0 | Every 3h |
-| Area boundaries | © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors | ODbL 1.0 | Static |
-| National outline | [Natural Earth](https://www.naturalearthdata.com/) | Public domain | Static |
-
-Hosting kindly donated by [Hostellation](https://hostellation.com/)
+- Citizen sensor data: [sensor.community](https://sensor.community/) contributors, ODbL 1.0
+- Official station data: Executive Environment Agency (ИАОС) via the
+  [European Environment Agency](https://www.eea.europa.eu/)'s air quality programme
+- Bathing-water quality: [European Environment Agency](https://www.eea.europa.eu/)
+  Bathing Water Directive data (Discodata, plus the 2025 Datahub workbook), CC BY 4.0
+- Boundaries and basemap: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, ODbL 1.0
+- National outline: [Natural Earth](https://www.naturalearthdata.com/), public domain
+- Wind forecast: [Open-Meteo](https://open-meteo.com/), ECMWF IFS model, CC BY 4.0
+- Hosting kindly donated by [Hostellation](https://hostellation.com/)
 
 Before comparing two places, read
 [docs/known-limitations.md](docs/known-limitations.md): some cities are drawn
