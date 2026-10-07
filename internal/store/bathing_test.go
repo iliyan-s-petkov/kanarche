@@ -1,6 +1,8 @@
 package store_test
 
 import (
+	"slices"
+	"strconv"
 	"testing"
 	"time"
 
@@ -117,5 +119,60 @@ func TestReplaceBathingIsAllOrNothing(t *testing.T) {
 	last, _, _ := s.BathingLastImport(ctx)
 	if !last.Equal(at) {
 		t.Errorf("BathingLastImport = %v, want the earlier successful import", last)
+	}
+}
+
+// Source is stored per class; an unset source is Discodata.
+func TestBathingClassSourceRoundTrips(t *testing.T) {
+	ctx, _, s := newStore(t)
+	d := bathingFixture()
+	d.Classes = append(d.Classes, store.BathingClass{SiteID: "BG3310610135003001", Season: 2025, Quality: "good", Source: store.SourceDatahub})
+	d.SupplementEdition = "2025 v1.0"
+	if err := s.ReplaceBathing(ctx, d, time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("ReplaceBathing: %v", err)
+	}
+	got, err := s.LoadBathing(ctx)
+	if err != nil {
+		t.Fatalf("LoadBathing: %v", err)
+	}
+	var sources []string
+	for _, c := range got.Classes {
+		sources = append(sources, c.SiteID[len(c.SiteID)-4:]+"/"+strconv.Itoa(c.Season)+"="+c.Source)
+	}
+	want := []string{"7001/2024=discodata", "3001/2023=discodata", "3001/2024=discodata", "3001/2025=datahub"}
+	if !slices.Equal(sources, want) {
+		t.Errorf("sources = %v, want %v", sources, want)
+	}
+}
+
+func TestBathingRejectsUnknownSource(t *testing.T) {
+	ctx, _, s := newStore(t)
+	d := bathingFixture()
+	d.Classes[0].Source = "wikipedia"
+	if err := s.ReplaceBathing(ctx, d, time.Now()); err == nil {
+		t.Fatal("unknown source accepted")
+	}
+}
+
+func TestBathingSupplementEdition(t *testing.T) {
+	ctx, _, s := newStore(t)
+	if ed, err := s.BathingSupplementEdition(ctx); err != nil || ed != "" {
+		t.Fatalf("fresh table: %q, %v; want empty", ed, err)
+	}
+	at := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	d := bathingFixture()
+	d.SupplementEdition = "2025 v1.0"
+	if err := s.ReplaceBathing(ctx, d, at); err != nil {
+		t.Fatal(err)
+	}
+	if ed, err := s.BathingSupplementEdition(ctx); err != nil || ed != "2025 v1.0" {
+		t.Fatalf("after import: %q, %v", ed, err)
+	}
+	// The newest import decides, and an import without a snapshot clears it.
+	if err := s.ReplaceBathing(ctx, bathingFixture(), at.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if ed, err := s.BathingSupplementEdition(ctx); err != nil || ed != "" {
+		t.Fatalf("after import without snapshot: %q, %v; want empty", ed, err)
 	}
 }

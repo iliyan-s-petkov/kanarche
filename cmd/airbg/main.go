@@ -125,7 +125,9 @@ func main() {
 			go cloudflare.NewCollector(cfg.Cloudflare, os.Getenv(cloudflare.TokenEnv), cfStore).Loop(ctx)
 		}
 		if cfg.Sea.Enabled {
-			go bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)).Loop(ctx)
+			seaCollector := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series))
+			seaCollector.SetSupplement(loadSupplement(cfg))
+			go seaCollector.Loop(ctx)
 		}
 		client := upstream.New(cfg.Upstream)
 		collectStore := store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)
@@ -250,13 +252,16 @@ func main() {
 
 	// Forced refresh of the bathing-water layer, ignoring refresh_interval.
 	case "import-sea":
-		st, err := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator)).RunOnce(ctx)
+		seaCollector := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator))
+		seaCollector.SetSupplement(loadSupplement(cfg))
+		st, err := seaCollector.RunOnce(ctx)
 		if err != nil {
 			slog.Error("import sea", "error", err)
 			os.Exit(1)
 		}
 		slog.Info("import sea complete", "sites", st.Sites, "classes", st.Classes, "samples", st.Samples,
-			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan)
+			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan,
+			"supplement_applied", st.Supplement.Applied)
 
 	case "purge-outside-boundary":
 		// Deliberately a separate, operator-invoked step (task-17 review
@@ -459,6 +464,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	seaDone := make(chan struct{})
 	if cfg.Sea.Enabled {
 		sc := bathing.NewCollector(cfg.Sea, collectorStore)
+		sc.SetSupplement(loadSupplement(cfg))
 		go func() {
 			defer close(seaDone)
 			sc.Loop(pollCtx)

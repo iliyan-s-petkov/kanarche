@@ -16,12 +16,15 @@ const retryAfter = time.Hour
 type Sink interface {
 	ReplaceBathing(ctx context.Context, d store.BathingData, at time.Time) error
 	BathingLastImport(ctx context.Context) (time.Time, bool, error)
+	// BathingSupplementEdition is the snapshot edition of the newest import, empty if none.
+	BathingSupplementEdition(ctx context.Context) (string, error)
 }
 
 // Stats is one RunOnce outcome.
 type Stats struct {
 	Sites, Classes, Samples int
 	Skipped                 Skipped
+	Supplement              SupplementStats
 }
 
 type Collector struct {
@@ -29,6 +32,7 @@ type Collector struct {
 	client *Client
 	sink   Sink
 	clock  func() time.Time
+	sup    *Supplement
 }
 
 func NewCollector(cfg config.Sea, sink Sink) *Collector {
@@ -37,6 +41,9 @@ func NewCollector(cfg config.Sea, sink Sink) *Collector {
 
 // SetClockForTesting overrides the import timestamp clock.
 func (c *Collector) SetClockForTesting(clock func() time.Time) { c.clock = clock }
+
+// SetSupplement sets the class fill. Nil, the default, imports Discodata only.
+func (c *Collector) SetSupplement(sup *Supplement) { c.sup = sup }
 
 // RunOnce fetches, validates and replaces the stored set. Nothing is written on failure.
 func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
@@ -48,7 +55,8 @@ func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
 	if err != nil {
 		return Stats{}, err
 	}
-	st := Stats{Sites: len(d.Sites), Classes: len(d.Classes), Samples: len(d.Samples), Skipped: sk}
+	d, ss := Merge(d, c.sup, Guards{MaxDisagree: c.cfg.Datahub.MaxDisagree, MinSiteCoverage: c.cfg.Datahub.MinSiteCoverage})
+	st := Stats{Sites: len(d.Sites), Classes: len(d.Classes), Samples: len(d.Samples), Skipped: sk, Supplement: ss}
 	return st, c.sink.ReplaceBathing(ctx, d, c.clock().UTC())
 }
 
@@ -77,6 +85,16 @@ func (c *Collector) Loop(ctx context.Context) {
 		slog.Error("sea import: read last import", "error", err)
 	}
 	wait := NextDelay(c.clock(), last, ok, c.cfg.RefreshInterval)
+	// A new snapshot edition is imported at once instead of waiting out the interval.
+	if c.sup != nil && wait > 0 {
+		ed, err := c.sink.BathingSupplementEdition(ctx)
+		if err != nil {
+			slog.Error("sea import: read supplement edition", "error", err)
+		} else if ed != c.sup.Edition {
+			slog.Info("sea import: supplement edition changed", "stored", ed, "embedded", c.sup.Edition)
+			wait = 0
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -90,7 +108,9 @@ func (c *Collector) Loop(ctx context.Context) {
 			continue
 		}
 		slog.Info("sea import complete", "sites", st.Sites, "classes", st.Classes, "samples", st.Samples,
-			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan)
+			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan,
+			"supplement_applied", st.Supplement.Applied, "supplement_shadowed", st.Supplement.Shadowed,
+			"supplement_inactive", st.Supplement.Inactive)
 		wait = c.cfg.RefreshInterval
 	}
 }

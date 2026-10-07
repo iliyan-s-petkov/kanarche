@@ -85,7 +85,7 @@ func Build(raw Raw, country string) (store.BathingData, Skipped, error) {
 			continue
 		}
 		seasons[key] = true
-		d.Classes = append(d.Classes, store.BathingClass{SiteID: r.SiteID, Season: r.Season, Quality: q})
+		d.Classes = append(d.Classes, store.BathingClass{SiteID: r.SiteID, Season: r.Season, Quality: q, Source: store.SourceDiscodata})
 	}
 
 	dates := map[string]bool{}
