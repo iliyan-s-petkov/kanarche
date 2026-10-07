@@ -117,13 +117,11 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info }) {
   if (rampH) el.style.setProperty('--ramp-h', rampH)
   else el.style.removeProperty('--ramp-h')
 
-  // Icon-only: the triangle already says what it does, and a word beside it
-  // pushed the whole bar to the right of itself. An icon-only control still
-  // needs a name, so the name moves to aria-label.
+  // Icon-only on desktop: the label span is visually hidden and names the toggle.
   if (!toggle) {
     toggle = document.createElement('summary')
     toggle.className = 'scale__toggle'
-    // Hidden on desktop (app.css); shown folded on a phone, so the pill names
+    // Visually hidden on desktop (app.css); shown folded on a phone, so the pill names
     // itself instead of reading as a bare triangle. Same text as .scale__label.
     const toggleName = document.createElement('span')
     toggleName.className = 'scale__toggle-label'

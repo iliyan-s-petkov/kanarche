@@ -24,6 +24,19 @@ const withLegend = (page, open) =>
 
 for (const vp of VIEWPORTS) {
   test.describe(vp.name, () => {
+    test('the legend toggle is named by the metric title', async ({ browser }) => {
+      const { name, ...opts } = vp
+      const context = await browser.newContext(opts)
+      const page = await context.newPage()
+      await page.goto('/en')
+      await mapSettled(page)
+      const toggle = page.locator('.scale--onmap > .scale__toggle')
+      const title = (await toggle.locator('.scale__toggle-label').textContent()).trim()
+      expect(title).not.toBe('')
+      await expect(toggle).toHaveAccessibleName(title)
+      await context.close()
+    })
+
     test('opening the layers list folds an open legend', async ({ browser }) => {
       const { name, ...opts } = vp
       const context = await browser.newContext(opts)

@@ -334,7 +334,11 @@ strong, b { font-weight: var(--weight-emphasis); }
   overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
 /* Named for the folded pill only; the open card keeps the icon-only toggle. */
-.scale__toggle-label { display: none; }
+/* Visually hidden, not display:none, so the toggle keeps its accessible name. */
+.scale__toggle-label {
+  position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
 /* The kit hangs a menu panel from its button's END edge, which is right for the
    Колони menu — that one sits at the right end of the table's controls. The
    metric menu is the FIRST control on the row, so an end-anchored panel wider
@@ -928,6 +932,8 @@ strong, b { font-weight: var(--weight-emphasis); }
   background-image: var(--ramp-h, none);
 }
 .scale--onmap:not([open]) .scale__toggle-label {
+  position: static; inline-size: auto; block-size: auto; overflow: visible;
+  clip-path: none; white-space: normal;
   display: inline; margin-inline: var(--space-1); font-size: var(--text-compact);
 }
 /* Touch: the kit's 24px square is too small to tap, open or folded. */
