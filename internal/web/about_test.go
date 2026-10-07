@@ -260,9 +260,7 @@ func catalogueKey(t *testing.T, lang, key string) string {
 }
 
 // TestAboutGuideCards. Each card renders its h4 title and four images
-// (en/bg x light/dark), and each image file exists on disk. Images land from a
-// separate branch: a missing file is skipped only when
-// AIRBG_ABOUT_IMAGES_PENDING=1, otherwise it fails.
+// (en/bg x light/dark), and each image file exists on disk.
 func TestAboutGuideCards(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	pages := map[string]string{
@@ -289,9 +287,6 @@ func TestAboutGuideCards(t *testing.T) {
 							_, err := os.Stat(filepath.Join("static", "about", file+".webp"))
 							if err == nil {
 								return
-							}
-							if os.IsNotExist(err) && os.Getenv("AIRBG_ABOUT_IMAGES_PENDING") == "1" {
-								t.Skipf("image pending: %s.webp", file)
 							}
 							t.Errorf("image missing: %v", err)
 						})
