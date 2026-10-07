@@ -374,12 +374,13 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// the configured basemap host reaches the CSP, and it keeps the server
 	// package from needing to know how a policy is assembled.
 	srv, err := server.New(server.Options{
-		Config:    cfg,
-		Catalogue: cat,
-		Snapshots: holder,
-		Store:     apiStore,
-		Publisher: pub,
-		Logger:    log,
+		Config:        cfg,
+		Catalogue:     cat,
+		Snapshots:     holder,
+		Store:         apiStore,
+		Publisher:     pub,
+		SeaSupplement: seaSupplementMeta(cfg),
+		Logger:        log,
 	})
 	if err != nil {
 		return err

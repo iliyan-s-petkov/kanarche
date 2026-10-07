@@ -35,6 +35,7 @@ type DataSource interface {
 	VisitorDailyLast(ctx context.Context, n int) ([]store.VisitorDaily, error)
 	LoadBathing(ctx context.Context) (store.BathingData, error)
 	BathingLastImport(ctx context.Context) (time.Time, bool, error)
+	BathingSupplementEdition(ctx context.Context) (string, error)
 }
 
 type Deps struct {
@@ -70,6 +71,10 @@ type Deps struct {
 	// GeocodeLimiter is the per-client bucket for that route; nil also answers
 	// 503. The caller owns its evictor.
 	GeocodeLimiter *ratelimit.Limiter
+
+	// SeaSupplement is the embedded snapshot's published date and source URL,
+	// read once at startup. The zero value serves empty strings.
+	SeaSupplement SeaSupplementMeta
 
 	// visitors is set by NewRouter, one per router.
 	visitors *visitorCache

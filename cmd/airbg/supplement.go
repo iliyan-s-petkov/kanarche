@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"airbg.org/internal/api"
 	"airbg.org/internal/config"
 	"airbg.org/internal/upstream/bathing"
 	"airbg.org/internal/upstream/bathing/datahub"
@@ -28,4 +29,14 @@ func loadSupplement(cfg config.Config) *bathing.Supplement {
 		return nil
 	}
 	return f.Supplement()
+}
+
+// seaSupplementMeta reads the snapshot header once for the sea API. A bad
+// embed is already logged by loadSupplement, so it yields empty fields here.
+func seaSupplementMeta(cfg config.Config) api.SeaSupplementMeta {
+	f, err := checkSnapshot(cfg)
+	if err != nil {
+		return api.SeaSupplementMeta{}
+	}
+	return api.SeaSupplementMeta{Published: f.Header.Published, URL: f.Header.SourceURL}
 }

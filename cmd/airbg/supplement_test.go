@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"airbg.org/internal/api"
 	"airbg.org/internal/config"
 )
 
@@ -64,5 +65,21 @@ func TestValidateConfigFailsOnBadSnapshotPin(t *testing.T) {
 	}
 	if !strings.Contains(errOut.String(), "invalid snapshot") {
 		t.Errorf("stderr = %q, want the snapshot error", errOut.String())
+	}
+}
+
+func TestSeaSupplementMetaComesFromTheSnapshotHeader(t *testing.T) {
+	cfg := committedConfig(t)
+	f, err := checkSnapshot(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := seaSupplementMeta(cfg)
+	if m.Published == "" || m.URL == "" || m.Published != f.Header.Published || m.URL != f.Header.SourceURL {
+		t.Errorf("meta = %+v, header = %+v", m, f.Header)
+	}
+	cfg.Sea.Datahub.SHA256 = strings.Repeat("0", 64)
+	if m := seaSupplementMeta(cfg); m != (api.SeaSupplementMeta{}) {
+		t.Errorf("bad pin meta = %+v, want zero", m)
 	}
 }

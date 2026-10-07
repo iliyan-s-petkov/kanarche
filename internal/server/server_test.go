@@ -606,6 +606,10 @@ func (b *blockingSeriesStore) LoadBathing(ctx context.Context) (store.BathingDat
 	return store.BathingData{}, errors.New("blockingSeriesStore: LoadBathing unexpectedly called")
 }
 
+func (b *blockingSeriesStore) BathingSupplementEdition(ctx context.Context) (string, error) {
+	return "", errors.New("blockingSeriesStore: BathingSupplementEdition unexpectedly called")
+}
+
 func (b *blockingSeriesStore) BathingLastImport(ctx context.Context) (time.Time, bool, error) {
 	return time.Time{}, false, errors.New("blockingSeriesStore: BathingLastImport unexpectedly called")
 }
