@@ -17,6 +17,9 @@ Configuration is resolved in exactly two layers, in this order:
    from the file (see §3), plus the two secrets that are environment-only
    (§4).
 
+Every `AIRBG_*` name is also read as `KANARCHE_*`, which wins when both are set.
+The `AIRBG_*` prefix is deprecated but still read, and logs a warning per key.
+
 There is no third layer and no compiled-in fallback. A key that is present in
 neither the file nor the environment is a **startup error**, not a zero
 value — for most of these keys, zero is the dangerous setting (an unlimited
