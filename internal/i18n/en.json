@@ -458,7 +458,7 @@
   "sea.below_detection": "below the detection limit",
   "sea.pre_season": "pre-season",
   "sea.no_samples": "No samples published for this site.",
-  "sea.note": "The class is the EEA's assessment over the last four seasons. Single samples are context, not a verdict on the water today.",
+  "sea.note": "The class is the EEA's assessment over the last four seasons. Single samples are context, not a verdict on the water today. The EEA publishes each season's results the following year, so the newest class can be a year old.",
   "sea.credit": "Data: European Environment Agency (EEA), CC BY 4.0",
   "sea.profile": "Site profile",
   "sea.close": "Close",
