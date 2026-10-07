@@ -24,6 +24,11 @@ type Part struct {
 	// DeclaredSize, when non-zero, replaces the uncompressed size in the
 	// headers. The CRC stays correct, so only the size lies.
 	DeclaredSize uint64
+	// BadCRC writes a CRC that does not match the content.
+	BadCRC bool
+	// Raw writes Data as-is under Method, with no compression.
+	Raw    bool
+	Method uint16
 }
 
 // Options lists the entries in write order. Duplicate names are kept.
@@ -55,7 +60,10 @@ func BuildTo(w io.Writer, opts Options) error {
 }
 
 func writePart(zw *zip.Writer, p Part) error {
-	if p.DeclaredSize != 0 {
+	if p.Raw {
+		return writeRaw(zw, p)
+	}
+	if p.DeclaredSize != 0 || p.BadCRC {
 		return writeLying(zw, p)
 	}
 	method := zip.Deflate
@@ -94,17 +102,38 @@ func writeLying(zw *zip.Writer, p Part) error {
 	if err := fw.Close(); err != nil {
 		return err
 	}
+	size := p.DeclaredSize
+	if size == 0 {
+		size = uint64(len(p.Data))
+	}
+	sum := crc.Sum32()
+	if p.BadCRC {
+		sum ^= 1
+	}
+	return createRaw(zw, p.Name, zip.Deflate, sum, size, comp.Bytes())
+}
+
+// writeRaw stores Data unmodified under p.Method.
+func writeRaw(zw *zip.Writer, p Part) error {
+	size := p.DeclaredSize
+	if size == 0 {
+		size = uint64(len(p.Data))
+	}
+	return createRaw(zw, p.Name, p.Method, crc32.ChecksumIEEE(p.Data), size, p.Data)
+}
+
+func createRaw(zw *zip.Writer, name string, method uint16, sum uint32, size uint64, data []byte) error {
 	w, err := zw.CreateRaw(&zip.FileHeader{
-		Name:               p.Name,
-		Method:             zip.Deflate,
-		CRC32:              crc.Sum32(),
-		CompressedSize64:   uint64(comp.Len()),
-		UncompressedSize64: p.DeclaredSize,
+		Name:               name,
+		Method:             method,
+		CRC32:              sum,
+		CompressedSize64:   uint64(len(data)),
+		UncompressedSize64: size,
 	})
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(comp.Bytes())
+	_, err = w.Write(data)
 	return err
 }
 

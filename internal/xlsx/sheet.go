@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -19,8 +20,7 @@ const (
 	MaxCellsPerRow        = 64
 	MaxColumn             = 16384 // XFD
 	maxRowNumber          = 1 << 20
-	maxValueBytes         = 256  // text of one <v>
-	ctxCheckEvery         = 4096 // tokens between context checks
+	maxValueBytes         = 256 // text of one <v>
 )
 
 var (
@@ -75,19 +75,19 @@ func (b *Book) RowsContext(ctx context.Context, sheetName string, required []str
 	if err := b.loadShared(ctx); err != nil {
 		return err
 	}
-	rc, err := b.part(part, MaxSheetBytes)
+	rc, err := b.part(ctx, part, MaxSheetBytes)
 	if err != nil {
 		return err
 	}
 	defer rc.Close()
-	s := &sheetReader{book: b, ctx: ctx, d: newDecoder(rc), required: required, fn: fn}
+	s := &sheetReader{book: b, d: newDecoder(ctx, rc), required: required, fn: fn}
 	if err := s.run(); err != nil {
 		if s.rowNum > 0 && !errors.Is(err, errCallback) {
 			return fmt.Errorf("%s row %d: %w", sheetName, s.rowNum, err)
 		}
 		return unwrapCallback(err)
 	}
-	return nil
+	return ctx.Err()
 }
 
 // loadShared reads the shared-string table once per Book.
@@ -99,12 +99,12 @@ func (b *Book) loadShared(ctx context.Context) error {
 		b.strsLoaded = true
 		return nil
 	}
-	rc, err := b.part(b.shared, MaxSharedStringsBytes)
+	rc, err := b.part(ctx, b.shared, MaxSharedStringsBytes)
 	if err != nil {
 		return err
 	}
 	defer rc.Close()
-	d := newDecoder(rc)
+	d := newDecoder(ctx, rc)
 	var (
 		strs     []string
 		cur      strings.Builder
@@ -113,12 +113,7 @@ func (b *Book) loadShared(ctx context.Context) error {
 		phonetic int // depth inside <rPh>, whose text is not part of the value
 		total    int64
 	)
-	for n := 0; ; n++ {
-		if n%ctxCheckEvery == 0 {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-		}
+	for {
 		tok, err := d.Token()
 		if err == io.EOF {
 			break
@@ -178,7 +173,6 @@ type cell struct {
 
 type sheetReader struct {
 	book     *Book
-	ctx      context.Context
 	d        *decoder
 	required []string
 	fn       func(Row) error
@@ -215,12 +209,7 @@ func unwrapCallback(err error) error {
 }
 
 func (s *sheetReader) run() error {
-	for n := 0; ; n++ {
-		if n%ctxCheckEvery == 0 {
-			if err := s.ctx.Err(); err != nil {
-				return err
-			}
-		}
+	for {
 		tok, err := s.d.Token()
 		if err == io.EOF {
 			return fmt.Errorf("%w: no sheetData", ErrBadSheet)
@@ -431,21 +420,25 @@ func attr(t xml.StartElement, local string) (string, bool) {
 }
 
 // parseUint accepts 0 or a digit string without a leading zero, up to max.
+// The bound is checked per digit in uint64 so no input can wrap.
 func parseUint(s string, max int) (int, bool) {
-	if s == "" || len(s) > 10 || (len(s) > 1 && s[0] == '0') {
+	if s == "" || max < 0 || (len(s) > 1 && s[0] == '0') {
 		return 0, false
 	}
-	n := 0
+	var n uint64
 	for i := 0; i < len(s); i++ {
 		if s[i] < '0' || s[i] > '9' {
 			return 0, false
 		}
-		n = n*10 + int(s[i]-'0')
+		if n > (math.MaxUint64-9)/10 {
+			return 0, false
+		}
+		n = n*10 + uint64(s[i]-'0')
+		if n > uint64(max) {
+			return 0, false
+		}
 	}
-	if n > max {
-		return 0, false
-	}
-	return n, true
+	return int(n), true
 }
 
 // parseRef parses an A1 reference: 1 to 3 upper-case letters up to XFD,

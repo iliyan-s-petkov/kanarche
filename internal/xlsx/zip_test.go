@@ -2,6 +2,7 @@ package xlsx
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -121,7 +122,7 @@ func TestOpenRejectsVBAProject(t *testing.T) {
 		"xl/VBAProject.BIN",
 		"xl/embeddings/oleObject1.xml",
 		"xl/activeX/activeX1.xml",
-		"xl/printerSettings/printerSettings1.bin",
+		"xl/printerSettings/printerSettings01.bin",
 	} {
 		parts := append(minimalParts(), xlsxtest.Part{Name: name, Data: []byte("x")})
 		_, err := open(t, parts)
@@ -175,7 +176,7 @@ func TestPartRejectsNestedZip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc, err := b.part(xlsxtest.SheetName, MaxSheetBytes)
+	rc, err := b.part(context.Background(), xlsxtest.SheetName, MaxSheetBytes)
 	if err == nil {
 		_, err = io.Copy(io.Discard, rc)
 		rc.Close()
@@ -190,7 +191,7 @@ func TestPartRejectsNestedZip(t *testing.T) {
 
 func readPart(t *testing.T, b *Book, name string, limit int64) (int64, error) {
 	t.Helper()
-	rc, err := b.part(name, limit)
+	rc, err := b.part(context.Background(), name, limit)
 	if err != nil {
 		return 0, err
 	}

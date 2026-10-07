@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/flate"
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -15,8 +16,8 @@ import (
 	"hash/crc32"
 	"io"
 	"path"
+	"regexp"
 	"strings"
-	"unicode/utf8"
 )
 
 // Container caps. Safety limits, not tuning knobs.
@@ -29,8 +30,11 @@ const (
 	MaxRatio              = 100
 	MaxDepth              = 32
 
+	// Any .rels part.
+	MaxRelsBytes = 64 << 10
+
 	// The ratio check starts after this much output so tiny parts pass.
-	ratioFloor = 1 << 20
+	ratioFloor = 64 << 10
 	// Largest single XML token (text run, tag with attributes).
 	maxTokenBytes = 1 << 20
 )
@@ -92,8 +96,19 @@ type Book struct {
 
 type sheetRef struct{ name, part string }
 
-// Open validates the container and reads the workbook index.
+// Printer settings parts are allowed by exact name and never decompressed.
+var printerSettingsName = regexp.MustCompile(`^xl/printerSettings/printerSettings[1-9][0-9]{0,3}\.bin$`)
+
+// Open is OpenContext with a background context.
 func Open(r io.ReaderAt, size int64) (*Book, error) {
+	return OpenContext(context.Background(), r, size)
+}
+
+// OpenContext validates the container and reads the workbook index.
+func OpenContext(ctx context.Context, r io.ReaderAt, size int64) (*Book, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	head := make([]byte, 8)
 	n, _ := r.ReadAt(head, 0)
 	head = head[:n]
@@ -114,36 +129,49 @@ func Open(r io.ReaderAt, size int64) (*Book, error) {
 		return nil, fmt.Errorf("%w: %d > %d", ErrTooManyEntries, len(zr.File), MaxEntries)
 	}
 	b := &Book{files: make(map[string]*zip.File, len(zr.File)), maxTotal: MaxTotalBytes, lim: defaultLimits}
+	seen := make(map[string]bool, len(zr.File))
 	for _, f := range zr.File {
-		if err := checkName(f.Name); err != nil {
-			return nil, err
+		exempt := printerSettingsName.MatchString(f.Name)
+		if !exempt {
+			if err := checkName(f.Name); err != nil {
+				return nil, err
+			}
 		}
 		key := strings.ToLower(f.Name)
-		if b.files[key] != nil {
+		if seen[key] {
 			return nil, fmt.Errorf("%w: %q", ErrDuplicateName, f.Name)
 		}
-		b.files[key] = f
+		seen[key] = true
+		if !exempt {
+			b.files[key] = f
+		}
 	}
 	for _, name := range []string{contentTypesPart, workbookPart, workbookRelsPart} {
 		if b.files[strings.ToLower(name)] == nil {
 			return nil, fmt.Errorf("%w: %s", ErrMissingPart, name)
 		}
 	}
-	if err := b.checkContentTypes(); err != nil {
+	if err := b.checkContentTypes(ctx); err != nil {
 		return nil, err
 	}
-	rels, err := b.readRels(workbookRelsPart)
+	rels, err := b.readRels(ctx, workbookRelsPart)
 	if err != nil {
 		return nil, err
 	}
-	for key, f := range b.files {
-		if strings.HasPrefix(key, "xl/worksheets/_rels/") && strings.HasSuffix(key, ".rels") {
-			if _, err := b.readRels(f.Name); err != nil {
-				return nil, err
-			}
+	if err := b.readWorkbook(ctx, rels); err != nil {
+		return nil, err
+	}
+	// Only the rels of listed worksheets are read, for external targets.
+	for _, s := range b.sheets {
+		name := path.Join(path.Dir(s.part), "_rels", path.Base(s.part)+".rels")
+		if b.files[strings.ToLower(name)] == nil {
+			continue
+		}
+		if _, err := b.readRels(ctx, name); err != nil {
+			return nil, err
 		}
 	}
-	if err := b.readWorkbook(rels); err != nil {
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	return b, nil
@@ -159,7 +187,8 @@ func (b *Book) Sheets() []string {
 }
 
 func checkName(name string) error {
-	bad := name == "" || !utf8.ValidString(name) ||
+	// ASCII only: Unicode case folding would let K (U+212A) match k.
+	bad := name == "" || !isASCII(name) ||
 		strings.ContainsAny(name, "\\\x00") || strings.HasPrefix(name, "/")
 	if !bad {
 		// A trailing slash marks a directory entry.
@@ -185,8 +214,17 @@ func checkName(name string) error {
 	return nil
 }
 
-func (b *Book) readSmall(name string) ([]byte, error) {
-	rc, err := b.part(name, MaxSmallPartBytes)
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *Book) readSmall(ctx context.Context, name string, limit int64) ([]byte, error) {
+	rc, err := b.part(ctx, name, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -194,28 +232,46 @@ func (b *Book) readSmall(name string) ([]byte, error) {
 	return io.ReadAll(rc)
 }
 
-func (b *Book) checkContentTypes() error {
-	data, err := b.readSmall(contentTypesPart)
+// checkContentTypes rejects macro content types, matched on decoded
+// attribute values so character references cannot hide them.
+func (b *Book) checkContentTypes(ctx context.Context) error {
+	data, err := b.readSmall(ctx, contentTypesPart, MaxSmallPartBytes)
 	if err != nil {
 		return err
 	}
-	lower := bytes.ToLower(data)
-	if bytes.Contains(lower, []byte("macroenabled")) || bytes.Contains(lower, []byte("vbaproject")) {
-		return ErrMacro
+	d := newDecoder(ctx, bytes.NewReader(data))
+	for {
+		tok, err := d.Token()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%s: %w", contentTypesPart, err)
+		}
+		se, ok := tok.(xml.StartElement)
+		if !ok || (se.Name.Local != "Default" && se.Name.Local != "Override") {
+			continue
+		}
+		for _, a := range se.Attr {
+			ct := strings.ToLower(a.Value)
+			if a.Name.Local == "ContentType" && (strings.Contains(ct, "macroenabled") || strings.Contains(ct, "vbaproject")) {
+				return fmt.Errorf("%w: %s", ErrMacro, a.Value)
+			}
+		}
 	}
-	return nil
 }
 
 type rel struct{ typ, target string }
 
-// readRels parses a relationships part and rejects external targets.
-func (b *Book) readRels(name string) (map[string]rel, error) {
-	data, err := b.readSmall(name)
+// readRels parses a relationships part and rejects external targets and
+// empty or duplicate ids.
+func (b *Book) readRels(ctx context.Context, name string) (map[string]rel, error) {
+	data, err := b.readSmall(ctx, name, MaxRelsBytes)
 	if err != nil {
 		return nil, err
 	}
 	out := map[string]rel{}
-	d := newDecoder(bytes.NewReader(data))
+	d := newDecoder(ctx, bytes.NewReader(data))
 	for {
 		tok, err := d.Token()
 		if err == io.EOF {
@@ -239,31 +295,41 @@ func (b *Book) readRels(name string) (map[string]rel, error) {
 			case "Target":
 				r.target = a.Value
 			case "TargetMode":
-				if strings.EqualFold(a.Value, "External") {
+				if strings.EqualFold(strings.TrimSpace(a.Value), "External") {
 					return nil, fmt.Errorf("%w: %s in %s", ErrExternal, r.target, name)
 				}
 			}
+		}
+		if id == "" {
+			return nil, fmt.Errorf("%w: empty relationship id in %s", ErrBadWorkbook, name)
+		}
+		if _, dup := out[id]; dup {
+			return nil, fmt.Errorf("%w: duplicate relationship id %q in %s", ErrBadWorkbook, id, name)
 		}
 		out[id] = r
 	}
 }
 
 // readWorkbook maps sheet names to worksheet parts via the workbook rels.
-func (b *Book) readWorkbook(rels map[string]rel) error {
+func (b *Book) readWorkbook(ctx context.Context, rels map[string]rel) error {
 	for _, r := range rels {
-		if strings.HasSuffix(r.typ, relTypeSharedStrings) {
-			p, err := b.resolve(r.target)
-			if err != nil {
-				return err
-			}
-			b.shared = p
+		if !strings.HasSuffix(r.typ, relTypeSharedStrings) {
+			continue
 		}
+		if b.shared != "" {
+			return fmt.Errorf("%w: more than one sharedStrings relationship", ErrBadWorkbook)
+		}
+		p, err := b.resolve(r.target)
+		if err != nil {
+			return err
+		}
+		b.shared = p
 	}
-	data, err := b.readSmall(workbookPart)
+	data, err := b.readSmall(ctx, workbookPart, MaxSmallPartBytes)
 	if err != nil {
 		return err
 	}
-	d := newDecoder(bytes.NewReader(data))
+	d := newDecoder(ctx, bytes.NewReader(data))
 	seen := map[string]bool{}
 	for {
 		tok, err := d.Token()
@@ -287,7 +353,7 @@ func (b *Book) readWorkbook(rels map[string]rel) error {
 			}
 		}
 		r, ok := rels[rid]
-		if name == "" || !ok || seen[name] {
+		if name == "" || rid == "" || !ok || seen[name] {
 			return fmt.Errorf("%w: sheet %q rel %q", ErrBadWorkbook, name, rid)
 		}
 		seen[name] = true
@@ -303,13 +369,13 @@ func (b *Book) readWorkbook(rels map[string]rel) error {
 	}
 }
 
-// resolve turns a workbook-relative target into an existing part name.
+// resolve turns a workbook-relative target into an existing .xml part name.
 func (b *Book) resolve(target string) (string, error) {
 	p := strings.TrimPrefix(target, "/")
 	if p == target {
 		p = path.Join("xl", target)
 	}
-	if err := checkName(p); err != nil || p != path.Clean(p) {
+	if err := checkName(p); err != nil || p != path.Clean(p) || !strings.HasSuffix(p, ".xml") {
 		return "", fmt.Errorf("%w: target %q", ErrBadName, target)
 	}
 	if b.files[strings.ToLower(p)] == nil {
@@ -321,7 +387,7 @@ func (b *Book) resolve(target string) (string, error) {
 // part opens one entry with a decompressed cap of limit bytes. The reader
 // also enforces the book-wide total, the ratio cap, the nested-zip check
 // and the CRC.
-func (b *Book) part(name string, limit int64) (io.ReadCloser, error) {
+func (b *Book) part(ctx context.Context, name string, limit int64) (io.ReadCloser, error) {
 	f := b.files[strings.ToLower(name)]
 	if f == nil {
 		return nil, fmt.Errorf("%w: %s", ErrMissingPart, name)
@@ -331,7 +397,7 @@ func (b *Book) part(name string, limit int64) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("%s: %w", name, err)
 	}
 	in := &countReader{r: raw}
-	pr := &partReader{name: name, f: f, book: b, in: in, limit: limit, crc: crc32.NewIEEE()}
+	pr := &partReader{ctx: ctx, name: name, f: f, book: b, in: in, limit: limit, crc: crc32.NewIEEE()}
 	switch f.Method {
 	case zip.Store:
 		pr.dec = in
@@ -366,6 +432,7 @@ func (c *countReader) Read(p []byte) (int, error) {
 }
 
 type partReader struct {
+	ctx    context.Context
 	name   string
 	f      *zip.File
 	book   *Book
@@ -381,6 +448,10 @@ type partReader struct {
 func (r *partReader) Read(p []byte) (int, error) {
 	if r.err != nil {
 		return 0, r.err
+	}
+	if err := r.ctx.Err(); err != nil {
+		r.err = err
+		return 0, err
 	}
 	// Ask for at most one byte past either cap so overshoot is detected
 	// without decompressing a whole buffer beyond it.
@@ -436,19 +507,25 @@ func (p *prefixed) Close() error               { return p.c.Close() }
 // decoder is a strict xml.Decoder that refuses directives, bounds element
 // depth and bounds the bytes behind any single token.
 type decoder struct {
+	ctx   context.Context
 	d     *xml.Decoder
 	in    *tokenGuard
 	depth int
 }
 
-func newDecoder(r io.Reader) *decoder {
+func newDecoder(ctx context.Context, r io.Reader) *decoder {
 	g := &tokenGuard{br: bufio.NewReaderSize(r, 64<<10), max: maxTokenBytes}
 	d := xml.NewDecoder(g) // uses g.ReadByte directly, no extra buffer
 	d.Strict = true
-	return &decoder{d: d, in: g}
+	return &decoder{ctx: ctx, d: d, in: g}
 }
 
 func (x *decoder) Token() (xml.Token, error) {
+	select {
+	case <-x.ctx.Done():
+		return nil, x.ctx.Err()
+	default:
+	}
 	tok, err := x.d.Token()
 	if err != nil {
 		return nil, err
