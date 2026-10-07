@@ -47,6 +47,22 @@ async function toWebp(page, png, { fit = 'stretch', backdrop = '#ffffff' } = {})
   throw new Error('image stays above the size budget at the lowest quality')
 }
 
+// Lays the screenshots out side by side on a flat backdrop, each with rounded corners
+// and a faint border and shadow so they read as phones. Returns a W x H PNG.
+async function composite(encoder, shots, backdrop, theme) {
+  const imgs = shots.map((b) => `<img src="data:image/png;base64,${b.toString('base64')}">`).join('')
+  const edge = theme === 'dark' ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.18)'
+  const shadow = theme === 'dark' ? 'rgba(0,0,0,.6)' : 'rgba(20,30,40,.25)'
+  await encoder.setViewportSize({ width: W, height: H })
+  await encoder.setContent(`<!doctype html><style>
+    html,body{margin:0;width:${W}px;height:${H}px;background:${backdrop}}
+    body{display:flex;justify-content:space-evenly;align-items:center}
+    img{height:368px;border-radius:16px;box-shadow:0 0 0 1px ${edge},0 6px 16px ${shadow}}
+  </style>${imgs}`)
+  await encoder.evaluate(() => Promise.all([...document.images].map((i) => i.decode())))
+  return encoder.screenshot()
+}
+
 async function mapReady(page) {
   await page.waitForFunction(() => document.querySelector('[data-island="map"]')?.__map?.isStyleLoaded?.(), null, { timeout: 45_000 })
   await page.waitForTimeout(1000)
@@ -388,16 +404,26 @@ const SCENES = {
     return { clip: await clipAround(page, ['.map-orient__btn', '.map-orient__panel'], { pad: 140, within: '#map' }) }
   },
 
-  // The phone viewport keeps its own proportions and sits centred on a backdrop.
+  // Three phone screens side by side: the map, the sensor sheet, and the page below the map.
   phone: {
     context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
-    async run(page, { prefix, theme }) {
-      await page.goto(`${prefix}/area/sofia`)
-      await mapReady(page)
-      await page.locator('.map__full').click()
-      await expect(page.locator('.map__full')).toHaveAttribute('aria-pressed', 'true')
-      await mapReady(page)
-      // Tap the cell of sensor 101; the point is read again on every try because the resize can move it.
+    async run(page, { prefix, theme, encoder }) {
+      const shots = []
+      const load = async () => {
+        await page.goto(`${prefix}/area/sofia`)
+        await mapReady(page)
+        await mapIdle(page)
+        await page.waitForTimeout(1000)
+      }
+
+      // 1. The map with its controls, the folded legend and the scroll cue.
+      await load()
+      await expect(page.locator('.map__full')).toBeVisible()
+      await expect(page.locator('.scale--onmap:not([open])')).toBeVisible()
+      await expect(page.locator('.scroll-cue')).toBeVisible()
+      shots.push(await page.screenshot())
+
+      // 2. Sensor 101 tapped; the point is read again on every try because the layout can move it.
       await expect(async () => {
         const pt = await page.evaluate(() => {
           const map = document.querySelector('[data-island="map"]').__map
@@ -413,8 +439,17 @@ const SCENES = {
         await page.touchscreen.tap(pt.x, pt.y)
         await expect(page.locator('.map-sensor-sheet')).toBeVisible({ timeout: 2000 })
       }).toPass({ timeout: 20_000 })
+      await expect(page.locator('.map-sensor-sheet .chart-frame')).toBeVisible({ timeout: 20_000 })
       await page.waitForTimeout(2000)
-      return { fit: 'contain', backdrop: theme === 'dark' ? '#14181c' : '#eef1f4' }
+      shots.push(await page.screenshot())
+
+      // 3. The readouts and charts under the map, on a fresh load so no sheet covers them.
+      await load()
+      await page.locator('.readout').first().evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
+      await page.waitForTimeout(2000)
+      shots.push(await page.screenshot())
+
+      return { png: await composite(encoder, shots, theme === 'dark' ? '#14181c' : '#eef1f4', theme), fit: 'stretch' }
     },
   },
 }
@@ -433,8 +468,8 @@ for (const [lang, prefix, locale] of [['en', '/en', 'en-GB'], ['bg', '', 'bg-BG'
         })
         const page = await context.newPage()
         const encoder = await context.newPage()
-        const shot = await run(page, { prefix, lang, theme })
-        const png = await page.screenshot(shot.clip ? { clip: shot.clip } : {})
+        const shot = await run(page, { prefix, lang, theme, encoder })
+        const png = shot.png ?? await page.screenshot(shot.clip ? { clip: shot.clip } : {})
         const webp = await toWebp(encoder, png, shot)
         await mkdir(OUT, { recursive: true })
         await writeFile(resolve(OUT, `start-${name}-${lang}-${theme}.webp`), webp)
