@@ -57,7 +57,7 @@
   "about.start.tilt.title": "Tilt and turn the map",
   "about.start.tilt.body": "Right-drag or Ctrl+drag to tilt and rotate. On touch, use two fingers. Tilted, each hexagon rises into a column as tall as its reading, so the worst spots stand out. Reset to north puts the map back.",
   "about.start.tilt.alt": "The map tilted over Sofia, with hexagons raised into columns by their reading.",
-  "about.start.areas.title":"Follow your town or district",
+  "about.start.areas.title": "Follow your town or district",
   "about.start.areas.body": "Each province, provincial capital and Sofia district has its own page. It shows the median, the coverage and the last 24 hours.",
   "about.start.areas.alt": "The Plovdiv area page, with the current median, the number of sensors and the range over the last 24 hours.",
   "about.start.embed.title": "Put the map on your own site",
