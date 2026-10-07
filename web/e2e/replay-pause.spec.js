@@ -19,7 +19,7 @@ test('pause keeps the paused frame on the map, exit restores live', async ({ pag
 
   const play = page.locator('.map-play__btn[aria-pressed]')
   await play.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  const replay = page.waitForResponse((r) => r.url().includes('timelapse'))
+  const replay = page.waitForResponse((r) => r.url().includes('/api/') && r.url().includes('timelapse'))
   await play.click()
   const body = await (await replay).json()
   await expect(page.locator('.map-play--open')).toHaveCount(1)

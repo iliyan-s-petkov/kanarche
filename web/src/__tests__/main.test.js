@@ -73,21 +73,21 @@ describe('runIsland', () => {
 // deferIsland decides which islands wait for the map to finish mounting.
 describe('deferIsland', () => {
   it('keeps the map and the controls on the map at load', () => {
-    for (const name of ['map', 'switcher', 'finder', 'freshness', 'refresh', 'theme', 'chart', 'sensorbar']) {
+    for (const name of ['map', 'switcher', 'finder', 'freshness', 'refresh', 'theme', 'chart', 'sensorbar', 'panel']) {
       expect(deferIsland(name, '')).toBe(false)
     }
   })
   it('defers the islands below the map', () => {
-    for (const name of ['panel', 'readouts', 'table', 'visitors', 'copycode', 'clearsettings']) {
+    for (const name of ['readouts', 'table', 'visitors', 'copycode', 'clearsettings']) {
       expect(deferIsland(name, '')).toBe(true)
     }
   })
-  it('mounts the sensor card and readouts at load when the URL names a sensor', () => {
-    expect(deferIsland('panel', '#metric=P2&sensor=42')).toBe(false)
-    expect(deferIsland('readouts', '#sensor=42')).toBe(false)
+  it('mounts the readouts at load when the URL names a sensor', () => {
+    expect(deferIsland('readouts', '#metric=P2&sensor=42')).toBe(false)
+    expect(deferIsland('readouts', '')).toBe(true)
     expect(deferIsland('table', '#sensor=42')).toBe(true)
   })
   it('does not mistake a longer key for a sensor', () => {
-    expect(deferIsland('panel', '#nosensor=1')).toBe(true)
+    expect(deferIsland('readouts', '#nosensor=1')).toBe(true)
   })
 })

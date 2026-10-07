@@ -107,9 +107,10 @@ export function scheduleAfterFirstPaint(callback, raf = globalThis.requestAnimat
 }
 
 // Islands below the map wait for the map to mount and the main thread to idle.
-const DEFERRED = new Set(['panel', 'readouts', 'table', 'visitors', 'copycode', 'clearsettings'])
-// A sensor in the URL means the card is wanted on first paint, not after idle.
-const SENSOR_NOW = new Set(['panel', 'readouts'])
+// The sensor card host is not here: the side dock looks the card up when a sensor opens, so a click before it mounted showed nothing.
+const DEFERRED = new Set(['readouts', 'table', 'visitors', 'copycode', 'clearsettings'])
+// A sensor in the URL means the readouts are wanted on first paint, not after idle.
+const SENSOR_NOW = new Set(['readouts'])
 
 export function deferIsland(name, hash) {
   if (!DEFERRED.has(name)) return false
