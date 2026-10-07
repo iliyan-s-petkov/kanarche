@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -33,7 +32,6 @@ func runExtractDatahub(args []string, stdout, stderr io.Writer) int {
 	file := fs.String("file", "", "local copy of the pinned workbook")
 	fetch := fs.Bool("fetch", false, "download the pinned URL instead of --file")
 	out := fs.String("out", defaultSnapshotPath, "snapshot path")
-	sample := fs.String("emit-sample", "", "also write a small test workbook cut from the source")
 	edition := fs.String("edition", "2025 v1.0", "edition recorded in the header")
 	published := fs.String("published", "2026-06-02", "publication date recorded in the header")
 	if err := fs.Parse(args); err != nil {
@@ -44,7 +42,7 @@ func runExtractDatahub(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if err := extractDatahub(context.Background(), extractArgs{
-		file: *file, out: *out, sample: *sample, edition: *edition, published: *published,
+		file: *file, out: *out, edition: *edition, published: *published,
 	}, stdout); err != nil {
 		fmt.Fprintln(stderr, "extract-bathing-datahub:", err)
 		return 1
@@ -53,7 +51,7 @@ func runExtractDatahub(args []string, stdout, stderr io.Writer) int {
 }
 
 type extractArgs struct {
-	file, out, sample, edition, published string
+	file, out, edition, published string
 }
 
 func extractDatahub(ctx context.Context, a extractArgs, stdout io.Writer) error {
@@ -101,24 +99,11 @@ func extractDatahub(ctx context.Context, a extractArgs, stdout io.Writer) error 
 	if err != nil {
 		return err
 	}
-	if a.sample != "" {
-		if err := writeSample(book, cfg.Sea.Country, a.sample); err != nil {
-			return err
-		}
-	}
 	if err := writeAtomic(a.out, data); err != nil {
 		return err
 	}
 	report(stdout, a.out, len(data), snap, rej)
 	return nil
-}
-
-func writeSample(book *xlsx.Book, country, path string) error {
-	var buf bytes.Buffer
-	if err := datahub.EmitSample(book, country, datahub.SampleOptions{MinSeason: 2023, MaxPerSeason: 14, MaxOther: 5}, &buf); err != nil {
-		return err
-	}
-	return writeAtomic(path, buf.Bytes())
 }
 
 // writeAtomic leaves no partial file behind: the target appears whole or not at all.

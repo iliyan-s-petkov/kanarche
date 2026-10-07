@@ -2,8 +2,10 @@ package datahub
 
 import (
 	"io"
+	"os"
 	"sort"
 	"strconv"
+	"testing"
 
 	"airbg.org/internal/xlsx"
 	"airbg.org/internal/xlsx/xlsxtest"
@@ -69,4 +71,37 @@ func EmitSample(book *xlsx.Book, country string, opt SampleOptions, w io.Writer)
 	}
 	_, err = w.Write(data)
 	return err
+}
+
+// Regenerates the committed fixture from the real workbook. Gated by env so a
+// normal run skips it:
+//
+//	DATAHUB_SAMPLE_FROM=/path/real.xlsx DATAHUB_SAMPLE_TO=testdata/datahub_bg_sample.xlsx \
+//	  go test ./internal/upstream/bathing/datahub -run TestEmitSampleFromSource
+func TestEmitSampleFromSource(t *testing.T) {
+	from, to := os.Getenv("DATAHUB_SAMPLE_FROM"), os.Getenv("DATAHUB_SAMPLE_TO")
+	if from == "" || to == "" {
+		t.Skip("set DATAHUB_SAMPLE_FROM and DATAHUB_SAMPLE_TO to cut the fixture")
+	}
+	f, err := os.Open(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	book, err := xlsx.Open(f, st.Size())
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.Create(to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Close()
+	if err := EmitSample(book, "BG", SampleOptions{MinSeason: 2023, MaxPerSeason: 14, MaxOther: 5}, out); err != nil {
+		t.Fatal(err)
+	}
 }

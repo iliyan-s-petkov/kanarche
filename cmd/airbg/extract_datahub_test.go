@@ -192,15 +192,3 @@ func TestExtractNeedsExactlyOneSource(t *testing.T) {
 		t.Error("both sources accepted")
 	}
 }
-
-func TestExtractEmitSample(t *testing.T) {
-	fx := newExtractFixture(t)
-	out := filepath.Join(fx.dir, "bg.json")
-	sample := filepath.Join(fx.dir, "sample.xlsx")
-	if code, _, stderr := fx.run(t, "--file", fx.file, "--out", out, "--emit-sample", sample); code != 0 {
-		t.Fatalf("exit %d:\n%s", code, stderr)
-	}
-	if st, err := os.Stat(sample); err != nil || st.Size() == 0 {
-		t.Fatalf("sample missing: %v", err)
-	}
-}

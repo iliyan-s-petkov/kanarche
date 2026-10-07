@@ -219,7 +219,7 @@ func TestParseRealFile(t *testing.T) {
 }
 
 // The committed sample is cut from the real EEA workbook by
-// extract-bathing-datahub --emit-sample, with no hand edits.
+// TestEmitSampleFromSource, with no hand edits.
 func TestParseRealSample(t *testing.T) {
 	data, err := os.ReadFile("testdata/datahub_bg_sample.xlsx")
 	if err != nil {
