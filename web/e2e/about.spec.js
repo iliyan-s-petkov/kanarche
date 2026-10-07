@@ -44,9 +44,12 @@ for (const [w, h] of [[390, 844], [1280, 800]]) {
     const page = await ctx.newPage()
     await page.setViewportSize({ width: w, height: h })
     await page.goto('/en/about')
+    // One light screenshot per guide card.
     const shots = page.locator('#start .about-shot__img--light')
-    await expect(shots).toHaveCount(5)
-    for (let i = 0; i < 5; i++) {
+    const cards = await page.locator('#start .about-steps > li').count()
+    expect(cards).toBeGreaterThanOrEqual(21)
+    await expect(shots).toHaveCount(cards)
+    for (let i = 0; i < cards; i++) {
       await shots.nth(i).scrollIntoViewIfNeeded()
       await expect.poll(() => shots.nth(i).evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
     }
@@ -123,7 +126,7 @@ test('the step number is a filled circle on the same row as the heading', async 
   const page = await ctx.newPage()
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/en/about')
-  const m = await page.locator('#start .about-steps h3').first().evaluate((h) => {
+  const m = await page.locator('#start .about-steps h4').first().evaluate((h) => {
     const cs = getComputedStyle(h, '::before')
     const hr = h.getBoundingClientRect()
     const range = document.createRange()

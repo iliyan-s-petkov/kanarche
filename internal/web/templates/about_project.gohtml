@@ -10,9 +10,16 @@
   <nav class="about-toc" aria-label="{{.T "about.toc.label"}}">
     <a href="#goals">{{.T "about.toc.goals"}}</a>
     <a href="#start">{{.T "about.start.heading"}}</a>
+    <a class="about-toc__sub" href="#start-read">{{.T "about.start.group.read.title"}}</a>
+    <a class="about-toc__sub" href="#start-find">{{.T "about.start.group.find.title"}}</a>
+    <a class="about-toc__sub" href="#start-move">{{.T "about.start.group.move.title"}}</a>
+    <a class="about-toc__sub" href="#start-layers">{{.T "about.start.group.layers.title"}}</a>
+    <a class="about-toc__sub" href="#start-history">{{.T "about.start.group.history.title"}}</a>
+    <a class="about-toc__sub" href="#start-keep">{{.T "about.start.group.keep.title"}}</a>
     <a href="#privacy">{{.T "about.privacy.heading"}}</a>
     <a href="#visitors">{{.T "about.visitors.heading"}}</a>
     <a href="#station">{{.T "about.station.heading"}}</a>
+    <a href="#involved">{{.T "about.involved.heading"}}</a>
     <a href="#more">{{.T "about.toc.more"}}</a>
   </nav>
 </div>
@@ -40,6 +47,11 @@
       <h3 class="about-value__title">{{.T "about.values.private.title"}}</h3>
       <p>{{.T "about.values.private.body"}}</p>
     </div>
+    <div class="about-value">
+      <svg class="about-value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>
+      <h3 class="about-value__title">{{.T "about.values.phone.title"}}</h3>
+      <p>{{.T "about.values.phone.body"}}</p>
+    </div>
   </div>
 </section>
 
@@ -55,66 +67,44 @@
 <section class="about-section" id="start" aria-labelledby="start-h">
   <h2 id="start-h">{{.T "about.start.heading"}}</h2>
   <p>{{.T "about.start.intro"}}</p>
+  <h3 id="start-read" class="about-group">{{.T "about.start.group.read.title"}}</h3>
   <ol class="about-steps">
-    <li>
-      <div class="about-step__text">
-        <h3>{{.T "about.start.layers.title"}}</h3>
-        <p>{{.T "about.start.layers.body"}}</p>
-      </div>
-      <figure class="about-shot">
-        <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-layers-%s-light.webp" .Lang)}}" alt="{{.T "about.start.layers.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-        <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-layers-%s-dark.webp" .Lang)}}" alt="{{.T "about.start.layers.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-      </figure>
-    </li>
-    <li>
-      <div class="about-step__text">
-        <h3>{{.T "about.start.window.title"}}</h3>
-        <p>{{.T "about.start.window.body"}}</p>
-      </div>
-      <figure class="about-shot">
-        <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-window-%s-light.webp" .Lang)}}" alt="{{.T "about.start.window.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-        <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-window-%s-dark.webp" .Lang)}}" alt="{{.T "about.start.window.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-      </figure>
-    </li>
-    <li>
-      <div class="about-step__text">
-        <h3>{{.T "about.start.tilt.title"}}</h3>
-        <p>{{.T "about.start.tilt.body"}}</p>
-      </div>
-      <figure class="about-shot">
-        <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-tilt-%s-light.webp" .Lang)}}" alt="{{.T "about.start.tilt.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-        <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-tilt-%s-dark.webp" .Lang)}}" alt="{{.T "about.start.tilt.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-      </figure>
-    </li>
-    <li>
-      <div class="about-step__text">
-        <h3>{{.T "about.start.areas.title"}}</h3>
-        <p>{{.T "about.start.areas.body"}}</p>
-      </div>
-      <figure class="about-shot">
-        <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-areas-%s-light.webp" .Lang)}}" alt="{{.T "about.start.areas.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-        <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-areas-%s-dark.webp" .Lang)}}" alt="{{.T "about.start.areas.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-      </figure>
-    </li>
-    <li>
-      <div class="about-step__text">
-        <h3>{{.T "about.start.embed.title"}}</h3>
-        <p>{{.T "about.start.embed.body"}}</p>
-      </div>
-      <figure class="about-shot">
-        <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-embed-%s-light.webp" .Lang)}}" alt="{{.T "about.start.embed.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-        <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-embed-%s-dark.webp" .Lang)}}" alt="{{.T "about.start.embed.alt"}}" width="560" height="460" loading="lazy" decoding="async">
-      </figure>
-      <div class="about-step__extra">
-        {{/* The real form: /embed takes a province slug only (docs/embedding.md). */}}
-        <div class="about-code-wrap" data-island="copycode" data-t-copy="{{.T "about.start.embed.copy"}}" data-t-copied="{{.T "about.start.embed.copied"}}" data-t-failed="{{.T "panel.copy_failed"}}">
-        <pre class="about-code" dir="ltr" tabindex="0" role="region" aria-label="{{.T "about.start.embed.code_label"}}"><code>&lt;iframe src="{{.BaseURL}}/embed?area=plovdiv-oblast"
-        title="{{.T "seo.title_brand"}}" width="100%" height="480"
-        loading="lazy" style="border:0"&gt;&lt;/iframe&gt;</code></pre>
-        </div>
-        <p><a href="{{.SourceRepoURL}}/blob/master/docs/embedding.md" rel="noopener">{{.T "about.start.embed.docs"}}</a></p>
-      </div>
-    </li>
+    {{template "about-step" (.Step "layers")}}
+    {{template "about-step" (.Step "metrics")}}
+    {{template "about-step" (.Step "legend")}}
+    {{template "about-step" (.Step "window")}}
+    {{template "about-step" (.Step "inactive")}}
+  </ol>
+  <h3 id="start-find" class="about-group">{{.T "about.start.group.find.title"}}</h3>
+  <ol class="about-steps">
+    {{template "about-step" (.Step "search")}}
+    {{template "about-step" (.Step "areas")}}
+    {{template "about-step" (.Step "below")}}
+    {{template "about-step" (.Step "phone")}}
+  </ol>
+  <h3 id="start-move" class="about-group">{{.T "about.start.group.move.title"}}</h3>
+  <ol class="about-steps">
+    {{template "about-step" (.Step "tilt")}}
+    {{template "about-step" (.Step "locate")}}
+  </ol>
+  <h3 id="start-layers" class="about-group">{{.T "about.start.group.layers.title"}}</h3>
+  <ol class="about-steps">
+    {{template "about-step" (.Step "pollen")}}
+    {{template "about-step" (.Step "sea")}}
+    {{template "about-step" (.Step "wind")}}
+    {{template "about-step" (.Step "official")}}
+  </ol>
+  <h3 id="start-history" class="about-group">{{.T "about.start.group.history.title"}}</h3>
+  <ol class="about-steps">
+    {{template "about-step" (.Step "replay")}}
+    {{template "about-step" (.Step "charts")}}
+  </ol>
+  <h3 id="start-keep" class="about-group">{{.T "about.start.group.keep.title"}}</h3>
+  <ol class="about-steps">
+    {{template "about-step" (.Step "favourite")}}
+    {{template "about-step" (.Step "share")}}
+    {{template "about-step" (.Step "embed")}}
+    {{template "about-step" (.Step "table")}}
   </ol>
 </section>
 
@@ -162,6 +152,12 @@
   <p class="about-card__note">{{.T "about.station.note"}}</p>
 </section>
 
+<section class="about-section" id="involved" aria-labelledby="involved-h">
+  <h2 id="involved-h">{{.T "about.involved.heading"}}</h2>
+  {{/* The sentence carries {repo} and {issues}; InvolvedParts splits it so the links are real anchors and every run is escaped text. */}}
+  <p>{{range .InvolvedParts}}{{if .Href}}<a href="{{.Href}}" rel="noopener noreferrer">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+</section>
+
 <section class="about-section" id="more" aria-labelledby="more-h">
   <h2 id="more-h">{{.T "about.more.heading"}}</h2>
   <div class="about-links">
@@ -174,3 +170,24 @@
 <p class="about-back"><a href="{{.Path "/"}}">{{.T "area.back_to_map"}}</a></p>
 </div>
 {{end}}
+
+{{/* One Getting started card. Data is PageData plus .Name, from PageData.Step. */}}
+{{define "about-step"}}<li>
+  <div class="about-step__text">
+    <h4>{{.T (printf "about.start.%s.title" .Name)}}</h4>
+    <p>{{.T (printf "about.start.%s.body" .Name)}}</p>
+  </div>
+  <figure class="about-shot">
+    <img class="about-shot__img about-shot__img--light" src="{{.Static (printf "about/start-%s-%s-light.webp" .Name .Lang)}}" alt="{{.T (printf "about.start.%s.alt" .Name)}}" width="560" height="460" loading="lazy" decoding="async">
+    <img class="about-shot__img about-shot__img--dark" src="{{.Static (printf "about/start-%s-%s-dark.webp" .Name .Lang)}}" alt="{{.T (printf "about.start.%s.alt" .Name)}}" width="560" height="460" loading="lazy" decoding="async">
+  </figure>
+  {{if eq .Name "embed"}}<div class="about-step__extra">
+    {{/* The real form: /embed takes a province slug only (docs/embedding.md). */}}
+    <div class="about-code-wrap" data-island="copycode" data-t-copy="{{.T "about.start.embed.copy"}}" data-t-copied="{{.T "about.start.embed.copied"}}" data-t-failed="{{.T "panel.copy_failed"}}">
+    <pre class="about-code" dir="ltr" tabindex="0" role="region" aria-label="{{.T "about.start.embed.code_label"}}"><code>&lt;iframe src="{{.BaseURL}}/embed?area=plovdiv-oblast"
+        title="{{.T "seo.title_brand"}}" width="100%" height="480"
+        loading="lazy" style="border:0"&gt;&lt;/iframe&gt;</code></pre>
+    </div>
+    <p><a href="{{.SourceRepoURL}}/blob/master/docs/embedding.md" rel="noopener">{{.T "about.start.embed.docs"}}</a></p>
+  </div>{{end}}
+</li>{{end}}

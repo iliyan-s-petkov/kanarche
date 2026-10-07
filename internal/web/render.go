@@ -1127,3 +1127,65 @@ func (rr *Renderer) RenderError(w http.ResponseWriter, r *http.Request, status i
 	// overwrite bug hid — it looked handled at this level and was undone below.
 	rr.render(w, r, status, "error", data)
 }
+
+// AboutStep is the data one Getting started card renders from: the page data
+// (for T, Static, Lang) plus the card name that keys its copy and images.
+type AboutStep struct {
+	PageData
+	Name string
+}
+
+// Step returns the data for the "about-step" template, since templates cannot
+// build a struct of their own.
+func (p PageData) Step(name string) AboutStep { return AboutStep{PageData: p, Name: name} }
+
+// involvedLink is the target and link text for one {placeholder} in the
+// about.involved.body sentence.
+type involvedLink struct{ Href, Label string }
+
+// involvedPart is one run of the sentence: plain Text, or a link when Href is
+// set (Text is then the link text). Text is always a plain string, so the
+// template escapes it and translated copy never becomes trusted HTML.
+type involvedPart struct{ Text, Href string }
+
+// involvedParts splits body on {name} placeholders found in links. A
+// placeholder with no entry stays in the text as written.
+func involvedParts(body string, links map[string]involvedLink) []involvedPart {
+	var parts []involvedPart
+	rest := body
+	for {
+		start := strings.IndexByte(rest, '{')
+		if start < 0 {
+			break
+		}
+		end := strings.IndexByte(rest[start:], '}')
+		if end < 0 {
+			break
+		}
+		link, ok := links[rest[start+1:start+end]]
+		if !ok {
+			// Not ours: keep the brace as text and carry on after it.
+			parts = append(parts, involvedPart{Text: rest[:start+1]})
+			rest = rest[start+1:]
+			continue
+		}
+		if start > 0 {
+			parts = append(parts, involvedPart{Text: rest[:start]})
+		}
+		parts = append(parts, involvedPart{Text: link.Label, Href: link.Href})
+		rest = rest[start+end+1:]
+	}
+	if rest != "" {
+		parts = append(parts, involvedPart{Text: rest})
+	}
+	return parts
+}
+
+// InvolvedParts is the about.involved.body sentence with {repo} and {issues}
+// turned into the two links.
+func (p PageData) InvolvedParts() []involvedPart {
+	return involvedParts(p.T("about.involved.body"), map[string]involvedLink{
+		"repo":   {Href: p.SourceRepoURL(), Label: p.T("about.involved.repo")},
+		"issues": {Href: p.SourceRepoURL() + "/issues", Label: p.T("about.involved.issues")},
+	})
+}
