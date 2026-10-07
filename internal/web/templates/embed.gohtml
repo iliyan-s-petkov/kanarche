@@ -11,13 +11,14 @@
 <title>{{.T "seo.title_brand"}}</title>
 {{/* No canonical: the frame is noindex, and a canonical to an indexable page contradicts that. */}}
 <meta name="robots" content="noindex">
+{{/* First, so it runs once fetched instead of waiting on the stylesheets below. */}}
+<script src="{{.Static "theme-init.js"}}"></script>
 <link rel="icon" href="{{.Static "favicon.svg"}}" type="image/svg+xml">
 <link rel="icon" href="{{.Static "favicon-32.png"}}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{.Static "apple-touch-icon.png"}}" sizes="180x180">
 {{with .Assets.Style "theme"}}<link rel="stylesheet" href="{{.}}">
 {{else}}<link rel="stylesheet" href="{{.Static "theme.css"}}">
 {{end}}<link rel="stylesheet" href="{{.Static "app.css"}}">
-<script src="{{.Static "theme-init.js"}}"></script>
 {{with .Assets.Style "main"}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body class="embed">
