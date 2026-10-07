@@ -3,6 +3,7 @@ package bathing
 import (
 	"context"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"airbg.org/internal/config"
@@ -11,6 +12,15 @@ import (
 
 // retryAfter is the wait after a failed import, capped by refresh_interval.
 const retryAfter = time.Hour
+
+// extractHost extracts the hostname from a URL string, or returns the empty string on parse error.
+func extractHost(urlStr string) string {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
+}
 
 // Sink is the store side of an import.
 type Sink interface {
@@ -111,6 +121,12 @@ func (c *Collector) Loop(ctx context.Context) {
 			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan,
 			"supplement_applied", st.Supplement.Applied, "supplement_shadowed", st.Supplement.Shadowed,
 			"supplement_inactive", st.Supplement.Inactive)
+
+		// Check for a newer edition of the Datahub after successful import
+		if err := watchDatahubEdition(ctx, c.cfg.Datahub.URL, c.cfg.Datahub.RequestTimeout); err != nil {
+			slog.Error("sea datahub watch failed", "error", err)
+		}
+
 		wait = c.cfg.RefreshInterval
 	}
 }
