@@ -79,11 +79,13 @@ type stubSource struct {
 	bathingErr   error
 	bathingCalls int
 	// bathingEdition is the snapshot edition of the newest import.
-	bathingEdition    string
-	bathingEditionErr error
+	bathingEdition      string
+	bathingEditionErr   error
+	bathingEditionCalls int
 }
 
 func (s *stubSource) BathingSupplementEdition(_ context.Context) (string, error) {
+	s.bathingEditionCalls++
 	return s.bathingEdition, s.bathingEditionErr
 }
 

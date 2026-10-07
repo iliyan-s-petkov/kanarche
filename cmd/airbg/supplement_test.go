@@ -74,12 +74,11 @@ func TestSeaSupplementMetaComesFromTheSnapshotHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := seaSupplementMeta(cfg)
+	m := seaSupplementMeta(loadSupplement(cfg))
 	if m.Published == "" || m.URL == "" || m.Published != f.Header.Published || m.URL != f.Header.SourceURL {
 		t.Errorf("meta = %+v, header = %+v", m, f.Header)
 	}
-	cfg.Sea.Datahub.SHA256 = strings.Repeat("0", 64)
-	if m := seaSupplementMeta(cfg); m != (api.SeaSupplementMeta{}) {
-		t.Errorf("bad pin meta = %+v, want zero", m)
+	if m := seaSupplementMeta(nil); m != (api.SeaSupplementMeta{}) {
+		t.Errorf("nil supplement meta = %+v, want zero", m)
 	}
 }

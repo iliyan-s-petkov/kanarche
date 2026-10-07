@@ -245,7 +245,7 @@ func TestSeaListHeadlineCarriesSourceAndSupplement(t *testing.T) {
 	}
 }
 
-// Without a datahub row the key is absent, and the edition is never read.
+// Without a datahub row the key is absent and the edition is not read.
 func TestSeaOmitsSupplementWithoutDatahubRows(t *testing.T) {
 	src := seaSource()
 	for i := range src.bathing.Classes {
@@ -254,6 +254,9 @@ func TestSeaOmitsSupplementWithoutDatahubRows(t *testing.T) {
 	src.bathingEdition = "2025 v1.0"
 	for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/BG3310610135003001"} {
 		rec := serve(t, mixedDeps(t, src), get(p, "203.0.113.7"))
+		if src.bathingEditionCalls != 0 {
+			t.Errorf("%s: edition read %d times, want 0", p, src.bathingEditionCalls)
+		}
 		var b map[string]json.RawMessage
 		if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
 			t.Fatal(err)
@@ -264,10 +267,64 @@ func TestSeaOmitsSupplementWithoutDatahubRows(t *testing.T) {
 	}
 }
 
-func TestSeaEditionErrorIsA500(t *testing.T) {
+// A failed edition lookup drops the supplement and keeps the data.
+func TestSeaEditionErrorOmitsSupplement(t *testing.T) {
 	src := mixedSeaSource()
 	src.bathingEditionErr = errors.New("db down")
-	if rec := serve(t, mixedDeps(t, src), get("/api/v1/sea/sites", "203.0.113.7")); rec.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want 500", rec.Code)
+	for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/BG3310610135003001"} {
+		rec := serve(t, mixedDeps(t, src), get(p, "203.0.113.7"))
+		if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+			t.Errorf("%s: status = %d, body = %s", p, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+// No half-empty object: any empty field drops the whole supplement.
+func TestSeaOmitsIncompleteSupplement(t *testing.T) {
+	for name, tc := range map[string]struct {
+		edition string
+		meta    api.SeaSupplementMeta
+	}{
+		"no edition":   {"", seaSupplementMeta},
+		"no published": {"2025 v1.0", api.SeaSupplementMeta{URL: seaSupplementMeta.URL}},
+		"no url":       {"2025 v1.0", api.SeaSupplementMeta{Published: seaSupplementMeta.Published}},
+	} {
+		src := mixedSeaSource()
+		src.bathingEdition = tc.edition
+		d := visitorsDeps(t, src)
+		d.SeaSupplement = tc.meta
+		for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/BG3310610135003001"} {
+			rec := serve(t, d, get(p, "203.0.113.7"))
+			if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+				t.Errorf("%s %s: status = %d, body = %s", name, p, rec.Code, rec.Body.String())
+			}
+		}
+	}
+}
+
+// The supplement follows what the body shows, not what the store holds.
+func TestSeaSupplementFollowsTheBody(t *testing.T) {
+	src := mixedSeaSource()
+	src.bathing.Classes = append(src.bathing.Classes,
+		store.BathingClass{SiteID: "BG3242661710017001", Season: 2024, Quality: "good", Source: store.SourceDiscodata})
+	rec := serve(t, mixedDeps(t, src), get("/api/v1/sea/sites/BG3242661710017001", "203.0.113.7"))
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+		t.Errorf("discodata-only detail: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	// Datahub only in history: the headline is discodata.
+	src = seaSource()
+	src.bathing.Classes = []store.BathingClass{
+		{SiteID: "BG3310610135003001", Season: 2023, Quality: "good", Source: store.SourceDatahub},
+		{SiteID: "BG3310610135003001", Season: 2024, Quality: "excellent", Source: store.SourceDiscodata},
+	}
+	src.bathingEdition = "2025 v1.0"
+	rec = serve(t, mixedDeps(t, src), get("/api/v1/sea/sites", "203.0.113.7"))
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+		t.Errorf("history-only list: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rec = serve(t, mixedDeps(t, src), get("/api/v1/sea/sites/BG3310610135003001", "203.0.113.7"))
+	if !strings.Contains(rec.Body.String(), `"supplement"`) {
+		t.Errorf("detail with a datahub history row lacks supplement: %s", rec.Body.String())
 	}
 }

@@ -373,13 +373,14 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// Built here, in main, rather than inside server.New: this is the one place
 	// the configured basemap host reaches the CSP, and it keeps the server
 	// package from needing to know how a policy is assembled.
+	sup := loadSupplement(cfg)
 	srv, err := server.New(server.Options{
 		Config:        cfg,
 		Catalogue:     cat,
 		Snapshots:     holder,
 		Store:         apiStore,
 		Publisher:     pub,
-		SeaSupplement: seaSupplementMeta(cfg),
+		SeaSupplement: seaSupplementMeta(sup),
 		Logger:        log,
 	})
 	if err != nil {
@@ -465,7 +466,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	seaDone := make(chan struct{})
 	if cfg.Sea.Enabled {
 		sc := bathing.NewCollector(cfg.Sea, collectorStore)
-		sc.SetSupplement(loadSupplement(cfg))
+		sc.SetSupplement(sup)
 		go func() {
 			defer close(seaDone)
 			sc.Loop(pollCtx)

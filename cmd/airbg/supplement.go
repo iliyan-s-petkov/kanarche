@@ -31,12 +31,11 @@ func loadSupplement(cfg config.Config) *bathing.Supplement {
 	return f.Supplement()
 }
 
-// seaSupplementMeta reads the snapshot header once for the sea API. A bad
-// embed is already logged by loadSupplement, so it yields empty fields here.
-func seaSupplementMeta(cfg config.Config) api.SeaSupplementMeta {
-	f, err := checkSnapshot(cfg)
-	if err != nil {
+// seaSupplementMeta takes the header fields from the loaded supplement, so the
+// snapshot is parsed once. A nil supplement yields empty fields.
+func seaSupplementMeta(sup *bathing.Supplement) api.SeaSupplementMeta {
+	if sup == nil {
 		return api.SeaSupplementMeta{}
 	}
-	return api.SeaSupplementMeta{Published: f.Header.Published, URL: f.Header.SourceURL}
+	return api.SeaSupplementMeta{Published: sup.Published, URL: sup.URL}
 }

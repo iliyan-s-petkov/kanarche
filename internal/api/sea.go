@@ -127,9 +127,11 @@ func (c *seaCache) get(ctx context.Context, src DataSource, meta SeaSupplementMe
 	if hasDatahub(d.Classes) {
 		ed, err := src.BathingSupplementEdition(ctx)
 		if err != nil {
-			return seaBodies{}, err
+			// The classes are still right; only the credit line is lost.
+			slog.Error("sea supplement edition query failed", "error", err)
+			ed = ""
 		}
-		sup = &seaSupplement{Edition: ed, Published: meta.Published, URL: meta.URL}
+		sup = newSeaSupplement(ed, meta)
 	}
 	b, err := encodeSea(d, importedAt, sup)
 	if err != nil {
@@ -137,6 +139,15 @@ func (c *seaCache) get(ctx context.Context, src DataSource, meta SeaSupplementMe
 	}
 	c.bodies, c.fetched, c.ok = b, now, true
 	return b, nil
+}
+
+// newSeaSupplement returns nil unless every field is set, so a bad embed or a
+// missing edition never yields a half-empty object.
+func newSeaSupplement(edition string, m SeaSupplementMeta) *seaSupplement {
+	if edition == "" || m.Published == "" || m.URL == "" {
+		return nil
+	}
+	return &seaSupplement{Edition: edition, Published: m.Published, URL: m.URL}
 }
 
 func hasDatahub(cs []store.BathingClass) bool {
@@ -165,7 +176,7 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (
 		}}, samples[s.SiteID]...)
 	}
 
-	list := seaSitesBody{ImportedAt: importedAt, Limits: bathing.LimitsByZone, Supplement: sup, Sites: make([]seaSite, 0, len(d.Sites))}
+	list := seaSitesBody{ImportedAt: importedAt, Limits: bathing.LimitsByZone, Sites: make([]seaSite, 0, len(d.Sites))}
 	out := seaBodies{sites: make(map[string][]byte, len(d.Sites))}
 	for _, s := range d.Sites {
 		row := seaSite{ID: s.ID, NameBG: s.NameBG, NameEN: s.NameEN, Zone: s.Zone, Lat: s.Lat, Lon: s.Lon}
@@ -173,15 +184,23 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (
 			row.Season, row.Quality, row.Source = &cs[0].Season, &cs[0].Quality, &cs[0].Source
 		}
 		list.Sites = append(list.Sites, row)
+		if sup != nil && row.Source != nil && *row.Source == store.SourceDatahub {
+			list.Supplement = sup
+		}
 
 		detail := seaSiteBody{
 			ImportedAt: importedAt,
-			Supplement: sup,
 			Site: seaSiteInfo{ID: s.ID, NameBG: s.NameBG, NameEN: s.NameEN, Zone: s.Zone,
 				Lat: s.Lat, Lon: s.Lon, ProfileURL: s.ProfileURL},
 			Limits:  bathing.LimitsByZone[s.Zone],
 			Classes: nonNil(classes[s.ID]),
 			Samples: nonNil(samples[s.ID]),
+		}
+		// Only a site that shows a datahub class carries the credit.
+		for _, c := range classes[s.ID] {
+			if sup != nil && c.Source == store.SourceDatahub {
+				detail.Supplement = sup
+			}
 		}
 		enc, err := json.Marshal(detail)
 		if err != nil {
