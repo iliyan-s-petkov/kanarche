@@ -106,6 +106,17 @@ func Build(raw Raw, country string) (store.BathingData, Skipped, error) {
 	return d, sk, nil
 }
 
+// QualityKey maps an EEA class label to the stored key. The label is trimmed first.
+func QualityKey(label string) (string, bool) {
+	q, ok := qualities[strings.TrimSpace(label)]
+	return q, ok
+}
+
+// ValidSiteID reports whether id fits the bathing_site CHECK and carries the country prefix.
+func ValidSiteID(id, country string) bool {
+	return siteIDPattern.MatchString(id) && strings.HasPrefix(id, country)
+}
+
 func buildSite(r SiteRow, country string) (store.BathingSite, bool) {
 	zone, ok := zones[r.Zone]
 	if !ok || !siteIDPattern.MatchString(r.ID) || !strings.HasPrefix(r.ID, country) {
