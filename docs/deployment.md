@@ -1,4 +1,4 @@
-# Deploying kanarche.eu
+# Deploying airbg.org
 
 This is the operator runbook for the production deployment: one VPS, one
 Docker Compose stack, no orchestrator. It documents `deploy/docker-compose.prod.yml`,
@@ -15,7 +15,7 @@ document safe to follow: **only `caddy` publishes ports.**
 | Service | Role | Networks |
 |---|---|---|
 | `caddy` | The only service the internet can open a socket to. Terminates TLS for both vhosts and reverse-proxies to `app`. Publishes `80` and `443`. | `edge` |
-| `app` | The Go application: serves `kanarche.eu` on `:8080`, `tiles.kanarche.eu` on `:8082`, and Prometheus metrics on `:9090`. Publishes **no port**, in this file or any other, in any environment. | `edge`, `back` |
+| `app` | The Go application: serves `airbg.org` on `:8080`, `tiles.airbg.org` on `:8082`, and Prometheus metrics on `:9090`. Publishes **no port**, in this file or any other, in any environment. | `edge`, `back` |
 | `db` | TimescaleDB (Postgres). Publishes no port; reachable only from `app`, the one-shot backup jobs, and the one-shot `collect` job — all of which sit on `back`. Has no route to the internet. | `back` (`internal: true`) |
 | `socket-proxy` | `tecnativa/docker-socket-proxy`, holding the real Docker socket read-only and exposing only container creation (`CONTAINERS=1`, `POST=1`; every other endpoint group explicit `0`). | `sched` (`internal: true`) |
 | `ofelia` | Scheduler. Runs `airbg collect` every 5 minutes and `pg_dump` nightly as one-shot containers, talking only to `socket-proxy`, never to the Docker daemon directly. | `sched` (`internal: true`) |
@@ -98,17 +98,17 @@ Run these in order. Each step depends on the one before it.
    mistake here locks you out with no console. `deploy/nftables.conf` is a
    floor, not the enforcement: it only stops something binding a port by
    accident, since Docker's published ports bypass the filter table's `input`
-   chain entirely and `tiles.kanarche.eu` must stay reachable from the whole
+   chain entirely and `tiles.airbg.org` must stay reachable from the whole
    internet on 443 regardless.
 
-3. In Cloudflare DNS: `kanarche.eu` proxied (orange cloud), `tiles.kanarche.eu`
+3. In Cloudflare DNS: `airbg.org` proxied (orange cloud), `tiles.airbg.org`
    DNS-only (grey cloud), both pointing at the host's public IP.
 
 4. The origin certificate is **Let's Encrypt, issued by certbot over DNS-01**,
    not a Cloudflare Origin CA certificate — the Ansible role
    `home.apps.airbg` (`tasks/certificate.yml`) installs certbot and the
-   Cloudflare DNS plugin, requests one certificate covering `kanarche.eu`,
-   `www.kanarche.eu` and `tiles.kanarche.eu`, and a deploy hook writes it to
+   Cloudflare DNS plugin, requests one certificate covering `airbg.org`,
+   `www.airbg.org` and `tiles.airbg.org`, and a deploy hook writes it to
    `/srv/airbg/tls/origin.pem` and `/srv/airbg/tls/origin.key` — the exact
    filenames `deploy/Caddyfile` references. `certbot.timer` renews it. DNS-01
    is what makes this possible without a public A record or port 80 open.
@@ -116,8 +116,8 @@ Run these in order. Each step depends on the one before it.
    By hand on a host the role has not touched: install `certbot` and
    `python3-certbot-dns-cloudflare`, put a Cloudflare DNS-edit API token in
    `/etc/letsencrypt/cloudflare.ini` (`chmod 600` — certbot refuses a
-   group-readable one), then `certbot certonly --dns-cloudflare -d kanarche.eu
-   -d www.kanarche.eu -d tiles.kanarche.eu`.
+   group-readable one), then `certbot certonly --dns-cloudflare -d airbg.org
+   -d www.airbg.org -d tiles.airbg.org`.
 
    Download Cloudflare's origin-pull CA certificate and save it as
    `/srv/airbg/tls/cloudflare-origin-pull-ca.pem`. Then:
@@ -135,8 +135,8 @@ Run these in order. Each step depends on the one before it.
 
    This is the actual enforcement, not the firewall: `deploy/Caddyfile`
    requires this client certificate (`client_auth`, `require_and_verify`) on
-   the `kanarche.eu` vhost only. A packet filter can't do this job because
-   `tiles.kanarche.eu` shares port 443 and must stay public — SNI is above the
+   the `airbg.org` vhost only. A packet filter can't do this job because
+   `tiles.airbg.org` shares port 443 and must stay public — SNI is above the
    layer a filter operates at.
 
    If you run `caddy validate --config deploy/Caddyfile` with only the
@@ -216,7 +216,7 @@ Run every item below. Do not announce the site until all of them pass.
 - The site answers through Cloudflare:
 
   ```bash
-  curl -sS -o /dev/null -w '%{http_code}\n' https://kanarche.eu/
+  curl -sS -o /dev/null -w '%{http_code}\n' https://airbg.org/
   # want: 200
   ```
 
@@ -227,7 +227,7 @@ Run every item below. Do not announce the site until all of them pass.
   bypass Cloudflare's rate limiting by hitting the origin IP directly.
 
   ```bash
-  curl -sS --resolve kanarche.eu:443:<origin IP> https://kanarche.eu/
+  curl -sS --resolve airbg.org:443:<origin IP> https://airbg.org/
   # want: a TLS handshake failure, not a page
   ```
 
@@ -235,7 +235,7 @@ Run every item below. Do not announce the site until all of them pass.
   DNS-only, so it must NOT require a client certificate):
 
   ```bash
-  curl -sSI https://tiles.kanarche.eu/<archive name> | head -1
+  curl -sSI https://tiles.airbg.org/<archive name> | head -1
   # want: HTTP/2 200 (or 304), with a certificate curl trusts by default
   ```
 
@@ -331,13 +331,13 @@ ssh -L 9090:172.29.0.10:9090 airbg    # metrics
 
 Two caveats:
 
-- `AIRBG_LISTEN_BASE_URL` is `https://kanarche.eu` in production, so canonical
+- `AIRBG_LISTEN_BASE_URL` is `https://airbg.org` in production, so canonical
   links, `hreflang` tags and the language switcher all point at production
   while you browse through the forward — relative navigation within the page
   behaves normally, but any absolute link takes you back to the live site.
 - The forward bypasses both Caddy and Cloudflare, so it does not exercise
   `CF-Connecting-IP` bucketing, Caddy's headers, or the client-certificate
-  requirement on the `kanarche.eu` vhost. Verify all of those against the
+  requirement on the `airbg.org` vhost. Verify all of those against the
   public URL (§3), never against the forward.
 
 No `ports:` line is ever added to `docker-compose.prod.yml`, or to any

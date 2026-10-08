@@ -1,5 +1,5 @@
 #!/bin/sh
-# Deploy kanarche.eu to the Proxmox guest. See docs/backlog/ for what the role does.
+# Deploy airbg.org to the Proxmox guest. See docs/backlog/ for what the role does.
 #
 # The Infisical credentials are read from the login keychain and exported here
 # rather than in the caller's command line, so they never reach a transcript,

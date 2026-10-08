@@ -143,7 +143,7 @@ Style against the OpenMapTiles layer names, and set:
 
 - `sources.<name>.url` to `pmtiles://<tiles.public_url>/<tiles.archive>` — the
   same dated filename you generated in §2, e.g.
-  `pmtiles://https://tiles.kanarche.eu/bulgaria-20260815.pmtiles` — with each
+  `pmtiles://https://tiles.airbg.org/bulgaria-20260815.pmtiles` — with each
   layer's `source-layer` naming one of the layers above
 - `glyphs` to `<tiles.public_url>/glyphs/{fontstack}/{range}.pbf`, and every
   layer's `text-font` to a fontstack name §3 actually produced (`Noto Sans
@@ -178,7 +178,7 @@ Then set `tiles.archive` to that filename:
 tiles:
   addr: "127.0.0.1:8082"
   dir: "/var/lib/airbg/tiles"
-  public_url: "https://tiles.kanarche.eu"
+  public_url: "https://tiles.airbg.org"
   archive: "bulgaria-20260815.pmtiles"   # regeneration changes this
 ```
 
@@ -257,7 +257,7 @@ Adding an origin needs no basemap regeneration and no change to the app's CSP �
 of its own.
 
 **The design kit is deliberately not in this list.** It is served from
-`https://kanarche.eu/design-kit/`, so its fetches come from an origin that is
+`https://airbg.org/design-kit/`, so its fetches come from an origin that is
 already allowed, and the preview it renders is the one production renders.
 Because the kit is same-origin, the app's `connect-src` is what governs its tile
 fetches — the deployed policy already names `tiles.public_url`'s origin, and
@@ -385,13 +385,13 @@ hostname that resolves to the origin IP, and the anti-scraping design depends on
 that IP being unknown: `CF-Connecting-IP` is attacker-controlled on a direct
 connection, and every rate limiter keys off it.
 
-- The **application vhost** (`kanarche.eu`) requires a TLS client certificate
+- The **application vhost** (`airbg.org`) requires a TLS client certificate
   issued by Cloudflare's origin-pull CA, enforced by Caddy
   (`deploy/Caddyfile`). A direct connection to the origin IP fails the
   handshake whatever its source address. This replaces the IP allowlist this
   section originally proposed: an allowlist trusts where a packet came from,
   and anything hosted inside Cloudflare's ranges qualifies.
-- The **tiles vhost** (`tiles.kanarche.eu`) accepts the world, on a DNS-only
+- The **tiles vhost** (`tiles.airbg.org`) accepts the world, on a DNS-only
   hostname, with a publicly trusted certificate. It shares port 443 with the
   application vhost — which is why the enforcement has to be per-vhost. SNI is
   above the layer a packet filter works at.
@@ -427,10 +427,10 @@ Both questions this section used to leave open are settled (see also
   mounted read-only into the app container. The image stays ~27 MB and
   regenerating the basemap is an scp rather than a rebuild — which matters
   because releases ship the whole image over the wire.
-- `tiles.kanarche.eu` is served a **publicly trusted Let's Encrypt certificate**,
+- `tiles.airbg.org` is served a **publicly trusted Let's Encrypt certificate**,
   not a Cloudflare Origin CA one: browsers connect straight here, and they do
   not trust an Origin CA certificate. As built it is not a certificate of its
   own — the design called for Caddy to obtain one, but the host runs certbot
-  over DNS-01 and `tiles.kanarche.eu` is a SAN on the single certificate that also
-  covers `kanarche.eu`. Dropping the name from that lineage breaks this vhost.
+  over DNS-01 and `tiles.airbg.org` is a SAN on the single certificate that also
+  covers `airbg.org`. Dropping the name from that lineage breaks this vhost.
   See `deploy/README.md`, "the origin certificate".
