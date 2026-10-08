@@ -1,6 +1,6 @@
 # Development
 
-How to run airbg.org on your own machine and how to run its tests. For what the
+How to run kanarche.eu on your own machine and how to run its tests. For what the
 subcommands do once it is running, how the server is put together and how the
 production container is built, see [operations.md](operations.md). For every
 configuration key, see [configuration.md](configuration.md).

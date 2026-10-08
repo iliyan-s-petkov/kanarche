@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { e2eEnv } from './e2e-env.js'
 
 // No webServer block: the Go test at internal/e2e/e2e_test.go owns the stack's
 // lifetime, because internal/testsupport's Postgres helpers take a *testing.T
@@ -18,7 +19,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: process.env.AIRBG_E2E_BASE_URL,
+    baseURL: e2eEnv('BASE_URL'),
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

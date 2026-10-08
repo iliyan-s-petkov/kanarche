@@ -902,12 +902,12 @@ func (c Config) validateTiles(p *problems) {
 		// map, and nothing anywhere on the server to say why.
 		//
 		// This must be an exact match against whitespace-separated connect-src
-		// tokens, not a substring test: strings.Contains("not-tiles.airbg.org",
-		// "tiles.airbg.org") is true, which would let a CSP that allows a
+		// tokens, not a substring test: strings.Contains("not-tiles.kanarche.eu",
+		// "tiles.kanarche.eu") is true, which would let a CSP that allows a
 		// *different* origin satisfy the check for this one.
 		//
 		// The cost of exactness is that a wildcard source such as
-		// "https://*.airbg.org" is not recognised, even though a browser would
+		// "https://*.kanarche.eu" is not recognised, even though a browser would
 		// honour it and the map would work. That is accepted rather than fixed:
 		// matching wildcards means reimplementing CSP source-expression matching
 		// here, and getting that subtly wrong turns a check that catches a real
