@@ -63,18 +63,50 @@ func (p PageData) crumbLabel(row AreaRow) string {
 	return row.Name
 }
 
-// AreaHeading is the H1 of an area page: the oblast label form for an oblast,
-// the plain name otherwise.
-func (p PageData) AreaHeading() string { return p.crumbLabel(*p.Area) }
+// AreaHeading is the H1 of an area page, a descriptive sentence per kind so each
+// language owns its grammar: an oblast takes its inline form ("в област Варна"),
+// a city its name, a Sofia district "в район {name}". The breadcrumb's current
+// crumb still uses crumbLabel, so it stays the bare name.
+func (p PageData) AreaHeading() string {
+	row := *p.Area
+	switch row.Kind {
+	case "oblast":
+		return strings.ReplaceAll(p.T("area.h1.oblast"), "{inline}", p.oblastFormKey(row, "seo.oblast.inline"))
+	case "city":
+		// Bulgarian needs "във" before В and Ф names; the _vav key exists only
+		// where the grammar needs it, so other languages fall through to city.
+		key := "area.h1.city"
+		if startsWithVav(row.Name) && p.cat.Has(p.Lang, "area.h1.city_vav") {
+			key = "area.h1.city_vav"
+		}
+		return strings.ReplaceAll(p.T(key), "{name}", row.Name)
+	default:
+		return strings.ReplaceAll(p.T("area.h1.neighbourhood"), "{name}", row.Name)
+	}
+}
+
+// startsWithVav reports whether a name begins with в or ф in either case. Those
+// letters take "във" rather than "в" in the Bulgarian h1 sentence. ToLower
+// folds Cyrillic capitals too, so В and Ф match.
+func startsWithVav(name string) bool {
+	lower := strings.ToLower(name)
+	return strings.HasPrefix(lower, "в") || strings.HasPrefix(lower, "ф")
+}
 
 // oblastFormRow resolves row's oblast label form the same way areaSEO's
 // oblastForm does, without needing the Renderer: PageData already carries the
 // catalogue.
 func (p PageData) oblastFormRow(row AreaRow) string {
-	if key := "seo.oblast.label." + row.Slug; p.cat.Has(p.Lang, key) {
+	return p.oblastFormKey(row, "seo.oblast.label")
+}
+
+// oblastFormKey resolves an oblast's label or inline form for baseKey, using the
+// per-slug override key when the catalogue has one.
+func (p PageData) oblastFormKey(row AreaRow, baseKey string) string {
+	if key := baseKey + "." + row.Slug; p.cat.Has(p.Lang, key) {
 		return p.cat.T(p.Lang, key)
 	}
-	return strings.ReplaceAll(p.T("seo.oblast.label"), "{name}", row.Name)
+	return strings.ReplaceAll(p.T(baseKey), "{name}", row.Name)
 }
 
 // Breadcrumbs assembles the trail for one area page, shared by the visible nav

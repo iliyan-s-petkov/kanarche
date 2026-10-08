@@ -178,6 +178,17 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 // behind a flag later.
 func (rr *Renderer) areaSEO(row AreaRow, lang string) (title, description string) {
 	brand := rr.cat.T(lang, "seo.title_brand")
+	// An uncovered area has no readings to describe, so its copy says so instead
+	// of promising a live figure. The name is the oblast label form, as the h1 uses.
+	if !row.Covered {
+		name := row.Name
+		if row.Kind == "oblast" {
+			name = rr.oblastForm(row.Slug, lang, row.Name, "seo.oblast.label")
+		}
+		core := strings.ReplaceAll(rr.cat.T(lang, "seo.area.nodata.title"), "{name}", name)
+		desc := strings.ReplaceAll(rr.cat.T(lang, "seo.area.nodata.description"), "{name}", name)
+		return composeTitle(core, brand), desc
+	}
 	switch row.Kind {
 	case "oblast":
 		label := rr.oblastForm(row.Slug, lang, row.Name, "seo.oblast.label")

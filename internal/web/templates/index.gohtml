@@ -215,6 +215,10 @@
      (DESIGN.md §9.1). */}}
 {{template "readouts-island" .}}
 
+{{/* The PM explainer under the readouts: what the numbers are and what the
+     colours mean. Its thresholds are filled from api.Scales(), not typed here. */}}
+<p class="t-body">{{.HomeAboutPM}}</p>
+
 {{/* The map's text alternative, named so aria-describedby can reach it. It is
      one sentence and a link, not a copy of the list: the list is a whole tab of
      its own, and duplicating it here is what made the two tabs the same page.
