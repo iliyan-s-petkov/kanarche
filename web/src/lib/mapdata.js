@@ -14,7 +14,7 @@ import {
 } from './hexes.js'
 import { rampColour } from './ramp.js'
 import {
-  SOURCE_ID, LAYER_ID, HEX_SOURCE_ID,
+  SOURCE_ID, LAYER_ID, HEX_SOURCE_ID, PAINT_EVENT,
 } from './mapids.js'
 import { areaFeatures, sensorFeatures } from './mapfeatures.js'
 import { applyMarkerZoomRange, bandsFor, markerPaint } from './mappaint.js'
@@ -37,7 +37,7 @@ export const MOVE_DEBOUNCE_MS = 250
 // listens to is how e2e/redraw.spec.js counts the draws a reader sees.
 export function paintSource(map, sourceId, features) {
   map.getSource(sourceId)?.setData({ type: 'FeatureCollection', features })
-  map.getContainer?.()?.dispatchEvent?.(new CustomEvent('airbg:paint', { detail: { source: sourceId, features } }))
+  map.getContainer?.()?.dispatchEvent?.(new CustomEvent(PAINT_EVENT, { detail: { source: sourceId, features } }))
 }
 
 // onMetricChange is what runs on every metric switch (and once, explicitly,

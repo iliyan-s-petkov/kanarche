@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { installTimelapse } from '../timelapse-island.js'
 import { installHexRise } from '../hexrise.js'
 import { mountPlayer } from '../timelapse.js'
-import { HEX_SOURCE_ID, HEX_COLUMN_SOURCE_ID } from '../mapids.js'
+import { HEX_SOURCE_ID, HEX_COLUMN_SOURCE_ID, PAINT_EVENT } from '../mapids.js'
 
 const BODY = {
   metric: 'P2', resolution_km: 15, cells: [[23, 42]],
@@ -84,7 +84,7 @@ describe('playback and the column source', () => {
     await opened(h)
     h.scrubTo(2)
     const seen = []
-    h.map.getContainer().addEventListener('airbg:paint', (e) => seen.push(e.detail.source))
+    h.map.getContainer().addEventListener(PAINT_EVENT, (e) => seen.push(e.detail.source))
     h.ui.exit.click()
     await vi.waitFor(() => expect(seen).toContain(HEX_SOURCE_ID))
   })

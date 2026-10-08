@@ -5,7 +5,7 @@ import {
 } from '../hexrise.js'
 import { hexFeatures } from '../hexes.js'
 import { rampColour } from '../ramp.js'
-import { HEX_SOURCE_ID, HEX_COLUMN_SOURCE_ID, HEX_EXTRUSION_LAYER_ID } from '../mapids.js'
+import { HEX_SOURCE_ID, HEX_COLUMN_SOURCE_ID, HEX_EXTRUSION_LAYER_ID, PAINT_EVENT } from '../mapids.js'
 
 const BANDS = [
   { upper: 10, colour: '#00ff00' },
@@ -113,7 +113,7 @@ function fakeMap(pitch = 0) {
   }
 }
 
-const paint = (map, ids) => map.getContainer().dispatchEvent(new CustomEvent('airbg:paint', {
+const paint = (map, ids) => map.getContainer().dispatchEvent(new CustomEvent(PAINT_EVENT, {
   detail: { source: HEX_SOURCE_ID, features: ids.map((id) => ({ id, geometry: { type: 'Polygon' } })) },
 }))
 

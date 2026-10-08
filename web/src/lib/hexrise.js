@@ -4,7 +4,7 @@
 // would rewrite the fill, outline, point and label buckets too.
 
 import { rampPosition } from './ramp.js'
-import { HEX_SOURCE_ID, HEX_COLUMN_SOURCE_ID, HEX_EXTRUSION_LAYER_ID } from './mapids.js'
+import { HEX_SOURCE_ID, HEX_COLUMN_SOURCE_ID, HEX_EXTRUSION_LAYER_ID, PAINT_EVENT } from './mapids.js'
 
 // Pitch in degrees at which the columns reach full height.
 export const HEX_RISE_FULL_PITCH = 35
@@ -89,7 +89,7 @@ export function installHexRise(map, { raf = globalThis.requestAnimationFrame, re
     raf(apply)
   })
 
-  map.getContainer?.()?.addEventListener?.('airbg:paint', (e) => {
+  map.getContainer?.()?.addEventListener?.(PAINT_EVENT, (e) => {
     if (e.detail?.source !== HEX_SOURCE_ID) return
     painted = e.detail.features ?? []
     if (factor === 0) return
