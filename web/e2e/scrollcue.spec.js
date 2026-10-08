@@ -91,7 +91,10 @@ for (const vp of VIEWPORTS) {
           // The tap target (::before) is still >= 44px tall.
           if ((await tapBox(cue)).height < 44) return 'tap'
           for (const sel of ['.scale--onmap', '.map-play', '.map-freshness', '.map-locate', '.scale__info']) {
-            const o = await page.locator(sel).first().boundingBox()
+            const target = page.locator(sel).first()
+            // A control folded away has no box on screen; its stale layout rect is not an overlap.
+            if (!(await target.isVisible())) continue
+            const o = await target.boundingBox()
             if (o && overlaps(box, o)) return sel
           }
           return 'ok'

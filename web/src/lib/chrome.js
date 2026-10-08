@@ -507,9 +507,9 @@ export function mountChrome(el, cfg) {
       // claim, the dialog would open on nothing.
       info: scale ? { label: cfg.t.legendAbout, onOpen: () => scaleDialog.show(scale) } : null,
     })
-    legend.insertBefore(windRow, legend.querySelector(':scope > .scale__info'))
-    if (seaRows) legend.insertBefore(seaRows, legend.querySelector(':scope > .scale__info'))
-    if (pollenRows) legend.insertBefore(pollenRows, legend.querySelector(':scope > .scale__info'))
+    legend.appendChild(windRow)
+    if (seaRows) legend.appendChild(seaRows)
+    if (pollenRows) legend.appendChild(pollenRows)
     applyPollenLegend()
     // Bootstrap call: keep the server-rendered caption.
     if (tier === null) return

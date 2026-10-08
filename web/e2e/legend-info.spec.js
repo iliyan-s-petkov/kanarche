@@ -75,3 +75,47 @@ for (const shape of shapes) {
     })
   }
 }
+
+// Each (i) sits at the right end of the heading row it explains, clear of the heading text.
+const rowShapes = [
+  { name: 'desktop', path: '/en/', context: { viewport: { width: 1280, height: 800 } }, sea: 'Bathing water' },
+  { name: 'phone', path: '/', context: { viewport: { width: 393, height: 873 }, isMobile: true, hasTouch: true }, sea: 'Води за къпане' },
+]
+
+for (const shape of rowShapes) {
+  test(`${shape.name}: each legend (i) is in its heading row, right-aligned, clear of the text`, async ({ browser }, testInfo) => {
+    testInfo.setTimeout(60000)
+    const context = await browser.newContext(shape.context)
+    const page = await context.newPage()
+    await prepareMap(page, shape.path)
+    await toggleLayer(page, shape.sea)
+    const legend = page.locator('.scale--onmap')
+    if ((await legend.getAttribute('open')) === null) await legend.locator('> .scale__toggle').click()
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/legend-rows-${shape.name}.png` })
+
+    for (const head of ['> .scale__label', '.scale__sea-head']) {
+      const row = legend.locator(head)
+      const button = row.locator('button.scale__info')
+      await expect(button).toBeVisible()
+      const geo = await row.evaluate((r) => {
+        const b = r.querySelector('button.scale__info').getBoundingClientRect()
+        const range = document.createRange()
+        range.selectNodeContents(r.firstChild)
+        return { b: b.toJSON(), t: range.getBoundingClientRect().toJSON(), h: r.getBoundingClientRect().toJSON() }
+      })
+      const mid = geo.b.top + geo.b.height / 2
+      expect(mid).toBeGreaterThanOrEqual(geo.h.top)
+      expect(mid).toBeLessThanOrEqual(geo.h.bottom)
+      expect(geo.h.right - geo.b.right).toBeLessThanOrEqual(2)
+      expect(geo.t.right).toBeLessThanOrEqual(geo.b.left + 0.5)
+      expect(geo.b.width).toBeLessThanOrEqual(26)
+
+      await button.click()
+      const dialog = page.locator('dialog.scaleinfo[open]')
+      await expect(dialog).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(dialog).toHaveCount(0)
+    }
+    await context.close()
+  })
+}

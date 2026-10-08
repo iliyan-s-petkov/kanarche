@@ -190,17 +190,14 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info }) {
   none.appendChild(row)
   el.appendChild(none)
 
-  // Last, and inside the fold: the reader who wants the guideline behind the
-  // colours has already found the key and opened it. Icon-only for the same
-  // reason the toggle is — the key sits ON the map and a word here would widen
-  // it — so the name goes to aria-label.
+  // Right end of the metric heading row; the fold hides label and (i) together.
   if (info) {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'scale__info'
     button.setAttribute('aria-label', info.label)
     button.addEventListener('click', info.onOpen)
-    el.appendChild(button)
+    label.appendChild(button)
   }
 }
 
@@ -257,7 +254,7 @@ export function buildWindRow(label) {
   return wrap
 }
 
-// A section's own (i), named by aria-label; nested, so setPollenLegend (direct children only) leaves it alone.
+// A section's own (i), named by aria-label; goes at the right end of its heading row.
 function sectionInfo(info, onInfo) {
   if (!info?.label || !onInfo) return null
   const button = document.createElement('button')
@@ -287,7 +284,7 @@ export function buildSeaRows(t, colours, onInfo) {
     wrap.appendChild(row)
   }
   const info = sectionInfo(t.info, onInfo)
-  if (info) wrap.appendChild(info)
+  if (info) head.appendChild(info)
   return wrap
 }
 
@@ -310,14 +307,14 @@ export function buildPollenRows(t, onInfo) {
     wrap.appendChild(row)
   }
   const info = sectionInfo(t.info, onInfo)
-  if (info) wrap.appendChild(info)
+  if (info) head.appendChild(info)
   return wrap
 }
 
-// Pollen on: the metric's title, bar, no-data row and (i) step aside (the pollen section has its own (i)), and the folded pill names `title`.
+// Pollen on: the metric's title (with its (i)), bar and no-data row step aside, and the folded pill names `title`.
 export function setPollenLegend(el, on, title) {
   el.classList.toggle('scale--pollen', on)
-  for (const s of ['.scale__label', '.scale__bands', '.scale__none', '.scale__info']) {
+  for (const s of ['.scale__label', '.scale__bands', '.scale__none']) {
     const part = el.querySelector(`:scope > ${s}`)
     if (part) part.hidden = on
   }
