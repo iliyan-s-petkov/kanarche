@@ -32,7 +32,7 @@ test.describe.serial('the network layers', () => {
         .addEventListener('airbg:paint', (e) => resolve(e.detail.source), { once: true })
     }))
     await page.getByRole('checkbox', { name: /Citizen sensors/ }).uncheck()
-    expect(await painted).toBe('airbg-hexes')
+    expect(await painted).toBe('kanarche-hexes')
     expect(requests).toHaveLength(0)
     await page.getByRole('checkbox', { name: /Citizen sensors/ }).check()
   })

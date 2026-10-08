@@ -14,7 +14,7 @@ test('an oblast page counts its sensors below the sensor tier', async ({ ctx }) 
   // source holds area aggregates (slug), never sensors (id).
   const drawn = () => page.evaluate(async () => {
     const map = document.querySelector('[data-island="map"]').__map
-    const feats = (await map.getSource('airbg-data').getData()).features ?? []
+    const feats = (await map.getSource('kanarche-data').getData()).features ?? []
     return { zoom: map.getZoom(), areas: feats.filter((f) => f.properties.slug).length, sensors: feats.filter((f) => f.properties.id != null).length }
   })
   await expect.poll(async () => (await drawn()).areas).toBeGreaterThan(0)

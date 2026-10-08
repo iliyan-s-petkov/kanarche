@@ -80,7 +80,7 @@ describe('addBasemapOverlay', () => {
     return {
       calls,
       getSource: () => undefined,
-      getLayer: (id) => (id === 'airbg-hex-fill' ? { id } : undefined),
+      getLayer: (id) => (id === 'kanarche-hex-fill' ? { id } : undefined),
       addSource: (id, s) => calls.sources.push([id, s]),
       addLayer: (l, before) => calls.layers.push([l.id, before]),
     }
@@ -94,10 +94,10 @@ describe('addBasemapOverlay', () => {
   // ground obscuring the thing the page exists to show.
   it('slots the traced layers beneath the grid', async () => {
     const map = fakeMap()
-    await addBasemapOverlay(map, 'https://tiles.airbg.org/style.json', 'airbg-hex-fill', async () => style)
+    await addBasemapOverlay(map, 'https://tiles.airbg.org/style.json', 'kanarche-hex-fill', async () => style)
 
     expect(map.calls.sources).toEqual([['basemap', { type: 'vector' }]])
-    expect(map.calls.layers).toEqual([['roads', 'airbg-hex-fill']])
+    expect(map.calls.layers).toEqual([['roads', 'kanarche-hex-fill']])
   })
 
   it('adds them on top when the grid is not there to sit under', async () => {
@@ -105,7 +105,7 @@ describe('addBasemapOverlay', () => {
     map.calls = { sources: [], layers: [] }
     map.addSource = (id, s) => map.calls.sources.push([id, s])
     map.addLayer = (l, before) => map.calls.layers.push([l.id, before])
-    await addBasemapOverlay(map, 'https://x/style.json', 'airbg-hex-fill', async () => style)
+    await addBasemapOverlay(map, 'https://x/style.json', 'kanarche-hex-fill', async () => style)
     expect(map.calls.layers).toEqual([['roads', undefined]])
   })
 
@@ -114,7 +114,7 @@ describe('addBasemapOverlay', () => {
   it('leaves the raster alone when the style cannot be fetched', async () => {
     const map = fakeMap()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    await expect(addBasemapOverlay(map, 'https://x/style.json', 'airbg-hex-fill', async () => {
+    await expect(addBasemapOverlay(map, 'https://x/style.json', 'kanarche-hex-fill', async () => {
       throw new Error('502')
     })).resolves.toBeUndefined()
     expect(map.calls.layers).toEqual([])
@@ -123,7 +123,7 @@ describe('addBasemapOverlay', () => {
 
   it('does nothing at all when no basemap is configured', async () => {
     const map = fakeMap()
-    await addBasemapOverlay(map, '', 'airbg-hex-fill', async () => style)
+    await addBasemapOverlay(map, '', 'kanarche-hex-fill', async () => style)
     expect(map.calls.sources).toEqual([])
   })
 })

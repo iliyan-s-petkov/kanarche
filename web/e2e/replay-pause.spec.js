@@ -4,7 +4,7 @@ import { test, expect } from './fixtures.js'
 
 const hexData = (page) => page.evaluate(() => {
   const map = document.querySelector('[data-island="map"]').__map
-  const data = map.getSource('airbg-hexes').serialize().data
+  const data = map.getSource('kanarche-hexes').serialize().data
   return data.features
     .filter((f) => f.properties.value !== null && f.properties.value !== undefined)
     .map((f) => ({ v: f.properties.value, carried: f.properties.carried === true }))
@@ -12,7 +12,7 @@ const hexData = (page) => page.evaluate(() => {
 
 test('pause keeps the paused frame on the map, exit restores live', async ({ page }) => {
   await page.goto('/en')
-  await page.waitForFunction(() => document.querySelector('[data-island="map"]').__map?.getSource('airbg-hexes'))
+  await page.waitForFunction(() => document.querySelector('[data-island="map"]').__map?.getSource('kanarche-hexes'))
   // The grid arrives after the source exists; a snapshot before it would be empty.
   await expect.poll(async () => (await hexData(page)).length).toBeGreaterThan(0)
   const live = await hexData(page)

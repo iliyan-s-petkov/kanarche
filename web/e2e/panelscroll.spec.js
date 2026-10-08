@@ -50,7 +50,7 @@ const featurePoint = (page, layer) => page.evaluate((layer) => {
 
 // Home has no point tier until an area is picked; a cell naming one station opens it there.
 async function tapSensor(page) {
-  const layer = new URL(page.url()).pathname.includes('/area/') ? 'airbg-markers' : 'airbg-hex-fill'
+  const layer = new URL(page.url()).pathname.includes('/area/') ? 'kanarche-markers' : 'kanarche-hex-fill'
   let pt = null
   // Fullscreen resizes the canvas after the click; take the point once it holds still for 200ms.
   await expect.poll(async () => {

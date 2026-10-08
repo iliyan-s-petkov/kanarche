@@ -21,9 +21,9 @@ async function prepareMap(page, path) {
 // Client points of hex cells naming sensor 101, clear of the map's edges and overlays.
 const hexPoint = (page) => page.evaluate(() => {
   const map = document.querySelector('[data-island="map"]').__map
-  if (!map?.getLayer?.('airbg-hex-fill')) return null
+  if (!map?.getLayer?.('kanarche-hex-fill')) return null
   const box = map.getCanvas().getBoundingClientRect()
-  for (const f of map.queryRenderedFeatures({ layers: ['airbg-hex-fill'] })) {
+  for (const f of map.queryRenderedFeatures({ layers: ['kanarche-hex-fill'] })) {
     if (f.geometry.type !== 'Polygon' || Number(f.properties?.sensorId) !== 101) continue
     const ring = f.geometry.coordinates[0].slice(0, -1)
     const c = [0, 1].map((i) => ring.reduce((a, p) => a + p[i], 0) / ring.length)

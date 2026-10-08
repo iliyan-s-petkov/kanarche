@@ -40,7 +40,7 @@ const pollenAt = (page) => page.evaluate((c) => {
 }, CLICK)
 
 const hexVisibility = (page) => page.evaluate(() =>
-  document.querySelector('[data-island="map"]').__map.getLayoutProperty('airbg-hex-fill', 'visibility'))
+  document.querySelector('[data-island="map"]').__map.getLayoutProperty('kanarche-hex-fill', 'visibility'))
 
 for (const shape of [
   { name: 'desktop', path: '/en/', label: 'Pollen', title: 'Pollen forecast', levels: ['Low', 'Moderate', 'High'], prefix: '/en', context: { viewport: { width: 1440, height: 900 } } },

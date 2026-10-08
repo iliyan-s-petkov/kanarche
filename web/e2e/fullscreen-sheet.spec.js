@@ -12,9 +12,9 @@ const VIEWPORTS = [
 // Not gated on isStyleLoaded(): in CI it can stay false with the markers painted (#613).
 const markerPoint = (page) => page.evaluate(() => {
   const map = document.querySelector('[data-island="map"]').__map
-  if (!map?.getLayer?.('airbg-markers')) return null
+  if (!map?.getLayer?.('kanarche-markers')) return null
   const box = map.getCanvas().getBoundingClientRect()
-  const f = map.queryRenderedFeatures({ layers: ['airbg-markers'] })
+  const f = map.queryRenderedFeatures({ layers: ['kanarche-markers'] })
     .find((x) => x.properties?.id != null && x.geometry.type === 'Point')
   if (!f) return null
   const p = map.project(f.geometry.coordinates)

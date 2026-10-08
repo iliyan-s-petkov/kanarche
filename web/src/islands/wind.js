@@ -2,8 +2,8 @@
 import contract from '../lib/contract.json'
 import { formatLocalTime } from '../lib/localtime.js'
 
-export const WIND_SOURCE_ID = 'airbg-wind'
-export const WIND_LAYER_ID = 'airbg-wind-arrows'
+export const WIND_SOURCE_ID = 'kanarche-wind'
+export const WIND_LAYER_ID = 'kanarche-wind-arrows'
 
 // arrowBearing converts the meteorological direction the API reports — the
 // direction the wind comes FROM — into the direction the arrow points, which is
@@ -154,7 +154,7 @@ export function windModelName(id) {
 
 const defaultFormatTime = formatLocalTime
 
-export const ARROW_IMAGE_ID = 'airbg-wind-arrow'
+export const ARROW_IMAGE_ID = 'kanarche-wind-arrow'
 
 // Drawn at 48px and registered with pixelRatio 2, so it occupies 24 CSS px at
 // icon-size 1 — the size the glyph used to be at its midpoint.

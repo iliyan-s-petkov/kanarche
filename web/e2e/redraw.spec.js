@@ -41,7 +41,7 @@ test.describe.serial('one zoom, one redraw', () => {
   // network goes idle late, or never.
   const loaded = () => page.waitForFunction(() => {
     const seen = new Set((window.__paints ?? []).map((p) => p.source))
-    return seen.has('airbg-data') && seen.has('airbg-hexes')
+    return seen.has('kanarche-data') && seen.has('kanarche-hexes')
   }, null, { timeout: 20000 })
 
   // A keyboard zoom rather than a wheel: one keypress is one discrete zoom
@@ -73,7 +73,7 @@ test.describe.serial('one zoom, one redraw', () => {
 
     const seen = await paints()
     expect(seen.map((p) => p.source).sort(), 'both data layers redraw for a zoom')
-      .toEqual(['airbg-data', 'airbg-hexes'])
+      .toEqual(['kanarche-data', 'kanarche-hexes'])
     const perSource = {}
     for (const p of seen) perSource[p.source] = (perSource[p.source] ?? 0) + 1
     for (const [source, count] of Object.entries(perSource)) {
