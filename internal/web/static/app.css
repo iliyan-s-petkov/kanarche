@@ -110,7 +110,8 @@ strong, b { font-weight: var(--weight-emphasis); }
    would read as an error state on 27 healthy pages. */
 .notice-inline { color: var(--muted); font-size: var(--text-compact); letter-spacing: var(--track-compact); }
 /* Breadcrumb replaces the old single back-to-map link on area pages. */
-.breadcrumb { font-size: var(--text-compact); color: var(--fg-2); }
+/* One line, scrolled sideways when narrow: a wrap pushes the map pull tab below the fold. */
+.breadcrumb { font-size: var(--text-compact); color: var(--fg-2); white-space: nowrap; overflow-x: auto; }
 /* Desktop only: on phones the extra height pushes the map's pull tab below the fold. */
 @media (min-width: 672px) { .breadcrumb { margin-block-start: var(--space-6); } }
 .breadcrumb__sep { color: var(--muted); padding-inline: var(--space-1); }
