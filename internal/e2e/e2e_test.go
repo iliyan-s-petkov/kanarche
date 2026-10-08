@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -63,7 +62,7 @@ func TestBrowser(t *testing.T) {
 	if shard := os.Getenv("E2E_SHARD"); shard != "" {
 		args = append(args, "--shard="+shard)
 	}
-	cmd := exec.Command("npx", args...)
+	cmd := startGroup(e2eContext(t), groupGrace, "npx", args...)
 	cmd.Dir = filepath.Join("..", "..", "web")
 	// Playwright's transform cache defaults to os.tmpdir(); a repo-scoped TMPDIR
 	// leaves it in the tree and trips the deploy dirty-tree guard.
@@ -72,7 +71,12 @@ func TestBrowser(t *testing.T) {
 		"PWTEST_CACHE_DIR="+filepath.Join(t.TempDir(), "pw-cache"))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("playwright: %v", err)
+	}
+	// Reaps Chrome workers left behind if the runner exits early.
+	t.Cleanup(func() { killGroup(cmd) })
+	if err := cmd.Wait(); err != nil {
 		t.Fatalf("playwright: %v", err)
 	}
 }
