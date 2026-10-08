@@ -95,6 +95,11 @@ const box = (loc) => loc.evaluate((el) => {
   return { x: r.x, y: r.y, w: r.width, h: r.height, cx: r.x + r.width / 2, cy: r.y + r.height / 2 }
 })
 
+const boxes = (loc) => loc.evaluateAll(els => els.map(el => {
+  const r = el.getBoundingClientRect()
+  return { x: r.x, y: r.y, w: r.width, h: r.height }
+}))
+
 test('getting started alternates: step 1 image right of text, step 2 image left', async ({ ctx }) => {
   const page = await ctx.newPage()
   await page.setViewportSize({ width: 1280, height: 800 })
@@ -174,7 +179,7 @@ test('station cards: three in a row at 1280, one column at 390, one link each', 
   await page.goto('/en/about')
   const cards = page.locator('#station .about-card')
   await expect(cards).toHaveCount(3)
-  const wide = [await box(cards.nth(0)), await box(cards.nth(1)), await box(cards.nth(2))]
+  const wide = await boxes(cards)
   expect(Math.abs(wide[0].y - wide[2].y)).toBeLessThan(2)
   expect(wide[1].x).toBeGreaterThan(wide[0].x + wide[0].w - 1)
   expect(wide[2].x).toBeGreaterThan(wide[1].x + wide[1].w - 1)
@@ -187,7 +192,7 @@ test('station cards: three in a row at 1280, one column at 390, one link each', 
   await expect(cards.nth(2)).toContainText('sensor.community')
   await expect(cards.nth(0).locator('svg[aria-hidden="true"]')).toHaveCount(1)
   await page.setViewportSize({ width: 390, height: 844 })
-  const narrow = [await box(cards.nth(0)), await box(cards.nth(1)), await box(cards.nth(2))]
+  const narrow = await boxes(cards)
   expect(narrow[1].y).toBeGreaterThan(narrow[0].y + narrow[0].h - 1)
   expect(narrow[2].y).toBeGreaterThan(narrow[1].y + narrow[1].h - 1)
   expect(Math.abs(narrow[0].x - narrow[2].x)).toBeLessThan(2)
