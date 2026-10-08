@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the airbg.org basemap on this host, following docs/tiles.md exactly.
+# Build the kanarche.eu basemap on this host, following docs/tiles.md exactly.
 # Pins: planetiler 0.8.3, font-maker v0.0.1 (46fac6c), NotoSans-v2.015.
 set -euo pipefail
 

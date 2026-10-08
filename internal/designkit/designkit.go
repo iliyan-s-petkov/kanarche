@@ -10,7 +10,7 @@
 //
 // Unlike internal/tiles this is NOT a separate listener. The kit is same-origin
 // on purpose — that is what lets the app's CSP (script-src 'self') cover it
-// without being relaxed, and what makes connect-src 'self' https://tiles.airbg.org
+// without being relaxed, and what makes connect-src 'self' https://tiles.kanarche.eu
 // already sufficient for the kit's own fetches. The cost is that it shares the
 // public listener's token bucket, which is fine for a page a handful of people
 // open and would not be for anything on the critical path.

@@ -67,7 +67,7 @@ func TestBrowser(t *testing.T) {
 	// Playwright's transform cache defaults to os.tmpdir(); a repo-scoped TMPDIR
 	// leaves it in the tree and trips the deploy dirty-tree guard.
 	cmd.Env = append(os.Environ(),
-		"AIRBG_E2E_BASE_URL="+baseURL,
+		"KANARCHE_E2E_BASE_URL="+baseURL,
 		"PWTEST_CACHE_DIR="+filepath.Join(t.TempDir(), "pw-cache"))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
