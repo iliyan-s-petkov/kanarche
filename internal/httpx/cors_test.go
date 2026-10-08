@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/origin"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/origin"
+	"kanarche.eu/internal/ratelimit"
 )
 
 const siteOrigin = "https://airbg.org"

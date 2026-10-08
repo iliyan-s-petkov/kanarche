@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream/eea"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream/eea"
 )
 
 // hostOf is the bare host of a test server URL, the form eea.file_hosts takes.

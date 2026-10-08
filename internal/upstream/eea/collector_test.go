@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/db"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/store"
-	"airbg.org/internal/testsupport"
-	"airbg.org/internal/upstream/eea"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/testsupport"
+	"kanarche.eu/internal/upstream/eea"
 )
 
 // newStoreForCollector mirrors internal/store/store_test.go's newStore: the

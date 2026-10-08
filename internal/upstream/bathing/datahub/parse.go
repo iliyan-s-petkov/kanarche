@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"airbg.org/internal/upstream/bathing"
-	"airbg.org/internal/xlsx"
+	"kanarche.eu/internal/upstream/bathing"
+	"kanarche.eu/internal/xlsx"
 )
 
 // First season with a BWD class in our data.

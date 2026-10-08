@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/snapshot"
 )
 
 // An AGGREGATE hex request never fails on its parameters. The resolution is

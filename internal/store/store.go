@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/quality"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/quality"
 )
 
 type Store struct {

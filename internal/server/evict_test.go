@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
 )
 
 // TestSeriesLimiterEvictsOnItsOwnInterval pins that

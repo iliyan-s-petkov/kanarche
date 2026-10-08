@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 // Collector fetches the forecast for the fixed wind lattice and stores it. See docs/wind-overlay.md.

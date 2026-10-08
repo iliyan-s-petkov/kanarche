@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"airbg.org/internal/db"
+	"kanarche.eu/internal/db"
 )
 
 // areaAtPointSQL finds the smallest area containing a point.

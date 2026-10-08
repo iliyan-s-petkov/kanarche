@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // The WARN threshold must track the window that drops EEA rows from the snapshot.

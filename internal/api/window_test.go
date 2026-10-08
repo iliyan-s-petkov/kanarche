@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // windowFixture is the plain fixture plus one alternate view, so a test can tell

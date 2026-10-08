@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/db"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db"
 )
 
 // StoreConfig mirrors airbg.yaml's store: block, the same threshold every

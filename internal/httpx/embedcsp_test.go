@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 // The embed policy is the site's policy with one directive changed. Everything

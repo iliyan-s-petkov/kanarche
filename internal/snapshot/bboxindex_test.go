@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // naiveClip is the walk bboxIndex.clip replaces: check every entry, in order.

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/web"
 )
 
 // rendererAt is renderer() with a different public base URL.

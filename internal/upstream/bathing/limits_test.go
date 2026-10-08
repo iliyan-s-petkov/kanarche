@@ -3,7 +3,7 @@ package bathing_test
 import (
 	"testing"
 
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 // Annex I of 2006/7/EC; the panel marks samples against these.

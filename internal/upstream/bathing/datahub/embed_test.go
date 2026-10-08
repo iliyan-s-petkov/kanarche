@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 var testNow = time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)

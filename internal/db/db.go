@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/db/migrations"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db/migrations"
 )
 
 // Open opens a pool sized by whatever the connection string asks for, falling

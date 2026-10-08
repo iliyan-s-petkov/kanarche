@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // WindPayloadJSONForTesting exposes the unexported payload to the external test

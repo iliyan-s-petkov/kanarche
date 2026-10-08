@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // testUpstreamConfig builds a config.Upstream with the same shape airbg.yaml

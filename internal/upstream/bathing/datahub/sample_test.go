@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"airbg.org/internal/xlsx"
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 // SampleOptions bounds the cut: up to MaxPerSeason rows of the country for

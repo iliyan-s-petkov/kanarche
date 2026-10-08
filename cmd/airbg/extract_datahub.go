@@ -11,9 +11,9 @@ import (
 	"sort"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream/bathing/datahub"
-	"airbg.org/internal/xlsx"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream/bathing/datahub"
+	"kanarche.eu/internal/xlsx"
 )
 
 const (

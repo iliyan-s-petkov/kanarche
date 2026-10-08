@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/admit"
-	"airbg.org/internal/api"
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/admit"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/httpx"
 )
 
 // locateVia serves a request through a resolver that trusts the given CIDRs, so

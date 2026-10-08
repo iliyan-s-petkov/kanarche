@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/metrics"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/metrics"
 )
 
 var enumerationTrips = metrics.CounterVec(

@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/admit"
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
-	"airbg.org/internal/ratelimit"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/admit"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/ratelimit"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 var errBoom = errors.New("boom: pq: relation \"reading\" does not exist")

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/upstream"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/upstream"
+	"kanarche.eu/internal/web"
 )
 
 // testConfig is the committed configuration, loaded once, so these tests

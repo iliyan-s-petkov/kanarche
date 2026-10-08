@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/geocode"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/geocode"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/ratelimit"
 )
 
 // NewGeocodeLimiter builds the per-client bucket for /api/v1/geocode. Each miss

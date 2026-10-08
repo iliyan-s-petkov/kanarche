@@ -5,7 +5,7 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // runValidateConfig loads the configuration the same way the server does and

@@ -7,8 +7,8 @@ import (
 	"math"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // Store is the part of *store.Store the collector uses.

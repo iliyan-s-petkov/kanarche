@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/upstream"
 )
 
 // clampScorer mirrors the committed config: P1 pegs above its range, P2 inside

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 const xlsxType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

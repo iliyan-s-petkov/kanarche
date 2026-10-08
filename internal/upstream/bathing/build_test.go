@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 func fixtureRaw(t *testing.T) bathing.Raw {

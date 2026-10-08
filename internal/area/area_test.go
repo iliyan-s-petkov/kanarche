@@ -8,9 +8,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/db"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/testsupport"
 )
 
 // testAssignTimeout and testOperatorTimeout mirror airbg.yaml's

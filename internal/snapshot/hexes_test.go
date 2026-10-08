@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 func sensorAt(id int64, lon, lat float64, values map[string]float64) store.SensorReading {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // A real pair as upstream publishes it: one address, two devices, disjoint

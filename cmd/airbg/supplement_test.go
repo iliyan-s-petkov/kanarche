@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
 )
 
 func captureLog(t *testing.T) *bytes.Buffer {

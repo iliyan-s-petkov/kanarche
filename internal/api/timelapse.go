@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/upstream"
 )
 
 // handleTimelapse serves one animation: a metric's grid over a published span,

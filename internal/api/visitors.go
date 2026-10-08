@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 const (

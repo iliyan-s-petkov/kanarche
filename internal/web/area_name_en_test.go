@@ -8,7 +8,7 @@ import (
 	"testing"
 	"unicode"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // Some boundary name_en values are Cyrillic or nonstandard; en.json overrides them per slug.

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // tCallRe matches a translation call in a template: {{.T "key"}} inside a

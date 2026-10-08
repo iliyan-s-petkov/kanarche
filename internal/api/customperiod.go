@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // CustomPeriod means the window is in ?from=/?to= rather than a configured name.

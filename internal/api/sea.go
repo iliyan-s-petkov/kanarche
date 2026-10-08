@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 // The data changes once a year and is imported weekly; an hour-old answer is never visibly stale.

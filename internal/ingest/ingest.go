@@ -8,11 +8,11 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/metrics"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/metrics"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 // readingsFlagged counts scored readings by quality flag, across cycles.

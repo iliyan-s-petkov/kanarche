@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 func withBoundaries(t *testing.T, json string) *snapshot.Snapshot {

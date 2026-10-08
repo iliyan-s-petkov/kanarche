@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/metrics"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/metrics"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 var (

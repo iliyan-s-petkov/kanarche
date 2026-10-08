@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // The suite cold-loads every spec from one IP, and a cold load is dozens of

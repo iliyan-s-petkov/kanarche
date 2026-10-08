@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // areaPageFixture is seoFixture's kind roster plus the parent/centroid data

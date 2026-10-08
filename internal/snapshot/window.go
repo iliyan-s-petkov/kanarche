@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // A reader looking at the map is asking one of two questions. What is the air

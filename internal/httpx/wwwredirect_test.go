@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 func TestWWWToApex(t *testing.T) {

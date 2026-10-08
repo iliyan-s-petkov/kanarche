@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/geocode"
+	"kanarche.eu/internal/geocode"
 )
 
 // Two OSM ways of one street with different postcodes and adjacent bboxes.

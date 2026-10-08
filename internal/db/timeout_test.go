@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/db"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/testsupport"
 )
 
 // testOperatorTimeout mirrors airbg.yaml's database.statement_timeouts.operator.

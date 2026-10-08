@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"airbg.org/internal/metrics"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/metrics"
+	"kanarche.eu/internal/ratelimit"
 )
 
 // requestsTotal used to live here too, labelled "pattern", but it duplicated

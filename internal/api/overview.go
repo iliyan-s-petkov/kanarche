@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/upstream"
 )
 
 // Attribution is one credited data source and the URL its licence requires.

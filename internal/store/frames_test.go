@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 func TestFrameReadingsReturnsOneRowPerHourWithItsPosition(t *testing.T) {

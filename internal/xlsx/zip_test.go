@@ -8,7 +8,7 @@ import (
 	"io"
 	"testing"
 
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 func minimalParts() []xlsxtest.Part {

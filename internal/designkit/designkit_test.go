@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/designkit"
+	"kanarche.eu/internal/designkit"
 )
 
 // kit builds a directory shaped like the real one: an OpenDesign project

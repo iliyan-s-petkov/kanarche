@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/upstream/cloudflare"
+	"kanarche.eu/internal/upstream/cloudflare"
 )
 
 func TestParseSeedFileParsesEveryRow(t *testing.T) {

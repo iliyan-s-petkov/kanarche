@@ -3,8 +3,8 @@ package eea_test
 import (
 	"testing"
 
-	"airbg.org/internal/upstream"
-	"airbg.org/internal/upstream/eea"
+	"kanarche.eu/internal/upstream"
+	"kanarche.eu/internal/upstream/eea"
 )
 
 // PM10 and PM2.5 map onto the metric names the citizen sensors already use, so

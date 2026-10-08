@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream/bathing/datahub"
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream/bathing/datahub"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 // extractFixture builds a workbook with 60 BG sites in 2024 and 2025 (the

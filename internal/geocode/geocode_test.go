@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/geocode"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/geocode"
 )
 
 const nominatimBody = `[

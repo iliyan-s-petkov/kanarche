@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // Unit is what the API reports pollen in; anything else is refused.

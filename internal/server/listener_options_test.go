@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/server"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/server"
+	"kanarche.eu/internal/snapshot"
 )
 
 // TestRunServesOnSuppliedListeners proves Run uses Options.PublicListener and

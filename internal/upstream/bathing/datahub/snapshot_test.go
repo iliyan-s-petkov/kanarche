@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/xlsx"
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 var testHeader = Header{

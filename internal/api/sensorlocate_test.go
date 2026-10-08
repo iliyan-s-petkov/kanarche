@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/snapshot"
 )
 
 func locateFixture(t *testing.T) *snapshot.Snapshot {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // PollenBlock is the area page's pollen table, localised for the template.

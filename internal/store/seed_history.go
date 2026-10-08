@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"airbg.org/internal/quality"
+	"kanarche.eu/internal/quality"
 )
 
 // SeedHistory replays the last `depth` stored readings of every (sensor, metric)

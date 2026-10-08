@@ -4,7 +4,7 @@ import (
 	"net"
 	"sync"
 
-	"airbg.org/internal/metrics"
+	"kanarche.eu/internal/metrics"
 )
 
 // connectionsRejected counts connections closed for exceeding the cap.

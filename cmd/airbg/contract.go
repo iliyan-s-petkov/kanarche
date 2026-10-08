@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // defaultContractPath is relative to the process's working directory, which is

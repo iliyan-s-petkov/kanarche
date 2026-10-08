@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/db"
-	"airbg.org/internal/ingest"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/store"
-	"airbg.org/internal/testsupport"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/ingest"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/testsupport"
+	"kanarche.eu/internal/upstream"
 )
 
 // TestRunOnceDrainsRollupBacklog proves RunOnce rolls up every outstanding

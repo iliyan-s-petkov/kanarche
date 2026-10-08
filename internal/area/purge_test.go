@@ -3,7 +3,7 @@ package area_test
 import (
 	"testing"
 
-	"airbg.org/internal/area"
+	"kanarche.eu/internal/area"
 )
 
 // TestPurgeOutsideBoundaryDeletesSensorsOutsideBoundary is task-17 review

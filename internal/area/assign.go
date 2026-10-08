@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/db"
+	"kanarche.eu/internal/db"
 )
 
 // AssignSensors recomputes the sensor-to-area mapping by point-in-polygon

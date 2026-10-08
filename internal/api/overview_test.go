@@ -3,7 +3,7 @@ package api_test
 import (
 	"testing"
 
-	"airbg.org/internal/api"
+	"kanarche.eu/internal/api"
 )
 
 func TestAttributionsNameBothNetworksAndTheirMaps(t *testing.T) {

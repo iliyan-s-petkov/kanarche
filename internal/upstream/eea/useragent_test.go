@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/upstream/eea"
+	"kanarche.eu/internal/upstream/eea"
 )
 
 func TestEveryRequestSendsTheConfiguredUserAgent(t *testing.T) {

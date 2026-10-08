@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/db"
-	"airbg.org/internal/store"
-	"airbg.org/internal/testsupport"
-	"airbg.org/internal/upstream/cloudflare"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/testsupport"
+	"kanarche.eu/internal/upstream/cloudflare"
 )
 
 func newStoreForCollector(t *testing.T) (context.Context, *store.Store) {

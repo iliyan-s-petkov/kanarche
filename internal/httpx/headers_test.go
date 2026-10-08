@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 // TestSecurityHeadersDenyDeviceCapabilities. Phase 3a embeds a bundle built from

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // TestBuildDayRange pins buildDayRange's three rules: it takes the min/max of
@@ -26,7 +26,7 @@ func TestBuildDayRange(t *testing.T) {
 		points[i] = store.Point{Time: at(i), Value: 10}
 		counts[at(i)] = threshold
 	}
-	points[5].Value = 3.5  // the low point
+	points[5].Value = 3.5 // the low point
 	points[40].Value = 60 // the high point
 
 	day := buildDayRange(points, counts, threshold, floor)

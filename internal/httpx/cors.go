@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"airbg.org/internal/origin"
+	"kanarche.eu/internal/origin"
 )
 
 // CORS answers cross-origin reads of the JSON API for the origins a allows.

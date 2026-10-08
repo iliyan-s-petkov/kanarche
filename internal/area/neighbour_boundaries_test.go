@@ -3,8 +3,8 @@ package area_test
 import (
 	"testing"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/upstream"
 )
 
 // countryFiles is the committed boundary file for every code in airbg.yaml's

@@ -9,7 +9,7 @@ import (
 	"io"
 	"time"
 
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 //go:embed bg.json

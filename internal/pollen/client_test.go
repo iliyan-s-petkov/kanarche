@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/pollen"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/pollen"
+	"kanarche.eu/internal/store"
 )
 
 func testConfig() config.Pollen {

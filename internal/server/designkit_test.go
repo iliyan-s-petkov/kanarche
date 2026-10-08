@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/server"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/server"
+	"kanarche.eu/internal/snapshot"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // kitDir writes a miniature design kit shaped like the real OpenDesign project

@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
-	"airbg.org/internal/db/migrations"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/db/migrations"
+	"kanarche.eu/internal/testsupport"
 )
 
 func columnExists(t *testing.T, ctx context.Context, pool *pgxpool.Pool, table, col string) bool {

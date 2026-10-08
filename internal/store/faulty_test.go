@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // faultyStore is newStore under testStoreConfig's faulty rule (airbg.yaml's).

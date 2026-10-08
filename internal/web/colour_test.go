@@ -3,8 +3,8 @@ package web
 import (
 	"testing"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/upstream"
 )
 
 // bandColour is a second copy of a rule web/src/lib/colour.js already applies to

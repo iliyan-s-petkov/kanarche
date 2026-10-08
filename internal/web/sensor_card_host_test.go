@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 // extractSensorCardHost pulls the .place-host div out of a rendered page's

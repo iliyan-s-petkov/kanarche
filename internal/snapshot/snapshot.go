@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // Body is one fully prepared HTTP response body: the JSON, its gzip encoding,

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 const relsHead = `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`

@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/admit"
-	"airbg.org/internal/config"
-	"airbg.org/internal/geocode"
-	"airbg.org/internal/ratelimit"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/admit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/geocode"
+	"kanarche.eu/internal/ratelimit"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 // DataSource is the whole database surface this package uses. Narrowed to four

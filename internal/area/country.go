@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // normaliseCountryCode upper-cases and validates a code read from a boundary

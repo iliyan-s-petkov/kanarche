@@ -3,7 +3,7 @@ package quality
 import (
 	"testing"
 
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/upstream"
 )
 
 // feed scores the same sensor n times so its history fills, returning the last flag.

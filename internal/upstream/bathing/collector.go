@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // retryAfter is the wait after a failed import, capped by refresh_interval.

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream/cloudflare"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream/cloudflare"
 )
 
 func testConfig(url string) config.Cloudflare {

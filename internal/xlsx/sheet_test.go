@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 var req = []string{"countryCode", "season"}

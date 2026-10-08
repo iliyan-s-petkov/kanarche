@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/upstream"
 )
 
 // recordingHandlerVisibility captures slog records. Like

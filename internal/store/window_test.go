@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 func seedHourly(t *testing.T, ctx contextT, pool poolT, id int64, metric string, bucket time.Time, avg float64, samples int) {

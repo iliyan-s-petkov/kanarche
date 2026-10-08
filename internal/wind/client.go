@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // Point is a place to ask about, carrying its lattice index (Q lon, R lat, in

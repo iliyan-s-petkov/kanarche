@@ -24,8 +24,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/ratelimit"
 )
 
 // Query length bounds, in runes after trimming.

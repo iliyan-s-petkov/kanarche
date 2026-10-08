@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 func TestValidateConfigAcceptsCommittedFile(t *testing.T) {

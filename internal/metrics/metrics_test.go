@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"airbg.org/internal/metrics"
+	"kanarche.eu/internal/metrics"
 )
 
 func TestCounterExposition(t *testing.T) {

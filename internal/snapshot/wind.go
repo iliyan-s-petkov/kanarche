@@ -3,7 +3,7 @@ package snapshot
 import (
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // windPayload is the forecast overlay. Every field above Vectors exists to keep

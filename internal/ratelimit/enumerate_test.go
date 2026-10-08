@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/ratelimit"
 )
 
 // testEnumerate mirrors airbg.yaml's ratelimit.enumerate section (Task 11

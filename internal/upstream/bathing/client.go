@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // ErrPayloadTooLarge reports a body at or over max_payload_bytes.

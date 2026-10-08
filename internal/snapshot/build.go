@@ -11,8 +11,8 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 // countryKinds and cityKinds define the two choropleth tiers from Phase 1 §7.1.

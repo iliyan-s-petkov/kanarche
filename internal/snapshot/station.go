@@ -1,6 +1,6 @@
 package snapshot
 
-import "airbg.org/internal/store"
+import "kanarche.eu/internal/store"
 
 // stationKey identifies one physical site a sensor stands at: the exact
 // published coordinate AND the network that published it.

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/ratelimit"
 )
 
 // testBucket is the API bucket's config, mirroring airbg.yaml's

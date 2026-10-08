@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 // One prepared body per (metric, span): geometry once, a bare number array per

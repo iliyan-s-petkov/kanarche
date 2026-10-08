@@ -8,8 +8,8 @@ import (
 	"sort"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // PollenLevels names the bands, indexed by how many of the two bounds (season start, peak) a value reaches.

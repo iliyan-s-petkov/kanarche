@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // safeBuffer: the server logs from its own goroutines.

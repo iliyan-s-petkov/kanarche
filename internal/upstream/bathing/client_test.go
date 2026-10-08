@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 const testUA = "kanarche.test collector (+https://kanarche.test/)"

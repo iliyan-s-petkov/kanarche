@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream"
 )
 
 // The validator keeps its own copy of the canonical metric set because

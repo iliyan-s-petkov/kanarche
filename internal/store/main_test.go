@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/testsupport"
 )
 
 // One container for the whole package instead of one per test. At 66 tests the

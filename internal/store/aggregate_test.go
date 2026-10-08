@@ -16,11 +16,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/config"
-	"airbg.org/internal/db"
-	"airbg.org/internal/store"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/testsupport"
 )
 
 // The two type aliases keep the helper signatures short; contextT and poolT are
