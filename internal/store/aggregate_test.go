@@ -1487,6 +1487,33 @@ func seedAreaBuffer(t *testing.T, ctx contextT, pool poolT, slug, kind string, l
 	}
 }
 
+// Bankya sits in Pernik oblast's polygon and outside Sofia city's, so the
+// largest-overlap rule alone picks Pernik as its parent. AreaParents must
+// override that to Sofia, and Pernik's children must not list it.
+func TestAreaParentBankyaUnderSofia(t *testing.T) {
+	ctx, pool := migrated(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+
+	// Sofia city sits well east of Bankya and overlaps it not at all; the
+	// Pernik municipality (kind city) covers Bankya and wins by overlap.
+	seedAreaBuffer(t, ctx, pool, "sofiya", "city", 23.60, 42.70, 8000)
+	seedAreaBuffer(t, ctx, pool, "pernik", "city", 23.00, 42.60, 30000)
+	seedAreaBuffer(t, ctx, pool, "bankya", "neighbourhood", 23.00, 42.60, 1000)
+
+	parents, err := s.AreaParents(ctx)
+	if err != nil {
+		t.Fatalf("AreaParents: %v", err)
+	}
+	if got, want := parents["bankya"], "sofiya"; got != want {
+		t.Errorf(`parents["bankya"] = %q, want %q`, got, want)
+	}
+	for child, parent := range parents {
+		if parent == "pernik" && child == "bankya" {
+			t.Errorf("bankya listed under pernik; Sofia override not applied")
+		}
+	}
+}
+
 // AllAreaSeriesCounts must report how many distinct sensors landed in each
 // bucket, using the SAME bucket boundaries AllAreaSeries itself computes —
 // buildDayRange looks a bucket's count up by that exact time.
