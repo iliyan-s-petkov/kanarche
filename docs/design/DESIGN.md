@@ -1,4 +1,4 @@
-# DESIGN.md — airbg.org
+# DESIGN.md — kanarche.eu
 
 The design contract. Anything on screen that contradicts this file is a defect in one
 of the two; decide which, then change that one. Do not settle a disagreement by
@@ -11,7 +11,7 @@ did not move under the update. That release also ships `design-tokens.json`, whi
 the machine-readable form of the same values and the better source if this is ever
 re-derived. It carries 18 translated variants; Bulgarian is not among them.
 Nothing from Open Design is vendored, generated, or served: it supplied the starting
-tokens and the prose below was written against airbg's own constraints. Its
+tokens and the prose below was written against kanarche's own constraints. Its
 `components.html` is a reference mockup and is not in this repository.
 
 **Why Carbon.** Three reasons, none of them taste:
@@ -45,7 +45,7 @@ rejected, not negotiated.
 
 ### 2.1 The two palettes are separate, and that separation is the point
 
-airbg has **two** colour systems, and mixing them is the single most likely design
+kanarche has **two** colour systems, and mixing them is the single most likely design
 defect:
 
 - **Brand/UI palette** — below. Monochrome plus one blue. Describes *the interface*.

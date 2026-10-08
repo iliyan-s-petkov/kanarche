@@ -323,7 +323,7 @@ func TestTilesHostMustBeInConnectSrc(t *testing.T) {
 	}
 
 	// A connect-src token that merely contains the host as a substring must not
-	// satisfy the check: "not-tiles.airbg.org" contains "tiles.airbg.org", but
+	// satisfy the check: "not-tiles.kanarche.eu" contains "tiles.kanarche.eu", but
 	// it names a different origin and the browser will still block the fetch.
 	cfg.Listen.CSP = "default-src 'self'; connect-src 'self' https://not-tiles.airbg.org"
 	if err := cfg.Validate(); err == nil {

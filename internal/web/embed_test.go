@@ -83,7 +83,7 @@ func TestEveryOtherPageStillRefusesFraming(t *testing.T) {
 	}
 }
 
-// The frame is the map. Everything that makes airbg.org a site rather than a
+// The frame is the map. Everything that makes kanarche.eu a site rather than a
 // map — masthead, nav, province table, footer — belongs to the host page.
 func TestEmbedCarriesTheMapAndNotTheChrome(t *testing.T) {
 	body := framed(t, renderer(t, fixture(t)), "/embed").Body.String()
