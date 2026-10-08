@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  mountLayers, installLayers, groupsIn, readState, writeState,
+  mountLayers, installLayers, groupsIn, readState, writeState, styleMeta,
   LAYER_ORDER, STORAGE_KEY,
 } from '../maplayers.js'
 
@@ -20,6 +20,33 @@ const frame = () => {
   document.body.append(el)
   return el
 }
+
+// The style's custom keys moved from airbg:* to kanarche:*. The tiles host is
+// updated by hand, so the reader takes either spelling and the new one wins.
+describe('styleMeta', () => {
+  it('reads the kanarche:* key', () => {
+    expect(styleMeta({ metadata: { 'kanarche:group': 'water' } }, 'group')).toBe('water')
+  })
+  it('falls back to the old airbg:* key', () => {
+    expect(styleMeta({ metadata: { 'airbg:group': 'roads' } }, 'group')).toBe('roads')
+  })
+  it('prefers kanarche:* when both are present', () => {
+    const o = { metadata: { 'airbg:schema': 'old', 'kanarche:schema': 'new' } }
+    expect(styleMeta(o, 'schema')).toBe('new')
+  })
+  it('returns undefined when neither is present or there is no metadata', () => {
+    expect(styleMeta({ metadata: {} }, 'group')).toBeUndefined()
+    expect(styleMeta({}, 'group')).toBeUndefined()
+    expect(styleMeta(undefined, 'group')).toBeUndefined()
+  })
+  it('groupsIn sees a style that mixes both spellings', () => {
+    const layers = [
+      { id: 'a', metadata: { 'airbg:group': 'water' } },
+      { id: 'b', metadata: { 'kanarche:group': 'roads' } },
+    ]
+    expect(groupsIn(layers)).toEqual(LAYER_ORDER.filter((g) => g === 'water' || g === 'roads'))
+  })
+})
 
 // A style is a list of layers, and a layer's group is the only thing this
 // module reads off one — so a fake style is exactly that list.

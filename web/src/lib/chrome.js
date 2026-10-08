@@ -6,7 +6,7 @@ import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows
 import { createScaleDialog } from './scaledialog.js'
 import { createInfoDialog, pollenInfoContent, seaInfoContent } from './infodialog.js'
 import { mountFullscreen, mountZoom, mountLocate, mountOrientation } from './mapcontrols.js'
-import { mountLayers } from './maplayers.js'
+import { mountLayers, styleMeta } from './maplayers.js'
 import { setSensorStatus } from './sensorfilter.svelte.js'
 import { readFlag, writeFlag, safeStorage } from './storage.js'
 import { mountWindow, readWindow, windowOptions } from './mapwindow.js'
@@ -363,7 +363,7 @@ export function mountChrome(el, cfg) {
         // The raster AND the vector detail over it: hiding one and leaving the
         // other would strand road lines and POI pins over a blank canvas.
         for (const l of map.getStyle()?.layers ?? []) {
-          if (l.metadata?.['airbg:group']) map.setLayoutProperty(l.id, 'visibility', v)
+          if (styleMeta(l, 'group')) map.setLayoutProperty(l.id, 'visibility', v)
         }
       },
     },

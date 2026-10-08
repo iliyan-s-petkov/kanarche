@@ -8,7 +8,7 @@
 // the control — the kit's .colmenu.map__layers, top-left inside the frame.
 //
 // THE OPTIONS COME FROM THE STYLE, NOT FROM A LIST HERE
-// Every layer in tools/basemap/style.json carries metadata["airbg:group"], and
+// Every layer in tools/basemap/style.json carries metadata["kanarche:group"] (airbg:group before the rename), and
 // installLayers reads those groups off the MOUNTED style. A list of layer ids
 // typed into this file would be a second thing free to drift from the style it
 // claims to describe. Add a layer to the style tomorrow and it appears here
@@ -171,11 +171,17 @@ export function mountLayers(frame, { label, onToggle }, doc = document, win = wi
   return { root, button, panel, fieldset, caption, open }
 }
 
+// styleMeta reads a custom metadata key off a style or layer, kanarche:* first.
+// The pre-rename airbg:* spelling is read until the tiles host serves the new style.
+export function styleMeta(obj, name) {
+  return obj?.metadata?.[`kanarche:${name}`] ?? obj?.metadata?.[`airbg:${name}`]
+}
+
 // groupsIn returns the style's groups, in LAYER_ORDER, skipping any the style
 // does not carry. Exported for its own test: it is the seam that keeps this
 // file from holding a second copy of the style's contents.
 export function groupsIn(layers) {
-  return LAYER_ORDER.filter((g) => layers.some((l) => l.metadata?.['airbg:group'] === g))
+  return LAYER_ORDER.filter((g) => layers.some((l) => styleMeta(l, 'group') === g))
 }
 
 // installLayers fills the panel from the mounted style and wires each option to
@@ -275,7 +281,7 @@ export function installLayers(map, ui, { labels, caption, views = [], storage })
 
   const setGroup = (group, on) => {
     for (const l of map.getStyle()?.layers ?? []) {
-      if (l.metadata?.['airbg:group'] === group) {
+      if (styleMeta(l, 'group') === group) {
         map.setLayoutProperty(l.id, 'visibility', on ? 'visible' : 'none')
       }
     }

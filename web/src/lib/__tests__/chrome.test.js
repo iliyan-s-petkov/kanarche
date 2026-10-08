@@ -65,6 +65,7 @@ describe('the basemap toggle', () => {
       // none, and must be left standing.
       getStyle: () => ({ layers: [
         { id: 'poi-shop', metadata: { 'airbg:group': 'poi-shop' } },
+        { id: 'water', metadata: { 'kanarche:group': 'water' } },
         { id: 'kanarche-hex-fill' },
       ] }),
     }
@@ -73,6 +74,7 @@ describe('the basemap toggle', () => {
     expect(set).toEqual([
       ['kanarche-raster-base', 'visibility', 'none'],
       ['poi-shop', 'visibility', 'none'],
+      ['water', 'visibility', 'none'],
     ])
   })
 })
