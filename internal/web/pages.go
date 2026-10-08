@@ -161,6 +161,8 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	data := rr.newPageData(lang, path, snap.GeneratedAt)
 	row := rr.rowFrom(meta, lang)
 	data.Area = &row
+	// Uncovered areas carry no data, so keep them out of the index as well as the sitemap.
+	data.NoIndex = !meta.Covered
 	data.Title, data.Description = rr.areaSEO(row, lang)
 	data.AreaNowHTML = data.areaNowHTML(row)
 	data.AreaDayHTML = data.areaDayHTML(row)

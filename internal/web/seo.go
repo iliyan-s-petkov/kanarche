@@ -66,12 +66,13 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 		return rr.sitemapBody, nil
 	}
 
+	// Only covered areas: an uncovered page is noindex, so it stays out of the sitemap too.
 	var slugs []string
-	covered := map[string]bool{}
 	if snap := rr.holder.Load(); snap != nil {
 		for slug, meta := range snap.KnownSlugs {
-			slugs = append(slugs, slug)
-			covered[slug] = meta.Covered
+			if meta.Covered {
+				slugs = append(slugs, slug)
+			}
 		}
 		sort.Strings(slugs)
 	}
@@ -81,17 +82,13 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 		day = generatedAt.UTC().Format("2006-01-02")
 	}
 	// lastmod only where the page body follows the data: the home, the
-	// directory and areas with coverage. Static pages and areas without data
-	// get none rather than a date nothing supports.
+	// directory and the covered areas. Static pages get none rather than a
+	// date nothing supports.
 	type entry struct{ path, lastMod string }
 	entries := make([]entry, 0, len(slugs)+6)
 	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""})
 	for _, slug := range slugs {
-		lm := ""
-		if covered[slug] {
-			lm = day
-		}
-		entries = append(entries, entry{"/area/" + slug, lm})
+		entries = append(entries, entry{"/area/" + slug, day})
 	}
 
 	urls := make([]sitemapURL, 0, len(entries)*len(rr.cat.Languages()))

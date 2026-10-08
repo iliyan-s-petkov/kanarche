@@ -72,7 +72,7 @@ func TestSitemapIsWellFormedXML(t *testing.T) {
 	}
 }
 
-// TestSitemapContainsEveryArea: both fixture areas (sofia, vidin) must appear,
+// TestSitemapContainsEveryArea: covered fixture areas (sofia) must appear,
 // plus the six static pages. A dropped area is invisible in the rendered
 // site and only shows up here.
 func TestSitemapContainsEveryArea(t *testing.T) {
@@ -89,7 +89,6 @@ func TestSitemapContainsEveryArea(t *testing.T) {
 		"https://airbg.org/about",
 		"https://airbg.org/about-the-data",
 		"https://airbg.org/area/sofia",
-		"https://airbg.org/area/vidin",
 	} {
 		if !locs[want] {
 			t.Errorf("sitemap is missing %q", want)
@@ -101,15 +100,14 @@ func TestSitemapContainsEveryArea(t *testing.T) {
 		"https://airbg.org/en/about",
 		"https://airbg.org/en/about-the-data",
 		"https://airbg.org/en/area/sofia",
-		"https://airbg.org/en/area/vidin",
 	} {
 		if !locs[want] {
 			t.Errorf("sitemap is missing the English variant %q", want)
 		}
 	}
-	// Eight pages in each of the two fixture languages.
-	if len(doc.URLs) != 16 {
-		t.Errorf("sitemap has %d <url> entries, want 16: %+v", len(doc.URLs), doc.URLs)
+	// Seven pages in each of the two fixture languages; uncovered vidin is left out.
+	if len(doc.URLs) != 14 {
+		t.Errorf("sitemap has %d <url> entries, want 14: %+v", len(doc.URLs), doc.URLs)
 	}
 }
 

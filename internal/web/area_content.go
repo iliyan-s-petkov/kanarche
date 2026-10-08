@@ -18,12 +18,12 @@ import (
 // minutes is not yet stale.
 const staleAfter = 30 * time.Minute
 
-// Crumb is one link in an area page's breadcrumb chain. URL is empty for the
-// last crumb — the page's own subject, printed as text rather than a link to
-// itself.
+// Crumb is one entry in an area page's breadcrumb trail. Current marks the
+// last crumb, the page's own subject, printed as text rather than a link.
 type Crumb struct {
-	Name string
-	URL  string
+	Name    string
+	URL     string
+	Current bool
 }
 
 // AreaLinkBlock is one nav.area-links section: a heading and the areas it
@@ -77,17 +77,18 @@ func (p PageData) oblastFormRow(row AreaRow) string {
 	return strings.ReplaceAll(p.T("seo.oblast.label"), "{name}", row.Name)
 }
 
-// Breadcrumbs assembles the full chain for one area page: the home crumb,
-// then chain (as ParentChain returned it) reversed to root-first order, then
-// the current area last with no link.
+// Breadcrumbs assembles the trail for one area page, shared by the visible nav
+// and the JSON-LD BreadcrumbList: home, the areas directory, the chain (as
+// ParentChain returned it) reversed to root-first order, then the current area.
 func (p PageData) Breadcrumbs(row AreaRow, chain []AreaRow) []Crumb {
-	out := make([]Crumb, 0, len(chain)+2)
+	out := make([]Crumb, 0, len(chain)+3)
 	out = append(out, Crumb{Name: p.T("area.breadcrumb.home"), URL: p.Path("/")})
+	out = append(out, Crumb{Name: p.T("nav.areas"), URL: p.Path("/areas")})
 	for i := len(chain) - 1; i >= 0; i-- {
 		a := chain[i]
 		out = append(out, Crumb{Name: p.crumbLabel(a), URL: p.Path("/area/" + a.Slug)})
 	}
-	out = append(out, Crumb{Name: p.crumbLabel(row)})
+	out = append(out, Crumb{Name: p.crumbLabel(row), URL: p.Path("/area/" + row.Slug), Current: true})
 	return out
 }
 
@@ -308,8 +309,8 @@ const nearestCount = 4
 //
 //   - oblast: no parent block; children is the one областен град (omitted
 //     for sofiyska-oblast, which contains no city); nearest is 4 oblasti.
-//   - city: parent is its oblast; children is the 24 Sofia districts, city
-//     "sofia" only; nearest is 4 cities.
+//   - city: parent is its oblast; children is the city's districts where it
+//     has any (Sofia); nearest is 4 cities.
 //   - neighbourhood (a Sofia district): parent is the chain София, Област
 //     София-град; no children; nearest is 4 districts.
 func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row AreaRow, snap *snapshot.Snapshot, lang string) {
@@ -322,7 +323,8 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 
 	if children := rr.childrenOf(meta, snap, lang); len(children) > 0 {
 		label := p.T("area.children.oblast")
-		if meta.Slug == "sofia" {
+		// Districts are the neighbourhood-kind children; no slug literal, so a renamed Sofia still matches.
+		if children[0].Kind == "neighbourhood" {
 			label = p.T("area.children.districts")
 		}
 		p.AreaChildrenBlock = &AreaLinkBlock{Label: label, Items: children}
@@ -334,7 +336,7 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 }
 
 // DirGroup is one /areas directory entry: an oblast, its own label form, the
-// cities inside it, and — for the group containing "sofia" only — the 24
+// cities inside it, and — for the group whose city has districts — the 24
 // Sofia districts nested under that city (§3 of the SEO6 plan).
 type DirGroup struct {
 	Oblast    AreaRow
@@ -365,14 +367,14 @@ func (rr *Renderer) buildDirectory(snap *snapshot.Snapshot, lang string) []DirGr
 		g.Cities = cities
 
 		for _, c := range cities {
-			if c.Slug != "sofia" {
-				continue
-			}
 			var districts []AreaRow
 			for _, m := range snap.KnownSlugs {
-				if m.Kind == "neighbourhood" && m.ParentSlug == "sofia" {
+				if m.Kind == "neighbourhood" && m.ParentSlug == c.Slug {
 					districts = append(districts, rr.rowFrom(m, lang))
 				}
+			}
+			if len(districts) == 0 {
+				continue
 			}
 			sort.Slice(districts, func(i, j int) bool { return districts[i].Name < districts[j].Name })
 			g.Districts = districts

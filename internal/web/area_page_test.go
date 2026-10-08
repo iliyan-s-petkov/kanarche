@@ -23,14 +23,14 @@ func areaPageFixture(t *testing.T) *snapshot.Snapshot {
 				Covered: true, SensorCount: 5, Values: map[string]float64{"P2": 12.3}},
 			"sofiya-grad-oblast": {Slug: "sofiya-grad-oblast", Kind: "oblast", NameBG: "София-град", NameEN: "Sofia-City",
 				CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 9, Covered: true, SensorCount: 412},
-			"sofia": {Slug: "sofia", Kind: "city", NameBG: "София", NameEN: "Sofia",
+			"sofiya": {Slug: "sofiya", Kind: "city", NameBG: "София", NameEN: "Sofia",
 				ParentSlug: "sofiya-grad-oblast", CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 11,
 				Covered: true, SensorCount: 30, Values: map[string]float64{"P2": 8.0}},
 			"mladost": {Slug: "mladost", Kind: "neighbourhood", NameBG: "Младост", NameEN: "Mladost",
-				ParentSlug: "sofia", CentroidLon: 23.37, CentroidLat: 42.65, DefaultZoom: 13,
+				ParentSlug: "sofiya", CentroidLon: 23.37, CentroidLat: 42.65, DefaultZoom: 13,
 				Covered: true, SensorCount: 4, Values: map[string]float64{"P2": 6.0}},
 			"lozenets": {Slug: "lozenets", Kind: "neighbourhood", NameBG: "Лозенец", NameEN: "Lozenets",
-				ParentSlug: "sofia", CentroidLon: 23.32, CentroidLat: 42.68, DefaultZoom: 13,
+				ParentSlug: "sofiya", CentroidLon: 23.32, CentroidLat: 42.68, DefaultZoom: 13,
 				Covered: true, SensorCount: 6, Values: map[string]float64{"P2": 9.5}},
 			"sofiyska-oblast": {Slug: "sofiyska-oblast", Kind: "oblast", NameBG: "Софийска", NameEN: "Sofia",
 				CentroidLon: 23.7, CentroidLat: 42.5, DefaultZoom: 9, Covered: true, SensorCount: 40},
@@ -62,7 +62,7 @@ func TestAreaSentenceNoJS(t *testing.T) {
 	if !strings.Contains(body, `<nav class="area-links"`) {
 		t.Error("the area-links block (parent/children/nearest) is missing")
 	}
-	if !strings.Contains(body, `href="/area/sofia"`) {
+	if !strings.Contains(body, `href="/area/sofiya"`) {
 		t.Error("the parent link to the city is missing")
 	}
 }
@@ -102,7 +102,7 @@ func TestAreaH1CarriesOblastKindPrefix(t *testing.T) {
 	cases := map[string]string{
 		"/area/plovdiv-oblast":    `<h1 class="t-title">Област Пловдив</h1>`,
 		"/en/area/plovdiv-oblast": `<h1 class="t-title">Plovdiv Province</h1>`,
-		"/area/sofia":             `<h1 class="t-title">София</h1>`,
+		"/area/sofiya":            `<h1 class="t-title">София</h1>`,
 	}
 	for path, want := range cases {
 		if body := fetch(t, rr, path).Body.String(); !strings.Contains(body, want) {
