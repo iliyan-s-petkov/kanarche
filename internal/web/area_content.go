@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // staleAfter is how long past a snapshot's GeneratedAt a reader is told "this

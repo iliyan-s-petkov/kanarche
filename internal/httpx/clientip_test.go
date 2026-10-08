@@ -6,7 +6,7 @@ import (
 	"net/netip"
 	"testing"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 func resolver(t *testing.T) *httpx.IPResolver {

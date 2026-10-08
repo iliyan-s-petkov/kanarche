@@ -11,12 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/backfill"
-	"airbg.org/internal/config"
-	"airbg.org/internal/db"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/backfill"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/testsupport"
 )
 
 // testQualityConfig mirrors the ranges airbg.yaml ships (see

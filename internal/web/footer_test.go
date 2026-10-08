@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/web"
 )
 
 // cityFixture adds prod-style transliterated city slugs: five cities plus an

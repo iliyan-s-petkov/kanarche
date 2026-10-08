@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/upstream/eea"
+	"kanarche.eu/internal/upstream/eea"
 )
 
 func TestParseMetadataResolvesBulgarianSamplingPoints(t *testing.T) {

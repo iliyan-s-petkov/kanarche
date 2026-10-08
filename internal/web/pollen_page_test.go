@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 // pollenSnap installs a sofia table built from rows, as Build would.

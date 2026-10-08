@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 func nearestWindCell(cells []snapshot.WindCell, lon, lat float64) float64 {

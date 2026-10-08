@@ -6,8 +6,8 @@ package web
 import (
 	"testing"
 
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
 )
 
 // areaReadoutsFor builds the PageData an area page carries — the one area, the

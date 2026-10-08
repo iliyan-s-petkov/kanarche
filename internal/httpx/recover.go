@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"airbg.org/internal/metrics"
+	"kanarche.eu/internal/metrics"
 )
 
 var panicsRecovered = metrics.Counter(

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/web"
 )
 
 // TestBuildAssetsAreImmutablyCacheable. A content-hashed filename can be cached

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/snapshot"
 )
 
 // TestNewHolderTakesDefaultMetricFromConfig proves NewHolder actually consumes

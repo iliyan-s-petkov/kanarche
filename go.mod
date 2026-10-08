@@ -1,4 +1,4 @@
-module airbg.org
+module kanarche.eu
 
 go 1.26.0
 

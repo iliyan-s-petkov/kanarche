@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/wind"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/wind"
 )
 
 func points() []wind.Point {

@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // minLookbackDays always re-checks a few recent days for late corrections.

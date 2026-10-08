@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/tiles"
+	"kanarche.eu/internal/tiles"
 )
 
 const origin = "https://airbg.org"

@@ -12,12 +12,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/db"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
-	"airbg.org/internal/testsupport"
-	"airbg.org/internal/wind"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/testsupport"
+	"kanarche.eu/internal/wind"
 )
 
 const collectorSeriesTimeout = 5 * time.Second

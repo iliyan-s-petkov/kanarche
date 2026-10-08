@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/quality"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/store"
 )
 
 func TestRollupHourExcludesFlaggedReadings(t *testing.T) {

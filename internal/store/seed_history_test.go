@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/quality"
+	"kanarche.eu/internal/quality"
 )
 
 func seedRows(id int64, metric string, value float64, flag quality.Flag, n int, newest time.Time, step time.Duration) []quality.Scored {

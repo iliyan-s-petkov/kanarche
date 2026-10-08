@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/db"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/testsupport"
 )
 
 // testDBConfig mirrors airbg.yaml's database.statement_timeouts, with the

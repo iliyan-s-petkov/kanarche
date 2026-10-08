@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/upstream"
 )
 
 // timelapseFixture carries a body per published (metric, span, tier), each

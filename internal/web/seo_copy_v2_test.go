@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/snapshot"
 )
 
 // TestFreshnessCopyMatchesUpstreamPollInterval pins the "every 5 minutes"

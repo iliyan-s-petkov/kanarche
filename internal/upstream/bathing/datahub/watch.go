@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"airbg.org/internal/metrics"
+	"kanarche.eu/internal/metrics"
 )
 
 var newEditionFound = metrics.Gauge("airbg_sea_datahub_newer_edition", "1 while the EEA Datahub has an edition newer than the pinned one, else 0.")

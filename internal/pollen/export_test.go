@@ -1,8 +1,8 @@
 package pollen
 
 import (
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // RequestURLForTesting exposes the URL builder to the external test package.

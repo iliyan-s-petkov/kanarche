@@ -3,7 +3,7 @@ package origin_test
 import (
 	"testing"
 
-	"airbg.org/internal/origin"
+	"kanarche.eu/internal/origin"
 )
 
 const site = "https://airbg.org"

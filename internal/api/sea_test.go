@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/store"
 )
 
 var seaImportedAt = time.Date(2026, 10, 4, 3, 0, 0, 0, time.UTC)

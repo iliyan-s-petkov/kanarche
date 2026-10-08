@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // dataTAttrRe finds the START of a data-t-* attribute. The value is scanned by

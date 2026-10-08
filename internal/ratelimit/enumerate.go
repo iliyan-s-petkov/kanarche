@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // The area/sensor/window limits documented in Phase 1 §8.3 (12 distinct areas,

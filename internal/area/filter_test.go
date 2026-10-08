@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/upstream"
 )
 
 // reading builds a minimal upstream.Reading for these tests. There is no

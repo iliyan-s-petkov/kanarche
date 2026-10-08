@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
 )
 
 // testSeries is airbg.yaml's series.default_metric and series.default_window,

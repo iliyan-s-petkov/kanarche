@@ -1,6 +1,6 @@
 package snapshot
 
-import "airbg.org/internal/store"
+import "kanarche.eu/internal/store"
 
 // SensorLocation is where one sensor is and which area page owns it.
 //

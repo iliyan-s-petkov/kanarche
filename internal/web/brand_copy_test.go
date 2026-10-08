@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/web"
 )
 
 var (

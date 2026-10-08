@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
-	"airbg.org/internal/geocode"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/geocode"
 )
 
 const upstreamRows = `[{"display_name":"бул. Витоша 1, София","lat":"42.6931","lon":"23.3201",

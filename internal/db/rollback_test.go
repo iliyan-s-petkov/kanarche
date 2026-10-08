@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/db/migrations"
+	"kanarche.eu/internal/db/migrations"
 )
 
 // TestMigration00006DownGuard executes the guard from 00006's Down section

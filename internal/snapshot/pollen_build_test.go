@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 func TestBuildServesPollenPerAreaAndCarriesItForward(t *testing.T) {

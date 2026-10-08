@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/xlsx"
-	"airbg.org/internal/xlsx/xlsxtest"
+	"kanarche.eu/internal/xlsx"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 var now = time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)

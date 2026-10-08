@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 // HexResolutionKM is the default centre-to-centre spacing of the hex grid, in

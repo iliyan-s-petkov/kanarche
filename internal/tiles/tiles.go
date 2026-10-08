@@ -20,7 +20,7 @@ import (
 	"path"
 	"strings"
 
-	"airbg.org/internal/origin"
+	"kanarche.eu/internal/origin"
 )
 
 // styleFile is the one artefact name that is fixed. The style document is

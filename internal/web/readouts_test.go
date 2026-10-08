@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // readoutsFor builds a PageData carrying rows and nothing else the strip reads.

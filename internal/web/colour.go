@@ -1,6 +1,6 @@
 package web
 
-import "airbg.org/internal/api"
+import "kanarche.eu/internal/api"
 
 // bandColour is the table's swatch colour for one reading: the first band whose
 // inclusive upper bound is at or above the value, from the first scale table

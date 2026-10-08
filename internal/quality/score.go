@@ -4,8 +4,8 @@ import (
 	"math"
 	"slices"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream"
 )
 
 // NeighbourRadiusMetres (the search radius for the spatial check, spec §6.3)

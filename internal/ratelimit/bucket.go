@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // Rate is a refill rate and a maximum burst, both in tokens.

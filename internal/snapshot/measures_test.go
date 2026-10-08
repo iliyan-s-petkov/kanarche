@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 // A device measures what its hardware measures, whether or not this cycle's

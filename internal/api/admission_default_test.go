@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/admit"
-	"airbg.org/internal/api"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/admit"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/store"
 )
 
 // blockingSource holds every AreaAtPoint call inside the query until gate is

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 // The overlay's whole risk is being read as measurement, so the fields that say

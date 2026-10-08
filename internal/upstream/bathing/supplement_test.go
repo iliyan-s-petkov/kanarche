@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 const (

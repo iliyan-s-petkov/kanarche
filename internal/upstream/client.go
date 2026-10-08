@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // upstreamTimeLayout is sensor.community's timestamp format. It carries no zone

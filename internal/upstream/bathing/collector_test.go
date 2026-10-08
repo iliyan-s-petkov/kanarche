@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream/bathing"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream/bathing"
 )
 
 type fakeSink struct {

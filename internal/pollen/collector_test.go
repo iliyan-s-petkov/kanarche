@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/pollen"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/pollen"
+	"kanarche.eu/internal/store"
 )
 
 func TestNextRun(t *testing.T) {

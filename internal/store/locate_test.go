@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // TestAreaAtPointPrefersTheSmallestArea: a point in Sofia falls inside the

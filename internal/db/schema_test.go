@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/db"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/testsupport"
 )
 
 // Sofia's Alexander Nevsky Cathedral. Longitude first — PostGIS geography is

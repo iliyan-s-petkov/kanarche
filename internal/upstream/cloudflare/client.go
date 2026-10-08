@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // TokenEnv is where the API token comes from. Env-only, like

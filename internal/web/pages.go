@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
 )
 
 const (

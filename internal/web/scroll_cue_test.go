@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // The strip under the map on the home and area pages, in both languages, and

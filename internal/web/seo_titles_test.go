@@ -8,8 +8,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/web"
 )
 
 // seoFixture carries one area of every kind the SEO copy spec (seo-copy.md)

@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
-	"airbg.org/internal/i18n"
-	"airbg.org/internal/server"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/server"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/web"
 )
 
 // TestNoRouteSetsCookies is OpenProject #584's origin-side privacy guard: the

@@ -3,7 +3,7 @@ package snapshot
 import (
 	"testing"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 func TestSensorLocationsPickTheSmallestArea(t *testing.T) {

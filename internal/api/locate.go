@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 // The national fallback view — roughly Bulgaria's centre, at a zoom that fits

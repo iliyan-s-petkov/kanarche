@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream"
 )
 
 // testScorer builds a Scorer with the same values airbg.yaml ships, so the

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/area"
 	"github.com/jackc/pgx/v5/pgconn"
+	"kanarche.eu/internal/area"
 )
 
 // TestAssignSensorsAppliesTheGivenTimeout proves assignTimeout genuinely

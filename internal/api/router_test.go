@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
-	"airbg.org/internal/ratelimit"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/ratelimit"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
 )
 
 // testConfig is the committed configuration, loaded once, so API tests assert

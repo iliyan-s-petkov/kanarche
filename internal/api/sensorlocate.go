@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"airbg.org/internal/httpx"
+	"kanarche.eu/internal/httpx"
 )
 
 // handleSensorLocate resolves one sensor id to a position and an area.

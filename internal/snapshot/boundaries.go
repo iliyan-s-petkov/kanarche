@@ -3,7 +3,7 @@ package snapshot
 import (
 	"encoding/json"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // boundaryPayload is the province outlines, shaped as GeoJSON so a client can

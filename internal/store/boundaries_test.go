@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 func TestAreaBoundariesReturnsOneShapePerAreaOfTheKindsAsked(t *testing.T) {

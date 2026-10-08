@@ -3,7 +3,7 @@ package bathing
 import (
 	"log/slog"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // SupplementClass is one annual class from a second source.

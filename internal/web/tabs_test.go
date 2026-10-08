@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // "/" and "/areas" render from one template. They used to render the SAME

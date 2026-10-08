@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/web"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/web"
 )
 
 // framed serves path through the same SecurityHeaders wrapper production puts

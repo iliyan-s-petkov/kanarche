@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/store"
 )
 
 func customURL(from, to time.Time) string {

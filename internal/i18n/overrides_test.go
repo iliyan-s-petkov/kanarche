@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // writeOverrides builds an override directory and returns its path.

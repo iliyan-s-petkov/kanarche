@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // storageAllowListKeys reads the published allow-list directly, the same file

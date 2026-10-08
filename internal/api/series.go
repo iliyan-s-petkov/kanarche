@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"airbg.org/internal/admit"
-	"airbg.org/internal/config"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/metrics"
-	"airbg.org/internal/ratelimit"
-	"airbg.org/internal/snapshot"
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
 	"github.com/jackc/pgx/v5/pgconn"
+	"kanarche.eu/internal/admit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/metrics"
+	"kanarche.eu/internal/ratelimit"
+	"kanarche.eu/internal/snapshot"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 // admissionRejected counts requests shed by the admission semaphore.

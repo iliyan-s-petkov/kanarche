@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // The province list is ranked by its reading, and the order is a contract, not

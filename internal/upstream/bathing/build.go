@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // Skipped counts rows Build dropped, for the import log line.

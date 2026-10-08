@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // In English an област is a province, never "oblast". Transliterating it leaves

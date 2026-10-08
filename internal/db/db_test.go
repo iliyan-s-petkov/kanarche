@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"airbg.org/internal/db"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/testsupport"
 )
 
 func TestMigrateIsIdempotent(t *testing.T) {

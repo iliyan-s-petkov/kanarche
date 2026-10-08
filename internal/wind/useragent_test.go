@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"airbg.org/internal/wind"
+	"kanarche.eu/internal/wind"
 )
 
 func TestFetchSendsTheConfiguredUserAgent(t *testing.T) {

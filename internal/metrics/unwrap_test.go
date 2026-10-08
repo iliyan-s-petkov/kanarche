@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"airbg.org/internal/metrics"
+	"kanarche.eu/internal/metrics"
 )
 
 // TestInstrumentKeepsTheWriterReachable. Instrument wraps every response writer

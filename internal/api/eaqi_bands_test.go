@@ -3,7 +3,7 @@ package api_test
 import (
 	"testing"
 
-	"airbg.org/internal/api"
+	"kanarche.eu/internal/api"
 )
 
 // The published EAQI table, transcribed from the index's own "Legend explained"

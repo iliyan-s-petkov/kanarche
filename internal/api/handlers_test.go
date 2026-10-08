@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/ratelimit"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/ratelimit"
+	"kanarche.eu/internal/upstream"
 )
 
 // serve wraps the mux in WithClientIP so BucketKeyFrom resolves, which is how

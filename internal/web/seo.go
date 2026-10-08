@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // /embed is not disallowed: a crawl block would hide its X-Robots-Tag noindex.

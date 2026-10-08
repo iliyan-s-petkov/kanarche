@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
-	"airbg.org/internal/db/migrations"
+	"kanarche.eu/internal/db/migrations"
 )
 
 // TestSourceColumnsExist asserts migration 00011 added the source-tagging

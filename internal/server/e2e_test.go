@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/db"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/server"
-	"airbg.org/internal/store"
-	"airbg.org/internal/testsupport"
+	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/server"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/testsupport"
 )
 
 // newIntegrationStore starts a throwaway PostGIS container, migrates it, and

@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // seedWindowed gives the three seeded sensors a rollup history whose mean is

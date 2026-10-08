@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/store"
 )
 
 // writeChunkSize bounds pgx.Batch size. A full cycle can carry ~2M readings

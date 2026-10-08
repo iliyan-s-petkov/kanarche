@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"time"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/config"
-	"airbg.org/internal/upstream/bathing"
-	"airbg.org/internal/upstream/bathing/datahub"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/upstream/bathing"
+	"kanarche.eu/internal/upstream/bathing/datahub"
 )
 
 func snapshotPins(cfg config.Config) datahub.Pins {

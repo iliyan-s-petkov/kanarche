@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 const ldOpen = `<script type="application/ld+json">`

@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/xlsx"
+	"kanarche.eu/internal/xlsx"
 )
 
 var (

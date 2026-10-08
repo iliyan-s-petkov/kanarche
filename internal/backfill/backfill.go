@@ -21,11 +21,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/area"
-	"airbg.org/internal/config"
-	"airbg.org/internal/quality"
-	"airbg.org/internal/store"
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/area"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/quality"
+	"kanarche.eu/internal/store"
+	"kanarche.eu/internal/upstream"
 )
 
 const archiveTimeLayout = "2006-01-02T15:04:05"

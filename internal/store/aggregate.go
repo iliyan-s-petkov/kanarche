@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"airbg.org/internal/db"
+	"kanarche.eu/internal/db"
 )
 
 // usableQuality is the quality filter every published aggregate applies.

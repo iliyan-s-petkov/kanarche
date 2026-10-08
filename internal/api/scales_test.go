@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"airbg.org/internal/api"
-	"airbg.org/internal/upstream"
-	"airbg.org/internal/upstream/eea"
+	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/upstream"
+	"kanarche.eu/internal/upstream/eea"
 )
 
 // TestScaleBandsAreMonotonic. Bands out of order, or with a repeated upper

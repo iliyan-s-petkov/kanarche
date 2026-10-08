@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 // seedCountry inserts a country row as a lon/lat box.

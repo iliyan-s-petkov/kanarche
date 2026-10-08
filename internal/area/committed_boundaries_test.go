@@ -3,7 +3,7 @@ package area_test
 import (
 	"testing"
 
-	"airbg.org/internal/area"
+	"kanarche.eu/internal/area"
 )
 
 // TestCommittedBoundariesImport imports the actual committed files, not a

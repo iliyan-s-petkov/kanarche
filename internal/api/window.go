@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"airbg.org/internal/snapshot"
+	"kanarche.eu/internal/snapshot"
 )
 
 // windowParam is the query parameter that picks an averaging window. One name

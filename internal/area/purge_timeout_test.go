@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/area"
+	"kanarche.eu/internal/area"
 )
 
 // TestPurgeOutsideBoundaryAppliesTheGivenTimeout proves operatorTimeout

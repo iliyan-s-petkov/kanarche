@@ -5,7 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/upstream"
+	"kanarche.eu/internal/upstream"
 )
 
 // NationalBoundaryKind is the area.kind value reserved for the whole-country

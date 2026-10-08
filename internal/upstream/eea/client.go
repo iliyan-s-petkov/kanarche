@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // metadataCacheFile is the on-disk name for the cached coordinate CSV,

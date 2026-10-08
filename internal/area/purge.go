@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"airbg.org/internal/db"
+	"kanarche.eu/internal/db"
 )
 
 // PurgeResult reports what PurgeOutsideBoundary removed. Orphaned readings are

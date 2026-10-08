@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
-	"airbg.org/internal/httpx"
-	"airbg.org/internal/ratelimit"
+	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/httpx"
+	"kanarche.eu/internal/ratelimit"
 )
 
 // testBucket builds a config.Bucket for tests that only care about

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"airbg.org/internal/i18n"
+	"kanarche.eu/internal/i18n"
 )
 
 // storageKeysFile is where the published allow-list lives — the same file

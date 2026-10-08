@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"airbg.org/internal/store"
+	"kanarche.eu/internal/store"
 )
 
 func testBoundaries() []store.AreaBoundary {

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"airbg.org/internal/config"
+	"kanarche.eu/internal/config"
 )
 
 // TestNewHolderRespectsWindArgument proves NewHolder actually uses the wind
