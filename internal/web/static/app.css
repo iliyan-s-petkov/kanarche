@@ -461,6 +461,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-wind-label__toggle::before { content: 'ⓘ'; margin-inline-end: var(--space-1); }
 .map-wind-label__toggle:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius); }
 .map-wind-label__text:not(:empty) { margin-block-start: var(--space-1); }
+/* While the locate hint is up, the folded note sits above it instead of under it. */
+:has(> .map-locate-hint) > .map-wind-label:not([open]) {
+  inset-block-end: calc(var(--locate-hint-lift) + var(--locate-hint-clear));
+}
 /* The bathing-site card (lib/seapanel.svelte.js): right, under the search and clear of the control column and
    the legend on desktop; a bottom sheet on phones. */
 .map-sea {
