@@ -37,7 +37,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|validate-config|contract|healthz>")
+		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|extract-bathing-datahub|validate-config|contract|healthz>")
 		os.Exit(2)
 	}
 
@@ -46,6 +46,12 @@ func main() {
 	// rather than at server start.
 	if os.Args[1] == "validate-config" {
 		os.Exit(runValidateConfig(os.Stdout, os.Stderr))
+	}
+
+	// extract-bathing-datahub reads a pinned file and writes a JSON snapshot. It
+	// needs no database, so it runs before the pool is opened.
+	if os.Args[1] == "extract-bathing-datahub" {
+		os.Exit(runExtractDatahub(os.Args[2:], os.Stdout, os.Stderr))
 	}
 
 	// contract emits the constants the frontend generates from. Checked before
@@ -119,7 +125,10 @@ func main() {
 			go cloudflare.NewCollector(cfg.Cloudflare, config.Getenv(cloudflare.TokenEnv), cfStore).Loop(ctx)
 		}
 		if cfg.Sea.Enabled {
-			go bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)).Loop(ctx)
+			seaCollector := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series))
+			seaCollector.SetSupplement(loadSupplement(cfg))
+			seaCollector.SetEditionWatch(editionWatch(cfg))
+			go seaCollector.Loop(ctx)
 		}
 		client := upstream.New(cfg.Upstream)
 		collectStore := store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)
@@ -244,13 +253,16 @@ func main() {
 
 	// Forced refresh of the bathing-water layer, ignoring refresh_interval.
 	case "import-sea":
-		st, err := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator)).RunOnce(ctx)
+		seaCollector := bathing.NewCollector(cfg.Sea, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator))
+		seaCollector.SetSupplement(loadSupplement(cfg))
+		st, err := seaCollector.RunOnce(ctx)
 		if err != nil {
 			slog.Error("import sea", "error", err)
 			os.Exit(1)
 		}
 		slog.Info("import sea complete", "sites", st.Sites, "classes", st.Classes, "samples", st.Samples,
-			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan)
+			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan,
+			"supplement_applied", st.Supplement.Applied)
 
 	case "purge-outside-boundary":
 		// Deliberately a separate, operator-invoked step (task-17 review
@@ -362,13 +374,15 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// Built here, in main, rather than inside server.New: this is the one place
 	// the configured basemap host reaches the CSP, and it keeps the server
 	// package from needing to know how a policy is assembled.
+	sup := loadSupplement(cfg)
 	srv, err := server.New(server.Options{
-		Config:    cfg,
-		Catalogue: cat,
-		Snapshots: holder,
-		Store:     apiStore,
-		Publisher: pub,
-		Logger:    log,
+		Config:        cfg,
+		Catalogue:     cat,
+		Snapshots:     holder,
+		Store:         apiStore,
+		Publisher:     pub,
+		SeaSupplement: seaSupplementMeta(sup),
+		Logger:        log,
 	})
 	if err != nil {
 		return err
@@ -453,6 +467,8 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	seaDone := make(chan struct{})
 	if cfg.Sea.Enabled {
 		sc := bathing.NewCollector(cfg.Sea, collectorStore)
+		sc.SetSupplement(sup)
+		sc.SetEditionWatch(editionWatch(cfg))
 		go func() {
 			defer close(seaDone)
 			sc.Loop(pollCtx)

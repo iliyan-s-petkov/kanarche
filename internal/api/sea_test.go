@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"airbg.org/internal/api"
 	"airbg.org/internal/store"
 )
 
@@ -174,5 +175,156 @@ func TestSeaBeforeAnyImport(t *testing.T) {
 	}
 	if b.ImportedAt != nil || b.Sites == nil || len(b.Sites) != 0 {
 		t.Errorf("body = %s, want null imported_at and an empty sites array", rec.Body.String())
+	}
+}
+
+var seaSupplementMeta = api.SeaSupplementMeta{Published: "2026-09-30", URL: "https://example.test/datahub/bathing"}
+
+// mixedSeaSource has one site whose 2024 class came from the Excel release.
+func mixedSeaSource() *stubSource {
+	src := seaSource()
+	src.bathing.Classes = []store.BathingClass{
+		{SiteID: "BG3310610135003001", Season: 2023, Quality: "good", Source: store.SourceDiscodata},
+		{SiteID: "BG3310610135003001", Season: 2024, Quality: "excellent", Source: store.SourceDatahub},
+	}
+	src.bathingEdition = "2025 v1.0"
+	return src
+}
+
+func mixedDeps(t *testing.T, src *stubSource) api.Deps {
+	d := visitorsDeps(t, src)
+	d.SeaSupplement = seaSupplementMeta
+	return d
+}
+
+type seaSupplementBody struct {
+	Edition   string `json:"edition"`
+	Published string `json:"published"`
+	URL       string `json:"url"`
+}
+
+func TestSeaDetailExposesSourcePerClass(t *testing.T) {
+	rec := serve(t, mixedDeps(t, mixedSeaSource()), get("/api/v1/sea/sites/BG3310610135003001", "203.0.113.7"))
+	var b struct {
+		Classes []struct {
+			Season  int    `json:"season"`
+			Quality string `json:"quality"`
+			Source  string `json:"source"`
+		} `json:"classes"`
+		Supplement *seaSupplementBody `json:"supplement"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if len(b.Classes) != 2 || b.Classes[0].Source != "datahub" || b.Classes[1].Source != "discodata" {
+		t.Errorf("classes = %+v, want datahub then discodata", b.Classes)
+	}
+	want := seaSupplementBody{Edition: "2025 v1.0", Published: "2026-09-30", URL: "https://example.test/datahub/bathing"}
+	if b.Supplement == nil || *b.Supplement != want {
+		t.Errorf("supplement = %+v, want %+v", b.Supplement, want)
+	}
+}
+
+func TestSeaListHeadlineCarriesSourceAndSupplement(t *testing.T) {
+	rec := serve(t, mixedDeps(t, mixedSeaSource()), get("/api/v1/sea/sites", "203.0.113.7"))
+	var b struct {
+		Sites      []map[string]json.RawMessage `json:"sites"`
+		Supplement *seaSupplementBody           `json:"supplement"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if string(b.Sites[1]["source"]) != `"datahub"` || string(b.Sites[1]["season"]) != "2024" {
+		t.Errorf("headline = %v", b.Sites[1])
+	}
+	if string(b.Sites[0]["source"]) != "null" {
+		t.Errorf("unclassified source = %s, want null", b.Sites[0]["source"])
+	}
+	if b.Supplement == nil || b.Supplement.Edition != "2025 v1.0" {
+		t.Errorf("supplement = %+v", b.Supplement)
+	}
+}
+
+// Without a datahub row the key is absent and the edition is not read.
+func TestSeaOmitsSupplementWithoutDatahubRows(t *testing.T) {
+	src := seaSource()
+	for i := range src.bathing.Classes {
+		src.bathing.Classes[i].Source = store.SourceDiscodata
+	}
+	src.bathingEdition = "2025 v1.0"
+	for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/BG3310610135003001"} {
+		rec := serve(t, mixedDeps(t, src), get(p, "203.0.113.7"))
+		if src.bathingEditionCalls != 0 {
+			t.Errorf("%s: edition read %d times, want 0", p, src.bathingEditionCalls)
+		}
+		var b map[string]json.RawMessage
+		if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+			t.Fatal(err)
+		}
+		if _, has := b["supplement"]; has {
+			t.Errorf("%s: supplement present without datahub rows: %s", p, rec.Body.String())
+		}
+	}
+}
+
+// A failed edition lookup drops the supplement and keeps the data.
+func TestSeaEditionErrorOmitsSupplement(t *testing.T) {
+	src := mixedSeaSource()
+	src.bathingEditionErr = errors.New("db down")
+	for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/BG3310610135003001"} {
+		rec := serve(t, mixedDeps(t, src), get(p, "203.0.113.7"))
+		if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+			t.Errorf("%s: status = %d, body = %s", p, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+// No half-empty object: any empty field drops the whole supplement.
+func TestSeaOmitsIncompleteSupplement(t *testing.T) {
+	for name, tc := range map[string]struct {
+		edition string
+		meta    api.SeaSupplementMeta
+	}{
+		"no edition":   {"", seaSupplementMeta},
+		"no published": {"2025 v1.0", api.SeaSupplementMeta{URL: seaSupplementMeta.URL}},
+		"no url":       {"2025 v1.0", api.SeaSupplementMeta{Published: seaSupplementMeta.Published}},
+	} {
+		src := mixedSeaSource()
+		src.bathingEdition = tc.edition
+		d := visitorsDeps(t, src)
+		d.SeaSupplement = tc.meta
+		for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/BG3310610135003001"} {
+			rec := serve(t, d, get(p, "203.0.113.7"))
+			if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+				t.Errorf("%s %s: status = %d, body = %s", name, p, rec.Code, rec.Body.String())
+			}
+		}
+	}
+}
+
+// The supplement follows what the body shows, not what the store holds.
+func TestSeaSupplementFollowsTheBody(t *testing.T) {
+	src := mixedSeaSource()
+	src.bathing.Classes = append(src.bathing.Classes,
+		store.BathingClass{SiteID: "BG3242661710017001", Season: 2024, Quality: "good", Source: store.SourceDiscodata})
+	rec := serve(t, mixedDeps(t, src), get("/api/v1/sea/sites/BG3242661710017001", "203.0.113.7"))
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+		t.Errorf("discodata-only detail: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	// Datahub only in history: the headline is discodata.
+	src = seaSource()
+	src.bathing.Classes = []store.BathingClass{
+		{SiteID: "BG3310610135003001", Season: 2023, Quality: "good", Source: store.SourceDatahub},
+		{SiteID: "BG3310610135003001", Season: 2024, Quality: "excellent", Source: store.SourceDiscodata},
+	}
+	src.bathingEdition = "2025 v1.0"
+	rec = serve(t, mixedDeps(t, src), get("/api/v1/sea/sites", "203.0.113.7"))
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"supplement"`) {
+		t.Errorf("history-only list: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rec = serve(t, mixedDeps(t, src), get("/api/v1/sea/sites/BG3310610135003001", "203.0.113.7"))
+	if !strings.Contains(rec.Body.String(), `"supplement"`) {
+		t.Errorf("detail with a datahub history row lacks supplement: %s", rec.Body.String())
 	}
 }

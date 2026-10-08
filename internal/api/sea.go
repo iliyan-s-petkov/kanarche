@@ -28,12 +28,31 @@ type seaSite struct {
 	Lon     float64 `json:"lon"`
 	Season  *int    `json:"season"`
 	Quality *string `json:"quality"`
+	// Source is the dataset behind Season and Quality, null with no class.
+	Source *string `json:"source"`
+}
+
+// SeaSupplementMeta is the snapshot header data the API echoes. The caller
+// loads it once at startup, so no request touches the embedded file.
+type SeaSupplementMeta struct {
+	Published string
+	URL       string
+}
+
+// seaSupplement names the Excel release behind the datahub classes. Edition
+// comes from the store, the rest from the embedded snapshot header.
+type seaSupplement struct {
+	Edition   string `json:"edition"`
+	Published string `json:"published"`
+	URL       string `json:"url"`
 }
 
 type seaSitesBody struct {
 	ImportedAt *time.Time                `json:"imported_at"`
 	Limits     map[string]bathing.Limits `json:"limits"`
 	Sites      []seaSite                 `json:"sites"`
+	// Supplement is omitted unless a served class came from datahub.
+	Supplement *seaSupplement `json:"supplement,omitempty"`
 }
 
 type seaSiteInfo struct {
@@ -49,6 +68,7 @@ type seaSiteInfo struct {
 type seaClass struct {
 	Season  int    `json:"season"`
 	Quality string `json:"quality"`
+	Source  string `json:"source"`
 }
 
 type seaSample struct {
@@ -67,6 +87,8 @@ type seaSiteBody struct {
 	Limits     bathing.Limits `json:"limits"`
 	Classes    []seaClass     `json:"classes"`
 	Samples    []seaSample    `json:"samples"`
+	// Supplement is omitted unless a served class came from datahub.
+	Supplement *seaSupplement `json:"supplement,omitempty"`
 }
 
 // seaBodies is one store load, encoded once: the list and every site's detail.
@@ -83,7 +105,7 @@ type seaCache struct {
 	ok      bool
 }
 
-func (c *seaCache) get(ctx context.Context, src DataSource, now time.Time) (seaBodies, error) {
+func (c *seaCache) get(ctx context.Context, src DataSource, meta SeaSupplementMeta, now time.Time) (seaBodies, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.ok && now.Sub(c.fetched) < seaTTL {
@@ -101,7 +123,17 @@ func (c *seaCache) get(ctx context.Context, src DataSource, now time.Time) (seaB
 	if has {
 		importedAt = &at
 	}
-	b, err := encodeSea(d, importedAt)
+	var sup *seaSupplement
+	if hasDatahub(d.Classes) {
+		ed, err := src.BathingSupplementEdition(ctx)
+		if err != nil {
+			// The classes are still right; only the credit line is lost.
+			slog.Error("sea supplement edition query failed", "error", err)
+			ed = ""
+		}
+		sup = newSeaSupplement(ed, meta)
+	}
+	b, err := encodeSea(d, importedAt, sup)
 	if err != nil {
 		return seaBodies{}, err
 	}
@@ -109,12 +141,30 @@ func (c *seaCache) get(ctx context.Context, src DataSource, now time.Time) (seaB
 	return b, nil
 }
 
+// newSeaSupplement returns nil unless every field is set, so a bad embed or a
+// missing edition never yields a half-empty object.
+func newSeaSupplement(edition string, m SeaSupplementMeta) *seaSupplement {
+	if edition == "" || m.Published == "" || m.URL == "" {
+		return nil
+	}
+	return &seaSupplement{Edition: edition, Published: m.Published, URL: m.URL}
+}
+
+func hasDatahub(cs []store.BathingClass) bool {
+	for _, c := range cs {
+		if c.Source == store.SourceDatahub {
+			return true
+		}
+	}
+	return false
+}
+
 // encodeSea builds both shapes. Store order is site, then season or date
 // ascending; the detail lists are reversed to newest first.
-func encodeSea(d store.BathingData, importedAt *time.Time) (seaBodies, error) {
+func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (seaBodies, error) {
 	classes := map[string][]seaClass{}
 	for _, c := range d.Classes {
-		classes[c.SiteID] = append([]seaClass{{Season: c.Season, Quality: c.Quality}}, classes[c.SiteID]...)
+		classes[c.SiteID] = append([]seaClass{{Season: c.Season, Quality: c.Quality, Source: c.Source}}, classes[c.SiteID]...)
 	}
 	samples := map[string][]seaSample{}
 	for _, s := range d.Samples {
@@ -131,9 +181,12 @@ func encodeSea(d store.BathingData, importedAt *time.Time) (seaBodies, error) {
 	for _, s := range d.Sites {
 		row := seaSite{ID: s.ID, NameBG: s.NameBG, NameEN: s.NameEN, Zone: s.Zone, Lat: s.Lat, Lon: s.Lon}
 		if cs := classes[s.ID]; len(cs) > 0 {
-			row.Season, row.Quality = &cs[0].Season, &cs[0].Quality
+			row.Season, row.Quality, row.Source = &cs[0].Season, &cs[0].Quality, &cs[0].Source
 		}
 		list.Sites = append(list.Sites, row)
+		if sup != nil && row.Source != nil && *row.Source == store.SourceDatahub {
+			list.Supplement = sup
+		}
 
 		detail := seaSiteBody{
 			ImportedAt: importedAt,
@@ -142,6 +195,12 @@ func encodeSea(d store.BathingData, importedAt *time.Time) (seaBodies, error) {
 			Limits:  bathing.LimitsByZone[s.Zone],
 			Classes: nonNil(classes[s.ID]),
 			Samples: nonNil(samples[s.ID]),
+		}
+		// Only a site that shows a datahub class carries the credit.
+		for _, c := range classes[s.ID] {
+			if sup != nil && c.Source == store.SourceDatahub {
+				detail.Supplement = sup
+			}
 		}
 		enc, err := json.Marshal(detail)
 		if err != nil {
@@ -166,7 +225,7 @@ func nonNil[T seaClass | seaSample](s []T) []T {
 
 // handleSeaSites serves every bathing site with its latest annual class.
 func (d Deps) handleSeaSites(w http.ResponseWriter, r *http.Request) {
-	b, err := d.sea.get(r.Context(), d.Store, time.Now())
+	b, err := d.sea.get(r.Context(), d.Store, d.SeaSupplement, time.Now())
 	if err != nil {
 		slog.Error("sea sites query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
@@ -182,7 +241,7 @@ func (d Deps) handleSeaSite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "The site id is not valid.")
 		return
 	}
-	b, err := d.sea.get(r.Context(), d.Store, time.Now())
+	b, err := d.sea.get(r.Context(), d.Store, d.SeaSupplement, time.Now())
 	if err != nil {
 		slog.Error("sea site query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")

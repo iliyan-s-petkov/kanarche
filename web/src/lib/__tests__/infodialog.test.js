@@ -78,4 +78,18 @@ describe('seaInfoContent', () => {
     ])
     expect(SEA_LINKS.eea).toBe(c.links[1].href)
   })
+
+  const info = { title: 'T', body: 'B', linkMap: 'Map', linkEea: 'EEA', linkDatahub: 'Dataset' }
+  it('adds the Datahub dataset link from the API url', () => {
+    const c = seaInfoContent(info, 'https://www.eea.europa.eu/en/datahub/datahubitem-view/x')
+    expect(c.links.at(-1)).toEqual({ label: 'Dataset', href: 'https://www.eea.europa.eu/en/datahub/datahubitem-view/x' })
+    expect(c.links).toHaveLength(3)
+  })
+  it('has no Datahub link without a supplement url', () => {
+    for (const url of [undefined, null, '']) expect(seaInfoContent(info, url).links).toHaveLength(2)
+  })
+  it('never links a url that is not https', () => {
+    expect(seaInfoContent(info, 'javascript:alert(1)').links).toHaveLength(2)
+    expect(seaInfoContent(info, 'http://example.org/a').links).toHaveLength(2)
+  })
 })

@@ -85,7 +85,7 @@ func Build(raw Raw, country string) (store.BathingData, Skipped, error) {
 			continue
 		}
 		seasons[key] = true
-		d.Classes = append(d.Classes, store.BathingClass{SiteID: r.SiteID, Season: r.Season, Quality: q})
+		d.Classes = append(d.Classes, store.BathingClass{SiteID: r.SiteID, Season: r.Season, Quality: q, Source: store.SourceDiscodata})
 	}
 
 	dates := map[string]bool{}
@@ -104,6 +104,27 @@ func Build(raw Raw, country string) (store.BathingData, Skipped, error) {
 		d.Samples = append(d.Samples, s)
 	}
 	return d, sk, nil
+}
+
+// QualityKey maps an EEA class label to the stored key. The label is trimmed first.
+func QualityKey(label string) (string, bool) {
+	q, ok := qualities[strings.TrimSpace(label)]
+	return q, ok
+}
+
+// ValidQualityKey reports whether key is a stored class key, not an EEA label.
+func ValidQualityKey(key string) bool {
+	for _, k := range qualities {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidSiteID reports whether id fits the bathing_site CHECK and carries the country prefix.
+func ValidSiteID(id, country string) bool {
+	return siteIDPattern.MatchString(id) && strings.HasPrefix(id, country)
 }
 
 func buildSite(r SiteRow, country string) (store.BathingSite, bool) {

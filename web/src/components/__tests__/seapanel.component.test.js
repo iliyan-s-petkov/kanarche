@@ -14,6 +14,8 @@ const t = readSeaTexts({
   tSeaNoSamples: 'No samples.', tSeaNote: 'The class is the EEA assessment.',
   tSeaCredit: 'Data: EEA, CC BY 4.0', tSeaProfile: 'Site profile', tSeaClose: 'Close',
   tSeaFailed: 'Could not load.',
+  tSeaClassSourceDatahub: 'From the EEA {year} report', tSeaSamplesPending: 'Lab samples for {season} are not published yet.',
+  tSeaSupplementNote: 'Dataset, edition {edition}, published {published}.',
 })
 const cfg = {
   lang: 'en',
@@ -54,6 +56,61 @@ describe('SeaPanel', () => {
     expect(root.querySelector('.sea-panel__class').textContent).toContain('Class for 2024')
     expect(root.querySelector('.sea-panel__history').textContent).toContain('2023')
     expect(root.querySelector('.sea-panel__history').textContent).toContain('Poor')
+  })
+
+  describe('datahub classes', () => {
+    const datahub = {
+      ...detail,
+      classes: [{ season: 2025, quality: 'good', source: 'datahub' }, { season: 2024, quality: 'excellent', source: 'discodata' }],
+      supplement: { edition: '2025 v1.0', published: '2026-09-30', url: 'https://example.test/d' },
+    }
+    const discodata = {
+      ...detail,
+      classes: detail.classes.map((c) => ({ ...c, source: 'discodata' })),
+    }
+
+    it('marks a datahub class and says its lab samples are pending', async () => {
+      await opened(async () => datahub)
+      expect(frame.querySelector('.sea-panel__class .sea-panel__source').textContent).toBe('From the EEA 2025 report')
+      expect(frame.querySelector('.sea-panel__pending').textContent).toBe('Lab samples for 2025 are not published yet.')
+      // The earlier discodata season carries no marker.
+      expect(frame.querySelectorAll('.sea-panel__source')).toHaveLength(1)
+      expect(frame.querySelector('.sea-panel__history .sea-panel__source')).toBeNull()
+    })
+
+    it('marks an earlier datahub season in the history', async () => {
+      const older = { ...datahub, classes: [{ season: 2025, quality: 'good', source: 'discodata' }, { season: 2024, quality: 'good', source: 'datahub' }], supplement: undefined }
+      await opened(async () => older)
+      expect(frame.querySelector('.sea-panel__history .sea-panel__source').textContent).toBe('From the EEA 2024 report')
+      expect(frame.querySelector('.sea-panel__pending')).toBeNull()
+    })
+
+    it('shows neither marker nor pending note for discodata classes', async () => {
+      await opened(async () => discodata)
+      expect(frame.querySelector('.sea-panel__source')).toBeNull()
+      expect(frame.querySelector('.sea-panel__pending')).toBeNull()
+    })
+
+    it('shows the supplement note with a formatted date only when the API sends one', async () => {
+      await opened(async () => datahub)
+      expect(frame.querySelector('.sea-panel__supplement').textContent).toBe('Dataset, edition 2025 v1.0, published Sep 30, 2026.')
+    })
+
+    it('has no supplement note without a supplement', async () => {
+      await opened(async () => discodata)
+      expect(frame.querySelector('.sea-panel__supplement')).toBeNull()
+    })
+
+    it('keeps a published value that is not a date as it came', async () => {
+      await opened(async () => ({ ...datahub, supplement: { ...datahub.supplement, published: 'autumn' } }))
+      expect(frame.querySelector('.sea-panel__supplement').textContent).toContain('published autumn.')
+    })
+
+    it('drops the pending note once samples for that season exist', async () => {
+      const sampled = { ...datahub, samples: [{ ...detail.samples[0], season: 2025, date: '2025-07-02' }] }
+      await opened(async () => sampled)
+      expect(frame.querySelector('.sea-panel__pending')).toBeNull()
+    })
   })
 
   it('fetches the site by id', async () => {

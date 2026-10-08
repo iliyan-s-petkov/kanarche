@@ -43,7 +43,9 @@ type Options struct {
 	Snapshots *snapshot.Holder
 	Store     api.DataSource
 	Publisher *Publisher
-	Logger    *slog.Logger
+	// SeaSupplement is the snapshot header data for the sea API.
+	SeaSupplement api.SeaSupplementMeta
+	Logger        *slog.Logger
 	// Pre-bound listeners, for tests that need the OS-assigned port before
 	// Run starts. Nil means Run binds Config.Listen.Addr/MetricsAddr and
 	// Config.Tiles.Addr itself, as before.
@@ -121,6 +123,7 @@ func New(opts Options) (*Server, error) {
 		Snapshots:      opts.Snapshots,
 		Breadth:        breadth,
 		Store:          opts.Store,
+		SeaSupplement:  opts.SeaSupplement,
 		SeriesLimiter:  seriesLimiter,
 		Admission:      admission,
 		Geocoder:       geocode.New(opts.Config.Geocoder),

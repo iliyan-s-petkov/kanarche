@@ -467,8 +467,10 @@ export function mountChrome(el, cfg) {
 
   // renderLegend clears the key, so the wind row is re-inserted after each repaint.
   const windRow = buildWindRow(cfg.t.legendWind)
+  // Set from the sea list response; empty means no Datahub class is shown.
+  let seaSupplementURL = ''
   const seaRows = cfg.t.sea
-    ? buildSeaRows(cfg.t.sea, cfg.seaColours ?? {}, () => infoDialog.show(seaInfoContent(cfg.t.sea.info)))
+    ? buildSeaRows(cfg.t.sea, cfg.seaColours ?? {}, () => infoDialog.show(seaInfoContent(cfg.t.sea.info, seaSupplementURL)))
     : null
   const pollenRows = cfg.pollenLayer && cfg.t.pollen
     ? buildPollenRows(cfg.t.pollen, () => infoDialog.show(pollenInfoContent(cfg.t.pollen.info)))
@@ -548,6 +550,9 @@ export function mountChrome(el, cfg) {
     // arrows are, so no caller can turn one on without the other.
     showSea(on) {
       if (seaRows) seaRows.hidden = !on
+    },
+    setSeaSupplement(url) {
+      seaSupplementURL = url || ''
     },
     showPollen(on) {
       if (pollenRows) pollenRows.hidden = !on

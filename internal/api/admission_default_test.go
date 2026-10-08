@@ -52,6 +52,10 @@ func (s *blockingSource) LoadBathing(_ context.Context) (store.BathingData, erro
 	return store.BathingData{}, nil
 }
 
+func (s *blockingSource) BathingSupplementEdition(_ context.Context) (string, error) {
+	return "", nil
+}
+
 func (s *blockingSource) BathingLastImport(_ context.Context) (time.Time, bool, error) {
 	return time.Time{}, false, nil
 }

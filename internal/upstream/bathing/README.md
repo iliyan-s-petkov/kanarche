@@ -39,3 +39,25 @@ a fresh database imports immediately. A failed run retries after an hour and
 leaves the stored set untouched.
 
 `airbg import-sea` runs one import immediately, for a forced refresh.
+
+## Datahub supplement (2025 classes)
+
+Discodata stops at season 2024. The EEA publishes the 2025 annual class only as
+an Excel workbook on the Datahub (released 2 Jun 2026). A hardened xlsx reader
+built on stdlib runs offline in the dev command `extract-bathing-datahub`. It
+validates the pinned workbook (sha256 checked), parses BG data, and writes a
+reviewed snapshot (`internal/upstream/bathing/datahub/bg.json`) that is
+committed and embedded in the binary.
+
+At runtime, `Build` merges snapshot classes into Discodata for `(site, season)`
+keys Discodata lacks, applying guards: Discodata wins on overlap, the snapshot
+fills new seasons only, and disagreement on shared keys or low site coverage
+refuses the whole supplement (logged). The snapshot edition trigger: Loop
+imports at once when the embedded edition differs from stored, not waiting for
+the interval.
+
+New edition detection (weekly, after successful import): HEAD probes the next
+edition URL (year bumped by one). 200 sets gauge `airbg_sea_datahub_newer_edition`
+to 1, 404 to 0, other statuses return an error and leave it alone. Yearly
+runbook: bump URL and sha in `airbg.yaml`, run extract command, review diff,
+open a PR.

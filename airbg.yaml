@@ -304,6 +304,18 @@ sea:
   refresh_interval: "168h"
   max_payload_bytes: 8388608
   max_rows: 20000
+  # Yearly EEA Datahub Excel. The pins are checked by extract-bathing-datahub
+  # and against the embedded bg.json at startup. The two ratios are the merge
+  # guards (log only). A new edition changes sha256, size and bg.json together.
+  datahub:
+    url: "https://sdi.eea.europa.eu/datastore/public/eea_t_bathing-water-status_p_1990-2025_v01_r00/bw_assessment_eea_datahub_1990_2025.xlsx"
+    sha256: "39a54c81bcbd30f8770327d2dc271cf68f3c90955d0fca98c3c6890bcfd683b3"
+    size: 43096327
+    allowed_hosts: ["sdi.eea.europa.eu"]
+    request_timeout: "5m"
+    max_download_bytes: 134217728
+    max_disagree: 0.005
+    min_site_coverage: 0.8
 
 store:
   # Minimum sensors before an area gets a value at all. Below it the area is

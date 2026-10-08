@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -190,7 +191,7 @@ func (c Config) validateTimeouts(p *problems) {
 }
 
 func (c Config) validateDatabase(p *problems) {
-	if c.Database.URL == "" {
+	if c.Database.URL == "" && !c.offline {
 		p.addf("%s is not set in the environment (directly, or via %s naming a file); it is required and must never be written to the config file", DatabaseURLEnv, DatabaseURLFileEnv)
 	}
 	if c.Database.APIConns <= 0 {
@@ -567,6 +568,57 @@ func (c Config) validateSea(p *problems) {
 		p.addf("sea.max_payload_bytes must be positive, got %d", c.Sea.MaxPayloadBytes)
 	}
 	p.positiveInt("sea.max_rows", c.Sea.MaxRows)
+	c.validateSeaDatahub(p)
+}
+
+var sha256Pin = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+// validateSeaDatahub guards the pinned download. The yearly file is untrusted,
+// so the URL, host and pins are all checked at load, not at first use.
+func (c Config) validateSeaDatahub(p *problems) {
+	d := c.Sea.Datahub
+	if len(d.AllowedHosts) == 0 {
+		p.addf("sea.datahub.allowed_hosts must name at least one host")
+	}
+	for _, host := range d.AllowedHosts {
+		if host == "" || strings.ContainsAny(host, "/:@?# ") {
+			p.addf("sea.datahub.allowed_hosts contains %q, which must be a bare host with no scheme, port or path", host)
+		}
+	}
+	u, err := url.Parse(d.URL)
+	switch {
+	case err != nil:
+		p.addf("sea.datahub.url = %q is not a URL: %v", d.URL, err)
+	case u.Scheme != "https":
+		p.addf("sea.datahub.url = %q must use https", d.URL)
+	case u.Hostname() == "":
+		p.addf("sea.datahub.url = %q must be absolute", d.URL)
+	default:
+		if !slices.Contains(d.AllowedHosts, u.Hostname()) {
+			p.addf("sea.datahub.url host %q is not in sea.datahub.allowed_hosts", u.Hostname())
+		}
+		if !strings.HasSuffix(u.Path, ".xlsx") {
+			p.addf("sea.datahub.url path %q must end in .xlsx", u.Path)
+		}
+	}
+	if !sha256Pin.MatchString(d.SHA256) {
+		p.addf("sea.datahub.sha256 must be 64 lowercase hex characters")
+	}
+	if d.Size <= 0 {
+		p.addf("sea.datahub.size must be positive, got %d", d.Size)
+	}
+	p.positive("sea.datahub.request_timeout", d.RequestTimeout)
+	if d.MaxDownloadBytes <= 0 {
+		p.addf("sea.datahub.max_download_bytes must be positive, got %d", d.MaxDownloadBytes)
+	}
+	if d.Size > d.MaxDownloadBytes {
+		p.addf("sea.datahub.size %d exceeds max_download_bytes %d", d.Size, d.MaxDownloadBytes)
+	}
+	for name, v := range map[string]float64{"max_disagree": d.MaxDisagree, "min_site_coverage": d.MinSiteCoverage} {
+		if !(v > 0 && v <= 1) {
+			p.addf("sea.datahub.%s = %v, must be in (0,1]", name, v)
+		}
+	}
 }
 
 func (c Config) validateStoreAndSeries(p *problems) {

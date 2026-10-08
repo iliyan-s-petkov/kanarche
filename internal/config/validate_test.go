@@ -704,6 +704,63 @@ func TestSeaValidationRejectsBadSettings(t *testing.T) {
 	}
 }
 
+func TestSeaDatahubCommittedPins(t *testing.T) {
+	d := validConfig(t).Sea.Datahub
+	if got, want := d.SHA256, "39a54c81bcbd30f8770327d2dc271cf68f3c90955d0fca98c3c6890bcfd683b3"; got != want {
+		t.Errorf("sea.datahub.sha256 = %q, want %q", got, want)
+	}
+	if got, want := d.Size, int64(43096327); got != want {
+		t.Errorf("sea.datahub.size = %d, want %d", got, want)
+	}
+	if err := validConfig(t).Validate(); err != nil {
+		t.Errorf("Validate(committed) error = %v, want nil", err)
+	}
+}
+
+func TestSeaDatahubValidationRejectsBadSettings(t *testing.T) {
+	for name, mutate := range map[string]func(*SeaDatahub){
+		"http url":            func(d *SeaDatahub) { d.URL = "http://sdi.eea.europa.eu/a.xlsx" },
+		"relative url":        func(d *SeaDatahub) { d.URL = "/a.xlsx" },
+		"host not allowed":    func(d *SeaDatahub) { d.URL = "https://evil.invalid/a.xlsx" },
+		"xlsm suffix":         func(d *SeaDatahub) { d.URL = "https://sdi.eea.europa.eu/a.xlsm" },
+		"no suffix":           func(d *SeaDatahub) { d.URL = "https://sdi.eea.europa.eu/a" },
+		"short sha256":        func(d *SeaDatahub) { d.SHA256 = "abc123" },
+		"upper-case sha256":   func(d *SeaDatahub) { d.SHA256 = strings.ToUpper(d.SHA256) },
+		"non-hex sha256":      func(d *SeaDatahub) { d.SHA256 = strings.Repeat("g", 64) },
+		"empty sha256":        func(d *SeaDatahub) { d.SHA256 = "" },
+		"zero size":           func(d *SeaDatahub) { d.Size = 0 },
+		"negative size":       func(d *SeaDatahub) { d.Size = -1 },
+		"size over the cap":   func(d *SeaDatahub) { d.Size = d.MaxDownloadBytes + 1 },
+		"empty allowed_hosts": func(d *SeaDatahub) { d.AllowedHosts = nil },
+		"host with a scheme":  func(d *SeaDatahub) { d.AllowedHosts = []string{"https://sdi.eea.europa.eu"} },
+		"host with a port":    func(d *SeaDatahub) { d.AllowedHosts = []string{"sdi.eea.europa.eu:443"} },
+		"zero timeout":        func(d *SeaDatahub) { d.RequestTimeout = 0 },
+		"zero max bytes":      func(d *SeaDatahub) { d.MaxDownloadBytes = 0 },
+		"zero max_disagree":   func(d *SeaDatahub) { d.MaxDisagree = 0 },
+		"max_disagree over 1": func(d *SeaDatahub) { d.MaxDisagree = 1.5 },
+		"zero min coverage":   func(d *SeaDatahub) { d.MinSiteCoverage = 0 },
+		"coverage over 1":     func(d *SeaDatahub) { d.MinSiteCoverage = 1.01 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := validConfig(t)
+			mutate(&c.Sea.Datahub)
+			if err := c.Validate(); err == nil {
+				t.Errorf("Validate accepted %s", name)
+			}
+		})
+	}
+}
+
+// Validated even when the Discodata import is off.
+func TestSeaDatahubIsValidatedWhenSeaDisabled(t *testing.T) {
+	c := validConfig(t)
+	c.Sea.Enabled = false
+	c.Sea.Datahub.SHA256 = "bad"
+	if err := c.Validate(); err == nil {
+		t.Error("Validate skipped sea.datahub because sea was disabled")
+	}
+}
+
 func TestSeaIsValidatedWhenDisabled(t *testing.T) {
 	c := validConfig(t)
 	c.Sea.Enabled = false

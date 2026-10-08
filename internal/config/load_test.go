@@ -349,3 +349,36 @@ func TestLoadFileAcceptsDatabaseURLFile(t *testing.T) {
 		t.Errorf("cfg.Database.URL = %q, want %q", cfg.Database.URL, want)
 	}
 }
+
+// Offline commands read the pins without a database credential.
+func TestLoadFileOfflineNeedsNoDatabaseURL(t *testing.T) {
+	t.Setenv(DatabaseURLEnv, "")
+	t.Setenv(DatabaseURLFileEnv, "")
+	path := filepath.Join("..", "..", "airbg.yaml")
+	if _, err := LoadFile(path); err == nil {
+		t.Fatal("LoadFile without a database URL succeeded, want an error")
+	}
+	cfg, err := LoadFileOffline(path)
+	if err != nil {
+		t.Fatalf("LoadFileOffline error = %v, want nil", err)
+	}
+	if cfg.Sea.Datahub.SHA256 == "" {
+		t.Error("LoadFileOffline dropped sea.datahub")
+	}
+}
+
+// Offline skips only the credential. Every other rule still applies.
+func TestLoadFileOfflineStillValidates(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "airbg.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := strings.Replace(string(data), "size: 43096327", "size: 0", 1)
+	path := filepath.Join(t.TempDir(), "airbg.yaml")
+	if err := os.WriteFile(path, []byte(bad), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadFileOffline(path); err == nil {
+		t.Error("LoadFileOffline accepted sea.datahub.size = 0")
+	}
+}

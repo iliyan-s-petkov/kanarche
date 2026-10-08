@@ -59,6 +59,8 @@ more of them join.
 - Citizen sensor data: [sensor.community](https://sensor.community/) contributors, ODbL 1.0
 - Official station data: Executive Environment Agency (ИАОС) via the
   [European Environment Agency](https://www.eea.europa.eu/)'s air quality programme
+- Bathing-water quality: [European Environment Agency](https://www.eea.europa.eu/)
+  Bathing Water Directive data (Discodata, plus the 2025 Datahub workbook), CC BY 4.0
 - Boundaries and basemap: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, ODbL 1.0
 - National outline: [Natural Earth](https://www.naturalearthdata.com/), public domain
 - Wind forecast: [Open-Meteo](https://open-meteo.com/), ECMWF IFS model, CC BY 4.0

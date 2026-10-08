@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"airbg.org/internal/config"
 	"airbg.org/internal/store"
 	"airbg.org/internal/upstream/bathing"
 )
@@ -19,6 +20,8 @@ type fakeSink struct {
 	last     time.Time
 	hasLast  bool
 	writeErr error
+	edition  string
+	onWrite  func()
 }
 
 func (f *fakeSink) ReplaceBathing(_ context.Context, d store.BathingData, at time.Time) error {
@@ -26,8 +29,13 @@ func (f *fakeSink) ReplaceBathing(_ context.Context, d store.BathingData, at tim
 		return f.writeErr
 	}
 	f.data, f.at, f.writes = d, at, f.writes+1
+	if f.onWrite != nil {
+		f.onWrite()
+	}
 	return nil
 }
+
+func (f *fakeSink) BathingSupplementEdition(context.Context) (string, error) { return f.edition, nil }
 
 func (f *fakeSink) BathingLastImport(context.Context) (time.Time, bool, error) {
 	return f.last, f.hasLast, nil
@@ -94,4 +102,150 @@ func TestNextDelay(t *testing.T) {
 			t.Errorf("%s: NextDelay = %v, want %v", tc.name, got, tc.want)
 		}
 	}
+}
+
+func fillSupplement() *bathing.Supplement {
+	return &bathing.Supplement{Edition: "2025 v1.0", Classes: []bathing.SupplementClass{
+		{SiteID: "BG3242661710017001", Season: 2025, Quality: "good"},
+		{SiteID: "BG3310610135003001", Season: 2025, Quality: "good"},
+		{SiteID: "BG3412737023002036", Season: 2025, Quality: "good"},
+	}}
+}
+
+func TestRunOnceMergesTheSupplement(t *testing.T) {
+	srv, _ := discodata(t)
+	sink := &fakeSink{}
+	c := bathing.NewCollector(testConfig(srv.URL), sink)
+	c.SetSupplement(fillSupplement())
+	st, err := c.RunOnce(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Classes != 15 || st.Supplement.Applied != 3 || sink.data.SupplementEdition != "2025 v1.0" {
+		t.Errorf("stats = %+v, edition %q", st, sink.data.SupplementEdition)
+	}
+	var fromDatahub int
+	for _, c := range sink.data.Classes {
+		if c.Source == store.SourceDatahub {
+			fromDatahub++
+		}
+	}
+	if fromDatahub != 3 {
+		t.Errorf("%d datahub classes written, want 3", fromDatahub)
+	}
+}
+
+// With no snapshot, Discodata is imported exactly as before.
+func TestRunOnceWithoutSupplementKeepsDiscodata(t *testing.T) {
+	srv, _ := discodata(t)
+	sink := &fakeSink{}
+	st, err := bathing.NewCollector(testConfig(srv.URL), sink).RunOnce(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Classes != 12 || sink.data.SupplementEdition != "" {
+		t.Errorf("stats = %+v, edition %q", st, sink.data.SupplementEdition)
+	}
+	for _, c := range sink.data.Classes {
+		if c.Source != store.SourceDiscodata {
+			t.Errorf("class %+v is not from Discodata", c)
+		}
+	}
+}
+
+// runLoop runs Loop until the first write or until wait elapses; it reports the writes.
+func runLoop(t *testing.T, c *bathing.Collector, sink *fakeSink, wait time.Duration) int {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sink.onWrite = cancel
+	done := make(chan struct{})
+	go func() { c.Loop(ctx); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(wait):
+		cancel()
+		<-done
+	}
+	return sink.writes
+}
+
+func TestLoopImportsNowWhenEditionChanged(t *testing.T) {
+	srv, _ := discodata(t)
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	sink := &fakeSink{last: now.Add(-time.Hour), hasLast: true, edition: "2024 v1.0"}
+	c := bathing.NewCollector(testConfig(srv.URL), sink)
+	c.SetClockForTesting(func() time.Time { return now })
+	c.SetSupplement(fillSupplement())
+	if n := runLoop(t, c, sink, 5*time.Second); n != 1 {
+		t.Errorf("%d writes, want an immediate import", n)
+	}
+}
+
+func TestLoopWaitsWhenEditionUnchanged(t *testing.T) {
+	srv, _ := discodata(t)
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	sink := &fakeSink{last: now.Add(-time.Hour), hasLast: true, edition: "2025 v1.0"}
+	c := bathing.NewCollector(testConfig(srv.URL), sink)
+	c.SetClockForTesting(func() time.Time { return now })
+	c.SetSupplement(fillSupplement())
+	if n := runLoop(t, c, sink, 300*time.Millisecond); n != 0 {
+		t.Errorf("%d writes, want none until refresh_interval", n)
+	}
+}
+
+// No snapshot means no edition to compare, so the schedule is unchanged.
+func TestLoopWaitsWithoutSupplement(t *testing.T) {
+	srv, _ := discodata(t)
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	sink := &fakeSink{last: now.Add(-time.Hour), hasLast: true, edition: "2024 v1.0"}
+	c := bathing.NewCollector(testConfig(srv.URL), sink)
+	c.SetClockForTesting(func() time.Time { return now })
+	if n := runLoop(t, c, sink, 300*time.Millisecond); n != 0 {
+		t.Errorf("%d writes, want none", n)
+	}
+}
+
+func watchCollector(t *testing.T, now *time.Time, calls *int, err error) *bathing.Collector {
+	t.Helper()
+	c := bathing.NewCollector(config.Sea{}, &fakeSink{})
+	c.SetClockForTesting(func() time.Time { return *now })
+	c.SetEditionWatch(func(context.Context) error { *calls++; return err })
+	return c
+}
+
+// The probe is weekly, though imports run more often.
+func TestEditionWatchRunsWeekly(t *testing.T) {
+	now := time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)
+	calls := 0
+	c := watchCollector(t, &now, &calls, nil)
+	c.WatchEdition(context.Background())
+	now = now.Add(24 * time.Hour)
+	c.WatchEdition(context.Background())
+	now = now.Add(5 * 24 * time.Hour)
+	c.WatchEdition(context.Background())
+	if calls != 1 {
+		t.Fatalf("calls inside 7 days = %d, want 1", calls)
+	}
+	now = now.Add(25 * time.Hour)
+	c.WatchEdition(context.Background())
+	if calls != 2 {
+		t.Errorf("calls after 7 days = %d, want 2", calls)
+	}
+}
+
+// A failed probe still counts, so an outage is retried next week, not every import.
+func TestEditionWatchFailureStillThrottled(t *testing.T) {
+	now := time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)
+	calls := 0
+	c := watchCollector(t, &now, &calls, errors.New("boom"))
+	c.WatchEdition(context.Background())
+	c.WatchEdition(context.Background())
+	if calls != 1 {
+		t.Errorf("calls = %d, want 1", calls)
+	}
+}
+
+func TestEditionWatchUnsetIsNoop(t *testing.T) {
+	bathing.NewCollector(config.Sea{}, &fakeSink{}).WatchEdition(context.Background())
 }

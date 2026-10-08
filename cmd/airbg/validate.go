@@ -16,6 +16,12 @@ func runValidateConfig(stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
+	// A bad embedded snapshot only disables the fill at runtime. As a deploy
+	// gate it is an error, so a pin change without a matching bg.json is caught.
+	if _, err := checkSnapshot(cfg); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
 	w := tabwriter.NewWriter(stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "listen.addr\t"+cfg.Listen.Addr)
 	fmt.Fprintln(w, "listen.metrics_addr\t"+cfg.Listen.MetricsAddr)
