@@ -5,7 +5,7 @@ import { test, expect } from './fixtures.js'
 // "The map redraws itself several times per zoom" is only measurable in a real
 // browser: the layers are painted by MapLibre from real network responses that
 // arrive apart. paintSource (islands/map.js) announces every data-layer repaint
-// as an `airbg:paint` event on the map container, and this file counts them.
+// as an `kanarche:paint` event on the map container, and this file counts them.
 test.describe.serial('one zoom, one redraw', () => {
   let page
 
@@ -19,7 +19,7 @@ test.describe.serial('one zoom, one redraw', () => {
       const attach = () => {
         const el = document.querySelector('[data-island="map"]')
         if (!el) return requestAnimationFrame(attach)
-        el.addEventListener('airbg:paint', (e) => {
+        el.addEventListener('kanarche:paint', (e) => {
           window.__paints.push({ source: e.detail.source, at: performance.now() })
         })
       }

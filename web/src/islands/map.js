@@ -12,7 +12,7 @@ import { readWindow } from '../lib/mapwindow.js'
 import { provideAreaSelect, provideAddressPin } from '../lib/mapareas.svelte.js'
 import { createAddressPin } from '../lib/addresspin.js'
 import { BOUNDARY_FILL_LAYER_ID, boundsOf, findBoundary } from '../lib/boundaries.js'
-import { LAYER_ID, FAULTY_LAYER_ID, HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID, HEX_POINT_LAYER_ID, HEX_SOURCE_ID } from '../lib/mapids.js'
+import { LAYER_ID, FAULTY_LAYER_ID, HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID, HEX_POINT_LAYER_ID, HEX_SOURCE_ID, PAINT_EVENT } from '../lib/mapids.js'
 import { MIN_ZOOM, readConfig } from '../lib/mapconfig.js'
 import { POINT_TIER_MIN_ZOOM } from '../lib/hexes.js'
 import { registerProtocols, mapStyle, installErrorHandler } from '../lib/mapstyle.js'
@@ -318,7 +318,7 @@ export function mount(el) {
   }
   // A refresh replaces the source wholesale, so a held id can land on an
   // unrelated new cell. Reuses the paint event the e2e specs already listen for.
-  map.getContainer?.()?.addEventListener?.('airbg:paint', (e) => {
+  map.getContainer?.()?.addEventListener?.(PAINT_EVENT, (e) => {
     if (e.detail?.source === HEX_SOURCE_ID) clearHexHover()
   })
 

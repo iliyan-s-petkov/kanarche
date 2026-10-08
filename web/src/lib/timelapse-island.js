@@ -124,7 +124,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
       // no source column, so there is nothing to filter it by.
       resolutionForZoom(Math.round(map.getZoom()), mapInlineSize(map)), null,
     )
-    // Through paintSource, not setData: its airbg:paint event is what refills the 3D column source.
+    // Through paintSource, not setData: its kanarche:paint event is what refills the 3D column source.
     paintSource(map, HEX_SOURCE_ID, markArrivals(filterByStatus(features, getSensorStatus())))
     const t = frameTime(body, i)
     ui.at(i, t ? clock.format(t) : '')

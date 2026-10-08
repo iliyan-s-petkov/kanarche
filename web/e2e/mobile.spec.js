@@ -564,7 +564,7 @@ test.describe('hex label and dot label never share a value (Task 12 round 3)', (
       const attach = () => {
         const el = document.querySelector('[data-island="map"]')
         if (!el) return requestAnimationFrame(attach)
-        el.addEventListener('airbg:paint', (e) => window.__paints.push(e.detail.source))
+        el.addEventListener('kanarche:paint', (e) => window.__paints.push(e.detail.source))
       }
       attach()
     })

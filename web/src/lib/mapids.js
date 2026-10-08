@@ -9,6 +9,9 @@ export const OFFICIAL_IMAGE_ID = 'kanarche-diamond'
 export const FAULTY_LAYER_ID = 'kanarche-markers-faulty'
 export const LABEL_LAYER_ID = 'kanarche-marker-labels'
 
+// DOM event dispatched on the map container after every data-layer repaint.
+export const PAINT_EVENT = 'kanarche:paint'
+
 export const HEX_SOURCE_ID = 'kanarche-hexes'
 export const HEX_LAYER_ID = 'kanarche-hex-fill'
 export const HEX_OUTLINE_LAYER_ID = 'kanarche-hex-outline'

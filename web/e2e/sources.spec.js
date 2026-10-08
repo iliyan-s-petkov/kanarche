@@ -29,7 +29,7 @@ test.describe.serial('the network layers', () => {
     page.on('request', (r) => { if (r.url().includes('/api/v1/')) requests.push(r.url()) })
     const painted = page.evaluate(() => new Promise((resolve) => {
       document.querySelector('[data-island="map"]')
-        .addEventListener('airbg:paint', (e) => resolve(e.detail.source), { once: true })
+        .addEventListener('kanarche:paint', (e) => resolve(e.detail.source), { once: true })
     }))
     await page.getByRole('checkbox', { name: /Citizen sensors/ }).uncheck()
     expect(await painted).toBe('kanarche-hexes')
