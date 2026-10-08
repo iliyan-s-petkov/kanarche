@@ -192,7 +192,7 @@ describe('mountWindow', () => {
     const { frame, ui } = mount()
     expect(ui.root.parentElement).toBe(frame)
     expect(ui.root.className).toContain('map-window')
-    expect(ui.button.getAttribute('aria-label')).toBe('Averaging period')
+    expect(ui.button.getAttribute('aria-label')).toBe('Averaging period: 48h')
     expect(ui.button.getAttribute('title')).toBe('Averaging period')
     expect(ui.button.textContent).toContain('48h')
     expect(ui.button.getAttribute('aria-expanded')).toBe('false')

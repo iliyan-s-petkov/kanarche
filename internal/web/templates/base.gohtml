@@ -22,14 +22,14 @@
 {{range .OGLocaleAlternates}}<meta property="og:locale:alternate" content="{{.}}">
 {{end}}<meta name="twitter:card" content="summary_large_image">
 {{with .JSONLD}}<script type="application/ld+json">{{.}}</script>
-{{end}}{{end}}<link rel="icon" href="{{.Static "favicon.svg"}}" type="image/svg+xml">
+{{end}}{{end}}{{/* First, so it runs once fetched instead of waiting on the stylesheets below. */}}
+<script src="{{.Static "theme-init.js"}}"></script>
+<link rel="icon" href="{{.Static "favicon.svg"}}" type="image/svg+xml">
 <link rel="icon" href="{{.Static "favicon-32.png"}}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{.Static "apple-touch-icon.png"}}" sizes="180x180">
 {{with .Assets.Style "theme"}}<link rel="stylesheet" href="{{.}}">
 {{else}}<link rel="stylesheet" href="{{.Static "theme.css"}}">
 {{end}}<link rel="stylesheet" href="{{.Static "app.css"}}">
-{{/* Before the stylesheets finish and before anything paints: see the file. */}}
-<script src="{{.Static "theme-init.js"}}"></script>
 {{with .Assets.Style "main"}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body>

@@ -51,6 +51,16 @@ for (const size of sizes) {
       return p
     }
 
+    test('the folded toggle is at least 24x24 CSS px', async ({ ctx }) => {
+      const { page, note, toggle } = await open(ctx)
+      await toggle.click()
+      await expect(note).not.toHaveAttribute('open', '')
+      const box = await toggle.boundingBox()
+      expect(box.width).toBeGreaterThanOrEqual(24)
+      expect(box.height).toBeGreaterThanOrEqual(24)
+      await page.close()
+    })
+
     test('a click on the note folds it', async ({ ctx }) => {
       const { page, note, toggle } = await open(ctx)
       await expect(toggle).toHaveAttribute('aria-expanded', 'true')

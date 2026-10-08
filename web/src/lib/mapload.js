@@ -52,12 +52,17 @@ import {
 } from './placement.js'
 import { restoreLastView } from './lastview.js'
 import { openFavouriteSensor } from './favourite.js'
-import { installTimelapse } from './timelapse-island.js'
+import { installTimelapseLazy } from './timelapse-lazy.js'
+import { whenRenderSettled } from './idle.js'
 import { hexExtrusionPaint, installHexRise } from './hexrise.js'
 
 // Named rather than positional: windState and boundaryState are structurally
 // identical objects, so a transposed pair would be silent here and at runtime.
 export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState = {}, pollenState = {}, onMoveEnd, subs }) {
+  // Resolved once the first data paint has run; the deferred wind start waits on it.
+  let windStarted = false
+  let markDataPainted
+  const dataPainted = new Promise((resolve) => { markDataPainted = resolve })
   map.on('load', async () => {
     // Not awaited: the metric subscription below must be registered before
     // this handler's first await, and the ground is detail the map does
@@ -313,12 +318,30 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     // state, both of which live in this scope.
     //
     // On by default (no defaultOff), so a first visit fetches the forecast.
+    // A stored "on" is applied after the first data paint and an idle slot, so the wind fetch
+    // and streaks bundle stay off the first render. A toggle in the meantime only changes what is applied then.
+    let windDeferred = false
+    let windWanted = true
     const windView = {
       id: 'wind',
       label: cfg.t.windToggle,
       // No needsMap: the arrows are this island's own source and layer, not the
       // basemap's, so they still draw on a map served without tiles.
-      apply: (on) => setWind(map, cfg, chrome, windState, on),
+      apply: (on) => {
+        windWanted = on
+        if (windDeferred) return on
+        const first = !windStarted
+        windStarted = true
+        if (!on || !first) return setWind(map, cfg, chrome, windState, on)
+        windDeferred = true
+        Promise.race([dataPainted, new Promise((r) => setTimeout(r, 8000))])
+          .then(() => whenRenderSettled(map))
+          .then(() => {
+            windDeferred = false
+            return setWind(map, cfg, chrome, windState, windWanted)
+          })
+        return on
+      },
     }
 
     // No defaultOff: the outlines are on unless the reader has switched them
@@ -401,7 +424,7 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     // the same markers, and a map where half the picture averaged a week and
     // the other half did not would be two answers to one question.
     // On state so a metric switch, which holds no chrome of its own, can reset it.
-    state.timelapse = installTimelapse(map, state, cfg, chrome)
+    state.timelapse = installTimelapseLazy(map, state, cfg, chrome)
 
     chrome.windowMenu.onpick(async (name) => {
       if (!chooseWindow(state, name)) return
@@ -510,6 +533,8 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
         placed = await placeVisitor(map, state, cfg, getJSON, { timeoutMs: LOCATE_TIMEOUT_MS })
       }
     }, () => refreshHexes(map, state, cfg, getJSON, { defer: true }))
+
+    markDataPainted()
 
     // Every jumpTo above queued a moveend of its own, and the paint it would
     // debounce into has just happened at that exact camera position.

@@ -12,6 +12,7 @@ import { soleOpen } from './lib/disclosure.js'
 import { scrollCue } from './lib/scrollcue.js'
 import { createBackToTop } from './lib/backtotop.js'
 import { localizeTimes } from './lib/localtime.js'
+import { afterIdle } from './lib/idle.js'
 
 const ISLANDS = {
   map: () => import('./islands/map.js'),
@@ -105,13 +106,32 @@ export function scheduleAfterFirstPaint(callback, raf = globalThis.requestAnimat
   }
 }
 
+// Islands below the map wait for the map to mount and the main thread to idle.
+// The sensor card host is not here: the side dock looks the card up when a sensor opens, so a click before it mounted showed nothing.
+const DEFERRED = new Set(['readouts', 'table', 'visitors', 'copycode', 'clearsettings'])
+// A sensor in the URL means the readouts are wanted on first paint, not after idle.
+const SENSOR_NOW = new Set(['readouts'])
+
+export function deferIsland(name, hash) {
+  if (!DEFERRED.has(name)) return false
+  if (SENSOR_NOW.has(name) && new URLSearchParams(String(hash).replace(/^#/, '')).has('sensor')) return false
+  return true
+}
+
 // Deferred past first paint so MapLibre evaluation does not delay the SSR'd LCP text.
 function mountIslands() {
+  const first = []
+  const later = []
   for (const el of document.querySelectorAll('[data-island]')) {
     const load = resolveLoader(el.dataset.island)
     if (!load) continue // unknown island: leave the server-rendered fallback
-    runIsland(el, load)
+    if (deferIsland(el.dataset.island, window.location.hash)) later.push([el, load])
+    else first.push(runIsland(el, load))
   }
+  // runIsland never rejects, so allSettled is just "the map chunk is done evaluating".
+  Promise.allSettled(first).then(() => {
+    for (const [el, load] of later) afterIdle(() => runIsland(el, load))
+  })
 }
 
 function init() {

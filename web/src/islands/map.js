@@ -30,7 +30,7 @@ import { mountChrome } from '../lib/chrome.js'
 import { installPanelPadding } from '../lib/panelpadding.js'
 import { installMapLoad } from '../lib/mapload.js'
 import { findSensor } from '../lib/sensors.svelte.js'
-import { createSeaPanel } from '../lib/seapanel.svelte.js'
+import { createSeaPanelLazy } from '../lib/seapanel-lazy.js'
 import { SEA_LAYER_ID } from '../lib/sea.js'
 import { POLLEN_FILL_LAYER_ID, pollenHref } from '../lib/pollen.js'
 
@@ -154,7 +154,7 @@ export function mount(el) {
   const boundaryState = { on: false, body: null, loading: false }
 
   // The bathing sites: one fetch per page like the wind, and a card of their own beside the sensor panel.
-  const seaPanel = createSeaPanel(el, cfg)
+  const seaPanel = createSeaPanelLazy(el, cfg)
   const seaState = { on: false, body: null, loading: false, closePanel: seaPanel.close }
   // The pollen provinces: one fetch per page, home map only (cfg.pollenLayer).
   const pollenState = { on: false, body: null, loading: false }

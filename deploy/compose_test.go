@@ -667,11 +667,11 @@ func TestTheSiteVhostCapsRequestBodies(t *testing.T) {
 	}
 }
 
-// TestEncodeIsStaticOnly asserts that every `encode` line in the Caddyfile
-// has a matcher (starts with a `@` token before the algorithm names), and that
-// there is exactly one such line, in the one app block (kanarche.eu),
-// with matcher `path /static/*`.
-func TestEncodeIsStaticOnly(t *testing.T) {
+// TestEncodeHasMatchers asserts that every `encode` line in the Caddyfile
+// has a matcher (starts with a `@` token before the algorithm names). Matchers
+// should be either @static (in kanarche.eu for /static/*) or @tiles_dynamic
+// (in tiles blocks for glyphs and style.json).
+func TestEncodeHasMatchers(t *testing.T) {
 	data, err := os.ReadFile("Caddyfile")
 	if err != nil {
 		t.Fatalf("ReadFile(Caddyfile) error = %v, want nil", err)
@@ -684,10 +684,11 @@ func TestEncodeIsStaticOnly(t *testing.T) {
 		}
 	}
 
-	if len(encodeLines) != 1 {
-		t.Fatalf("Caddyfile contains %d `encode` lines, want exactly 1 (kanarche.eu); found: %v", len(encodeLines), encodeLines)
+	if len(encodeLines) != 3 {
+		t.Fatalf("Caddyfile contains %d `encode` lines, want exactly 3 (1 @static in kanarche.eu, 2 @tiles_dynamic in tiles blocks); found: %v", len(encodeLines), encodeLines)
 	}
 
+	var staticCount, tilesDynamicCount int
 	for _, encodeLine := range encodeLines {
 		fields := strings.Fields(strings.TrimSpace(encodeLine))
 
@@ -699,12 +700,23 @@ func TestEncodeIsStaticOnly(t *testing.T) {
 		if !strings.HasPrefix(matcher, "@") {
 			t.Errorf("encode line does not start with a matcher: %q — compress APIs that already carry Content-Encoding will be re-compressed", encodeLine)
 		}
-		if matcher != "@static" {
-			t.Errorf("encode line uses matcher %q, want @static: %q", matcher, encodeLine)
+		if matcher == "@static" {
+			staticCount++
+		} else if matcher == "@tiles_dynamic" {
+			tilesDynamicCount++
+		} else {
+			t.Errorf("encode line uses unexpected matcher %q: %q", matcher, encodeLine)
 		}
 	}
 
-	// Verify the matcher is declared with path /static/*
+	if staticCount != 1 {
+		t.Errorf("Caddyfile has %d @static encode lines, want 1", staticCount)
+	}
+	if tilesDynamicCount != 2 {
+		t.Errorf("Caddyfile has %d @tiles_dynamic encode lines, want 2 (tiles.airbg.org and tiles.kanarche.eu)", tilesDynamicCount)
+	}
+
+	// Verify the matcher is declared with path /static/* in kanarche.eu
 	blocks := caddyBlocks(t, "Caddyfile")
 	site, ok := blocks["kanarche.eu"]
 	if !ok {
@@ -1317,5 +1329,31 @@ func TestAirbgTilesKeepsServing(t *testing.T) {
 	}
 	if strings.Contains(block, "redir") {
 		t.Error("tiles.airbg.org redirects; cross-origin range requests would fail")
+	}
+}
+
+// TestTilesEncodeTilesDynamic asserts that both tiles blocks encode glyphs and
+// style.json, but not pmtiles. Glyphs and style.json are text-like and compress
+// well; pmtiles serve with HTTP Range requests, which break if compressed.
+func TestTilesEncodeTilesDynamic(t *testing.T) {
+	blocks := caddyBlocks(t, "Caddyfile")
+
+	for _, tilesName := range []string{"tiles.airbg.org", "tiles.kanarche.eu"} {
+		block, ok := blocks[tilesName]
+		if !ok {
+			t.Fatalf("Caddyfile has no %s site block", tilesName)
+		}
+
+		if !strings.Contains(block, "@tiles_dynamic path /glyphs/* /style.json") {
+			t.Errorf("%s: does not declare @tiles_dynamic matcher for /glyphs/* /style.json", tilesName)
+		}
+
+		if !strings.Contains(block, "encode @tiles_dynamic zstd gzip") {
+			t.Errorf("%s: does not encode @tiles_dynamic with zstd gzip", tilesName)
+		}
+
+		if strings.Contains(block, "*.pmtiles") || strings.Contains(block, ".pmtiles") {
+			t.Errorf("%s: encode rule mentions pmtiles — Range requests would fail", tilesName)
+		}
 	}
 }
