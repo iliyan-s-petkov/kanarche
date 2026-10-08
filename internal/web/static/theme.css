@@ -104,6 +104,7 @@
   /* Locate hint: bubble lift above the button, arrow inset from the corner. Phone overrides in app.css. */
   --locate-hint-lift: 3.2rem;
   --locate-hint-arrow-inset: 9px;
+  --locate-hint-clear: 4rem;
 
   /* What the sensor panel covers at the map's bottom; the dock sets it on .map-shell, 0 with none open. */
   --map-panel-h: 0px;
