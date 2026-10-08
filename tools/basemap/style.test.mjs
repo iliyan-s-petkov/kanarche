@@ -51,13 +51,13 @@ ok('only ' + SERVED.join(' / '), [...fonts].every(f => SERVED.includes(f)),
    [...fonts].filter(f => !SERVED.includes(f)).join(', '));
 
 console.log('\n3. every layer is in a group the control can offer');
-const ungrouped = style.layers.filter(l => !l.metadata?.['airbg:group']).map(l => l.id);
-ok('no layer without airbg:group', ungrouped.length === 0, ungrouped.join(', '));
+const ungrouped = style.layers.filter(l => !l.metadata?.['kanarche:group']).map(l => l.id);
+ok('no layer without kanarche:group', ungrouped.length === 0, ungrouped.join(', '));
 
 console.log('\n4. the POI groups are disjoint and exhaustive');
 const dots = style.layers.filter(l => l['source-layer'] === 'poi' && l.type === 'circle');
 const groups = dots.map((l, i) => ({
-  group: l.metadata['airbg:group'],
+  group: l.metadata['kanarche:group'],
   f: spec.featureFilter(l.filter, `layers[${i}].filter`),
 }));
 const named = [...new Set(dots.flatMap(l => {
