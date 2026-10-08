@@ -70,13 +70,19 @@ func Watch(ctx context.Context, cfg FetchConfig) (bool, error) {
 // the r00 revision: ..._1990-2025_v01_r00/..._1990_2025.xlsx becomes
 // ..._1990-2026_v01_r01/..._1990_2026.xlsx. A URL with no year is returned unchanged.
 func deriveNextEditionURL(current string) string {
-	years := yearPattern.FindAllString(current, -1)
+	u, err := url.Parse(current)
+	if err != nil {
+		return current
+	}
+	// Only the path carries the edition, so host and port digits are never touched.
+	years := yearPattern.FindAllString(u.Path, -1)
 	if len(years) == 0 {
 		return current
 	}
 	last := years[len(years)-1]
 	n, _ := strconv.Atoi(last) // the pattern guarantees digits
 	// Replacing every occurrence also moves the range end in 1990-2025.
-	out := strings.ReplaceAll(current, last, strconv.Itoa(n+1))
-	return revisionPattern.ReplaceAllString(out, "${1}r01")
+	path := strings.ReplaceAll(u.Path, last, strconv.Itoa(n+1))
+	u.Path = revisionPattern.ReplaceAllString(path, "${1}r01")
+	return u.String()
 }
