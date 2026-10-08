@@ -5,6 +5,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
@@ -17,6 +18,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
         working-directory: web
+        timeout-minutes: 10
       # internal/web serves the EMBEDDED bundle (//go:embed all:dist), which is
       # not committed, so its tests 404 unless the build runs first.
       - run: npm run build
@@ -75,6 +77,7 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: web
@@ -89,12 +92,14 @@ jobs:
       # package.json instead of quietly resolving a different tree than the
       # one that was reviewed.
       - run: npm ci
+        timeout-minutes: 10
       - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run build
 
   integration:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
@@ -107,6 +112,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
         working-directory: web
+        timeout-minutes: 10
       # internal/web serves the EMBEDDED bundle (//go:embed all:dist), which is
       # not committed, so its tests 404 unless the build runs first.
       - run: npm run build
@@ -117,6 +123,7 @@ jobs:
 
   e2e-shard:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -135,6 +142,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
         working-directory: web
+        timeout-minutes: 10
       # The Go test serves the EMBEDDED bundle, so the build must run first or
       # every island is missing and every spec fails for the wrong reason.
       # VITE_E2E_MAP_HANDLE=1 is what puts el.__map onto the map island (see
@@ -144,6 +152,7 @@ jobs:
         working-directory: web
       - run: npx playwright install --with-deps chromium
         working-directory: web
+        timeout-minutes: 10
       - run: go test -tags e2e -timeout 30m ./internal/e2e/
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: failure()
@@ -158,11 +167,13 @@ jobs:
     if: always()
     needs: e2e-shard
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - run: test "${{ needs.e2e-shard.result }}" = success
 
   secrets:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
