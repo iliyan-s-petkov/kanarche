@@ -5,7 +5,7 @@ import { test, expect } from './fixtures.js'
 // "The map redraws itself several times per zoom" is only measurable in a real
 // browser: the layers are painted by MapLibre from real network responses that
 // arrive apart. paintSource (islands/map.js) announces every data-layer repaint
-// as an `kanarche:paint` event on the map container, and this file counts them.
+// as a `kanarche:paint` event on the map container, and this file counts them.
 test.describe.serial('one zoom, one redraw', () => {
   let page
 
