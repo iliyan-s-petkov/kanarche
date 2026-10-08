@@ -147,6 +147,13 @@ func TestDeriveNextEditionURL(t *testing.T) {
 		{"single year", "https://sdi.eea.europa.eu/eea_t_bathing_p_2025_v01_r00/data_2025.xlsx",
 			"https://sdi.eea.europa.eu/eea_t_bathing_p_2026_v01_r01/data_2026.xlsx"},
 		{"no year", "https://sdi.eea.europa.eu/latest/data.xlsx", "https://sdi.eea.europa.eu/latest/data.xlsx"},
+		// Port and host digits are not edition years, so only the path may change.
+		{"port with 20xx, no year in path", "https://127.0.0.1:42010/latest/bw_assessment.xlsx",
+			"https://127.0.0.1:42010/latest/bw_assessment.xlsx"},
+		{"port with 20xx and year in path", "https://127.0.0.1:42025/eea_t_p_2025_v01_r00/data_2025.xlsx",
+			"https://127.0.0.1:42025/eea_t_p_2026_v01_r01/data_2026.xlsx"},
+		{"host with 20xx, no year in path", "https://data2024.example.eu/latest/data.xlsx",
+			"https://data2024.example.eu/latest/data.xlsx"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
