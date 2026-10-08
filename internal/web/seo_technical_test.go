@@ -94,8 +94,6 @@ func TestSitemapLastModOnlyWhereDataSupportsIt(t *testing.T) {
 		"https://airbg.org/about":             "",
 		"https://airbg.org/about-the-data":    "",
 		"https://airbg.org/en/about":          "",
-		"https://airbg.org/area/vidin":        "",
-		"https://airbg.org/en/area/vidin":     "",
 		"https://airbg.org/en/about-the-data": "",
 	}
 	seen := 0

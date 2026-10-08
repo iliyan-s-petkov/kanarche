@@ -4,7 +4,7 @@
      container is what it needs now that <main> no longer clamps anything. */}}
 <div class="frame">
 <nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
-{{range $i, $c := .AreaCrumbs}}{{if $i}}<span class="breadcrumb__sep" aria-hidden="true">›</span>{{end}}{{if $c.URL}}<a class="link" href="{{$c.URL}}">{{$c.Name}}</a>{{else}}<span aria-current="page">{{$c.Name}}</span>{{end}}{{end}}
+{{range $i, $c := .AreaCrumbs}}{{if $i}}<span class="breadcrumb__sep" aria-hidden="true">›</span>{{end}}{{if .Current}}<span aria-current="page">{{.Name}}</span>{{else}}<a class="link" href="{{.URL}}">{{.Name}}</a>{{end}}{{end}}
 </nav>
 
 {{/* The kit's .page-head: the name, then whatever qualifies it, above the

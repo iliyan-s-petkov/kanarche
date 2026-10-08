@@ -11,7 +11,7 @@ import (
 )
 
 // acFixture is the SEO6 test snapshot: a covered city inside its oblast, a
-// Sofia district inside city "sofia" inside "sofiya-grad-oblast", a second
+// Sofia district inside city "sofiya" inside "sofiya-grad-oblast", a second
 // district for the nearest-list, an oblast with no city child
 // ("sofiyska-oblast", per the plan's per-kind link table), and an uncovered
 // city for the no-data example.
@@ -26,14 +26,14 @@ func acFixture() *snapshot.Snapshot {
 				Covered: true, SensorCount: 5, Values: map[string]float64{"P2": 12.3}},
 			"sofiya-grad-oblast": {Slug: "sofiya-grad-oblast", Kind: "oblast", NameBG: "София-град", NameEN: "Sofia-City",
 				CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 9, Covered: true, SensorCount: 412},
-			"sofia": {Slug: "sofia", Kind: "city", NameBG: "София", NameEN: "Sofia",
+			"sofiya": {Slug: "sofiya", Kind: "city", NameBG: "София", NameEN: "Sofia",
 				ParentSlug: "sofiya-grad-oblast", CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 11,
 				Covered: true, SensorCount: 30, Values: map[string]float64{"P2": 8.0}},
 			"mladost": {Slug: "mladost", Kind: "neighbourhood", NameBG: "Младост", NameEN: "Mladost",
-				ParentSlug: "sofia", CentroidLon: 23.37, CentroidLat: 42.65, DefaultZoom: 13,
+				ParentSlug: "sofiya", CentroidLon: 23.37, CentroidLat: 42.65, DefaultZoom: 13,
 				Covered: true, SensorCount: 4, Values: map[string]float64{"P2": 6.0}},
 			"lozenets": {Slug: "lozenets", Kind: "neighbourhood", NameBG: "Лозенец", NameEN: "Lozenets",
-				ParentSlug: "sofia", CentroidLon: 23.32, CentroidLat: 42.68, DefaultZoom: 13,
+				ParentSlug: "sofiya", CentroidLon: 23.32, CentroidLat: 42.68, DefaultZoom: 13,
 				Covered: true, SensorCount: 6, Values: map[string]float64{"P2": 9.5}},
 			"sofiyska-oblast": {Slug: "sofiyska-oblast", Kind: "oblast", NameBG: "Софийска", NameEN: "Sofia",
 				CentroidLon: 23.7, CentroidLat: 42.5, DefaultZoom: 9, Covered: true, SensorCount: 40},
@@ -43,7 +43,7 @@ func acFixture() *snapshot.Snapshot {
 				ParentSlug: "silistra-oblast", CentroidLon: 27.26, CentroidLat: 44.12, DefaultZoom: 11,
 				Covered: false, SensorCount: 0},
 			"kremikovtsi": {Slug: "kremikovtsi", Kind: "neighbourhood", NameBG: "Кремиковци", NameEN: "Kremikovtsi",
-				ParentSlug: "sofia", CentroidLon: 23.5, CentroidLat: 42.75, DefaultZoom: 13,
+				ParentSlug: "sofiya", CentroidLon: 23.5, CentroidLat: 42.75, DefaultZoom: 13,
 				Covered: false, SensorCount: 1},
 		},
 	}
@@ -269,7 +269,7 @@ func TestAreaTierDistrict(t *testing.T) {
 
 // TestAreaLinksPerKind checks the per-kind table in buildAreaLinks's doc
 // comment: an oblast's children block names its областен град, a city named
-// "sofia" gets the districts block instead, a district's parent chain is
+// "sofiya" gets the districts block instead, a district's parent chain is
 // city-then-oblast, and an oblast with no city child gets no children block.
 func TestAreaLinksPerKind(t *testing.T) {
 	rr := acRenderer(t)
@@ -296,19 +296,19 @@ func TestAreaLinksPerKind(t *testing.T) {
 		t.Errorf("sofiyska-oblast children block = %+v, want nil (no city inside it)", p2.AreaChildrenBlock)
 	}
 
-	// City "sofia": children is the districts block, labelled area.children.districts.
-	sofiaMeta := snap.KnownSlugs["sofia"]
-	sofiaRow := rr.rowFrom(sofiaMeta, i18n.DefaultLang)
+	// City "sofiya": children is the districts block, labelled area.children.districts.
+	sofiyaMeta := snap.KnownSlugs["sofiya"]
+	sofiaRow := rr.rowFrom(sofiyaMeta, i18n.DefaultLang)
 	p3 := acPageData(rr, i18n.DefaultLang, snap.GeneratedAt, snap.GeneratedAt)
-	rr.buildAreaLinks(&p3, sofiaMeta, sofiaRow, snap, i18n.DefaultLang)
+	rr.buildAreaLinks(&p3, sofiyaMeta, sofiaRow, snap, i18n.DefaultLang)
 	if p3.AreaChildrenBlock == nil || p3.AreaChildrenBlock.Label != "Райони на София" {
-		t.Errorf("sofia children block = %+v, want label %q", p3.AreaChildrenBlock, "Райони на София")
+		t.Errorf("sofiya children block = %+v, want label %q", p3.AreaChildrenBlock, "Райони на София")
 	}
 	if p3.AreaParentBlock == nil || len(p3.AreaParentBlock.Items) != 1 || p3.AreaParentBlock.Items[0].Slug != "sofiya-grad-oblast" {
-		t.Errorf("sofia parent block = %+v, want sofiya-grad-oblast", p3.AreaParentBlock)
+		t.Errorf("sofiya parent block = %+v, want sofiya-grad-oblast", p3.AreaParentBlock)
 	}
 
-	// District "mladost": parent chain is sofia, then sofiya-grad-oblast; no children.
+	// District "mladost": parent chain is sofiya, then sofiya-grad-oblast; no children.
 	mMeta := snap.KnownSlugs["mladost"]
 	mRow := rr.rowFrom(mMeta, i18n.DefaultLang)
 	p4 := acPageData(rr, i18n.DefaultLang, snap.GeneratedAt, snap.GeneratedAt)
@@ -319,8 +319,8 @@ func TestAreaLinksPerKind(t *testing.T) {
 	if p4.AreaParentBlock == nil || len(p4.AreaParentBlock.Items) != 2 {
 		t.Fatalf("mladost parent block = %+v, want a 2-item chain", p4.AreaParentBlock)
 	}
-	if p4.AreaParentBlock.Items[0].Slug != "sofia" || p4.AreaParentBlock.Items[1].Slug != "sofiya-grad-oblast" {
-		t.Errorf("mladost parent chain slugs = %v, want [sofia sofiya-grad-oblast]",
+	if p4.AreaParentBlock.Items[0].Slug != "sofiya" || p4.AreaParentBlock.Items[1].Slug != "sofiya-grad-oblast" {
+		t.Errorf("mladost parent chain slugs = %v, want [sofiya sofiya-grad-oblast]",
 			[]string{p4.AreaParentBlock.Items[0].Slug, p4.AreaParentBlock.Items[1].Slug})
 	}
 	// Nearest is the other covered district, lozenets (kremikovtsi is uncovered
@@ -342,18 +342,21 @@ func TestAreaLinksPerKind(t *testing.T) {
 		t.Errorf("mladost nearest block = %+v, want lozenets among the results", p4.AreaNearestBlock.Items)
 	}
 
-	// Breadcrumb chain for the district: Home, София, Област София-град, Младост.
-	if len(p4.AreaCrumbs) != 4 {
-		t.Fatalf("mladost breadcrumbs = %+v, want 4 crumbs", p4.AreaCrumbs)
+	// Breadcrumb trail for the district: Карта, Райони, then the chain root-first, then self.
+	wantCrumbs := []Crumb{
+		{Name: "Карта", URL: "/"},
+		{Name: "Райони", URL: "/areas"},
+		{Name: "Област София-град", URL: "/area/sofiya-grad-oblast"},
+		{Name: "София", URL: "/area/sofiya"},
+		{Name: "Младост", URL: "/area/mladost", Current: true},
 	}
-	wantNames := []string{"Карта", "Област София-град", "София", "Младост"}
-	for i, want := range wantNames {
-		if p4.AreaCrumbs[i].Name != want {
-			t.Errorf("breadcrumb[%d].Name = %q, want %q", i, p4.AreaCrumbs[i].Name, want)
+	if len(p4.AreaCrumbs) != len(wantCrumbs) {
+		t.Fatalf("mladost breadcrumbs = %+v, want %d crumbs", p4.AreaCrumbs, len(wantCrumbs))
+	}
+	for i, want := range wantCrumbs {
+		if p4.AreaCrumbs[i] != want {
+			t.Errorf("breadcrumb[%d] = %+v, want %+v", i, p4.AreaCrumbs[i], want)
 		}
-	}
-	if p4.AreaCrumbs[3].URL != "" {
-		t.Errorf("last breadcrumb URL = %q, want empty (self, not a link)", p4.AreaCrumbs[3].URL)
 	}
 }
 
@@ -377,8 +380,8 @@ func TestAreasDirectoryLinksEveryArea(t *testing.T) {
 			t.Errorf("area %q (kind %s) is not linked from the /areas directory", slug, meta.Kind)
 		}
 	}
-	// Sofia's districts are nested only under the sofia group, not duplicated
-	// under every oblast — this directory has one city "sofia", so exactly one
+	// Sofia's districts are nested only under the sofiya group, not duplicated
+	// under every oblast — this directory has one city "sofiya", so exactly one
 	// group carries a non-empty Districts slice.
 	withDistricts := 0
 	for _, g := range groups {

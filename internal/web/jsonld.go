@@ -184,18 +184,12 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 	return encodeJSONLD(ds)
 }
 
-// areaBreadcrumb is Home → Areas → parents (from p.AreaCrumbs, root first) → this area.
-func (rr *Renderer) areaBreadcrumb(p PageData, row AreaRow) []ldListItem {
-	items := []ldListItem{
-		{Name: p.T("site.title"), Item: p.BaseURL + p.Path("/")},
-		{Name: p.T("nav.areas"), Item: p.BaseURL + p.Path("/areas")},
+// areaBreadcrumb maps the visible trail (p.AreaCrumbs, built by Breadcrumbs) one-to-one onto the BreadcrumbList.
+func (rr *Renderer) areaBreadcrumb(p PageData) []ldListItem {
+	items := make([]ldListItem, 0, len(p.AreaCrumbs))
+	for _, c := range p.AreaCrumbs {
+		items = append(items, ldListItem{Name: c.Name, Item: p.BaseURL + c.URL})
 	}
-	if n := len(p.AreaCrumbs); n > 2 {
-		for _, c := range p.AreaCrumbs[1 : n-1] {
-			items = append(items, ldListItem{Name: c.Name, Item: p.BaseURL + c.URL})
-		}
-	}
-	items = append(items, ldListItem{Name: rr.areaCrumbName(row, p.Lang), Item: p.BaseURL + p.Path("/area/"+row.Slug)})
 	for i := range items {
 		items[i].Type, items[i].Position = "ListItem", i+1
 	}
@@ -204,7 +198,7 @@ func (rr *Renderer) areaBreadcrumb(p PageData, row AreaRow) []ldListItem {
 
 // areaJSONLD is the breadcrumb trail plus a Place when a centroid exists.
 func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
-	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: rr.areaBreadcrumb(p, row)}
+	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: rr.areaBreadcrumb(p)}
 
 	if row.Lat == 0 && row.Lon == 0 {
 		return encodeJSONLD(crumbs)
