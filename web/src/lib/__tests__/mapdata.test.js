@@ -154,7 +154,7 @@ describe('initData ordering', () => {
       // Only the marker source is recorded: the hex layer draws over the same
       // map from its own source, and counting its setData here would make this
       // test about how many layers exist rather than about marker colour.
-      getSource: (id) => (id === 'airbg-data' ? { setData: (data) => painted.push(data) } : undefined),
+      getSource: (id) => (id === 'kanarche-data' ? { setData: (data) => painted.push(data) } : undefined),
     }
   }
 
@@ -402,7 +402,7 @@ describe('the opening render', () => {
       painted,
       jumpTo: vi.fn(),
       getZoom: () => zoom,
-      getSource: (id) => (id === 'airbg-data' ? { setData: (d) => painted.push(d) } : undefined),
+      getSource: (id) => (id === 'kanarche-data' ? { setData: (d) => painted.push(d) } : undefined),
     }
   }
 
@@ -493,7 +493,7 @@ describe('refreshHexes', () => {
       painted,
       getZoom: () => zoom,
       getBounds: () => ({ getWest: () => 23.3, getSouth: () => 42.6, getEast: () => 23.4, getNorth: () => 42.7 }),
-      getSource: (id) => (id === 'airbg-hexes' ? { setData: (d) => painted.push(d) } : undefined),
+      getSource: (id) => (id === 'kanarche-hexes' ? { setData: (d) => painted.push(d) } : undefined),
     }
   }
 
@@ -743,7 +743,7 @@ describe('the area sensor list below the sensor tier', () => {
     return {
       painted,
       getZoom: () => zoom,
-      getSource: (id) => (id === 'airbg-data' ? { setData: (data) => painted.push(data) } : undefined),
+      getSource: (id) => (id === 'kanarche-data' ? { setData: (data) => painted.push(data) } : undefined),
     }
   }
 

@@ -1,5 +1,5 @@
 // Network filter for the sensor tier. A filter, not a second MapLibre source:
-// islands/map.js paints one source ('airbg-data') for both the area tiers and
+// islands/map.js paints one source ('kanarche-data') for both the area tiers and
 // the sensor tier, and repaintSensors redraws from state.sensorBody without a
 // refetch. Module-level $state, not viewstate.svelte.js — that file mirrors the
 // URL hash and this is not in the hash. Mirrors sensorfilter.svelte.js.

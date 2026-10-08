@@ -65,13 +65,13 @@ describe('the basemap toggle', () => {
       // none, and must be left standing.
       getStyle: () => ({ layers: [
         { id: 'poi-shop', metadata: { 'airbg:group': 'poi-shop' } },
-        { id: 'airbg-hex-fill' },
+        { id: 'kanarche-hex-fill' },
       ] }),
     }
     basemap.apply(false, map)
 
     expect(set).toEqual([
-      ['airbg-raster-base', 'visibility', 'none'],
+      ['kanarche-raster-base', 'visibility', 'none'],
       ['poi-shop', 'visibility', 'none'],
     ])
   })
@@ -435,7 +435,7 @@ describe('the inactive-stations toggle', () => {
       painted,
       getZoom: () => 12,
       getBounds: () => ({ getWest: () => 23.3, getSouth: () => 42.6, getEast: () => 23.4, getNorth: () => 42.7 }),
-      getSource: (id) => (id === 'airbg-hexes' ? { setData: (d) => painted.push(d) } : undefined),
+      getSource: (id) => (id === 'kanarche-hexes' ? { setData: (d) => painted.push(d) } : undefined),
     }
   }
 

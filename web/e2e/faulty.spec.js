@@ -4,7 +4,7 @@ import { test, expect, mapSettled } from './fixtures.js'
 // is faulty on the PM2.5 layer only. EN routes; sofia opens at the sensor tier.
 const sensorIds = (page) => page.evaluate(async () => {
   const map = document.querySelector('[data-island="map"]').__map
-  const feats = (await map.getSource('airbg-data').getData()).features ?? []
+  const feats = (await map.getSource('kanarche-data').getData()).features ?? []
   return feats.filter((f) => f.properties.id != null)
     .map((f) => ({ id: f.properties.id, faulty: f.properties.faulty }))
 })
@@ -40,7 +40,7 @@ test.describe.serial('the faulty stations toggle', () => {
     await expect(page.locator('.sensor-bar + .meta')).toHaveText('Showing 4 of 5 sensors, 2 with no recent readings')
     const ring = await page.evaluate(() => {
       const map = document.querySelector('[data-island="map"]').__map
-      return map.getLayer('airbg-markers-faulty').type
+      return map.getLayer('kanarche-markers-faulty').type
     })
     expect(ring).toBe('circle')
   })

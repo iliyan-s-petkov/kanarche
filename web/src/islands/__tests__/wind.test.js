@@ -448,7 +448,7 @@ describe('setWind', () => {
   })
 
   it('names the layer it toggles, so a renamed layer cannot silently no-op', () => {
-    expect(WIND_LAYER_ID).toBe('airbg-wind-arrows')
+    expect(WIND_LAYER_ID).toBe('kanarche-wind-arrows')
   })
 })
 

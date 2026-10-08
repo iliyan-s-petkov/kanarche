@@ -575,17 +575,17 @@ test.describe('hex label and dot label never share a value (Task 12 round 3)', (
     // Both data layers painted at least once, not just the empty style.
     await page.waitForFunction(() => {
       const seen = new Set(window.__paints ?? [])
-      return seen.has('airbg-data') && seen.has('airbg-hexes')
+      return seen.has('kanarche-data') && seen.has('kanarche-hexes')
     }, null, { timeout: 20000 })
     // Settle past load-time placement jumps.
     await page.waitForTimeout(3000)
 
-    await expect.poll(async () => (await anchors(page, 'airbg-marker-labels')).length)
+    await expect.poll(async () => (await anchors(page, 'kanarche-marker-labels')).length)
       .toBeGreaterThan(0)
 
     const [dotAnchors, hexAnchors] = await Promise.all([
-      anchors(page, 'airbg-marker-labels'),
-      anchors(page, 'airbg-hex-labels'),
+      anchors(page, 'kanarche-marker-labels'),
+      anchors(page, 'kanarche-hex-labels'),
     ])
 
     const overlapping = hexAnchors.filter((h) =>

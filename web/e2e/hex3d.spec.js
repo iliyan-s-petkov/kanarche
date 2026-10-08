@@ -2,7 +2,7 @@ import { test, expect } from './fixtures.js'
 
 // Rise on tilt: the hex cells are flat top-down and become value-height columns when pitched.
 const SIZES = [{ width: 1440, height: 900 }, { width: 393, height: 873 }]
-const EXTRUSION = 'airbg-hex-extrusion'
+const EXTRUSION = 'kanarche-hex-extrusion'
 
 async function prepareMap(page) {
   await page.goto('/en/')
@@ -23,7 +23,7 @@ const pitchTo = (page, pitch) => page.evaluate((pitch) => {
 // The extrusion's state as drawn: layer opacity and the rise/height of rendered columns.
 const columns = (page) => page.evaluate((layer) => {
   const map = document.querySelector('[data-island="map"]').__map
-  const fills = map.queryRenderedFeatures({ layers: ['airbg-hex-fill'] })
+  const fills = map.queryRenderedFeatures({ layers: ['kanarche-hex-fill'] })
   const flat = fills.length
   // Distinct values on the flat grid: above 1 once the fine tier at the target zoom has painted.
   const flatValues = new Set(fills.map((f) => f.properties.value).filter((v) => v != null)).size
@@ -33,7 +33,7 @@ const columns = (page) => page.evaluate((layer) => {
     .map((f) => ({
       value: f.properties.value ?? null,
       height: f.properties.height ?? 0,
-      rise: map.getFeatureState({ source: 'airbg-hex-columns', id: f.id }).rise ?? 0,
+      rise: map.getFeatureState({ source: 'kanarche-hex-columns', id: f.id }).rise ?? 0,
     }))
   return { flat, flatValues, opacity: map.getPaintProperty(layer, 'fill-extrusion-opacity'), cells }
 }, EXTRUSION)

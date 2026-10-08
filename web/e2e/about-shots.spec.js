@@ -167,7 +167,7 @@ async function overSofia(page, prefix, zoom = 12.5) {
   await page.goto(`${prefix}/`)
   await mapReady(page)
   await jump(page, { center: SOFIA, zoom })
-  await expect.poll(() => page.evaluate(() => document.querySelector('[data-island="map"]').__map.queryRenderedFeatures({ layers: ['airbg-hex-fill'] }).length), { timeout: 30_000, intervals: [500] }).toBeGreaterThan(0)
+  await expect.poll(() => page.evaluate(() => document.querySelector('[data-island="map"]').__map.queryRenderedFeatures({ layers: ['kanarche-hex-fill'] }).length), { timeout: 30_000, intervals: [500] }).toBeGreaterThan(0)
   await mapIdle(page)
   await page.waitForTimeout(800)
 }
@@ -319,7 +319,7 @@ const SCENES = {
     const cell = await page.evaluate((c) => {
       const map = document.querySelector('[data-island="map"]').__map
       const p = map.project(c)
-      const hit = map.queryRenderedFeatures([p.x, p.y], { layers: ['airbg-hex-fill'] })[0]
+      const hit = map.queryRenderedFeatures([p.x, p.y], { layers: ['kanarche-hex-fill'] })[0]
       if (!hit) return null
       const box = map.getCanvas().getBoundingClientRect()
       const pts = hit.geometry.coordinates[0].map((q) => map.project(q))
@@ -394,13 +394,13 @@ const SCENES = {
     await expect.poll(() => page.evaluate(() => {
       const map = document.querySelector('[data-island="map"]').__map
       if (!map.loaded() || map.isMoving()) return 0
-      return new Set(map.queryRenderedFeatures({ layers: ['airbg-hex-fill'] }).map((f) => f.properties.value)).size
+      return new Set(map.queryRenderedFeatures({ layers: ['kanarche-hex-fill'] }).map((f) => f.properties.value)).size
     }), { timeout: 30_000, intervals: [500] }).toBeGreaterThan(1)
     await jump(page, { pitch: 55, bearing: 25 })
     await expect.poll(() => page.evaluate(() => {
       const map = document.querySelector('[data-island="map"]').__map
       if (!map.loaded() || map.isMoving()) return 0
-      return new Set(map.queryRenderedFeatures({ layers: ['airbg-hex-extrusion'] }).map((f) => f.properties.value)).size
+      return new Set(map.queryRenderedFeatures({ layers: ['kanarche-hex-extrusion'] }).map((f) => f.properties.value)).size
     }), { timeout: 30_000, intervals: [500] }).toBeGreaterThan(1)
     // The popup reads the camera, so it shows the tilt and heading just set.
     await page.locator('.map-orient__btn').click()
@@ -436,7 +436,7 @@ const SCENES = {
       await expect(async () => {
         const pt = await page.evaluate(() => {
           const map = document.querySelector('[data-island="map"]').__map
-          const f = map.queryRenderedFeatures({ layers: ['airbg-hex-fill'] }).find((q) => Number(q.properties?.sensorId) === 101)
+          const f = map.queryRenderedFeatures({ layers: ['kanarche-hex-fill'] }).find((q) => Number(q.properties?.sensorId) === 101)
           if (!f) return null
           const ring = f.geometry.coordinates[0].slice(0, -1)
           const c = [0, 1].map((i) => ring.reduce((a, q) => a + q[i], 0) / ring.length)

@@ -295,7 +295,7 @@ describe('mount() ignores a move before the layers exist', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
 
     map.handlers.load()
-    await vi.waitFor(() => expect(map.painted).toContain('airbg-data'))
+    await vi.waitFor(() => expect(map.painted).toContain('kanarche-data'))
   })
 })
 
@@ -493,7 +493,7 @@ describe('mount() gives the point tier a layer to paint into', () => {
   it('adds a circle layer on the hex source', () => {
     const { map } = mountTestMap({ metric: 'P2' })
     const layers = map.addLayer.mock.calls.map((c) => c[0])
-    const point = layers.find((l) => l.source === 'airbg-hexes' && l.type === 'circle')
+    const point = layers.find((l) => l.source === 'kanarche-hexes' && l.type === 'circle')
 
     expect(point, 'no circle layer on the hex source').toBeTruthy()
     // Coloured by the same property the cells use, so a device and a cell at
@@ -509,7 +509,7 @@ describe('mount() gives the point tier a layer to paint into', () => {
   it('paints points only, never a cell\u2019s corners', () => {
     const { map } = mountTestMap({ metric: 'P2' })
     const point = map.addLayer.mock.calls.map((c) => c[0])
-      .find((l) => l.source === 'airbg-hexes' && l.type === 'circle')
+      .find((l) => l.source === 'kanarche-hexes' && l.type === 'circle')
 
     expect(point.filter).toEqual(['==', ['geometry-type'], 'Point'])
   })
@@ -523,7 +523,7 @@ describe('mount() prints the reading inside the cell', () => {
   const hexLabel = () => {
     const { map } = mountTestMap({ metric: 'P2' })
     return map.addLayer.mock.calls.map((c) => c[0])
-      .find((l) => l.source === 'airbg-hexes' && l.type === 'symbol')
+      .find((l) => l.source === 'kanarche-hexes' && l.type === 'symbol')
   }
 
   it('labels the cells from the source they are drawn from', () => {
@@ -625,7 +625,7 @@ describe('mount() draws the wind arrows beneath the hex labels', () => {
 describe('mount() opens a sensor from the cell that carries one', () => {
   it('binds a click to the cells and opens the sensor it names', () => {
     const { map } = mountTestMap({ metric: 'P2' })
-    const onCell = map.clickHandlers['airbg-hex-fill']
+    const onCell = map.clickHandlers['kanarche-hex-fill']
     expect(onCell, 'no click handler on the cells').toBeTypeOf('function')
 
     onCell({ features: [{ properties: { sensorId: 4242, value: 7 } }] })
@@ -655,7 +655,7 @@ describe('mount() opens a sensor from the cell that carries one', () => {
     await new Promise((r) => setTimeout(r, 0))
     map.jumpTo.mockClear()
 
-    map.clickHandlers['airbg-hex-fill']({ features: [{ properties: { sensorId: 4242 } }] })
+    map.clickHandlers['kanarche-hex-fill']({ features: [{ properties: { sensorId: 4242 } }] })
 
     await vi.waitFor(() => {
       expect(asked.some((u) => u.includes('/api/v1/sensor/4242/locate'))).toBe(true)
@@ -690,7 +690,7 @@ describe('mount() opens a sensor from the cell that carries one', () => {
 
   it('opens no panel for an aggregate cell, which names no device', () => {
     const { map } = mountTestMap({ metric: 'P2' })
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [{ properties: { n: 9, value: 7 } }],
       lngLat: { lng: 23.32, lat: 42.7 },
     })
@@ -800,7 +800,7 @@ describe('mount() zooms into a multi-station cell', () => {
     const fetchSpy = vi.fn()
     vi.stubGlobal('fetch', fetchSpy)
 
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [polygonFeature()],
       lngLat: { lng: 23.5, lat: 42.4 },
     })
@@ -818,7 +818,7 @@ describe('mount() zooms into a multi-station cell', () => {
     const zoom = POINT_TIER_MIN_ZOOM - 1
     map.getZoom = vi.fn(() => zoom)
 
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [polygonFeature()],
       lngLat: { lng: 23.5, lat: 42.4 },
     })
@@ -833,7 +833,7 @@ describe('mount() zooms into a multi-station cell', () => {
     const fetchSpy = vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({ areas: [] }) }))
     vi.stubGlobal('fetch', fetchSpy)
 
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [polygonFeature()],
       lngLat: { lng: 23.5, lat: 42.4 },
     })
@@ -847,7 +847,7 @@ describe('mount() zooms into a multi-station cell', () => {
     const { map } = mountTestMap({ metric: 'P2' })
     map.getZoom = vi.fn(() => 9)
 
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [{ properties: { n: 3, value: 5 }, geometry: { type: 'Point', coordinates: [23.5, 42.4] } }],
       lngLat: { lng: 23.5, lat: 42.4 },
     })
@@ -867,7 +867,7 @@ describe('mount() zooms into a multi-station cell', () => {
     const fetchSpy = vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({ areas: [] }) }))
     vi.stubGlobal('fetch', fetchSpy)
 
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [polygonFeature()],
       lngLat: { lng: 23.5, lat: 42.4 },
     })
@@ -889,7 +889,7 @@ describe('mount() zooms into a multi-station cell', () => {
     const fetchSpy = vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({ areas: [] }) }))
     vi.stubGlobal('fetch', fetchSpy)
 
-    map.clickHandlers['airbg-hex-fill']({
+    map.clickHandlers['kanarche-hex-fill']({
       features: [polygonFeature()],
       lngLat: { lng: 23.5, lat: 42.4 },
     })
@@ -907,7 +907,7 @@ describe('mount() hands the reading from the dots to the cells', () => {
   it('stops the aggregate markers where the cells start, not where the dots do', () => {
     const { map } = mountTestMap({ metric: 'P2' })
     const markers = map.addLayer.mock.calls.map((c) => c[0])
-      .filter((l) => l.source === 'airbg-data')
+      .filter((l) => l.source === 'kanarche-data')
 
     // Circles, official diamonds, faulty rings, labels — every layer the sensor
     // source feeds, so a fifth one added later has to answer this question too.
@@ -928,12 +928,12 @@ describe('mount() hands the reading from the dots to the cells', () => {
 
     applyMarkerZoomRange(map, 'sensors')
     expect(ranges).toEqual([
-      ['airbg-markers', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
+      ['kanarche-markers', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
       // The official diamonds hand over with the circles they stand beside.
       // Left out, they would have outlived the network they belong to.
-      ['airbg-markers-official', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
-      ['airbg-marker-labels', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
-      ['airbg-markers-faulty', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
+      ['kanarche-markers-official', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
+      ['kanarche-marker-labels', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
+      ['kanarche-markers-faulty', 0, POINT_TIER_MIN_ZOOM_FRACTIONAL],
       // Task 12 round 3: re-pinned every call, not just the cellValues
       // toggle's own — see mappaint.js's hexLabelMinZoom. cellValues is off
       // in this fake map (never set), so this is the unchanged point-tier
@@ -958,7 +958,7 @@ describe('mount() hands the reading from the dots to the cells', () => {
     // dots when zoomed out.
     const { map } = mountTestMap({ metric: 'P2' })
     const grid = map.addLayer.mock.calls.map((c) => c[0])
-      .filter((l) => l.source === 'airbg-hexes' && l.type !== 'symbol')
+      .filter((l) => l.source === 'kanarche-hexes' && l.type !== 'symbol')
 
     expect(grid.length).toBeGreaterThan(0)
     for (const l of grid) expect(l.minzoom).toBe(GRID_MIN_ZOOM_FRACTIONAL)
@@ -1189,8 +1189,8 @@ describe('a move paints its layers in one pass', () => {
 
     const { map } = mountTestMap({ metric: 'P2' })
     // The wind layer starts after the first render, so let it land before counting paints.
-    await vi.waitFor(() => expect(map.painted).toContain('airbg-wind'), { timeout: 4000 })
-    await vi.waitFor(() => expect(map.painted).toContain('airbg-data'))
+    await vi.waitFor(() => expect(map.painted).toContain('kanarche-wind'), { timeout: 4000 })
+    await vi.waitFor(() => expect(map.painted).toContain('kanarche-data'))
 
     let release
     gate = new Promise((r) => { release = r })
@@ -1205,8 +1205,8 @@ describe('a move paints its layers in one pass', () => {
 
     release()
     await vi.waitFor(() => {
-      expect(map.painted).toContain('airbg-data')
-      expect(map.painted).toContain('airbg-hexes')
+      expect(map.painted).toContain('kanarche-data')
+      expect(map.painted).toContain('kanarche-hexes')
     })
   })
 })
@@ -1249,7 +1249,7 @@ describe('the sensor status filter', () => {
       return sources.get(id)
     })
     return {
-      get setData() { return sources.get('airbg-data')?.setData ?? { mock: { calls: [] } } },
+      get setData() { return sources.get('kanarche-data')?.setData ?? { mock: { calls: [] } } },
     }
   }
 
@@ -1370,7 +1370,7 @@ describe('the official marker layer', () => {
   it('splits the source in two along the network, leaving areas with the dots', () => {
     const { map } = mountTestMap({ metric: 'P2' })
     const [circles, diamonds] = map.addLayer.mock.calls.map((c) => c[0])
-      .filter((l) => l.source === 'airbg-data' && l.id !== 'airbg-marker-labels' && l.id !== 'airbg-markers-faulty')
+      .filter((l) => l.source === 'kanarche-data' && l.id !== 'kanarche-marker-labels' && l.id !== 'kanarche-markers-faulty')
 
     expect(circles.type).toBe('circle')
     expect(diamonds.type).toBe('symbol')
@@ -1381,9 +1381,9 @@ describe('the official marker layer', () => {
 
   it('registers the diamond as an SDF, which is what lets the ramp colour it', () => {
     const { map } = mountTestMap({ metric: 'P2' })
-    const [id, image, opts] = map.addImage.mock.calls.find((c) => c[0] === 'airbg-diamond')
+    const [id, image, opts] = map.addImage.mock.calls.find((c) => c[0] === 'kanarche-diamond')
 
-    expect(id).toBe('airbg-diamond')
+    expect(id).toBe('kanarche-diamond')
     expect(image.width).toBe(image.height)
     expect(opts.sdf).toBe(true)
   })

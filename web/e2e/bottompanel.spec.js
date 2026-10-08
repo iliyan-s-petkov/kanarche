@@ -19,10 +19,10 @@ async function prepareMap(page, path = '/en/') {
 // of any overlay, skipping sensor ids in `skip`.
 const hexPoints = (page, skip) => page.evaluate((skip) => {
   const map = document.querySelector('[data-island="map"]').__map
-  if (!map?.getLayer?.('airbg-hex-fill')) return []
+  if (!map?.getLayer?.('kanarche-hex-fill')) return []
   const box = map.getCanvas().getBoundingClientRect()
   const out = []
-  for (const f of map.queryRenderedFeatures({ layers: ['airbg-hex-fill'] })) {
+  for (const f of map.queryRenderedFeatures({ layers: ['kanarche-hex-fill'] })) {
     const id = f.properties?.sensorId
     if (f.geometry.type !== 'Polygon' || id == null || skip.includes(Number(id))) continue
     const ring = f.geometry.coordinates[0].slice(0, -1)

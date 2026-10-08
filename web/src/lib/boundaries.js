@@ -10,15 +10,15 @@
 // own — boundsOf below derives them from the rings, because flying to a
 // selected province means fitting its extent, not its centre.
 
-export const BOUNDARY_SOURCE_ID = 'airbg-boundaries'
+export const BOUNDARY_SOURCE_ID = 'kanarche-boundaries'
 // Three layers over one source. The fill is the hit target and paints nothing:
 // a line is a few pixels wide and a reader aiming at a province aims at the
 // province, not at its edge. The outline is what they see. The highlight is the
 // same outline drawn heavier, filtered to the selected slug, so a selection is
 // one filter write rather than a second copy of the geometry.
-export const BOUNDARY_FILL_LAYER_ID = 'airbg-boundary-hit'
-export const BOUNDARY_LINE_LAYER_ID = 'airbg-boundary-line'
-export const BOUNDARY_SELECTED_LAYER_ID = 'airbg-boundary-selected'
+export const BOUNDARY_FILL_LAYER_ID = 'kanarche-boundary-hit'
+export const BOUNDARY_LINE_LAYER_ID = 'kanarche-boundary-line'
+export const BOUNDARY_SELECTED_LAYER_ID = 'kanarche-boundary-selected'
 
 export const BOUNDARY_LAYER_IDS = [
   BOUNDARY_FILL_LAYER_ID, BOUNDARY_LINE_LAYER_ID, BOUNDARY_SELECTED_LAYER_ID,

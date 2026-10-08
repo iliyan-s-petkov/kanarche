@@ -222,7 +222,7 @@ describe('installLayers', () => {
     layer('water', 'water'),
     layer('water-name', 'water'),
     layer('building', 'buildings'),
-    layer('airbg-markers'),
+    layer('kanarche-markers'),
   ]
 
   it('offers one option per group the style carries, in the reading order', () => {
@@ -247,7 +247,7 @@ describe('installLayers', () => {
 
   it('stays hidden when the style has nothing to switch', () => {
     const ui = mountLayers(frame(), { label: 'Layers' })
-    installLayers(fakeMap([layer('airbg-markers')]), ui, { labels, caption: 'c', storage: fakeStorage() })
+    installLayers(fakeMap([layer('kanarche-markers')]), ui, { labels, caption: 'c', storage: fakeStorage() })
     expect(options(ui)).toHaveLength(0)
     expect(ui.root.hidden).toBe(true)
   })
