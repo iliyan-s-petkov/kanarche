@@ -70,7 +70,7 @@ describe('createScaleDialog', () => {
   const open = (scale, lang = 'bg') => {
     const d = createScaleDialog(document, {
       closeLabel: 'Затвори', sourceLabel: 'Официалният документ',
-      disclaimer: 'Индикативни данни', lang,
+      disclaimer: 'Ориентировъчни данни', lang,
     })
     document.body.appendChild(d.el)
     // jsdom implements <dialog> but not showModal in every version the project
@@ -116,7 +116,7 @@ describe('createScaleDialog', () => {
 
   // Every page that explains the bands has to say the readings are indicative.
   it('carries the disclaimer', () => {
-    expect(open(EAQI).querySelector('.scaleinfo__disclaimer').textContent).toBe('Индикативни данни')
+    expect(open(EAQI).querySelector('.scaleinfo__disclaimer').textContent).toBe('Ориентировъчни данни')
   })
 
   // The guideline link and the close button shared a line and overlapped, so

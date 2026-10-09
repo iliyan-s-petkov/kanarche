@@ -229,7 +229,7 @@ func TestAreaPageStatesInsufficientCoverage(t *testing.T) {
 
 func TestAreaPageCarriesTheDisclaimer(t *testing.T) {
 	rec := fetch(t, renderer(t, fixture(t)), "/area/sofia")
-	if !strings.Contains(rec.Body.String(), "индикативни") {
+	if !strings.Contains(rec.Body.String(), "ориентировъчни") {
 		t.Error("the indicative-data disclaimer is missing from a page that shows values")
 	}
 }
