@@ -152,6 +152,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 .areas-directory__group h3 { font-size: var(--text-compact); margin-block-end: var(--space-1); }
 .areas-directory__group h4 { font-size: var(--text-caption); color: var(--fg-2); margin-block: var(--space-2) var(--space-1); }
 .areas-directory__group ul { list-style: none; margin: 0; padding: 0; }
+/* The districts group spans the directory row so its list can take several columns (5 on desktop, 2 on a 393px phone). */
+.areas-directory__group:has(> .areas-directory__districts) { grid-column: 1 / -1; }
+.areas-directory__districts { columns: 5 10rem; column-gap: var(--space-4); }
+.areas-directory__districts li { break-inside: avoid; }
 /* The frame, the 926:382 country fit, the height floor and the 1056px
    breakpoint are all the kit's .data-frame/.map/.map--hero now, and this file's
    own version of them is gone. It was the same rules written twice, and the

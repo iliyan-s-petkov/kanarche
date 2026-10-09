@@ -808,6 +808,11 @@ overlap AS (
 )
 SELECT slug, parent_slug FROM overlap WHERE rn = 1`
 
+// parentOverride pins a child's parent after the overlap pass. Bankya has 0%
+// overlap with Sofia city and only a sliver of the Pernik municipality, so
+// largest-overlap picks Pernik.
+var parentOverride = map[string]string{"bankya": "sofiya"}
+
 // AreaParents returns the parent slug of every area that has one (every
 // 'city' and 'neighbourhood'); an oblast, or a child with no overlapping
 // candidate at all, is simply absent from the map.
@@ -823,6 +828,9 @@ func (s *Store) AreaParents(ctx context.Context) (map[string]string, error) {
 		var slug, parent string
 		if err := rows.Scan(&slug, &parent); err != nil {
 			return nil, fmt.Errorf("store: scan area parent: %w", err)
+		}
+		if o, ok := parentOverride[slug]; ok {
+			parent = o
 		}
 		out[slug] = parent
 	}
