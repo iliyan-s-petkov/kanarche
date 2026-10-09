@@ -80,6 +80,7 @@ func (rr *Renderer) handlers() map[string]http.Handler {
 		h["GET "+prefix+"/about-the-data"] = http.HandlerFunc(rr.handleAbout)
 		h["GET "+prefix+"/privacy"] = http.HandlerFunc(rr.handlePrivacy)
 		h["GET "+prefix+"/licences"] = http.HandlerFunc(rr.handleLicences)
+		h["GET "+prefix+"/terms"] = http.HandlerFunc(rr.handleTerms)
 		h["GET "+prefix+"/embed"] = http.HandlerFunc(rr.handleEmbed)
 	}
 
@@ -291,6 +292,11 @@ func (rr *Renderer) handlePrivacy(w http.ResponseWriter, r *http.Request) {
 	data.StorageKeys = storageKeyInfos(rr.cat, data.Lang)
 	data.StorageKeysCSV = storageKeysCSV()
 	rr.render(w, r, http.StatusOK, "privacy", data)
+}
+
+// handleTerms serves /terms: the data disclaimer, liability and non-affiliation text.
+func (rr *Renderer) handleTerms(w http.ResponseWriter, r *http.Request) {
+	rr.render(w, r, http.StatusOK, "terms", rr.staticPageData(r, "seo.terms"))
 }
 
 // handleLicences serves /licences: every data source and the code licence.

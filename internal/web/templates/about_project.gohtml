@@ -149,7 +149,7 @@
       <span class="about-card__desc">{{.T "about.station.map.desc"}}</span>
     </div>
   </div>
-  <p class="about-card__note">{{.T "about.station.note"}}</p>
+  <p class="about-card__note">{{range .AboutNoteParts}}{{if .Href}}<a href="{{.Href}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
 </section>
 
 <section class="about-section" id="involved" aria-labelledby="involved-h">

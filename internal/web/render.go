@@ -132,7 +132,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 
 	// "embed" is parsed with base.gohtml like the rest, and then redefines
 	// "base" itself: it needs base's map partials but none of its chrome.
-	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "error", "embed"} {
+	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "terms", "error", "embed"} {
 		t, err := template.New("base.gohtml").Funcs(templateFuncs).ParseFS(templateFS,
 			"templates/base.gohtml", "templates/"+page+".gohtml")
 		if err != nil {
@@ -1179,6 +1179,35 @@ func involvedParts(body string, links map[string]involvedLink) []involvedPart {
 		parts = append(parts, involvedPart{Text: rest})
 	}
 	return parts
+}
+
+// AboutNoteParts is about.station.note with {terms} turned into the link.
+func (p PageData) AboutNoteParts() []involvedPart {
+	return involvedParts(p.T("about.station.note"), map[string]involvedLink{
+		"terms": {Href: p.Path("/terms"), Label: p.T("about.station.terms")},
+	})
+}
+
+// TermsLicencesParts is terms.licences.body with {licences} as a link.
+func (p PageData) TermsLicencesParts() []involvedPart {
+	return involvedParts(p.T("terms.licences.body"), map[string]involvedLink{
+		"licences": {Href: p.Path("/licences"), Label: p.T("terms.licences.link")},
+	})
+}
+
+// TermsPrivacyParts is terms.privacy.body with {privacy} and {about} as links.
+func (p PageData) TermsPrivacyParts() []involvedPart {
+	return involvedParts(p.T("terms.privacy.body"), map[string]involvedLink{
+		"privacy": {Href: p.Path("/privacy"), Label: p.T("terms.privacy.link")},
+		"about":   {Href: p.Path("/about") + "#privacy", Label: p.T("terms.privacy.about_link")},
+	})
+}
+
+// TermsContactParts is terms.contact.body with {issues} as the GitHub link.
+func (p PageData) TermsContactParts() []involvedPart {
+	return involvedParts(p.T("terms.contact.body"), map[string]involvedLink{
+		"issues": {Href: p.SourceIssuesURL(), Label: p.T("terms.contact.issues")},
+	})
 }
 
 // InvolvedParts is the about.involved.body sentence with {repo} and {issues}
