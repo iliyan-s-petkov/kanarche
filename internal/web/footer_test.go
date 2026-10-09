@@ -359,8 +359,8 @@ func TestAirbgInfoIsLinkedFromTheFooterAndAboutAsIndependent(t *testing.T) {
 		}
 	}
 	for _, tc := range []struct{ path, note string }{
-		{"/about", "Канарче не е свързано с airbg.info"},
-		{"/en/about", "Kanarche is not affiliated with airbg.info"},
+		{"/about", "Не е свързано със Sensor.Community или с airbg.info"},
+		{"/en/about", "It is not affiliated with Sensor.Community or with airbg.info"},
 	} {
 		body := fetch(t, rr, tc.path).Body.String()
 		for _, href := range []string{

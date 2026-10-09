@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	footerRefEN = "For reference only. Not medical advice. Follow official health warnings."
-	footerRefBG = "Само за информация. Не е медицински съвет. Следвайте официалните здравни предупреждения."
+	footerRefEN = "Indicative data, with no guarantee. Do not use it for health or safety decisions."
+	footerRefBG = "Данните са ориентировъчни и без гаранция. Не ги използвайте за решения за здраве или безопасност."
 	aboutRefEN  = "This map is for reference, not medical advice"
 	aboutRefBG  = "Картата е за информация, не е медицински съвет"
 )

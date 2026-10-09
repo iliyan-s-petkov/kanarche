@@ -1,0 +1,47 @@
+{{/* /terms: static prose, no snapshot needed. Copy is owner-approved (OpenProject #675). */}}
+{{define "main"}}
+<div class="measure">
+<div class="page-head">
+  <h1 class="t-title">{{.T "terms.title"}}</h1>
+  <p class="t-body">{{.T "terms.intro"}}</p>
+  <p class="t-body">{{.T "terms.updated"}}</p>
+</div>
+
+<h2>{{.T "terms.what.heading"}}</h2>
+<p>{{.T "terms.what.body"}}</p>
+
+<h2>{{.T "terms.sources.heading"}}</h2>
+<p>{{.T "terms.sources.intro"}}</p>
+<ul>
+  <li>{{.T "terms.sources.sc"}}</li>
+  <li>{{.T "terms.sources.eea"}}</li>
+  <li>{{.T "terms.sources.meteo"}}</li>
+  <li>{{.T "terms.sources.bathing"}}</li>
+  <li>{{.T "terms.sources.maps"}}</li>
+</ul>
+<p>{{.T "terms.sources.body"}}</p>
+
+<h2>{{.T "terms.accuracy.heading"}}</h2>
+<p>{{.T "terms.accuracy.body"}}</p>
+<p>{{.T "terms.health.body"}}</p>
+
+<h2>{{.T "terms.liability.heading"}}</h2>
+<p>{{.T "terms.liability.body"}}</p>
+
+<h2>{{.T "terms.affiliation.heading"}}</h2>
+<p>{{.T "terms.affiliation.body"}}</p>
+
+<h2>{{.T "terms.licences.heading"}}</h2>
+<p>{{range .TermsLicencesParts}}{{if .Href}}<a href="{{.Href}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+
+<h2>{{.T "terms.privacy.heading"}}</h2>
+<p>{{range .TermsPrivacyParts}}{{if .Href}}<a href="{{.Href}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+
+<h2>{{.T "terms.contact.heading"}}</h2>
+<p>{{range .TermsContactParts}}{{if .Href}}<a href="{{.Href}}" rel="noopener noreferrer">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+
+<p>{{.T "terms.changes.body"}}</p>
+
+<p><a href="{{.Path "/"}}">{{.T "area.back_to_map"}}</a></p>
+</div>
+{{end}}

@@ -86,7 +86,7 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 	// date nothing supports.
 	type entry struct{ path, lastMod string }
 	entries := make([]entry, 0, len(slugs)+6)
-	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""})
+	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""})
 	for _, slug := range slugs {
 		entries = append(entries, entry{"/area/" + slug, day})
 	}
