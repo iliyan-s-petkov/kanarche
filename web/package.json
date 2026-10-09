@@ -15,6 +15,7 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "@sveltejs/vite-plugin-svelte": "7.3.0",
+    "axe-core": "4.14.0",
     "jsdom": "30.0.1",
     "svelte": "5.56.8",
     "vite": "8.2.1",
