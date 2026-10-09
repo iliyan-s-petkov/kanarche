@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.js'
+import { test, expect, mapSettled } from './fixtures.js'
 
 // The home map's pollen layer. internal/e2e/e2e_test.go seeds ragweed at 40 grains inside
 // sofia-oblast (lon 23.32 ± 0.5, lat 42.69 ± 0.5), so that province reads "high".
@@ -7,10 +7,11 @@ const CENTRE = [23.32, 42.69]
 const CLICK = [23.0, 42.45]
 
 async function prepareMap(page, path) {
+  // The first hexes response marks the opening camera as placed; jumping earlier gets overridden.
+  const placed = page.waitForResponse(/\/api\/v1\/hexes/)
   await page.goto(path)
-  await page.waitForFunction(() => document.querySelector('[data-island="map"]')?.__map?.isStyleLoaded?.())
-  await page.waitForTimeout(1000)
-  await expect.poll(() => page.evaluate(() => document.querySelector('[data-island="map"]').__map.isMoving())).toBe(false)
+  await placed
+  await mapSettled(page)
   await page.evaluate((c) => {
     document.querySelector('.map-shell').scrollIntoView({ block: 'start', behavior: 'instant' })
     document.querySelector('[data-island="map"]').__map.jumpTo({ center: c, zoom: 8 })
@@ -99,6 +100,10 @@ for (const shape of [
     await expect(pill).toHaveText(shape.title)
     await expect(key).toBeHidden()
 
+    // Re-read the point: the legend and layer toggles above can shift the page since `at` was taken.
+    await mapSettled(page)
+    await expect.poll(async () => { at = await pollenAt(page); return at && `${at.slug}:${at.level}` }, { timeout: 20000 })
+      .toBe('sofia-oblast:high')
     if (shape.context.hasTouch) await page.touchscreen.tap(at.x, at.y)
     else await page.mouse.click(at.x, at.y)
     await page.waitForURL(`**${shape.prefix}/area/sofia-oblast`)
