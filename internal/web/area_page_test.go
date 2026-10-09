@@ -96,13 +96,14 @@ func TestAreaPageNoDataExample(t *testing.T) {
 	}
 }
 
-// U06: an oblast page H1 carries the kind prefix; a city keeps the bare name.
+// U06: an oblast page H1 carries the kind prefix; a city keeps the bare name
+// inside its descriptive sentence (area_h1_copy_test.go covers the full h1 set).
 func TestAreaH1CarriesOblastKindPrefix(t *testing.T) {
 	rr := renderer(t, areaPageFixture(t))
 	cases := map[string]string{
-		"/area/plovdiv-oblast":    `<h1 class="t-title">Област Пловдив</h1>`,
-		"/en/area/plovdiv-oblast": `<h1 class="t-title">Plovdiv Province</h1>`,
-		"/area/sofiya":            `<h1 class="t-title">София</h1>`,
+		"/area/plovdiv-oblast":    `<h1 class="t-title">Качество на въздуха в област Пловдив</h1>`,
+		"/en/area/plovdiv-oblast": `<h1 class="t-title">Air quality in Plovdiv Province</h1>`,
+		"/area/sofiya":            `<h1 class="t-title">Качество на въздуха в София</h1>`,
 	}
 	for path, want := range cases {
 		if body := fetch(t, rr, path).Body.String(); !strings.Contains(body, want) {

@@ -1,6 +1,44 @@
 package web
 
-import "kanarche.eu/internal/api"
+import (
+	"strconv"
+	"strings"
+
+	"kanarche.eu/internal/api"
+)
+
+// HomeAboutPM is the map home's PM explainer. Its PM2.5 thresholds are the EAQI
+// upper edges read from api.Scales(), the table the map colours by, so the copy
+// cannot drift from the legend; the catalogue carries the five placeholders.
+func (p PageData) HomeAboutPM() string {
+	e := pm25Edges()
+	return strings.NewReplacer(
+		"{good}", e[0],
+		"{fair}", e[1],
+		"{moderate}", e[2],
+		"{poor}", e[3],
+		"{verypoor}", e[4],
+	).Replace(p.T("home.about_pm"))
+}
+
+// pm25Edges returns the finite upper edges of the PM2.5 EAQI table (good through
+// very poor). The last band is open-ended, so it contributes no edge.
+func pm25Edges() [5]string {
+	var out [5]string
+	for _, s := range api.Scales() {
+		if s.Metric != "P2" || s.Name != "eaqi" {
+			continue
+		}
+		for i, b := range s.Bands {
+			if i >= len(out) || b.Upper == nil {
+				break
+			}
+			out[i] = strconv.FormatFloat(*b.Upper, 'f', -1, 64)
+		}
+		break
+	}
+	return out
+}
 
 // bandColour is the table's swatch colour for one reading: the first band whose
 // inclusive upper bound is at or above the value, from the first scale table
