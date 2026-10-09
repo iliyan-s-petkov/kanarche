@@ -88,7 +88,7 @@ func Scales() []Scale {
 
 	const indicative = "Low-cost sensor readings are indicative and are not " +
 		"reference-method measurements."
-	const indicativeBG = "Данните от нискобюджетни сензори са индикативни и не " +
+	const indicativeBG = "Данните от нискобюджетни сензори са ориентировъчни и не " +
 		"са измервания по референтен метод."
 	const officialOnly = "Measured only at official reference stations."
 	const officialOnlyBG = "Измерва се само в официалните референтни станции."
@@ -200,10 +200,10 @@ func weather() []Scale {
 	const orientation = "Weather bands for orientation. They are not a health " +
 		"standard, and low-cost sensor readings are indicative."
 	const orientationBG = "Метеорологични класове за ориентация. Те не са " +
-		"здравен стандарт, а данните от нискобюджетни сензори са индикативни."
+		"здравен стандарт, а данните от нискобюджетни сензори са ориентировъчни."
 	const noiseIndicative = "Low-cost sensor readings are indicative and are " +
 		"not reference-method measurements."
-	const noiseIndicativeBG = "Данните от нискобюджетни сензори са индикативни " +
+	const noiseIndicativeBG = "Данните от нискобюджетни сензори са ориентировъчни " +
 		"и не са измервания по референтен метод."
 
 	return []Scale{

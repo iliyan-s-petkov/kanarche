@@ -78,7 +78,7 @@ func TestTermsPages(t *testing.T) {
 				t.Errorf("%s lacks %q", tc.path, want)
 			}
 		}
-		// The footer's older brand line still says "индикативни"; the terms copy must not.
+		// The footer brand line sits outside main; the terms copy must not use the retired BG word.
 		main := body[:strings.Index(body, "<footer")]
 		for _, bad := range []string{"mailto:", "индикативн", "!terms.", "{licences}", "{privacy}", "{about}", "{issues}"} {
 			if strings.Contains(main, bad) {
