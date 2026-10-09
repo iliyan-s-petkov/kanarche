@@ -1275,7 +1275,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* Area pages, covered or not: shrink so the pull tab stays above the fold on touch phones. */
   @media (hover: none) {
     .map--wide {
-      block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: 55svh;
+      block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: 52svh;
     }
   }
   /* Portrait touch phones: a one-column grid so .area-summary can move below the map. */
@@ -1510,7 +1510,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      #below-map wraps .place-host, the chart and the readouts, so it is the
      direct child that spans; they stack inside it. */
   .frame:has(> [data-island="sensorbar"]), .frame:has(> .page-head:not(.page-head--compact)) {
-    display: grid; grid-template-columns: max-content max-content minmax(0, 1fr) minmax(0, 1fr);
+    display: grid; grid-template-columns: max-content fit-content(12rem) minmax(0, 1fr) minmax(0, 1fr);
     /* Row 1 pinned: an auto row here measured taller than any header cell's
        own content (a nested flex formatting context inside a grid track,
        sized inflated) — every header cell's real content is under 48px. */

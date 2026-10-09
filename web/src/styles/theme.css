@@ -38,7 +38,7 @@
   /* Layout, not colour, so it has nothing to follow. */
   --map-cap: 78vh;
   /* Phone chrome above an area page's map, worst case: city note plus a two-line h1 (the area h1 names the air quality, so a long city name wraps at 393px). Was 22rem, measured 349px before the h1 change. */
-  --phone-chrome-area: 24rem;
+  --phone-chrome-area: 22rem;
   /* Phone masthead height; app.css drops it to 40px in landscape. */
   --masthead-h: 48px;
   /* Horizontal scale ramp; legend.js sets it at runtime from /api/v1/scales. */
