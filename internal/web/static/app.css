@@ -128,6 +128,15 @@ strong, b { font-weight: var(--weight-emphasis); }
 .area-links__block { margin-block-end: var(--space-4); }
 .area-links__block h2 { font-size: var(--text-compact); color: var(--fg-2); margin-block-end: var(--space-1); }
 .area-links__block ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+/* Area FAQ: native details, summary is a 44px tap target. */
+.faq { margin-block-start: var(--space-6); }
+.faq h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
+.faq__item { border-block-start: 1px solid var(--border-faint); }
+.faq__item:last-child { border-block-end: 1px solid var(--border-faint); }
+.faq__item > summary { display: flex; align-items: center; min-block-size: 44px; padding-block: var(--space-2); font-weight: var(--weight-emphasis); cursor: pointer; }
+.faq__item > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.faq__answer { color: var(--fg-2); padding-block-end: var(--space-3); max-inline-size: 70ch; }
+.faq__answer p { margin: 0; }
 /* Pollen forecast table and its toolbar chip; bar length follows the level. */
 .pollen { margin-block-start: var(--space-6); scroll-margin-block-start: calc(var(--masthead-h) + var(--space-2)); }
 .pollen h2 { font-size: var(--text-section); margin-block-end: var(--space-2); }
