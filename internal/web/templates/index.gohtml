@@ -22,10 +22,6 @@
 <div class="toolbar">
 <div class="toolbar__spacer"></div>
 {{template "finderIsland" .}}
-{{/* Solid-bordered and full height, on the finder's baseline: this is where the
-     list tab's controls live, so the reload belongs beside the finder rather
-     than in a line of prose. */}}
-<div data-island="refresh" data-t-label="{{.T "refresh.button"}}"></div>
 </div>
 </div>
 {{end}}
@@ -176,9 +172,8 @@
      data-t-legend="{{.T "metric.legend"}}"></div>
 <div class="map-controls__find">{{template "finderIsland" .}}</div>
 </div>
-{{/* On the map, not under it: the line says how old what you are looking at is,
-     and the auto-refresh toggle governs the same thing. The manual refresh sits
-     in it beside the timer (dataFreshness, data-button). */}}
+{{/* On the map, not under it: the one refresh control, which also says how old
+     what you are looking at is (dataFreshness). */}}
 <div class="map-freshness">{{template "dataFreshness" .}}</div>
 {{template "scrollCue" .}}
 </div>

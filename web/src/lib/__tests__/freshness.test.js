@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { statusText, formatTime, AUTO_KEY, AUTO_INTERVAL_MS } from '../freshness.js'
+import { statusText, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
 
 const T = { updated: 'Данни от', loading: 'Обновяване…', failed: 'Обновяването не успя' }
 
@@ -51,9 +51,28 @@ describe('constants', () => {
     expect(AUTO_KEY).toBe('kanarche:auto-refresh')
   })
 
-  // Five minutes. Faster asks the origin for numbers that have not changed;
-  // much slower and the timestamp stops being reassurance.
-  it('polls at five minutes', () => {
-    expect(AUTO_INTERVAL_MS).toBe(300000)
+  it('offers off, 5, 15 and 30 minutes, defaulting to 5', () => {
+    expect(AUTO_CHOICES).toEqual([0, 5, 15, 30])
+    expect(DEFAULT_MINUTES).toBe(5)
+    expect(intervalMs(5)).toBe(300000)
+  })
+})
+
+describe('minutesFromStored', () => {
+  it('migrates the old boolean: true is 5 minutes, false is off', () => {
+    expect(minutesFromStored('true')).toBe(5)
+    expect(minutesFromStored('false')).toBe(0)
+  })
+
+  it('reads a stored interval back as a number', () => {
+    expect(minutesFromStored('0')).toBe(0)
+    expect(minutesFromStored('15')).toBe(15)
+    expect(minutesFromStored('30')).toBe(30)
+  })
+
+  it('falls back to the default for missing or unknown values', () => {
+    expect(minutesFromStored(null)).toBe(5)
+    expect(minutesFromStored('7')).toBe(5)
+    expect(minutesFromStored('junk')).toBe(5)
   })
 })

@@ -488,6 +488,8 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     subs.unprovide = getFreshness().provide(async () => {
       clearCache()
       await refresh(map, state, cfg, chrome, true)
+      // refreshHexes skips a URL it already holds, so forget it or the grid never refetches.
+      state.hexUrl = null
       await refreshHexes(map, state, cfg)
       await refreshWind(map, cfg, chrome, windState)
     })

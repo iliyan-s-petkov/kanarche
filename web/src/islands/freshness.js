@@ -1,7 +1,6 @@
-// The freshness line: what time the numbers are from, and whether they keep
-// themselves current. On an area page it carries the refresh button too — the
-// kit puts it there rather than in that page's toolbar, because on a page about
-// one place the reload is chrome beside the data and not a screen-level action.
+// The freshness pill: what time the numbers are from, a refresh-now button and
+// the auto-refresh interval, behind one icon. It is the only refresh control on
+// a page; the home list tab has none and relies on this one.
 import { mount as mountComponent } from 'svelte'
 import DataFreshness from '../components/DataFreshness.svelte'
 import { getFreshness } from '../lib/freshness.svelte.js'
@@ -12,16 +11,21 @@ export function mount(el, doc = document) {
   const fresh = getFreshness()
   const t = { updated: d.tUpdated || '', loading: d.tLoading || '', failed: d.tFailed || '' }
   const lang = doc.documentElement.getAttribute('lang') || 'bg'
+  const options = [
+    { value: 0, text: d.tOff || '' },
+    { value: 5, text: d.tM5 || '' },
+    { value: 15, text: d.tM15 || '' },
+    { value: 30, text: d.tM30 || '' },
+  ]
   return mountComponent(DataFreshness, {
     target: el,
     props: {
-      autoLabel: d.tAuto || '',
-      button: d.button === 'true',
-      buttonLabel: d.tLabel || '',
+      labels: { trigger: d.tLabel || '', now: d.tNow || '', group: d.tAuto || '' },
+      options,
       get status() { return statusText(fresh, t, lang) },
-      get auto() { return fresh.auto },
+      get minutes() { return fresh.minutes },
       get busy() { return fresh.busy },
-      onauto: (on) => fresh.setAuto(on),
+      onpick: (m) => fresh.setMinutes(m),
       onrefresh: () => fresh.request(),
     },
   })

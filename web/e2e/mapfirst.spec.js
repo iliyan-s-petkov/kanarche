@@ -105,14 +105,15 @@ for (const [name, vp] of [['desktop', DESKTOP], ['phone', PHONE]]) {
   })
 }
 
-test('the manual refresh sits in the freshness line beside the timer and still reloads', async ({ ctx }) => {
+test('the one refresh control sits in the freshness line and its popover still reloads', async ({ ctx }) => {
   const page = await visit(ctx, DESKTOP, '/en/')
   const line = page.locator('.map-freshness')
   const refresh = line.locator('.data-refresh__btn--icon')
   await expect(refresh).toBeVisible()
-  await expect(line.locator('.data-refresh__auto')).toBeVisible()
+  await expect(page.locator('[data-island="refresh"]')).toHaveCount(0)
   const reload = page.waitForResponse((r) => r.url().includes('/api/v1/') && r.request().method() === 'GET')
   await refresh.click()
+  await page.getByRole('button', { name: 'Refresh now' }).click()
   await reload
   await page.close()
 })

@@ -7,11 +7,23 @@
 
 export const AUTO_KEY = 'kanarche:auto-refresh'
 
-// Five minutes. The network's own cadence is "every few minutes" (the footer
-// says so), so anything faster asks the origin for numbers that have not
-// changed. Anything much slower and a wall display drifts far enough that the
-// timestamp beside it stops being reassurance and starts being a warning.
-export const AUTO_INTERVAL_MS = 5 * 60 * 1000
+// Minutes between automatic refreshes, 0 meaning off. Five is the default: the
+// network's own cadence is "every few minutes", so faster asks the origin for
+// numbers that have not changed, and a wall display drifts if it is much slower.
+export const AUTO_CHOICES = [0, 5, 15, 30]
+export const DEFAULT_MINUTES = 5
+
+export function intervalMs(minutes) {
+  return minutes * 60 * 1000
+}
+
+// The key used to hold a boolean: "true" meant the fixed five minutes and
+// "false" meant off, so they migrate to 5 and 0. Anything else is unset.
+export function minutesFromStored(raw) {
+  if (raw === 'true') return DEFAULT_MINUTES
+  if (raw === 'false') return 0
+  return AUTO_CHOICES.find((m) => String(m) === raw) ?? DEFAULT_MINUTES
+}
 
 // statusText is the whole of what the freshness line says, in one place.
 //
