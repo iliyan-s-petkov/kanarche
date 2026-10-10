@@ -33,6 +33,7 @@
 {{with .Assets.Style "main"}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body>
+<a class="skip" href="#main">{{.T "nav.skip"}}</a>
 {{/* The masthead brand is the lowercase wordmark of the active language
      (brand.wordmark); the aria-label carries the capitalised product name. */}}
 <header class="masthead">
@@ -84,7 +85,7 @@
      contain a page's content, and they have to be per-block because the map
      runs full-bleed between two contained blocks. A width on <main> would have
      been a third opinion the two containers then had to fight. */}}
-<main class="page">
+<main class="page" id="main" tabindex="-1">
 {{block "main" .}}{{end}}
 </main>
 
