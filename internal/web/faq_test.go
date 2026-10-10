@@ -269,3 +269,15 @@ func TestFAQPageJSONLDMatchesVisibleText(t *testing.T) {
 		}
 	}
 }
+
+func TestFAQAreaMidSentenceIsLowercaseOblast(t *testing.T) {
+	rr := renderer(t, eeaFixture(t))
+	items := faqVisible(t, fetch(t, rr, "/area/smolyan-oblast").Body.String())
+	if want := "Защо понякога няма стойност за област Смолян?"; items[6].Q != want {
+		t.Errorf("q7 = %q, want %q", items[6].Q, want)
+	}
+	items = faqVisible(t, fetch(t, rr, "/area/sofiyska-oblast").Body.String())
+	if want := "Защо понякога няма стойност за Софийска област?"; items[6].Q != want {
+		t.Errorf("q7 = %q, want %q", items[6].Q, want)
+	}
+}

@@ -34,11 +34,19 @@ func (p PageData) areaIn() string {
 	return h
 }
 
+// faqArea is {area} in the middle of a sentence: an oblast takes its inline form ("област Смолян"), not the capitalised crumb label.
+func (p PageData) faqArea(row AreaRow) string {
+	if row.Kind == "oblast" {
+		return p.oblastFormKey(row, "seo.oblast.inline")
+	}
+	return row.Name
+}
+
 // faqReplacer fills every FAQ placeholder: the area, the h1's preposition form, the poll interval and the EAQI edges from api.Scales().
 func (p PageData) faqReplacer(row AreaRow) *strings.Replacer {
 	p2, p1 := pm25Edges(), pm10Edges()
 	return strings.NewReplacer(
-		"{area}", p.crumbLabel(row),
+		"{area}", p.faqArea(row),
 		"{area_in}", p.areaIn(),
 		"{minutes}", strconv.Itoa(p.pollMinutes),
 		"{p2_good}", p2[0], "{p2_fair}", p2[1], "{p2_moderate}", p2[2], "{p2_poor}", p2[3], "{p2_verypoor}", p2[4],
