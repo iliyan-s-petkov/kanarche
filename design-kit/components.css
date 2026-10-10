@@ -1530,6 +1530,8 @@ body.has-faux-full { overflow: hidden; }
   cursor: pointer;
 }
 .map__layers .colmenu__btn:hover { background: var(--surface-2); }
+/* Its own box-shadow outranks the global ring, so the ring is restated on top of it. */
+.map__layers .colmenu__btn:focus-visible { box-shadow: var(--elev-raised), var(--focus-ring); }
 .map__layers .colmenu__btn[aria-expanded="true"] {
   background: var(--fg);
   color: var(--bg);

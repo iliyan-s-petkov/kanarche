@@ -346,6 +346,7 @@
   "nav.source": "Source code on GitHub",
   "nav.map": "Map",
   "nav.back_to_top": "Back to top",
+  "nav.skip": "Skip to content",
   "panel.close": "Close",
   "panel.copy_failed": "Could not copy",
   "panel.detail.coords": "Coordinates",

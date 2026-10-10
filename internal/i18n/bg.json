@@ -346,6 +346,7 @@
   "nav.source": "Изходен код в GitHub",
   "nav.map": "Карта",
   "nav.back_to_top": "Към началото",
+  "nav.skip": "Към съдържанието",
   "panel.close": "Затвори",
   "panel.copy_failed": "Копирането не успя",
   "panel.detail.coords": "Координати",
