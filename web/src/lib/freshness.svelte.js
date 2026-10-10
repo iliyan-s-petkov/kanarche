@@ -1,29 +1,37 @@
 // The shared answer to "how fresh is this, and is it staying fresh".
 //
-// Three islands touch it and none of them owns it: the toolbar button asks for
-// a reload, the freshness line reports what happened, and the map is the thing
-// that actually reloads. A store rather than a DOM event because there is real
-// state here — in-flight, last success, last failure — and an event carries
-// none of it, so every listener would keep its own copy and they would drift.
+// Two islands touch it and neither owns it: the freshness pill asks for a
+// reload and reports what happened, and the map is the thing that actually
+// reloads. A store rather than a DOM event because there is real state here
+// (in-flight, last success, last failure) and an event carries none of it, so
+// every listener would keep its own copy and they would drift.
 //
 // NOT in viewstate: that store is the mirror of the URL hash, and a refresh is
 // not a place. Putting it there would write a hash for an action with no
 // destination and hand the reader a Back button that undoes a reload.
-import { AUTO_INTERVAL_MS, AUTO_KEY } from './freshness.js'
-import { readFlag, writeFlag } from './storage.js'
+import { AUTO_CHOICES, AUTO_KEY, intervalMs, minutesFromStored } from './freshness.js'
+import { safeStorage } from './storage.js'
 
-export function createFreshness({ win = globalThis, storage, now = () => Date.now() } = {}) {
-  // Auto-refresh is ON unless the reader has turned it off. A map of current
-  // air quality that quietly goes stale while someone watches it is the one
-  // failure this page cannot report, because the numbers still look like
-  // numbers.
-  let auto = $state(readFlag(AUTO_KEY, true, storage))
+export function createFreshness({ win = globalThis, doc = globalThis.document, storage = safeStorage(), now = () => Date.now() } = {}) {
+  // Auto-refresh defaults to 5 minutes unless the reader chose otherwise. A map
+  // of current air quality that quietly goes stale while someone watches it is
+  // the one failure this page cannot report, because the numbers still look
+  // like numbers.
+  let minutes = $state(readMinutes())
   let busy = $state(false)
   let failed = $state(false)
   // The page was rendered from data the server had just read, so the reader is
-  // looking at something that WAS fresh — the line says so from the first
+  // looking at something that WAS fresh, and the line says so from the first
   // paint rather than staying blank until the first manual refresh.
   let at = $state(now())
+
+  function readMinutes() {
+    try {
+      return minutesFromStored(storage?.getItem(AUTO_KEY))
+    } catch {
+      return minutesFromStored(null)
+    }
+  }
 
   // The map island registers what a reload actually means. Kept as a set so
   // the store does not care how many maps a page mounts, and so a page with no
@@ -48,24 +56,42 @@ export function createFreshness({ win = globalThis, storage, now = () => Date.no
     }
   }
 
+  const hidden = () => doc?.visibilityState === 'hidden'
+
   function schedule() {
     if (timer !== null) {
       win.clearInterval(timer)
       timer = null
     }
-    if (auto) timer = win.setInterval(request, AUTO_INTERVAL_MS)
+    if (minutes > 0 && !hidden()) timer = win.setInterval(request, intervalMs(minutes))
   }
+
+  // Hidden tabs do not poll. On return, a reading older than the interval is
+  // refreshed once right away, and the timer restarts from that moment.
+  function onVisibility() {
+    if (hidden()) {
+      schedule()
+      return
+    }
+    if (minutes > 0 && now() - at >= intervalMs(minutes)) request()
+    schedule()
+  }
+  doc?.addEventListener('visibilitychange', onVisibility)
   schedule()
 
   return {
     get busy() { return busy },
     get failed() { return failed },
     get at() { return at },
-    get auto() { return auto },
-    setAuto(next) {
-      if (next === auto) return
-      auto = next
-      writeFlag(AUTO_KEY, next, storage)
+    get minutes() { return minutes },
+    setMinutes(next) {
+      if (!AUTO_CHOICES.includes(next) || next === minutes) return
+      minutes = next
+      try {
+        storage?.setItem(AUTO_KEY, String(next))
+      } catch {
+        /* private mode, or a full quota: the choice holds for this visit */
+      }
       schedule()
     },
     provide(fn) {
@@ -76,6 +102,7 @@ export function createFreshness({ win = globalThis, storage, now = () => Date.no
     destroy() {
       if (timer !== null) win.clearInterval(timer)
       timer = null
+      doc?.removeEventListener('visibilitychange', onVisibility)
       providers.clear()
     },
   }
@@ -89,7 +116,7 @@ export function getFreshness(opts) {
   return shared
 }
 
-// TEST-ONLY reset seam — see the note on resetViewStateForTests. A singleton
+// TEST-ONLY reset seam, see the note on resetViewStateForTests. A singleton
 // that survives between it() blocks makes the first test to touch it decide
 // what every later one observes.
 export function resetFreshnessForTests() {

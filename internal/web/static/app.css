@@ -955,15 +955,29 @@ strong, b { font-weight: var(--weight-emphasis); }
   gap: var(--space-1);
 }
 /* Icon-sized: spelled out, this overlay was a 380px bar across the map. */
-.data-refresh__auto, .data-refresh__btn--icon {
+.data-refresh__btn--icon {
   display: inline-flex; align-items: center; justify-content: center;
   inline-size: 1.75rem; block-size: 1.75rem; padding: 0;
   background: none; border: 0; border-radius: var(--radius-sm);
   color: var(--fg-2); cursor: pointer;
 }
-.data-refresh__auto:hover, .data-refresh__btn--icon:hover { color: var(--fg); background: var(--surface-2); }
-/* Second signal only; the struck glyph carries the off state. */
-.data-refresh__auto[aria-checked="true"] { color: var(--accent); }
+.data-refresh__btn--icon:hover { color: var(--fg); background: var(--surface-2); }
+.data-refresh__btn--icon[aria-expanded="true"] { background: var(--fg); color: var(--bg); }
+/* Opens upward like the window panel: there is only map above the corner. */
+.data-refresh__panel {
+  inset-block-start: auto; inset-block-end: calc(100% + var(--space-2));
+  inset-inline-end: auto; inset-inline-start: 0;
+  inline-size: max-content; max-inline-size: calc(100vw - var(--space-6));
+  min-inline-size: 0; padding: var(--space-3);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.data-refresh__panel[hidden] { display: none; }
+.data-refresh__now { justify-content: center; min-block-size: 40px; }
+.data-refresh__group { display: flex; flex-direction: column; }
+.data-refresh__legend { margin: 0; padding: 0 0 var(--space-2); color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
+.data-refresh__group .colmenu__opt { white-space: nowrap; }
+/* Over the layers menu and the legend while open, as the window panel is. */
+.map-freshness:has(.data-refresh__panel:not([hidden])) { z-index: 7; }
 
 /* Island hosts render empty until mount; reserve their measured height (area-page CLS). */
 [data-island="switcher"] { min-block-size: var(--control-height); }
@@ -1323,6 +1337,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     padding-block-start: var(--space-2); margin-block-start: var(--space-2);
   }
   .map-window__footer:empty { display: none; }
+  /* In the footer the popover opens in flow, below its icon, inside the window panel. */
+  .map-window__footer .data-refresh { flex-direction: column; align-items: flex-start; }
+  .map-window__footer .data-refresh__panel {
+    position: static; max-inline-size: 100%; padding: var(--space-2) 0 0; box-shadow: none; background: none;
+  }
   /* Host is still under .map-freshness; drop the overlay card styling in the footer. */
   .map-window__footer .data-refresh {
     margin: 0; background: none; box-shadow: none; padding: 0;
@@ -1419,7 +1438,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-play__btn, .map-window__btn { inline-size: 44px; block-size: 44px; min-block-size: 44px; }
   .map-window__btn { inline-size: auto; min-inline-size: 44px; }
   .map-play__speed { inline-size: auto; min-inline-size: 44px; }
-  .data-refresh__auto, .data-refresh__btn--icon { inline-size: 44px; block-size: 44px; }
+  .data-refresh__btn--icon { inline-size: 44px; block-size: 44px; }
 
   /* Hero: title stays (h1), tagline restates the masthead and goes. */
   .page-head--compact { padding-block: var(--space-2); }
@@ -1440,8 +1459,6 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .toolbar__spacer { display: none; }
   .toolbar__find { flex: 1 1 auto; min-inline-size: 0; }
   .toolbar__find .field__label { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-  .toolbar__refresh .btn__label { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-  .toolbar__refresh .btn { min-inline-size: 48px; padding-inline: 0; justify-content: center; }
   .colmenu__legend { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
   /* Two cards per row; a card was ~380px tall on a phone, mostly caption and
@@ -1502,7 +1519,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      wide, and the finder's visible label alone was tall enough to push the
      row past 44px. */
   .toolbar { flex-wrap: nowrap; align-items: center; gap: var(--space-2); padding-block-end: 0; }
-  .toolbar__find .field__label, .toolbar__refresh .btn__label {
+  .toolbar__find .field__label {
     position: absolute; inline-size: 1px; block-size: 1px; margin: -1px;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
   }

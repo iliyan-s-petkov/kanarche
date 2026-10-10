@@ -73,7 +73,7 @@ describe('runIsland', () => {
 // deferIsland decides which islands wait for the map to finish mounting.
 describe('deferIsland', () => {
   it('keeps the map and the controls on the map at load', () => {
-    for (const name of ['map', 'switcher', 'finder', 'freshness', 'refresh', 'theme', 'chart', 'sensorbar', 'panel']) {
+    for (const name of ['map', 'switcher', 'finder', 'freshness', 'theme', 'chart', 'sensorbar', 'panel']) {
       expect(deferIsland(name, '')).toBe(false)
     }
   })

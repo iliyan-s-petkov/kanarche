@@ -219,12 +219,15 @@
 </div>
 {{end}}
 
-{{/* The freshness line, on both pages that carry a map. The reload button sits
-     inside it on both: on the home page it moved here from the toolbar when the
-     controls went onto the map. */}}
+{{/* The freshness pill, on both pages that carry a map: the one refresh control,
+     a popover with refresh-now and the auto-refresh interval. */}}
 {{define "dataFreshness"}}<div data-island="freshness"
-     data-button="true"
      data-t-label="{{.T "refresh.button"}}"
+     data-t-now="{{.T "refresh.now"}}"
+     data-t-off="{{.T "refresh.off"}}"
+     data-t-m5="{{.T "refresh.m5"}}"
+     data-t-m15="{{.T "refresh.m15"}}"
+     data-t-m30="{{.T "refresh.m30"}}"
      data-t-updated="{{.T "refresh.updated"}}"
      data-t-loading="{{.T "refresh.loading"}}"
      data-t-failed="{{.T "refresh.failed"}}"

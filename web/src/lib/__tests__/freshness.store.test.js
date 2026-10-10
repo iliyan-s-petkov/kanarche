@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFreshness, getFreshness, resetFreshnessForTests } from '../freshness.svelte.js'
-import { AUTO_KEY, AUTO_INTERVAL_MS } from '../freshness.js'
+import { AUTO_KEY, intervalMs } from '../freshness.js'
+
+// A document whose visibility the test flips by hand.
+function fakeDoc() {
+  const listeners = new Set()
+  return {
+    visibilityState: 'visible',
+    listeners,
+    addEventListener(type, fn) { if (type === 'visibilitychange') listeners.add(fn) },
+    removeEventListener(type, fn) { if (type === 'visibilitychange') listeners.delete(fn) },
+    set(state) { this.visibilityState = state; for (const fn of [...listeners]) fn() },
+  }
+}
 
 // A fake window whose interval never actually fires: the tests drive it by
 // hand, so a five-minute cadence costs nothing and nothing leaks between them.
@@ -38,10 +50,16 @@ describe('createFreshness', () => {
 
   // A map going quietly stale while someone watches it is the one failure this
   // page cannot report — the numbers still look like numbers.
-  it('auto-refreshes unless the reader has turned it off', () => {
-    expect(createFreshness({ win: fakeWin(), storage: store() }).auto).toBe(true)
-    expect(createFreshness({ win: fakeWin(), storage: store({ [AUTO_KEY]: 'false' }) }).auto).toBe(false)
-    expect(createFreshness({ win: fakeWin(), storage: store({ [AUTO_KEY]: 'true' }) }).auto).toBe(true)
+  it('auto-refreshes every 5 minutes unless the reader chose otherwise', () => {
+    expect(createFreshness({ win: fakeWin(), storage: store() }).minutes).toBe(5)
+    expect(createFreshness({ win: fakeWin(), storage: store({ [AUTO_KEY]: '0' }) }).minutes).toBe(0)
+    expect(createFreshness({ win: fakeWin(), storage: store({ [AUTO_KEY]: '30' }) }).minutes).toBe(30)
+  })
+
+  // The key used to hold a boolean, and a returning visitor still has one.
+  it('migrates the old boolean: true becomes 5 minutes, false becomes off', () => {
+    expect(createFreshness({ win: fakeWin(), storage: store({ [AUTO_KEY]: 'true' }) }).minutes).toBe(5)
+    expect(createFreshness({ win: fakeWin(), storage: store({ [AUTO_KEY]: 'false' }) }).minutes).toBe(0)
   })
 
   it('runs every registered provider and stamps the time on success', async () => {
@@ -117,10 +135,13 @@ describe('createFreshness', () => {
 })
 
 describe('the auto-refresh timer', () => {
-  it('is scheduled at the shared interval when auto is on', () => {
+  it('is scheduled at the chosen interval', () => {
     const win = fakeWin()
     createFreshness({ win, storage: store() })
-    expect([...win.timers.values()].map((t) => t.ms)).toEqual([AUTO_INTERVAL_MS])
+    expect([...win.timers.values()].map((t) => t.ms)).toEqual([intervalMs(5)])
+    const win15 = fakeWin()
+    createFreshness({ win: win15, storage: store({ [AUTO_KEY]: '15' }) })
+    expect([...win15.timers.values()].map((t) => t.ms)).toEqual([intervalMs(15)])
   })
 
   it('is not scheduled when the reader has turned auto off', () => {
@@ -140,25 +161,31 @@ describe('the auto-refresh timer', () => {
     expect(called).toBe(1)
   })
 
-  it('is cancelled and rebuilt as the reader toggles auto, never doubled', () => {
+  it('is cancelled and rebuilt as the reader picks an interval, never doubled', () => {
     const win = fakeWin()
     const f = createFreshness({ win, storage: store() })
-    f.setAuto(false)
+    f.setMinutes(0)
     expect(win.timers.size).toBe(0)
-    f.setAuto(true)
-    expect(win.timers.size).toBe(1)
-    // Setting it to the value it already has must not stack a second timer.
-    f.setAuto(true)
+    f.setMinutes(15)
+    expect([...win.timers.values()].map((t) => t.ms)).toEqual([intervalMs(15)])
+    // Picking the value it already has must not stack a second timer.
+    f.setMinutes(15)
     expect(win.timers.size).toBe(1)
   })
 
-  it('remembers the choice for the next visit', () => {
+  it('ignores an interval the menu does not offer', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    f.setMinutes(7)
+    expect(f.minutes).toBe(5)
+  })
+
+  it('remembers the choice for the next visit, in the same key', () => {
     const s = store()
     const f = createFreshness({ win: fakeWin(), storage: s })
-    f.setAuto(false)
-    expect(s.map.get(AUTO_KEY)).toBe('false')
-    f.setAuto(true)
-    expect(s.map.get(AUTO_KEY)).toBe('true')
+    f.setMinutes(0)
+    expect(s.map.get(AUTO_KEY)).toBe('0')
+    f.setMinutes(30)
+    expect(s.map.get(AUTO_KEY)).toBe('30')
   })
 
   it('is torn down by destroy', () => {
@@ -166,6 +193,85 @@ describe('the auto-refresh timer', () => {
     const f = createFreshness({ win, storage: store() })
     f.destroy()
     expect(win.timers.size).toBe(0)
+  })
+})
+
+describe('a hidden tab', () => {
+  function setup(initial = {}) {
+    const win = fakeWin()
+    const doc = fakeDoc()
+    let clock = 0
+    const f = createFreshness({ win, doc, storage: store(initial), now: () => clock })
+    let calls = 0
+    f.provide(async () => { calls += 1 })
+    return { win, doc, f, calls: () => calls, advance(ms) { clock += ms } }
+  }
+  const settle = async () => { for (let i = 0; i < 4; i += 1) await Promise.resolve() }
+
+  it('pauses the timer while hidden', () => {
+    const { win, doc } = setup()
+    expect(win.timers.size).toBe(1)
+    doc.set('hidden')
+    expect(win.timers.size).toBe(0)
+  })
+
+  it('does not schedule a pick made while hidden', () => {
+    const { win, doc, f } = setup()
+    doc.set('hidden')
+    f.setMinutes(15)
+    expect(win.timers.size).toBe(0)
+    doc.set('visible')
+    expect(win.timers.size).toBe(1)
+  })
+
+  it('refreshes once on return when the interval has elapsed, then resumes the timer', async () => {
+    const { win, doc, calls, advance } = setup()
+    doc.set('hidden')
+    advance(intervalMs(5))
+    doc.set('visible')
+    await settle()
+    expect(calls()).toBe(1)
+    expect(win.timers.size).toBe(1)
+  })
+
+  it('resumes without refreshing when the interval has not elapsed', async () => {
+    const { win, doc, calls, advance } = setup()
+    doc.set('hidden')
+    advance(intervalMs(5) - 1)
+    doc.set('visible')
+    await settle()
+    expect(calls()).toBe(0)
+    expect(win.timers.size).toBe(1)
+  })
+
+  it('measures the elapsed time against the chosen interval', async () => {
+    const { doc, calls, advance } = setup({ [AUTO_KEY]: '15' })
+    doc.set('hidden')
+    advance(intervalMs(10))
+    doc.set('visible')
+    await settle()
+    expect(calls()).toBe(0)
+    doc.set('hidden')
+    advance(intervalMs(5))
+    doc.set('visible')
+    await settle()
+    expect(calls()).toBe(1)
+  })
+
+  it('never refreshes on return when auto-refresh is off', async () => {
+    const { win, doc, calls, advance } = setup({ [AUTO_KEY]: '0' })
+    doc.set('hidden')
+    advance(intervalMs(60))
+    doc.set('visible')
+    await settle()
+    expect(calls()).toBe(0)
+    expect(win.timers.size).toBe(0)
+  })
+
+  it('stops listening once destroyed', () => {
+    const { doc, f } = setup()
+    f.destroy()
+    expect(doc.listeners.size).toBe(0)
   })
 })
 

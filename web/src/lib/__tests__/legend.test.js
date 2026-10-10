@@ -320,7 +320,7 @@ describe('the on-map legend and the refresh cluster', () => {
     const lift = /\.map-shell \.scale--onmap \{[^}]*inset-block-end:\s*([\d.]+)rem/.exec(css)
     expect(lift, '.map-shell .scale--onmap sets no inset-block-end').not.toBeNull()
 
-    const btn = /\.data-refresh__auto, \.data-refresh__btn--icon \{[^}]*block-size:\s*([\d.]+)rem/.exec(css)
+    const btn = /\.data-refresh__btn--icon \{[^}]*block-size:\s*([\d.]+)rem/.exec(css)
     expect(btn, 'refresh button height is no longer declared in rem').not.toBeNull()
 
     expect(Number(lift[1]), 'legend still overlaps the refresh cluster')
