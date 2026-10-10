@@ -679,5 +679,21 @@
   "terms.contact.issues": "issues",
   "terms.changes.body": "We may update these terms. The date at the top shows the last change. Every earlier version is in the public source code history.",
   "about.station.terms": "Terms of use",
-  "area.indicative": "This figure is indicative. Some citizen stations may be old or faulty, and we do not calibrate them. For health advice, follow official sources."
+  "area.indicative": "This figure is indicative. Some citizen stations may be old or faulty, and we do not calibrate them. For health advice, follow official sources.",
+  "faq.heading": "Questions about the air in {area}",
+  "faq.q1": "What is the air quality in {area} right now?",
+  "faq.a1": "The figure at the top of this page is the current value for {area}. It is the median of the sensors that reported recently, with its band on the European Air Quality Index. The value is indicative and we do not give health advice. For official alerts, follow the Ministry of Health, the regional health inspectorates (РЗИ) and the Executive Environment Agency (ИАОС).",
+  "faq.q2": "What are PM2.5 and PM10?",
+  "faq.a2": "PM2.5 and PM10 are fine particles in the air, up to 2.5 and up to 10 microns across. They are measured in micrograms per cubic metre (µg/m³). In Bulgarian they are called ФПЧ2.5 and ФПЧ10. The map shows both, and you can switch between them in the metric menu.",
+  "faq.q3": "What do the colours on the map mean?",
+  "faq.a3": "The colours follow the bands of the European Air Quality Index. They run from blue green for good, through yellow and red, to purple for extremely poor. For PM2.5, good is up to {p2_good} µg/m³, fair up to {p2_fair}, moderate up to {p2_moderate}, poor up to {p2_poor}, very poor up to {p2_verypoor}, and above that extremely poor. For PM10 the same bands end at {p1_good}, {p1_fair}, {p1_moderate}, {p1_poor} and {p1_verypoor}. Grey means there is not enough data.",
+  "faq.q4": "How often is the data for {area} updated?",
+  "faq.a4": "The map fetches new readings from citizen sensors every {minutes} minutes. A sensor that has sent nothing for 2 hours no longer counts toward the current value. Official stations publish hourly averages with a delay of several hours, so their readings count for 12 hours. The time of the latest data is shown next to the value.",
+  "faq.q5": "Where does the air quality data for {area} come from?",
+  "faq.a5": "Most readings come from low-cost sensors run by volunteers in the Sensor.Community network. Their data is open under the ODbL 1.0 licence. Kanarche is an independent, non-commercial project. It is not affiliated with Sensor.Community or with airbg.info.",
+  "faq.a5_official": "Official stations of the Executive Environment Agency (ИАОС) in {area} are shown too. Their data comes through the European Environment Agency.",
+  "faq.q6": "Why do these numbers differ from the official stations?",
+  "faq.a6": "Citizen sensors are low-cost optical sensors. They are not reference instruments and we do not calibrate them. High humidity in particular makes them read higher. They also stand in different places from the official stations, and the value for {area} is a median of several sensors. Official stations report hourly averages several hours later. Citizen data is good for seeing change over time and differences between places. More in \"About the data\".",
+  "faq.q7": "Why is there sometimes no value for {area}?",
+  "faq.a7": "We publish a value only when at least three separate locations report usable readings. A sensor is inactive when it has sent nothing for 2 hours. A sensor is faulty for a measurement when at least half of its readings in the last 24 hours failed the quality checks, counting at least 6 readings. Faulty readings are left out of the value. You can show inactive and faulty stations in Layers."
 }

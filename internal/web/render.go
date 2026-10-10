@@ -53,6 +53,7 @@ type Renderer struct {
 	defaultMetric   string
 	defaultPeriod   string
 	social          config.Social
+	pollMinutes     int
 	// File order, which is the order the switcher offers them in and the order
 	// the config author chose — alphabetical would put "1y" first.
 	periodNames []string
@@ -111,6 +112,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 		basemapStyleURL: cfg.Tiles.StyleURL(),
 		frontend:        cfg.Frontend,
 		social:          cfg.Social,
+		pollMinutes:     int(cfg.Upstream.PollInterval / time.Minute),
 		defaultMetric:   cfg.Series.DefaultMetric,
 		defaultPeriod:   cfg.Series.PeriodNames[0],
 		periodNames:     cfg.Series.PeriodNames,
@@ -186,6 +188,8 @@ type PageData struct {
 	AreaDayHTML template.HTML
 	// AreaPollen is the pollen table and chip; nil without a forecast.
 	AreaPollen *PollenBlock
+	// AreaFAQ is the area page's FAQ, rendered once so the markup and the FAQPage JSON-LD share strings.
+	AreaFAQ *FAQBlock
 
 	TitleKey string
 	BodyKey  string
@@ -299,6 +303,8 @@ type PageData struct {
 	// sofiaLoc is the zone the area sentences' {time} placeholders are
 	// printed in — see Renderer.sofiaLoc.
 	sofiaLoc *time.Location
+	// pollMinutes is upstream.poll_interval in whole minutes, for the FAQ's {minutes}.
+	pollMinutes int
 }
 
 type AreaRow struct {
@@ -974,7 +980,7 @@ func (rr *Renderer) newPageData(lang, path string, generatedAt time.Time) PageDa
 	return PageData{
 		Lang: lang, RequestPath: path,
 		BaseURL: rr.baseURL, GeneratedAt: generatedAt, Now: time.Now(),
-		cat: rr.cat, sofiaLoc: rr.sofiaLoc,
+		cat: rr.cat, sofiaLoc: rr.sofiaLoc, pollMinutes: rr.pollMinutes,
 		Assets:          rr.assets,
 		static:          rr.static,
 		BasemapStyleURL: rr.basemapStyleURL,

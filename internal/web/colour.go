@@ -23,10 +23,15 @@ func (p PageData) HomeAboutPM() string {
 
 // pm25Edges returns the finite upper edges of the PM2.5 EAQI table (good through
 // very poor). The last band is open-ended, so it contributes no edge.
-func pm25Edges() [5]string {
+func pm25Edges() [5]string { return eaqiEdges("P2") }
+
+// pm10Edges is the PM10 twin of pm25Edges.
+func pm10Edges() [5]string { return eaqiEdges("P1") }
+
+func eaqiEdges(metric string) [5]string {
 	var out [5]string
 	for _, s := range api.Scales() {
-		if s.Metric != "P2" || s.Name != "eaqi" {
+		if s.Metric != metric || s.Name != "eaqi" {
 			continue
 		}
 		for i, b := range s.Bands {
