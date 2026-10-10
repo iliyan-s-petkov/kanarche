@@ -97,6 +97,22 @@ type ldListItem struct {
 	Item     string `json:"item"`
 }
 
+type ldAnswer struct {
+	Type string `json:"@type"`
+	Text string `json:"text"`
+}
+
+type ldQuestion struct {
+	Type           string   `json:"@type"`
+	Name           string   `json:"name"`
+	AcceptedAnswer ldAnswer `json:"acceptedAnswer"`
+}
+
+type ldFAQPage struct {
+	Type       string       `json:"@type"`
+	MainEntity []ldQuestion `json:"mainEntity"`
+}
+
 type ldBreadcrumbList struct {
 	Type            string       `json:"@type"`
 	ItemListElement []ldListItem `json:"itemListElement"`
@@ -124,6 +140,7 @@ func (ldWebSite) ldNode()        {}
 func (ldDataset) ldNode()        {}
 func (ldBreadcrumbList) ldNode() {}
 func (ldPlace) ldNode()          {}
+func (ldFAQPage) ldNode()        {}
 
 // organization is the site itself, named by the localized product name.
 func (p PageData) organization() ldOrganization {
@@ -196,19 +213,32 @@ func (rr *Renderer) areaBreadcrumb(p PageData) []ldListItem {
 	return items
 }
 
-// areaJSONLD is the breadcrumb trail plus a Place when a centroid exists.
+// faqPage maps the rendered FAQ one-to-one onto a FAQPage, so markup and visible text share strings.
+func (p PageData) faqPage() ldFAQPage {
+	page := ldFAQPage{Type: "FAQPage"}
+	for _, it := range p.AreaFAQ.Items {
+		page.MainEntity = append(page.MainEntity, ldQuestion{
+			Type: "Question", Name: it.Question,
+			AcceptedAnswer: ldAnswer{Type: "Answer", Text: it.Answer},
+		})
+	}
+	return page
+}
+
+// areaJSONLD is the breadcrumb trail, the FAQ, and a Place when a centroid exists.
 func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
 	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: rr.areaBreadcrumb(p)}
+	faq := p.faqPage()
 
 	if row.Lat == 0 && row.Lon == 0 {
-		return encodeJSONLD(crumbs)
+		return encodeJSONLD(crumbs, faq)
 	}
 	geo, err := json.Marshal(ldGeoCoordinates{Type: "GeoCoordinates", Latitude: row.Lat, Longitude: row.Lon})
 	if err != nil {
 		return "", err
 	}
 	place := ldPlace{Type: "Place", Name: rr.areaCrumbName(row, p.Lang), URL: p.CanonicalURL(), Geo: geo}
-	return encodeJSONLD(crumbs, place)
+	return encodeJSONLD(crumbs, place, faq)
 }
 
 // areaCrumbName labels an oblast as a province so it does not read as its capital city.
