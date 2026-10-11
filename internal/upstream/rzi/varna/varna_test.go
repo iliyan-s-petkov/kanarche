@@ -358,7 +358,7 @@ func TestCountGrammar(t *testing.T) {
 		"7":         {Op: "=", Value: 7},
 		"4 124":     {Op: "=", Value: 4124},
 		"34 659":    {Op: "=", Value: 34659},
-		"1 234 567": {Op: "=", Value: 1234567},
+		"1 000 000": {Op: "=", Value: 1000000},
 	}
 	for in, want := range ok {
 		f := Parse(synth(t, "03002", row("2026-06-09", "2026-06-09", in, "10", "")))

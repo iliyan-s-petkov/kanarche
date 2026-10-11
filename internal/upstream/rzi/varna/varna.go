@@ -61,10 +61,10 @@ func Parse(text string) rzi.File {
 	if !utf8.ValidString(text) {
 		return refuse("input is not valid UTF-8")
 	}
-	raw := strings.Split(text, "\n")
-	if len(raw) > MaxLines {
+	if strings.Count(text, "\n") >= MaxLines {
 		return refuse("input over line cap")
 	}
+	raw := strings.Split(text, "\n")
 	p := &parser{}
 	for i, l := range raw {
 		l = strings.TrimLeft(l, "\f")
@@ -105,7 +105,6 @@ type zone struct {
 type tline struct {
 	no    int
 	cells []cell
-	blank bool
 }
 
 type block struct {
@@ -158,9 +157,14 @@ func (p *parser) line(no int, l []rune) {
 	switch {
 	case reFooter.MatchString(trim), reTitle.MatchString(trim):
 		return
-	case strings.HasPrefix(trim, "Пункт"):
+	case strings.HasPrefix(string(l), "Пункт"):
 		p.endBlock()
 		p.startBlock(no, trim)
+		return
+	case strings.HasPrefix(trim, "Пункт") && p.cur != nil && !p.skipping:
+		// Real headers start at column 0. An indented one sits in a table
+		// column and must not end or forge a block.
+		p.warn(no, p.cur, "point header inside a table")
 		return
 	}
 	if p.skipping || p.cur == nil {
@@ -189,7 +193,7 @@ func (p *parser) startBlock(no int, trim string) {
 func (p *parser) blockLine(no int, l []rune, trim string) {
 	b := p.cur
 	if b.unitsDone {
-		b.lines = append(b.lines, tline{no: no, cells: splitCells(l), blank: trim == ""})
+		b.lines = append(b.lines, tline{no: no, cells: splitCells(l)})
 		return
 	}
 	if trim == "" {

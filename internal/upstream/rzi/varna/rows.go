@@ -97,7 +97,7 @@ func parseCount(s string) (rzi.Count, bool) {
 		return rzi.Count{}, false
 	}
 	v, err := strconv.ParseInt(strings.ReplaceAll(m[2], " ", ""), 10, 64)
-	if err != nil {
+	if err != nil || v > rzi.MaxCount {
 		return rzi.Count{}, false
 	}
 	if m[1] != "" {
