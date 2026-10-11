@@ -31,7 +31,7 @@ func tools(f *fakeRunner) Tools { return Tools{Runner: f, Timeout: time.Second} 
 
 func TestTextRunsFixedArgv(t *testing.T) {
 	f := &fakeRunner{out: map[string][]byte{"pdfinfo": info("no", "no", "12"), "pdftotext": []byte("hello")}}
-	got, err := tools(f).Text(context.Background(), goodPath)
+	got, err := tools(f).textAt(context.Background(), goodPath)
 	if err != nil || got != "hello" {
 		t.Fatalf("got %q, %v", got, err)
 	}
@@ -46,7 +46,7 @@ func TestTextRunsFixedArgv(t *testing.T) {
 
 func TestPages40Allowed(t *testing.T) {
 	f := &fakeRunner{out: map[string][]byte{"pdfinfo": info("no", "no", "40"), "pdftotext": []byte("x")}}
-	if _, err := tools(f).Text(context.Background(), goodPath); err != nil {
+	if _, err := tools(f).textAt(context.Background(), goodPath); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -70,7 +70,7 @@ func TestGateRefuses(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			f := &fakeRunner{out: map[string][]byte{"pdfinfo": c.out, "pdftotext": []byte("secret")}}
-			_, err := tools(f).Text(context.Background(), goodPath)
+			_, err := tools(f).textAt(context.Background(), goodPath)
 			if !errors.Is(err, c.want) {
 				t.Fatalf("err = %v, want %v", err, c.want)
 			}
@@ -85,19 +85,19 @@ func TestGateRefuses(t *testing.T) {
 
 func TestToolFailureIsFixedError(t *testing.T) {
 	f := &fakeRunner{out: map[string][]byte{"pdfinfo": info("no", "no", "1")}, err: map[string]error{"pdftotext": errors.New("boom /secret/path")}}
-	_, err := tools(f).Text(context.Background(), goodPath)
+	_, err := tools(f).textAt(context.Background(), goodPath)
 	if !errors.Is(err, ErrTool) || strings.Contains(err.Error(), "secret") {
 		t.Fatalf("err = %v", err)
 	}
 	f = &fakeRunner{err: map[string]error{"pdfinfo": errors.New("boom")}}
-	if _, err = tools(f).Text(context.Background(), goodPath); !errors.Is(err, ErrTool) {
+	if _, err = tools(f).textAt(context.Background(), goodPath); !errors.Is(err, ErrTool) {
 		t.Fatalf("err = %v", err)
 	}
 }
 
 func TestOutputCapMapsToErrTextCap(t *testing.T) {
 	f := &fakeRunner{out: map[string][]byte{"pdfinfo": info("no", "no", "1")}, err: map[string]error{"pdftotext": ErrOutputCap}}
-	if _, err := tools(f).Text(context.Background(), goodPath); !errors.Is(err, ErrTextCap) {
+	if _, err := tools(f).textAt(context.Background(), goodPath); !errors.Is(err, ErrTextCap) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -112,7 +112,7 @@ func TestPathMustBeValidatedName(t *testing.T) {
 		"",
 	} {
 		f := &fakeRunner{}
-		if _, err := tools(f).Text(context.Background(), p); !errors.Is(err, ErrPath) {
+		if _, err := tools(f).textAt(context.Background(), p); !errors.Is(err, ErrPath) {
 			t.Errorf("%q: err = %v", p, err)
 		}
 		if len(f.calls) != 0 {

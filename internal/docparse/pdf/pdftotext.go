@@ -6,8 +6,12 @@ package pdf
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -54,8 +58,24 @@ type Tools struct {
 func Default() Tools { return Tools{Runner: ExecRunner{}, Timeout: DefaultTimeout} }
 
 // Text gates the PDF with pdfinfo, then returns its pdftotext -layout text.
-// path must be a validated /<dir>/<sha256>.pdf name.
-func (t Tools) Text(ctx context.Context, path string) (string, error) {
+// The tools run on a private copy of data, so the caller's verified bytes
+// are what get parsed even if the original file is swapped meanwhile.
+func (t Tools) Text(ctx context.Context, data []byte) (string, error) {
+	dir, err := os.MkdirTemp("", "rzi-pdf-")
+	if err != nil {
+		return "", ErrTool
+	}
+	defer os.RemoveAll(dir)
+	sum := sha256.Sum256(data)
+	path := filepath.Join(dir, hex.EncodeToString(sum[:])+".pdf")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return "", ErrTool
+	}
+	return t.textAt(ctx, path)
+}
+
+// textAt runs the gate and pdftotext on a file named <sha256>.pdf.
+func (t Tools) textAt(ctx context.Context, path string) (string, error) {
 	if !validPath(path) {
 		return "", ErrPath
 	}
@@ -98,9 +118,16 @@ func (t Tools) gate(ctx context.Context, path string) error {
 	fields := map[string]string{}
 	for _, l := range strings.Split(string(out), "\n") {
 		k, v, ok := strings.Cut(l, ":")
-		if ok {
-			fields[strings.TrimSpace(k)] = strings.TrimSpace(v)
+		if !ok {
+			continue
 		}
+		k = strings.TrimSpace(k)
+		// A metadata value with a newline can forge a gate line, so a
+		// repeated gate key is refused rather than resolved.
+		if _, dup := fields[k]; dup && gateKeys[k] {
+			return ErrInfo
+		}
+		fields[k] = strings.TrimSpace(v)
 	}
 	enc, err := yesNo(fields["Encrypted"])
 	if err != nil {
@@ -124,7 +151,14 @@ func (t Tools) gate(ctx context.Context, path string) error {
 	return nil
 }
 
+var gateKeys = map[string]bool{"Encrypted": true, "JavaScript": true, "Pages": true}
+
+// yesNo reads the first token, since pdfinfo appends permissions to
+// "Encrypted: yes (print:yes ...)".
 func yesNo(s string) (bool, error) {
+	if f := strings.Fields(s); len(f) > 0 {
+		s = f[0]
+	}
 	switch s {
 	case "yes":
 		return true, nil
@@ -140,8 +174,11 @@ type ExecRunner struct{}
 
 // Run implements Runner.
 func (ExecRunner) Run(ctx context.Context, argv []string, maxOut int) ([]byte, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
-	out := &capWriter{max: maxOut}
+	// Over the cap the child is killed at once, not left to its timeout.
+	out := &capWriter{max: maxOut, onOver: cancel}
 	cmd.Stdout = out
 	cmd.Stderr = &capWriter{max: maxErrBytes, drop: true}
 	cmd.Stdin = nil
@@ -164,6 +201,8 @@ type capWriter struct {
 	max  int
 	drop bool
 	over bool
+	// onOver runs when the cap trips.
+	onOver func()
 }
 
 func (w *capWriter) Write(p []byte) (int, error) {
@@ -179,5 +218,8 @@ func (w *capWriter) Write(p []byte) (int, error) {
 		return len(p), nil
 	}
 	w.over = true
+	if w.onOver != nil {
+		w.onOver()
+	}
 	return room, ErrOutputCap
 }

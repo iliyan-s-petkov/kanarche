@@ -38,7 +38,7 @@ var reName = regexp.MustCompile(`^([0-9a-f]{64})\.(pdf|xls|xlsx)$`)
 type kind struct {
 	source  string
 	magic   []byte
-	extract func(ctx context.Context, path string, data []byte) rzi.File
+	extract func(ctx context.Context, data []byte) rzi.File
 }
 
 // newKinds is the one place formats are wired to extractors.
@@ -52,16 +52,16 @@ func newKinds(tools pdf.Tools) map[string]kind {
 		"xls": {
 			source:  rzi.SourceBurgas,
 			magic:   []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1},
-			extract: func(_ context.Context, _ string, data []byte) rzi.File { return burgas.Extract(data) },
+			extract: func(_ context.Context, data []byte) rzi.File { return burgas.Extract(data) },
 		},
 		// Dobrich: set extract to the XLSX extractor when it exists.
 		"xlsx": {source: rzi.SourceDobrich, magic: []byte("PK\x03\x04")},
 	}
 }
 
-func varnaExtract(tools pdf.Tools) func(context.Context, string, []byte) rzi.File {
-	return func(ctx context.Context, path string, data []byte) rzi.File {
-		text, err := tools.Text(ctx, path)
+func varnaExtract(tools pdf.Tools) func(context.Context, []byte) rzi.File {
+	return func(ctx context.Context, data []byte) rzi.File {
+		text, err := tools.Text(ctx, data)
 		if err != nil {
 			return rejected(rzi.SourceVarna, sha(data), err.Error())
 		}
@@ -154,6 +154,10 @@ func build(path, hash string, k kind) (rec rzi.File) {
 		return rejected(k.source, hash, "input not readable")
 	}
 	defer fh.Close()
+	// The entry type was checked at listing time; check the opened fd too.
+	if st, err := fh.Stat(); err != nil || !st.Mode().IsRegular() {
+		return rejected(k.source, hash, "input not readable")
+	}
 	data, err := io.ReadAll(io.LimitReader(fh, maxInputBytes+1))
 	if err != nil {
 		return rejected(k.source, hash, "input not readable")
@@ -170,7 +174,7 @@ func build(path, hash string, k kind) (rec rzi.File) {
 	if k.extract == nil {
 		return rejected(k.source, hash, "unsupported format")
 	}
-	rec = k.extract(context.Background(), path, data)
+	rec = k.extract(context.Background(), data)
 	if rec.SHA256 != hash {
 		return rejected(k.source, hash, "extractor hash mismatch")
 	}
@@ -182,6 +186,7 @@ func writeAtomic(dir, hash string, body []byte) error {
 	final := filepath.Join(dir, hash+".json")
 	tmp := final + ".tmp"
 	if err := os.WriteFile(tmp, body, 0o644); err != nil {
+		os.Remove(tmp)
 		return fmt.Errorf("write failed")
 	}
 	if err := os.Rename(tmp, final); err != nil {

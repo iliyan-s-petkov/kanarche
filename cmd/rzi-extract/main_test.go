@@ -20,10 +20,19 @@ type fakeRunner struct {
 	text    []byte
 	textErr error
 	calls   []string
+	paths   []string
+	seen    [][]byte
 }
 
 func (f *fakeRunner) Run(_ context.Context, argv []string, _ int) ([]byte, error) {
 	f.calls = append(f.calls, argv[0])
+	for _, a := range argv {
+		if strings.HasSuffix(a, ".pdf") {
+			f.paths = append(f.paths, a)
+			b, _ := os.ReadFile(a)
+			f.seen = append(f.seen, b)
+		}
+	}
 	if argv[0] == "pdfinfo" {
 		return []byte(f.info), nil
 	}
@@ -282,7 +291,7 @@ func TestOutputOverCapRejected(t *testing.T) {
 	h := e.put(data, "xls")
 	ks := pdfKinds(&fakeRunner{})
 	k := ks["xls"]
-	k.extract = func(_ context.Context, _ string, data []byte) rzi.File { return bigRecord(data) }
+	k.extract = func(_ context.Context, data []byte) rzi.File { return bigRecord(data) }
 	ks["xls"] = k
 	if code := process(e.in, e.out, ks); code != 0 {
 		t.Fatalf("exit %d", code)
@@ -304,7 +313,7 @@ func TestExtractorPanicRejected(t *testing.T) {
 	h := e.put(pdfBytes("p"), "pdf")
 	ks := pdfKinds(&fakeRunner{})
 	k := ks["pdf"]
-	k.extract = func(context.Context, string, []byte) rzi.File { panic("boom secret") }
+	k.extract = func(context.Context, []byte) rzi.File { panic("boom secret") }
 	ks["pdf"] = k
 	if code := process(e.in, e.out, ks); code != 0 {
 		t.Fatalf("exit %d", code)
@@ -349,5 +358,55 @@ func TestRejectedRecordsDoNotLeakContent(t *testing.T) {
 	b, _ := os.ReadFile(filepath.Join(e.out, h+".json"))
 	if bytes.Contains(b, []byte("TOPSECRET")) {
 		t.Fatal("record leaks document content")
+	}
+}
+
+// The tools get a private copy of the hashed bytes, never the inbox path.
+func TestToolsGetPrivateCopyNotInboxPath(t *testing.T) {
+	e := newEnv(t)
+	data := pdfBytes("private")
+	e.put(data, "pdf")
+	f := &fakeRunner{info: okInfo, text: excerpt(t)}
+	process(e.in, e.out, pdfKinds(f))
+	if len(f.paths) == 0 {
+		t.Fatal("no tool call")
+	}
+	for i, p := range f.paths {
+		if strings.HasPrefix(p, e.in) {
+			t.Fatalf("tool got inbox path %s", p)
+		}
+		if !bytes.Equal(f.seen[i], data) {
+			t.Fatal("tool saw bytes other than the hashed ones")
+		}
+	}
+}
+
+func TestTmpRemovedWhenWriteFails(t *testing.T) {
+	dir := t.TempDir()
+	h := sum([]byte("a"))
+	// A directory in the tmp slot makes WriteFile fail.
+	if err := os.Mkdir(filepath.Join(dir, h+".json.tmp"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeAtomic(dir, h, []byte("{}")); err == nil {
+		t.Fatal("want error")
+	}
+	if _, err := os.Lstat(filepath.Join(dir, h+".json.tmp")); !os.IsNotExist(err) {
+		t.Fatal("tmp left behind")
+	}
+}
+
+func TestTmpRemovedWhenRenameFails(t *testing.T) {
+	dir := t.TempDir()
+	h := sum([]byte("b"))
+	final := filepath.Join(dir, h+".json")
+	if err := os.MkdirAll(filepath.Join(final, "x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeAtomic(dir, h, []byte("{}")); err == nil {
+		t.Fatal("want error")
+	}
+	if _, err := os.Lstat(final + ".tmp"); !os.IsNotExist(err) {
+		t.Fatal("tmp left behind")
 	}
 }
