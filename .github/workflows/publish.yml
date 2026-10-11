@@ -9,7 +9,7 @@ permissions:
 jobs:
   pr-check:
     if: github.event_name == 'pull_request'
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       # Lowercased: registry paths must be, and a repo owner may not be.
       - run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - run: echo "DOCPARSE_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-docparse" >> "$GITHUB_ENV"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
       - id: build-pr
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
@@ -39,10 +40,31 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           vuln-type: os,library
+      - id: build-docparse-pr
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
+        with:
+          context: .
+          file: Dockerfile.docparse
+          platforms: linux/amd64
+          push: false
+          load: true
+          provenance: false
+          sbom: false
+          tags: ${{ env.DOCPARSE_IMAGE }}:pr-check
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=docparse
+          cache-to: type=gha,mode=max,scope=docparse
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          image-ref: ${{ env.DOCPARSE_IMAGE }}:pr-check
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+          vuln-type: os,library
 
   publish:
     if: github.event_name != 'pull_request'
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -52,6 +74,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       # Lowercased: registry paths must be, and a repo owner may not be.
       - run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - run: echo "DOCPARSE_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-docparse" >> "$GITHUB_ENV"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
@@ -94,3 +117,37 @@ jobs:
             tags+=(-t "$IMAGE:$REF_NAME")
           fi
           docker buildx imagetools create "${tags[@]}" "$IMAGE@$DIGEST"
+      # docparse sandbox image: same build, scan, sign, alias path.
+      - id: build-docparse
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
+        with:
+          context: .
+          file: Dockerfile.docparse
+          platforms: linux/amd64
+          push: true
+          provenance: true
+          sbom: true
+          tags: ${{ env.DOCPARSE_IMAGE }}:${{ steps.tag.outputs.short }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=docparse
+          cache-to: type=gha,mode=max,scope=docparse
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          image-ref: ${{ env.DOCPARSE_IMAGE }}@${{ steps.build-docparse.outputs.digest }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+          vuln-type: os,library
+      - run: cosign sign --yes ${{ env.DOCPARSE_IMAGE }}@${{ steps.build-docparse.outputs.digest }}
+      - env:
+          DIGEST: ${{ steps.build-docparse.outputs.digest }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tags=()
+          if [[ "$GITHUB_REF" == refs/heads/master ]]; then
+            tags+=(-t "$DOCPARSE_IMAGE:latest")
+          fi
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tags+=(-t "$DOCPARSE_IMAGE:$REF_NAME")
+          fi
+          docker buildx imagetools create "${tags[@]}" "$DOCPARSE_IMAGE@$DIGEST"

@@ -32,8 +32,8 @@ var goRunTool = regexp.MustCompile(`go run ([\w./-]+)@(\S+)`)
 var pinnedVersion = regexp.MustCompile(`^v\d+\.\d+\.\d+(-\S+)?$`)
 
 // wantToolSteps is the number of `go run tool@version` steps ci.yml currently
-// has: three staticcheck runs (untagged, integration, e2e) and three
-// govulncheck runs of the same shape.
+// has: four staticcheck runs (untagged, integration, e2e, docparse) and three
+// govulncheck runs (untagged, integration, e2e).
 //
 // This is the positive control, and it is the assertion that makes the rest of
 // the test mean anything. Without it, deleting the analyser steps, renaming the
@@ -41,7 +41,7 @@ var pinnedVersion = regexp.MustCompile(`^v\d+\.\d+\.\d+(-\S+)?$`)
 // regexp does not recognise would leave the scan matching nothing at all — and
 // a loop over zero matches raises zero failures. "No unpinned tools found"
 // reads identically whether the tools are pinned or absent.
-const wantToolSteps = 6
+const wantToolSteps = 7
 
 func readWorkflow(t *testing.T, path string) string {
 	t.Helper()
@@ -100,6 +100,8 @@ func TestTaggedAnalyserRunsSurvive(t *testing.T) {
 		{"go vet, e2e", []string{"go vet", "-tags e2e"}},
 		{"staticcheck, integration", []string{"staticcheck", "-tags integration"}},
 		{"staticcheck, e2e", []string{"staticcheck", "-tags e2e"}},
+		{"go vet, docparse", []string{"go vet", "-tags docparse"}},
+		{"staticcheck, docparse", []string{"staticcheck", "-tags docparse"}},
 		{"govulncheck, integration", []string{"govulncheck", "-test", "-tags integration"}},
 		{"govulncheck, e2e", []string{"govulncheck", "-test", "-tags e2e"}},
 	} {
@@ -180,6 +182,61 @@ func TestContractIsRegeneratedAndDiffed(t *testing.T) {
 		t.Errorf("contract regenerate+diff steps are out of order in %s: want go build (%d) < regenerate (%d) < diff (%d) < go vet (%d); "+
 			"regenerating before the build compiles cmd/airbg would run a stale binary, and diffing after go vet would let an unrelated failure mask a stale contract",
 			workflowPath, buildIdx, regenIdx, diffIdx, vetIdx)
+	}
+}
+
+// jobSpan returns the line range [start, end) of a top-level job, or -1, -1.
+func jobSpan(lines []string, name string) (int, int) {
+	jobStart := regexp.MustCompile(`^  [\w-]+:\s*$`)
+	start := -1
+	for i, line := range lines {
+		if !jobStart.MatchString(line) {
+			continue
+		}
+		if start >= 0 {
+			return start, i
+		}
+		if strings.TrimSpace(line) == name+":" {
+			start = i
+		}
+	}
+	if start == -1 {
+		return -1, -1
+	}
+	return start, len(lines)
+}
+
+// TestDocparseJob pins the job that runs the hostile corpus against the
+// docparse image: read-only token, bounded, and the tagged suite uncached.
+func TestDocparseJob(t *testing.T) {
+	lines := strings.Split(readWorkflow(t, workflowPath), "\n")
+	start, end := jobSpan(lines, "docparse")
+	if start == -1 {
+		t.Fatalf("%s has no `docparse` job", workflowPath)
+	}
+	job := lines[start:end]
+	permIdx, hasTimeout, hasRun := -1, false, false
+	for i, line := range job {
+		switch {
+		case strings.TrimSpace(line) == "permissions:":
+			permIdx = i
+		case strings.HasPrefix(strings.TrimSpace(line), "timeout-minutes:"):
+			hasTimeout = true
+		case containsAll(line, []string{"go test", "-count=1", "-tags docparse", "./internal/docparse/integration/..."}):
+			hasRun = true
+		}
+	}
+	if permIdx == -1 {
+		t.Fatalf("docparse job has no permissions block")
+	}
+	if got := permBlockKeys(job, permIdx, 6); len(got) != 1 || got["contents"] != "read" {
+		t.Errorf("docparse job permissions = %v, want exactly {contents: read}", got)
+	}
+	if !hasTimeout {
+		t.Error("docparse job has no timeout-minutes")
+	}
+	if !hasRun {
+		t.Error("docparse job does not run go test -count=1 -tags docparse ./internal/docparse/integration/...")
 	}
 }
 
