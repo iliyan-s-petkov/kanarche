@@ -5,6 +5,7 @@ import (
 	"math"
 	"net"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
@@ -41,6 +42,13 @@ func (p *problems) addf(format string, args ...any) {
 func (p *problems) positive(path string, d time.Duration) {
 	if d <= 0 {
 		p.addf("%s = %v, must be greater than zero", path, d)
+	}
+}
+
+// within rejects a duration outside [lo, hi].
+func (p *problems) within(path string, d, lo, hi time.Duration) {
+	if d < lo || d > hi {
+		p.addf("%s = %v, must be between %v and %v", path, d, lo, hi)
 	}
 }
 
@@ -569,6 +577,37 @@ func (c Config) validateSea(p *problems) {
 	}
 	p.positiveInt("sea.max_rows", c.Sea.MaxRows)
 	c.validateSeaDatahub(p)
+	c.validateSeaRZI(p)
+}
+
+// validateSeaRZI runs whether or not the fetcher is enabled. The per-source
+// host allow-list lives in internal/upstream/rzi, which checks page_url
+// against it when the fetcher is built.
+func (c Config) validateSeaRZI(p *problems) {
+	r := c.Sea.RZI
+	for _, d := range []struct{ key, dir string }{{"inbox_dir", r.InboxDir}, {"outbox_dir", r.OutboxDir}} {
+		if !filepath.IsAbs(d.dir) {
+			p.addf("sea.rzi.%s = %q must be an absolute path", d.key, d.dir)
+		}
+	}
+	if r.InboxDir == r.OutboxDir {
+		p.addf("sea.rzi.inbox_dir and outbox_dir must differ")
+	}
+	p.within("sea.rzi.in_season_interval", r.InSeasonInterval, time.Minute, 7*24*time.Hour)
+	p.within("sea.rzi.off_season_interval", r.OffSeasonInterval, time.Minute, 7*24*time.Hour)
+	p.within("sea.rzi.request_timeout", r.RequestTimeout, time.Millisecond, 5*time.Minute)
+	if r.MaxFileBytes <= 0 || r.MaxFileBytes > 64<<20 {
+		p.addf("sea.rzi.max_file_bytes must be in 1..%d, got %d", 64<<20, r.MaxFileBytes)
+	}
+	for _, s := range []struct{ key, page string }{{"varna", r.Varna.PageURL}, {"burgas", r.Burgas.PageURL}, {"dobrich", r.Dobrich.PageURL}} {
+		u, err := url.Parse(s.page)
+		switch {
+		case err != nil:
+			p.addf("sea.rzi.%s.page_url is not a URL", s.key)
+		case u.Scheme != "https" || u.Host == "" || u.User != nil:
+			p.addf("sea.rzi.%s.page_url = %q must be an absolute https URL without credentials", s.key, s.page)
+		}
+	}
 }
 
 var sha256Pin = regexp.MustCompile(`^[0-9a-f]{64}$`)

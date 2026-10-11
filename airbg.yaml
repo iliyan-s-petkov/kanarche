@@ -316,6 +316,22 @@ sea:
     max_download_bytes: 134217728
     max_disagree: 0.005
     min_site_coverage: 0.8
+  # RZI bathing samples. See internal/upstream/rzi/fetch.go. Off until the
+  # extractor sandbox is deployed. Hosts per source are fixed in code.
+  rzi:
+    enabled: false
+    inbox_dir: "/var/lib/airbg/rzi/inbox"
+    outbox_dir: "/var/lib/airbg/rzi/outbox"
+    in_season_interval: "6h"
+    off_season_interval: "24h"
+    max_file_bytes: 5242880
+    request_timeout: "30s"
+    varna:
+      page_url: "https://rzi-varna.com/?page_id=2635"
+    burgas:
+      page_url: "https://rzi-burgas.bg/kachestvo-na-vodite/"
+    dobrich:
+      page_url: "https://rzi-dobrich.egov.bg/wps/portal/rzi.dobrich/main-activities/public-health/swimming-zone"
 
 store:
   # Minimum sensors before an area gets a value at all. Below it the area is

@@ -66,6 +66,20 @@ func TestValidateRejects(t *testing.T) {
 		{"geocoder zero cache entries", func(c *Config) { c.Geocoder.CacheMaxEntries = 0 }, "geocoder.cache_max_entries"},
 		{"geocoder zero upstream rate", func(c *Config) { c.Geocoder.UpstreamPerSecond = 0 }, "geocoder.upstream_per_second"},
 		{"geocode bucket burst below rate", func(c *Config) { c.RateLimit.Geocode.Burst = 0.01 }, "ratelimit.geocode.burst"},
+		{"rzi relative inbox", func(c *Config) { c.Sea.RZI.InboxDir = "inbox" }, "sea.rzi.inbox_dir"},
+		{"rzi inbox equals outbox", func(c *Config) { c.Sea.RZI.OutboxDir = c.Sea.RZI.InboxDir }, "must differ"},
+		{"rzi zero in-season interval", func(c *Config) { c.Sea.RZI.InSeasonInterval = 0 }, "sea.rzi.in_season_interval"},
+		{"rzi zero off-season interval", func(c *Config) { c.Sea.RZI.OffSeasonInterval = 0 }, "sea.rzi.off_season_interval"},
+		{"rzi zero timeout", func(c *Config) { c.Sea.RZI.RequestTimeout = 0 }, "sea.rzi.request_timeout"},
+		{"rzi zero max file bytes", func(c *Config) { c.Sea.RZI.MaxFileBytes = 0 }, "sea.rzi.max_file_bytes"},
+		{"rzi page url over http", func(c *Config) { c.Sea.RZI.Burgas.PageURL = "http://rzi-burgas.bg/x/" }, "sea.rzi.burgas.page_url"},
+		{"rzi page url with credentials", func(c *Config) { c.Sea.RZI.Varna.PageURL = "https://u:p@rzi-varna.com/" }, "sea.rzi.varna.page_url"},
+		{"rzi max file bytes over cap", func(c *Config) { c.Sea.RZI.MaxFileBytes = 64<<20 + 1 }, "sea.rzi.max_file_bytes"},
+		{"rzi timeout over cap", func(c *Config) { c.Sea.RZI.RequestTimeout = 5*time.Minute + 1 }, "sea.rzi.request_timeout"},
+		{"rzi in-season interval under a minute", func(c *Config) { c.Sea.RZI.InSeasonInterval = time.Minute - 1 }, "sea.rzi.in_season_interval"},
+		{"rzi in-season interval over a week", func(c *Config) { c.Sea.RZI.InSeasonInterval = 7*24*time.Hour + 1 }, "sea.rzi.in_season_interval"},
+		{"rzi off-season interval under a minute", func(c *Config) { c.Sea.RZI.OffSeasonInterval = time.Minute - 1 }, "sea.rzi.off_season_interval"},
+		{"rzi off-season interval over a week", func(c *Config) { c.Sea.RZI.OffSeasonInterval = 7*24*time.Hour + 1 }, "sea.rzi.off_season_interval"},
 		{"zero max_conns", func(c *Config) { c.Listen.MaxConns = 0 }, "listen.max_conns"},
 		{"unsafe-inline in csp", func(c *Config) { c.Listen.CSP += "; script-src 'unsafe-inline'" }, "unsafe-inline"},
 		{"unsafe-eval in csp", func(c *Config) { c.Listen.CSP += "; script-src 'unsafe-eval'" }, "unsafe-eval"},
@@ -877,5 +891,19 @@ func TestWindForecastMustOutlastThePollInterval(t *testing.T) {
 	cfg.Wind.PollInterval = time.Duration(cfg.Wind.ForecastHours-1) * time.Hour
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("Validate() = %v, want an interval inside the forecast accepted", err)
+	}
+}
+
+// The fetcher ships off, with the plan's cadence and caps.
+func TestSeaRZIShippedDefaults(t *testing.T) {
+	r := good(t).Sea.RZI
+	if r.Enabled {
+		t.Error("sea.rzi.enabled = true, want false")
+	}
+	if r.InSeasonInterval != 6*time.Hour || r.OffSeasonInterval != 24*time.Hour {
+		t.Errorf("intervals = %v, %v", r.InSeasonInterval, r.OffSeasonInterval)
+	}
+	if r.MaxFileBytes != 5<<20 || r.RequestTimeout != 30*time.Second {
+		t.Errorf("caps = %d, %v", r.MaxFileBytes, r.RequestTimeout)
 	}
 }
