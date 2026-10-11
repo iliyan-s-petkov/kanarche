@@ -1,5 +1,5 @@
 // The keyboard list of sensors in the current map view. Pure: no DOM, no map.
-import { featureCentre } from './geometry.js'
+import { featureCentre, offsetFrom } from './geometry.js'
 import { number } from './areacards.js'
 import { bandName } from './bandname.js'
 
@@ -15,11 +15,21 @@ export function describeReading(value, { bands, names, unit, lang }) {
   return readingText({ value, unit, band: bandName(value, bands, names), lang })
 }
 
+// positionText: where a sensor is from the map centre, in words for someone who cannot see the map.
+// t: {here, km, m, dirs[8]}; km and m carry {n} and {dir}.
+export function positionText({ metres, octant }, t, lang) {
+  if (metres < 100) return t.here
+  const dir = t.dirs[octant]
+  if (metres < 1000) return t.m.replace('{n}', number(Math.round(metres / 50) * 50, lang)).replace('{dir}', dir)
+  const km = metres < 10000 ? Math.round(metres / 100) / 10 : Math.round(metres / 1000)
+  return t.km.replace('{n}', number(km, lang)).replace('{dir}', dir)
+}
+
 // buildNearby(features, opts) -> { items, total, rest }
 // features: the hex layer's painted features, so the list agrees with what the map shows.
 // Only a cell that names one sensor and carries a reading can be listed; a bin of
 // several has no single sensor to open. Nearest to the view centre first.
-export function buildNearby(features, { centre, bounds, limit, nameOf, readingOf }) {
+export function buildNearby(features, { centre, bounds, limit, nameOf, readingOf, positionOf = () => '' }) {
   const [west, south, east, north] = bounds
   // Longitude degrees shrink with latitude (same equirectangular rule as nearest.js).
   const k = Math.cos((centre[1] * Math.PI) / 180)
@@ -42,7 +52,7 @@ export function buildNearby(features, { centre, bounds, limit, nameOf, readingOf
   const sorted = [...byId.values()].sort((a, b) => a.distance - b.distance || a.id - b.id)
   const items = sorted.slice(0, limit).map((s) => ({
     id: s.id, featureId: s.featureId, lon: s.lon, lat: s.lat,
-    name: nameOf(s.id), reading: readingOf(s.value),
+    name: nameOf(s.id), place: positionOf(offsetFrom(centre, [s.lon, s.lat])), reading: readingOf(s.value),
   }))
   return { items, total: sorted.length, rest: sorted.length - items.length }
 }

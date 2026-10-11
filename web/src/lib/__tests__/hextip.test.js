@@ -16,30 +16,23 @@ describe('createHexTip', () => {
     createHexTip(container)
     expect(card().hidden).toBe(true)
     expect(card().getAttribute('aria-hidden')).toBe('true')
-    expect(live().getAttribute('aria-live')).toBe('polite')
   })
 
-  it('shows text on the card without speaking it', () => {
+  it('shows text on the card and never adds a live region', () => {
     const tip = createHexTip(container)
     tip.show('PM2.5: 10 µg/m³ · fair', { x: 40, y: 80 })
     expect(card().hidden).toBe(false)
     expect(card().textContent).toBe('PM2.5: 10 µg/m³ · fair')
-    expect(live().textContent).toBe('')
+    expect(live()).toBeNull()
+    expect(container.querySelector('[aria-live]')).toBeNull()
   })
 
-  it('speaks only when announce is called, and hide clears both', () => {
+  it('hides on hide and removes its element on destroy', () => {
     const tip = createHexTip(container)
     tip.show('a', { x: 1, y: 1 })
-    tip.announce('PM2.5: 10 µg/m³ · fair')
-    expect(live().textContent).toBe('PM2.5: 10 µg/m³ · fair')
     tip.hide()
     expect(card().hidden).toBe(true)
-    expect(live().textContent).toBe('')
-  })
-
-  it('removes its elements on destroy', () => {
-    createHexTip(container).destroy()
+    tip.destroy()
     expect(card()).toBeNull()
-    expect(live()).toBeNull()
   })
 })

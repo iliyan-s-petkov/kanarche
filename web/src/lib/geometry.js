@@ -14,3 +14,13 @@ export function featureCentre(geometry) {
   if (geometry?.type === 'Polygon') return ringCentroid(geometry.coordinates[0])
   return null
 }
+
+// Metres per degree of latitude, and the compass octant (0 north, clockwise) of a point
+// from a centre. Equirectangular, fine at the few kilometres a map view spans.
+const METRES_PER_DEGREE = 111195
+export function offsetFrom(centre, point) {
+  const dx = (point[0] - centre[0]) * Math.cos((centre[1] * Math.PI) / 180) * METRES_PER_DEGREE
+  const dy = (point[1] - centre[1]) * METRES_PER_DEGREE
+  const bearing = (Math.atan2(dx, dy) * 180) / Math.PI
+  return { metres: Math.hypot(dx, dy), octant: ((Math.round(bearing / 45) % 8) + 8) % 8 }
+}

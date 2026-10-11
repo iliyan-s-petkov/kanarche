@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildNearby, readingText, describeReading } from '../nearbylist.js'
+import { buildNearby, readingText, describeReading, positionText } from '../nearbylist.js'
 
 const pt = (id, lon, lat, value) => ({
   id: id * 10,
@@ -92,5 +92,38 @@ describe('describeReading', () => {
 
   it('gives the value alone when the metric has no bands', () => {
     expect(describeReading(9, { ...read, bands: [] })).toBe('9 µg/m³')
+  })
+})
+
+describe('positionText', () => {
+  const t = {
+    here: 'At the map centre',
+    km: '{n} km {dir} of the map centre',
+    m: '{n} m {dir} of the map centre',
+    dirs: ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'],
+  }
+
+  it('says centre when the sensor is within 100 m of it', () => {
+    expect(positionText({ metres: 60, octant: 3 }, t, 'en')).toBe('At the map centre')
+  })
+
+  it('rounds metres to 50 below a kilometre', () => {
+    expect(positionText({ metres: 480, octant: 2 }, t, 'en')).toBe('500 m east of the map centre')
+  })
+
+  it('gives one decimal of km up to 10 km and whole km after', () => {
+    expect(positionText({ metres: 1240, octant: 0 }, t, 'en')).toBe('1.2 km north of the map centre')
+    expect(positionText({ metres: 25400, octant: 6 }, t, 'en')).toBe('25 km west of the map centre')
+  })
+
+  it('uses the decimal comma in Bulgarian', () => {
+    expect(positionText({ metres: 1240, octant: 0 }, { ...t, km: '{n} км на {dir}' }, 'bg')).toBe('1,2 км на north')
+  })
+})
+
+describe('buildNearby places', () => {
+  it('gives each item the position text for its offset from the centre', () => {
+    const r = buildNearby([pt(1, 23.5, 42.51, 5)], { ...base, nameOf: (id) => `S${id}`, readingOf: String, positionOf: (o) => `${o.octant}:${Math.round(o.metres / 1000)}` })
+    expect(r.items[0].place).toBe('0:1')
   })
 })

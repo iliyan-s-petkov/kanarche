@@ -3,6 +3,7 @@ import { test, expect, mapSettled } from './fixtures.js'
 // The "Sensors in view" list and the band names in text. internal/e2e/e2e_test.go seeds
 // sensors 101, 102 and 103 around sofia (lon 23.32, lat 42.69).
 const CENTRE = [23.32, 42.69]
+const PLACE = /^(At the map centre|\d+(\.\d)? (m|km) (north|south)?(east|west)? ?of the map centre)$/
 const BAND = /\b(good|fair|moderate|poor|very poor|extremely poor)\b/
 
 async function prepareMap(page, path) {
@@ -38,6 +39,8 @@ test('Tab reaches the nearby list, which names value and band in text', async ({
     await expect(first).toContainText('µg/m³')
     await expect(first.locator('.nearby__reading')).toHaveText(BAND)
     await expect(first.locator('.nearby__name')).toHaveText(/\S/)
+    // Where it is, in words: the data holds no street or district, so it is the offset from the map centre.
+    await expect(first.locator('.nearby__place')).toHaveText(PLACE)
 
     // Tab from the summary lands on the first item.
     await summary(page).focus()
@@ -69,22 +72,20 @@ test('Enter on a list item opens that sensor, whose panel names the band', async
   }
 })
 
-test('keyboard focus on a list item shows and announces its reading', async ({ ctx }) => {
+test('keyboard focus on a list item shows the card and says nothing extra', async ({ ctx }) => {
   const page = await ctx.newPage()
   try {
     await prepareMap(page, '/en/')
     await openList(page)
-    const live = page.locator('[data-island="map"] .visually-hidden[role="status"]')
     const tip = page.locator('.hex-tip')
     await summary(page).focus()
     await page.keyboard.press('Tab')
-    await expect(live).toHaveText(BAND)
     await expect(tip).toBeVisible()
     await expect(tip).toHaveText(BAND)
+    // The focused button already reads its own text, so no live region may repeat it.
+    await expect(page.locator('[data-island="map"] .visually-hidden[role="status"]')).toHaveCount(0)
 
-    // Leaving the item clears both.
     await page.keyboard.press('Shift+Tab')
-    await expect(live).toHaveText('')
     await expect(tip).toBeHidden()
   } finally {
     await page.close()

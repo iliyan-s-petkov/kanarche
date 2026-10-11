@@ -567,7 +567,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 .nearby__item:hover { background: var(--surface-2); }
 .nearby__item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .nearby__name { font-weight: var(--weight-emphasis); }
-.nearby__reading { color: var(--fg-2); font-size: var(--text-compact); }
+.nearby__place, .nearby__reading { color: var(--fg-2); font-size: var(--text-compact); }
 .nearby__more, .nearby__empty { margin: var(--space-2) 0 0; color: var(--muted); font-size: var(--text-compact); }
 /* The reading card at a hovered or list-focused hex cell. Positioned by hextip.js. */
 .hex-tip {

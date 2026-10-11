@@ -14,10 +14,11 @@
             type="button"
             class="nearby__item"
             onclick={() => onopen(item)}
-            onfocus={(e) => onpreview(item, e.currentTarget.matches(':focus-visible'))}
+            onfocus={() => onpreview(item)}
             onblur={onunpreview}
           >
             <span class="nearby__name">{item.name}</span>
+            <span class="nearby__place">{item.place}</span>
             <span class="nearby__reading">{item.reading}</span>
           </button>
         </li>
