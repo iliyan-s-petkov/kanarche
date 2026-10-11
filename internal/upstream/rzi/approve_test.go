@@ -25,7 +25,7 @@ func (r *rig) reviewFile(sha string) {
 
 func TestApprovePublishesPassedRowsOnly(t *testing.T) {
 	r := newRig(t)
-	r.seedOK(shaOf("1"), siteA, 1)
+	r.seedOK(shaOf("1"), siteA, 2)
 	r.reviewFile(shaOf("b"))
 
 	a, err := r.ing.Approve(r.ctx, shaOf("b"))
@@ -37,17 +37,25 @@ func TestApprovePublishesPassedRowsOnly(t *testing.T) {
 		t.Errorf("approval = %+v", a)
 	}
 	rows := r.rows()
-	if len(rows) != 3 {
-		t.Fatalf("rows = %d, want the 3 that passed", len(rows))
+	if len(rows) != 4 {
+		t.Fatalf("rows = %d, want the 3 that passed and the held stored sample", len(rows))
 	}
+	var held int
 	for _, x := range rows {
-		// The flagged row is siteA on 2026-06-02. The older seeded row is gone.
+		// The flagged row is siteA on 2026-06-02, and a sample is stored there.
 		if x.SiteID == siteA && x.Date.Day() == 2 && x.Date.Month() == time.June {
-			t.Errorf("flagged row published: %+v", x)
+			held++
+			if x.EC != 30 || x.File.SHA256 != shaOf("1") {
+				t.Errorf("the stored sample under the flagged row was changed: %+v", x)
+			}
+			continue
 		}
 		if x.File.SHA256 != shaOf("b") {
 			t.Errorf("row from file %s", x.File.SHA256[:4])
 		}
+	}
+	if held != 1 {
+		t.Errorf("held stored samples = %d, want 1", held)
 	}
 	f := r.file(shaOf("b"))
 	if f.Status != store.RZIStatusOK || f.ApprovedAt == nil || f.ExcludedRows != 1 || f.RowsOK != 3 {
@@ -223,8 +231,9 @@ func TestApproveRefusesAfterNewerGoodFile(t *testing.T) {
 	}
 }
 
-// A row that rewrites a stored sample is flagged too, and approval leaves it out.
-func TestApproveLeavesOutRowThatRewritesAStoredSample(t *testing.T) {
+// A row that rewrites a stored sample is flagged. Approval leaves the row out
+// and keeps the stored sample as it was.
+func TestApproveKeepsStoredSampleForFlaggedRow(t *testing.T) {
 	r := newRig(t)
 	r.process()
 	drop(t, r.outbox, varna(t, shaOf("a")))
@@ -250,9 +259,20 @@ func TestApproveLeavesOutRowThatRewritesAStoredSample(t *testing.T) {
 	if a.Excluded != 1 || a.Published != total-1 {
 		t.Errorf("approval = %+v, want 1 excluded of %d", a, total)
 	}
+	// The flagged row's stored sample survives with its old value.
+	var kept int
 	for _, x := range r.rows() {
 		if x.Date.Format("2006-01-02") == changed.Date && int64(x.EC) == changed.EC.Value {
 			t.Errorf("the rewriting row was published: %+v", x)
 		}
+		if x.Date.Format("2006-01-02") == changed.Date && int64(x.EC) == changed.EC.Value-1 {
+			kept++
+			if x.File.SHA256 != shaOf("a") {
+				t.Errorf("held sample moved to file %.4s", x.File.SHA256)
+			}
+		}
+	}
+	if kept != 1 || len(r.rows()) != total {
+		t.Errorf("kept = %d, rows = %d, want the held sample and %d rows", kept, len(r.rows()), total)
 	}
 }

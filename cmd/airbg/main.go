@@ -502,6 +502,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 
 	// RZI documents: off unless sea.rzi.enabled.
 	rziDone := make(chan struct{})
+	rziMetricsDone := make(chan struct{})
 	rzc, rziErr := rziCollectorFor(cfg, collectorStore)
 	if rziErr != nil {
 		slog.Error("rzi collector not started", "error", rziErr)
@@ -511,8 +512,15 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 			defer close(rziDone)
 			rzc.Loop(pollCtx)
 		}()
+		// The gauges follow the store on their own clock, so an approval
+		// shows within a minute whatever the fetch interval is.
+		go func() {
+			defer close(rziMetricsDone)
+			rzc.WatchMetrics(pollCtx, rzi.MetricsRefresh)
+		}()
 	} else {
 		close(rziDone)
+		close(rziMetricsDone)
 	}
 
 	err = srv.Run(ctx)
@@ -527,5 +535,6 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	<-cfDone
 	<-seaDone
 	<-rziDone
+	<-rziMetricsDone
 	return err
 }

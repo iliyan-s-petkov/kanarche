@@ -45,6 +45,9 @@ type fakeFetcher struct {
 	priors map[string][]rzi.Validators
 	reply  map[string]rzi.Result
 	fail   map[string]error
+	// onFetch runs inside every Fetch, for a test that needs the world to
+	// change in the middle of a pass.
+	onFetch func()
 }
 
 func (f *fakeFetcher) count() int {
@@ -54,6 +57,9 @@ func (f *fakeFetcher) count() int {
 }
 
 func (f *fakeFetcher) Fetch(_ context.Context, id string, prior rzi.Validators) (rzi.Result, error) {
+	if f.onFetch != nil {
+		f.onFetch()
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls = append(f.calls, id)

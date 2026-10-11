@@ -23,7 +23,7 @@ func TestApproveRZIFilePublishesAndRecords(t *testing.T) {
 	}
 
 	at := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
-	if err := s.ApproveRZIFile(ctx, hash("c"), "rzi_varna", []store.RZISample{rziSample(siteA, 16)}, at, 3); err != nil {
+	if err := s.ApproveRZIFile(ctx, hash("c"), "rzi_varna", []store.RZISample{rziSample(siteA, 16)}, nil, at, 3); err != nil {
 		t.Fatalf("ApproveRZIFile: %v", err)
 	}
 
@@ -63,7 +63,7 @@ func TestApproveRZIFileOnlyFromNeedsReview(t *testing.T) {
 			if _, err := s.RecordRZIFile(ctx, f); err != nil {
 				t.Fatal(err)
 			}
-			err := s.ApproveRZIFile(ctx, hash("c"), "rzi_varna", []store.RZISample{rziSample(siteA, 16)}, time.Now(), 0)
+			err := s.ApproveRZIFile(ctx, hash("c"), "rzi_varna", []store.RZISample{rziSample(siteA, 16)}, nil, time.Now(), 0)
 			if !errors.Is(err, store.ErrRZINotReviewable) {
 				t.Fatalf("err = %v, want ErrRZINotReviewable", err)
 			}
@@ -81,13 +81,13 @@ func TestApproveRZIFileGuards(t *testing.T) {
 		t.Fatal(err)
 	}
 	one := []store.RZISample{rziSample(siteA, 16)}
-	if err := s.ApproveRZIFile(ctx, hash("d"), "rzi_varna", one, time.Now(), 0); !errors.Is(err, store.ErrRZIUnknownFile) {
+	if err := s.ApproveRZIFile(ctx, hash("d"), "rzi_varna", one, nil, time.Now(), 0); !errors.Is(err, store.ErrRZIUnknownFile) {
 		t.Errorf("unknown sha: err = %v", err)
 	}
-	if err := s.ApproveRZIFile(ctx, hash("c"), "rzi_burgas", one, time.Now(), 0); err == nil {
+	if err := s.ApproveRZIFile(ctx, hash("c"), "rzi_burgas", one, nil, time.Now(), 0); err == nil {
 		t.Error("source mismatch accepted")
 	}
-	if err := s.ApproveRZIFile(ctx, hash("c"), "rzi_varna", nil, time.Now(), 0); !errors.Is(err, store.ErrRZINothingToPublish) {
+	if err := s.ApproveRZIFile(ctx, hash("c"), "rzi_varna", nil, nil, time.Now(), 0); !errors.Is(err, store.ErrRZINothingToPublish) {
 		t.Errorf("empty set: err = %v", err)
 	}
 	f, _, _ := s.RZIFileBySHA(ctx, hash("c"))

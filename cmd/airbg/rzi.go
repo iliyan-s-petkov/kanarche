@@ -51,6 +51,11 @@ func runRZIApprove(ctx context.Context, args []string, a approver, stdout, stder
 		}
 		return 1
 	}
+	if res.AlreadyApproved {
+		fmt.Fprintf(stdout, "already approved source=%s sha256=%s published=%d excluded=%d\n",
+			res.Source, res.SHA256, res.Published, res.Excluded)
+		return 0
+	}
 	fmt.Fprintf(stdout, "approved source=%s sha256=%s published=%d excluded=%d\n",
 		res.Source, res.SHA256, res.Published, res.Excluded)
 	return 0
@@ -60,7 +65,7 @@ func runRZIApprove(ctx context.Context, args []string, a approver, stdout, stder
 // echoed: it may wrap text from the database or the disk.
 func approveMessage(err error) string {
 	for _, known := range []error{
-		rzi.ErrBadSHA, rzi.ErrNoReviewRecord, rzi.ErrSHAMismatch, rzi.ErrNotApprovable, rzi.ErrSuperseded,
+		rzi.ErrBadSHA, rzi.ErrNoReviewRecord, rzi.ErrSHAMismatch, rzi.ErrNotApprovable, rzi.ErrSuperseded, rzi.ErrReviewTampered, store.ErrRZIFileIsOK,
 		store.ErrRZIUnknownFile, store.ErrRZINotReviewable, store.ErrRZINothingToPublish,
 	} {
 		if errors.Is(err, known) {

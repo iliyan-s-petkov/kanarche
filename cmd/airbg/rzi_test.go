@@ -74,6 +74,30 @@ func TestRZIApprovePrintsCountsOnly(t *testing.T) {
 	}
 }
 
+func TestRZIApproveSaysWhenAlreadyApproved(t *testing.T) {
+	sha := strings.Repeat("ab", 32)
+	f := &fakeApprover{res: rzi.Approval{Source: "varna", SHA256: sha, Published: 12, Excluded: 3, AlreadyApproved: true}}
+	var out, errb bytes.Buffer
+	if code := runRZIApprove(context.Background(), []string{sha}, f, &out, &errb); code != 0 {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	want := fmt.Sprintf("already approved source=varna sha256=%s published=12 excluded=3\n", sha)
+	if out.String() != want || errb.Len() != 0 {
+		t.Errorf("stdout %q stderr %q", out.String(), errb.String())
+	}
+}
+
+func TestRZIApproveNamesTheNewRefusals(t *testing.T) {
+	sha := strings.Repeat("ab", 32)
+	for _, e := range []error{rzi.ErrReviewTampered, store.ErrRZIFileIsOK} {
+		var out, errb bytes.Buffer
+		code := runRZIApprove(context.Background(), []string{sha}, &fakeApprover{err: e}, &out, &errb)
+		if code != 1 || !strings.Contains(errb.String(), e.Error()) {
+			t.Errorf("%v: exit %d, stderr %q", e, code, errb.String())
+		}
+	}
+}
+
 func TestRZIApproveUsageAndExitCodes(t *testing.T) {
 	sha := strings.Repeat("ab", 32)
 	cases := []struct {

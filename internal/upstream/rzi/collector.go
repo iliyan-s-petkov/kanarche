@@ -12,6 +12,9 @@ import (
 // by the interval.
 const retryAfter = time.Hour
 
+// MetricsRefresh is how often the status gauges are re-read from the store.
+const MetricsRefresh = time.Minute
+
 // Fetcher downloads one source into the inbox. *Fetcher satisfies it.
 type Fetching interface {
 	Fetch(ctx context.Context, id string, prior Validators) (Result, error)
@@ -80,6 +83,10 @@ func (c *Collector) Loop(ctx context.Context) {
 	for {
 		wait := Interval(c.cfg, c.clock())
 		st, err := c.RunOnce(ctx)
+		if ctx.Err() != nil {
+			// Shutdown cut the pass short. That is not a failure.
+			return
+		}
 		if err != nil {
 			slog.Error("rzi pass failed", "error", err)
 			wait = min(retryAfter, wait)
@@ -91,6 +98,24 @@ func (c *Collector) Loop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.After(wait):
+		}
+	}
+}
+
+// WatchMetrics refreshes the status gauges from the store every interval until
+// ctx is done. It reads the database only, so an approval shows without
+// waiting for the next fetch pass.
+func (c *Collector) WatchMetrics(ctx context.Context, every time.Duration) {
+	t := time.NewTicker(every)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			if err := c.ing.PublishMetrics(ctx); err != nil && ctx.Err() == nil {
+				slog.Warn("rzi metrics", "error", err)
+			}
 		}
 	}
 }

@@ -89,10 +89,33 @@ func Validate(f File, sites []store.BathingSite, last LastGood, now time.Time) (
 // the rows that passed when others did not. Only an operator approval may
 // publish that partial set, never the ingest loop. A rejected file has none.
 func ValidateRows(f File, sites []store.BathingSite, last LastGood, now time.Time) ([]Sample, []Reject, Status) {
+	r := ValidateDetailed(f, sites, last, now)
+	return r.Accepted, r.Rejects, r.Status
+}
+
+// Verdict is the full outcome of ValidateDetailed.
+type Verdict struct {
+	Accepted []Sample
+	Rejects  []Reject
+	Status   Status
+	// Held lists the stored samples whose row in this file was flagged. An
+	// approval keeps them as they are instead of dropping them.
+	Held []Key
+}
+
+// Key is the identity of a sample: one site on one day.
+type Key struct {
+	SiteID string
+	Date   time.Time
+}
+
+// ValidateDetailed is ValidateRows plus the stored samples that flagged
+// rows point at.
+func ValidateDetailed(f File, sites []store.BathingSite, last LastGood, now time.Time) Verdict {
 	v := &validator{today: sofiaDate(now)}
 	if f.Error != "" {
 		v.reject(-1, -1, "", "", "extractor rejected the document")
-		return nil, v.rejects, StatusRejected
+		return Verdict{Rejects: v.rejects, Status: StatusRejected}
 	}
 	v.checkFile(f)
 	if len(f.Blocks) > 0 && len(f.Blocks) <= MaxBlocks {
@@ -102,9 +125,9 @@ func ValidateRows(f File, sites []store.BathingSite, last LastGood, now time.Tim
 		v.reject(-1, -1, "", "", "block count drifted from last good file")
 	}
 	if len(v.rejects) > 0 {
-		return v.accepted, v.rejects, StatusNeedsReview
+		return Verdict{Accepted: v.accepted, Rejects: v.rejects, Status: StatusNeedsReview, Held: v.held}
 	}
-	return v.accepted, nil, StatusOK
+	return Verdict{Accepted: v.accepted, Status: StatusOK}
 }
 
 type validator struct {
@@ -112,6 +135,14 @@ type validator struct {
 	season   int
 	accepted []Sample
 	rejects  []Reject
+	held     []Key
+}
+
+// hold records the stored sample a flagged row points at, if there is one.
+func (v *validator) hold(stored map[siteDate]Sample, siteID string, date time.Time) {
+	if _, ok := stored[siteDate{siteID, date}]; ok {
+		v.held = append(v.held, Key{SiteID: siteID, Date: date})
+	}
 }
 
 func (v *validator) reject(block, row int, point, date, reason string) {
@@ -174,7 +205,13 @@ func (v *validator) checkBlocks(f File, idx SiteIndex, last LastGood) {
 		}
 		for ri, r := range b.Rows {
 			s, ok := v.checkRow(bi, ri, point, r)
-			if !ok || siteID == "" {
+			if !ok {
+				if d, parsed := parseDate(r.Date); parsed && siteID != "" {
+					v.hold(stored, siteID, d)
+				}
+				continue
+			}
+			if siteID == "" {
 				continue
 			}
 			s.SiteID = siteID
@@ -186,6 +223,7 @@ func (v *validator) checkBlocks(f File, idx SiteIndex, last LastGood) {
 			seen[key] = true
 			if old, ok := stored[key]; ok && !sameValues(old, s) {
 				v.reject(bi, ri, point, r.Date, "value changed for a stored sample")
+				v.hold(stored, siteID, s.Date)
 				continue
 			}
 			v.accepted = append(v.accepted, s)

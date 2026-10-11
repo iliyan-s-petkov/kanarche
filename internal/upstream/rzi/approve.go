@@ -16,7 +16,8 @@ var (
 	ErrNoReviewRecord = errors.New("rzi: no record awaiting review for this sha256")
 	ErrSHAMismatch    = errors.New("rzi: review record does not carry this sha256")
 	ErrNotApprovable  = errors.New("rzi: file is not awaiting review")
-	ErrSuperseded     = errors.New("rzi: a newer file is already published for this source")
+	ErrSuperseded     = store.ErrRZISuperseded
+	ErrReviewTampered = errors.New("rzi: review record does not match the record that was reviewed")
 )
 
 // Approval is the outcome of an approval. Counts only, no document text.
@@ -25,6 +26,9 @@ type Approval struct {
 	SHA256    string
 	Published int
 	Excluded  int
+	// AlreadyApproved is set when the file was approved before and only the
+	// move of its review copy was finished.
+	AlreadyApproved bool
 }
 
 // Approve publishes the rows of a needs_review file that passed validation.
@@ -37,7 +41,8 @@ func (g *Ingester) Approve(ctx context.Context, sha string) (Approval, error) {
 		return Approval{}, ErrBadSHA
 	}
 	name := sha + ".json"
-	rec, err := g.readRecord(filepath.Join(g.cfg.OutboxDir, dirReview, name))
+	reviewPath := filepath.Join(g.cfg.OutboxDir, dirReview, name)
+	rec, recSum, err := g.readRecord(reviewPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return Approval{}, ErrNoReviewRecord
 	}
@@ -58,16 +63,25 @@ func (g *Ingester) Approve(ctx context.Context, sha string) (Approval, error) {
 	if !found {
 		return Approval{}, store.ErrRZIUnknownFile
 	}
-	if row.Status != store.RZIStatusNeedsReview {
-		return Approval{}, fmt.Errorf("%w: status %s", ErrNotApprovable, row.Status)
-	}
 	if row.Source != rec.Source {
 		return Approval{}, ErrSHAMismatch
 	}
-	if good, ok, err := g.sink.RZILastGood(ctx, rec.Source); err != nil {
-		return Approval{}, fmt.Errorf("rzi last good: %w", err)
-	} else if ok && good.FetchedAt.After(row.FetchedAt) {
-		return Approval{}, ErrSuperseded
+	if row.Status == store.RZIStatusOK && row.ApprovedAt != nil {
+		// Approved before. Only the move of the review copy can be left.
+		if row.RecordSHA256 != recSum {
+			return Approval{}, ErrReviewTampered
+		}
+		g.finishMove(sha)
+		slog.Info("rzi file already approved", "source", rec.Source, "sha256", sha)
+		return Approval{Source: rec.Source, SHA256: sha, Published: row.RowsOK, Excluded: row.ExcludedRows, AlreadyApproved: true}, nil
+	}
+	if row.Status != store.RZIStatusNeedsReview {
+		return Approval{}, fmt.Errorf("%w: status %s", ErrNotApprovable, row.Status)
+	}
+	// The verdict was made on the record hashed at ingest. A review copy
+	// that changed since then is not what was reviewed.
+	if row.RecordSHA256 != recSum {
+		return Approval{}, ErrReviewTampered
 	}
 
 	sites, err := g.sink.LoadBathingSites(ctx)
@@ -78,7 +92,8 @@ func (g *Ingester) Approve(ctx context.Context, sha string) (Approval, error) {
 	if err != nil {
 		return Approval{}, err
 	}
-	accepted, _, status := ValidateRows(rec, sites, last, g.clock())
+	v := ValidateDetailed(rec, sites, last, g.clock())
+	accepted, status := v.Accepted, v.Status
 	if status == StatusRejected {
 		return Approval{}, fmt.Errorf("%w: structurally rejected", ErrNotApprovable)
 	}
@@ -86,17 +101,32 @@ func (g *Ingester) Approve(ctx context.Context, sha string) (Approval, error) {
 		return Approval{}, store.ErrRZINothingToPublish
 	}
 	excluded := rows(rec) - len(accepted)
-	if err := g.sink.ApproveRZIFile(ctx, sha, rec.Source, toStore(accepted), g.clock(), excluded); err != nil {
+	if err := g.sink.ApproveRZIFile(ctx, sha, rec.Source, toStore(accepted), toKeys(v.Held), g.clock(), excluded); err != nil {
 		return Approval{}, err
 	}
 	slog.Info("rzi file approved", "source", rec.Source, "sha256", sha, "published", len(accepted), "excluded", excluded)
-	// The approval is stored. A failed move only leaves a stale review copy,
-	// which the next pass or an operator can clear.
-	if err := os.MkdirAll(filepath.Join(g.cfg.OutboxDir, dirDone), 0o750); err == nil {
-		err = os.Rename(filepath.Join(g.cfg.OutboxDir, dirReview, name), filepath.Join(g.cfg.OutboxDir, dirDone, name))
-		if err != nil {
-			slog.Warn("rzi review record not moved", "sha256", sha)
-		}
-	}
+	g.finishMove(sha)
 	return Approval{Source: rec.Source, SHA256: sha, Published: len(accepted), Excluded: excluded}, nil
+}
+
+// finishMove puts the review copy into done/. The approval is already stored,
+// so a failed move only leaves a stale copy, which approving again clears.
+func (g *Ingester) finishMove(sha string) {
+	name := sha + ".json"
+	if err := os.MkdirAll(filepath.Join(g.cfg.OutboxDir, dirDone), 0o750); err != nil {
+		slog.Warn("rzi review record not moved", "sha256", sha)
+		return
+	}
+	err := os.Rename(filepath.Join(g.cfg.OutboxDir, dirReview, name), filepath.Join(g.cfg.OutboxDir, dirDone, name))
+	if err != nil {
+		slog.Warn("rzi review record not moved", "sha256", sha)
+	}
+}
+
+func toKeys(ks []Key) []store.RZIKey {
+	out := make([]store.RZIKey, len(ks))
+	for i, k := range ks {
+		out[i] = store.RZIKey{SiteID: k.SiteID, Date: k.Date}
+	}
+	return out
 }

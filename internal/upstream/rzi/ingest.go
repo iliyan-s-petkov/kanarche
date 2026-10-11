@@ -2,8 +2,11 @@ package rzi
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -40,7 +43,7 @@ type Sink interface {
 	RZIFileBySHA(ctx context.Context, sha string) (store.RZIFile, bool, error)
 	ReplaceRZISource(ctx context.Context, source string, f store.RZIFile, xs []store.RZISample) error
 	RecordRZIFile(ctx context.Context, f store.RZIFile) (int64, error)
-	ApproveRZIFile(ctx context.Context, sha, source string, xs []store.RZISample, at time.Time, excluded int) error
+	ApproveRZIFile(ctx context.Context, sha, source string, xs []store.RZISample, keep []store.RZIKey, at time.Time, excluded int) error
 }
 
 // Stats counts what one Process pass did with outbox records.
@@ -142,7 +145,7 @@ func (g *Ingester) Process(ctx context.Context) (Stats, error) {
 
 func (g *Ingester) one(ctx context.Context, name string, st *Stats) error {
 	sha := strings.TrimSuffix(name, ".json")
-	rec, err := g.readRecord(filepath.Join(g.cfg.OutboxDir, name))
+	rec, recSum, err := g.readRecord(filepath.Join(g.cfg.OutboxDir, name))
 	if err == nil && rec.SHA256 != sha {
 		err = errNameMismatch
 	}
@@ -159,7 +162,8 @@ func (g *Ingester) one(ctx context.Context, name string, st *Stats) error {
 
 	if old, found, err := g.sink.RZIFileBySHA(ctx, sha); err != nil {
 		return fmt.Errorf("rzi file lookup: %w", err)
-	} else if found && (old.ApprovedAt != nil || old.ExtractorVersion == rec.ExtractorVersion) {
+	} else if found && (old.Status == store.RZIStatusOK || old.ApprovedAt != nil || old.ExtractorVersion == rec.ExtractorVersion) {
+		// An ok file is final: a later extractor never re-judges it.
 		st.Duplicate++
 		slog.Info("rzi outbox record already stored", "source", rec.Source, "sha256", sha, "status", old.Status)
 		if old.Status == store.RZIStatusNeedsReview {
@@ -179,6 +183,7 @@ func (g *Ingester) one(ctx context.Context, name string, st *Stats) error {
 	accepted, rejects, status := ValidateRows(rec, sites, last, g.clock())
 
 	file := g.fileRow(rec, status, len(accepted), rows(rec), rejects)
+	file.RecordSHA256 = recSum
 	switch status {
 	case StatusOK:
 		if err := g.sink.ReplaceRZISource(ctx, rec.Source, file, toStore(accepted)); err != nil {
@@ -207,7 +212,10 @@ func (g *Ingester) one(ctx context.Context, name string, st *Stats) error {
 	}
 }
 
-var errNameMismatch = errors.New("file name does not match sha256")
+var (
+	errNameMismatch = errors.New("file name does not match sha256")
+	errNotRegular   = errors.New("not a regular file")
+)
 
 // refusal maps a read error to a fixed string. Decode errors can quote the
 // record, so they never reach the log as they are.
@@ -223,17 +231,33 @@ func refusal(err error) string {
 		return errNameMismatch.Error()
 	case errors.Is(err, ErrSource):
 		return "unknown source"
+	case errors.Is(err, errNotRegular):
+		return "not a regular file"
 	}
 	return "unreadable record"
 }
 
-func (g *Ingester) readRecord(path string) (File, error) {
+// readRecord decodes a record file and returns the sha256 of its bytes.
+// Anything but a regular file is refused, a symlink included.
+func (g *Ingester) readRecord(path string) (File, string, error) {
+	fi, err := os.Lstat(path)
+	if err != nil {
+		return File{}, "", err
+	}
+	if !fi.Mode().IsRegular() {
+		return File{}, "", errNotRegular
+	}
 	fh, err := os.Open(path)
 	if err != nil {
-		return File{}, err
+		return File{}, "", err
 	}
 	defer fh.Close()
-	return Decode(fh)
+	h := sha256.New()
+	f, err := Decode(io.TeeReader(fh, h))
+	if err != nil {
+		return File{}, "", err
+	}
+	return f, hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // fileRow builds the row for a verdict. Reason holds the fixed validator
@@ -309,7 +333,7 @@ func joinReasons(rejects []Reject) string {
 // The store keeps no block count, so Blocks is the number of distinct sites:
 // each block maps to one site and a site is mapped by one block.
 func (g *Ingester) lastGood(ctx context.Context, source string) (LastGood, error) {
-	f, ok, err := g.sink.RZILastGood(ctx, source)
+	_, ok, err := g.sink.RZILastGood(ctx, source)
 	if err != nil {
 		return LastGood{}, fmt.Errorf("rzi last good: %w", err)
 	}
@@ -323,7 +347,7 @@ func (g *Ingester) lastGood(ctx context.Context, source string) (LastGood, error
 	var lg LastGood
 	sites := map[string]bool{}
 	for _, r := range all {
-		if r.File.ID != f.ID {
+		if r.File.Source != source {
 			continue
 		}
 		sites[r.SiteID] = true
