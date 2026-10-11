@@ -323,12 +323,11 @@ export function mount(el) {
     })
     tip.show(tipText(reading), e.point)
   }
-  // A list item stands in for the pointer: same highlight and card, and a spoken
-  // announcement only when focus got there by keyboard.
-  const previewCell = (item, keyboard) => {
+  // A list item stands in for the pointer: same highlight and card. Nothing is announced,
+  // the focused button already reads its own text.
+  const previewCell = (item) => {
     if (item.featureId !== undefined) markHex(item.featureId)
     tip.show(tipText(item.reading), map.project([item.lon, item.lat]))
-    if (keyboard) tip.announce(tipText(item.reading))
   }
   // Both layers: a feature is a polygon or a point, never both. The cell layers share one
   // listener so moving from a ground footprint onto its column is not a leave.

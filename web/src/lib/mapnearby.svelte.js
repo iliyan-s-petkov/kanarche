@@ -2,7 +2,7 @@
 // features that repaint carried, so it costs no request and never disagrees with the map.
 import { mount as mountComponent, unmount } from 'svelte'
 import NearbyList from '../components/NearbyList.svelte'
-import { buildNearby, describeReading } from './nearbylist.js'
+import { buildNearby, describeReading, positionText } from './nearbylist.js'
 import { bandsFor } from './mappaint.js'
 import { findSensor } from './sensors.svelte.js'
 import { HEX_SOURCE_ID, PAINT_EVENT } from './mapids.js'
@@ -10,11 +10,17 @@ import { HEX_SOURCE_ID, PAINT_EVENT } from './mapids.js'
 // How many sensors the list names; the rest is a count.
 export const NEARBY_LIMIT = 10
 
-// el: the server-rendered [data-nearby] host. onopen(item) opens the sensor, onpreview(item, keyboard) / onunpreview() mark its cell.
+// el: the server-rendered [data-nearby] host. onopen(item) opens the sensor, onpreview(item) / onunpreview() mark its cell.
 export function installNearbyList({ map, el, cfg, state, onopen, onpreview, onunpreview }) {
   const d = el.dataset
   const model = $state({ items: [], total: 0, rest: 0 })
   const container = map.getContainer()
+  const words = {
+    here: d.tHere || '',
+    km: d.tKm || '',
+    m: d.tM || '',
+    dirs: [d.tDirN, d.tDirNe, d.tDirE, d.tDirSe, d.tDirS, d.tDirSw, d.tDirW, d.tDirNw].map((x) => x || ''),
+  }
 
   const rebuild = (features) => {
     const c = map.getCenter()
@@ -31,6 +37,7 @@ export function installNearbyList({ map, el, cfg, state, onopen, onpreview, onun
       limit: NEARBY_LIMIT,
       nameOf: (id) => findSensor(id)?.stationName || `${d.tSensor || ''} ${id}`.trim(),
       readingOf: (value) => describeReading(value, read),
+      positionOf: (offset) => positionText(offset, words, cfg.lang),
     })
     model.items = next.items
     model.total = next.total

@@ -1,6 +1,6 @@
 // The readout for one hex cell: a small text card at the pointer or the focused list item.
-// The card is for sight (aria-hidden). Speech comes from a separate polite live region
-// that only announce() writes, so a mouse sweeping the map never talks.
+// Sight only (aria-hidden): a focused list button already speaks its own text, so a live
+// region here would make screen readers say every reading twice.
 
 // Gap between the point and the card, matching .hex-tip in app.css.
 const GAP = 12
@@ -10,11 +10,7 @@ export function createHexTip(container, doc = document) {
   tip.className = 'hex-tip'
   tip.setAttribute('aria-hidden', 'true')
   tip.hidden = true
-  const live = doc.createElement('div')
-  live.className = 'visually-hidden'
-  live.setAttribute('role', 'status')
-  live.setAttribute('aria-live', 'polite')
-  container.append(tip, live)
+  container.append(tip)
 
   return {
     // point: {x, y} in the container's own pixels.
@@ -31,14 +27,9 @@ export function createHexTip(container, doc = document) {
     },
     hide() {
       tip.hidden = true
-      live.textContent = ''
-    },
-    announce(text) {
-      live.textContent = text
     },
     destroy() {
       tip.remove()
-      live.remove()
     },
   }
 }
