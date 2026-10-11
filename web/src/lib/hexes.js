@@ -20,10 +20,16 @@ export const TARGET_HEX_PX = 32
 // of screen.
 export const PHONE_BREAKPOINT_PX = 672
 
+// True at or under the phone width. The one place the width is compared, so the
+// grid and the hexagon numbers cannot disagree about what a phone is.
+export function isPhoneInline(inlineSize = Infinity) {
+  return inlineSize <= PHONE_BREAKPOINT_PX
+}
+
 // A phone holds a third of the ground, so halving the target asks one tier
 // finer: at z7, 15 km not 25 — 23 cells across at 17 px, not 14 at 28.
 export function targetHexPx(inlineSize = Infinity) {
-  return inlineSize <= PHONE_BREAKPOINT_PX ? TARGET_HEX_PX / 2 : TARGET_HEX_PX
+  return isPhoneInline(inlineSize) ? TARGET_HEX_PX / 2 : TARGET_HEX_PX
 }
 
 // Metres per pixel at zoom 0 at the reference latitude — the standard Web
