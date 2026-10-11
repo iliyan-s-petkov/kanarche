@@ -7,6 +7,17 @@ around it or goose splits it on the semicolons inside.
 The reasoning behind a migration lives here, not in the file. Numbers below are
 the ones documented so far.
 
+## 00018 — `bathing_rzi_file`, `bathing_rzi_sample`
+
+Current-season results from the regional health inspectorates (OpenProject
+#704, parent #669). Own tables so the weekly EEA replace, which deletes every
+`bathing_site`, cannot wipe them. For the same reason `site_id` is a plain
+text column with no foreign key: a cascade would delete the rows, a restrict
+would fail the EEA delete. The ingest validator maps points to EEA ids.
+`bathing_rzi_file` is keyed by content hash, so a re-fetched identical file is
+one row. A source's samples are replaced as a set in one transaction, and only
+files with status `ok` own samples.
+
 ## 00016 — `reading_quality_hourly`, `sensor_faulty`
 
 The faulty-sensor rule (`quality.faulty_*` in `airbg.yaml`, OpenProject #676):
