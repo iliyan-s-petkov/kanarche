@@ -150,6 +150,7 @@ func FuzzDecode(f *testing.F) {
 		if len(rej) > MaxRejects {
 			t.Fatalf("%d rejects over cap", len(rej))
 		}
+		assertEEASiteIDs(t, acc)
 	})
 }
 

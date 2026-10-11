@@ -40,15 +40,15 @@ var units = map[string]bool{"MPN/100ml": true, "cfu/100ml": true}
 // Sample is one accepted RZI row mapped to an EEA site. Remarks is for
 // review only and never serialised (decision D5).
 type Sample struct {
-	SiteID           string
-	Date             time.Time
-	Season           int
-	EC               int
-	ECBelowDetection bool
-	IE               int
-	IEBelowDetection bool
-	Unit             string
-	Remarks          string `json:"-"`
+	SiteID  string
+	Date    time.Time
+	Season  int
+	EC      int
+	ECBelow bool
+	IE      int
+	IEBelow bool
+	Unit    string
+	Remarks string `json:"-"`
 }
 
 // LastGood is what the last ok file of the same source left in the store.
@@ -228,8 +228,8 @@ func (v *validator) checkRow(bi, ri int, point string, r Row) (Sample, bool) {
 	}
 	return Sample{
 		Date: date, Season: v.season,
-		EC: ec, ECBelowDetection: ecBelow,
-		IE: ie, IEBelowDetection: ieBelow,
+		EC: ec, ECBelow: ecBelow,
+		IE: ie, IEBelow: ieBelow,
 		Unit: r.Unit, Remarks: stripControl(r.Remarks),
 	}, true
 }
@@ -252,8 +252,8 @@ func checkCount(c Count) (int, bool, bool) {
 }
 
 func sameValues(a, b Sample) bool {
-	return a.EC == b.EC && a.ECBelowDetection == b.ECBelowDetection &&
-		a.IE == b.IE && a.IEBelowDetection == b.IEBelowDetection && a.Unit == b.Unit
+	return a.EC == b.EC && a.ECBelow == b.ECBelow &&
+		a.IE == b.IE && a.IEBelow == b.IEBelow && a.Unit == b.Unit
 }
 
 // parseDate accepts exactly YYYY-MM-DD and returns UTC midnight.

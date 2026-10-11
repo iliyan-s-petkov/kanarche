@@ -32,7 +32,7 @@ func TestValidateAcceptsFixture(t *testing.T) {
 	if acc[1] != want {
 		t.Fatalf("row 2 = %+v, want %+v", acc[1], want)
 	}
-	if !acc[0].IEBelowDetection || acc[0].IE != 15 || acc[0].ECBelowDetection {
+	if !acc[0].IEBelow || acc[0].IE != 15 || acc[0].ECBelow {
 		t.Fatalf("censoring lost: %+v", acc[0])
 	}
 }
@@ -51,7 +51,7 @@ func TestValidateRejectedRecord(t *testing.T) {
 // stored is a last-good sample identical to the fixture's first row.
 func stored() Sample {
 	return Sample{SiteID: "BG3310610135003001", Date: day(2026, 6, 2), Season: 2026,
-		EC: 30, IE: 15, IEBelowDetection: true, Unit: "MPN/100ml"}
+		EC: 30, IE: 15, IEBelow: true, Unit: "MPN/100ml"}
 }
 
 // addBlocks appends valid blocks for 03004 and 03005, giving 5 blocks.
@@ -173,7 +173,7 @@ func TestValidateFailsClosed(t *testing.T) {
 		}()}}, time.Time{}, StatusNeedsReview},
 		{"changed censoring", func(f *File) {}, LastGood{Blocks: 3, Samples: []Sample{func() Sample {
 			s := stored()
-			s.IEBelowDetection = false
+			s.IEBelow = false
 			return s
 		}()}}, time.Time{}, StatusNeedsReview},
 		{"same value", func(f *File) {}, LastGood{Blocks: 3, Samples: []Sample{stored()}}, time.Time{}, StatusOK},
@@ -200,8 +200,40 @@ func TestValidateFailsClosed(t *testing.T) {
 			if len(rej) > MaxRejects {
 				t.Fatalf("%d rejects over cap", len(rej))
 			}
+			assertEEASiteIDs(t, acc)
 		})
 	}
+}
+
+// assertEEASiteIDs: the store has no FK on site_id, so every accepted row
+// must carry an id from the EEA site list.
+func assertEEASiteIDs(t testing.TB, acc []Sample) {
+	t.Helper()
+	ids := map[string]bool{}
+	for _, s := range testSites() {
+		ids[s.ID] = true
+	}
+	for _, s := range acc {
+		if !ids[s.SiteID] {
+			t.Fatalf("accepted row with non-EEA site id %q", s.SiteID)
+		}
+	}
+}
+
+// TestValidateMapsPointToItsSite pins each accepted row to the EEA id whose
+// suffix is the block's point.
+func TestValidateMapsPointToItsSite(t *testing.T) {
+	acc, rej, st := Validate(validFile(t), testSites(), LastGood{}, testNow())
+	if st != StatusOK {
+		t.Fatalf("status %s, rejects %+v", st, rej)
+	}
+	want := []string{"BG3310610135003001", "BG3310610135003001", "BG3310610135003002", "BG3310610135003003"}
+	for i, s := range acc {
+		if s.SiteID != want[i] {
+			t.Fatalf("row %d site %q, want %q", i, s.SiteID, want[i])
+		}
+	}
+	assertEEASiteIDs(t, acc)
 }
 
 // TestValidateRejectsCapped bounds the reject list on a file of all-bad rows.
