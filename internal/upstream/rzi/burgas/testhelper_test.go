@@ -45,12 +45,6 @@ func utf16le(str string) []byte {
 	return out
 }
 
-// wideString is a BIFF8 string: u16 length, flags 1 (UTF-16), characters.
-func wideString(str string) []byte {
-	u := utf16le(str)
-	return append(append(le16(len(u)/2), 1), u...)
-}
-
 type bookOpts struct {
 	cells      []tcell
 	splitStr   int  // with splitChar > 0, split the SST inside string number splitStr
@@ -265,4 +259,3 @@ func blockCells(top int, point string, lat, lon string, rows []trow) []tcell {
 }
 
 // col returns c moved to column col.
-func col(c tcell, col int) tcell { c.col = col; return c }
