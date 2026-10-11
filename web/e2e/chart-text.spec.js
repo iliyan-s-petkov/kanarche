@@ -12,7 +12,7 @@ test.describe('chart text alternative', () => {
     await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 24 hours: latest [\d.]+ µg\/m³, lowest [\d.]+ µg\/m³, highest [\d.]+ µg\/m³\.$/)
 
     const table = page.locator(`${CHART} .sr-only table`)
-    await expect(table.locator('caption')).toHaveText(/^Readings for PM2\.5, 24 hours$/)
+    await expect(table.locator('caption')).toHaveText(/^Hourly averages for PM2\.5, 24 hours$/)
     await expect(table.locator('thead th[scope="col"]')).toHaveText(['Time', 'PM2.5 (µg/m³)'])
     expect(await table.locator('tbody tr').count()).toBeGreaterThan(1)
     await expect(table.locator('tbody tr').first().locator('th[scope="row"]')).toHaveText(/\d{1,2} \p{L}+ \d{2}:\d{2}/u)
@@ -29,7 +29,7 @@ test.describe('chart text alternative', () => {
     await expect(plot).toHaveAttribute('aria-label', /24 hours/)
     await page.locator('#area-period-select').selectOption('7d')
     await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 7 days: /)
-    await expect(page.locator(`${CHART} table caption`)).toHaveText('Readings for PM2.5, 7 days')
+    await expect(page.locator(`${CHART} table caption`)).toHaveText('Hourly averages for PM2.5, 7 days')
   })
 
   test('the Bulgarian chart is described in Bulgarian', async ({ page }) => {
@@ -43,6 +43,6 @@ test.describe('chart text alternative', () => {
     await page.goto('/en/#sensor=101')
     const plot = page.locator('.panel-chart [role="img"]')
     await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 24 hours: latest [\d.]+ µg\/m³, lowest [\d.]+ µg\/m³, highest [\d.]+ µg\/m³\.$/)
-    await expect(page.locator('.panel-chart .sr-only table caption')).toHaveText('Readings for PM2.5, 24 hours')
+    await expect(page.locator('.panel-chart .sr-only table caption')).toHaveText('Hourly averages for PM2.5, 24 hours')
   })
 })

@@ -65,7 +65,8 @@ export function mount(el) {
       text: {
         summary: d.tTextSummary || '',
         none: d.tTextNone || '',
-        caption: d.tTextCaption || '',
+        captionHourly: d.tTextCaptionByHour || '',
+        captionDaily: d.tTextCaptionByDay || '',
       },
     },
   })
