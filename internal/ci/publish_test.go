@@ -447,17 +447,52 @@ func TestDocparseImageIsPublishedLikeTheMain(t *testing.T) {
 	if strings.Contains(build, "latest") {
 		t.Error("build-docparse step tags latest; alias only after signing")
 	}
-	trivy := strings.Join(lines[trivyIdx:trivyIdx+6], "\n")
-	if !strings.Contains(trivy, "exit-code: '1'") {
-		t.Error("docparse trivy step has no exit-code: '1'")
+	if !trivyStepFails(lines, trivyIdx) {
+		t.Error("publish docparse trivy step has no exit-code: '1'")
 	}
 
-	pr := strings.Join(lines[prStart:prEnd], "\n")
-	for _, want := range []string{"file: Dockerfile.docparse", "image-ref: ${{ env.DOCPARSE_IMAGE }}:pr-check"} {
-		if !strings.Contains(pr, want) {
-			t.Errorf("pr-check job lacks %q", want)
+	prBuild, prTrivy := -1, -1
+	for i := prStart; i < prEnd; i++ {
+		switch {
+		case strings.TrimSpace(lines[i]) == "- id: build-docparse-pr":
+			prBuild = i
+		case prTrivy == -1 && strings.Contains(lines[i], "image-ref: ${{ env.DOCPARSE_IMAGE }}:pr-check"):
+			prTrivy = i
 		}
 	}
+	if prBuild == -1 || prTrivy == -1 || prTrivy < prBuild {
+		t.Fatalf("pr-check docparse build (%d) and trivy (%d) missing or out of order", prBuild, prTrivy)
+	}
+	b := strings.Join(stepAt(lines, prBuild), "\n")
+	if !strings.Contains(b, "file: Dockerfile.docparse") || !strings.Contains(b, "push: false") {
+		t.Error("pr-check docparse build is not Dockerfile.docparse with push: false")
+	}
+	if !trivyStepFails(lines, prTrivy) {
+		t.Error("pr-check docparse trivy step has no exit-code: '1'")
+	}
+	for i := prStart; i < prEnd; i++ {
+		if strings.Contains(lines[i], "DOCPARSE_IMAGE") {
+			for _, d := range []string{"push: true", "cosign", "imagetools"} {
+				if strings.Contains(lines[i], d) {
+					t.Errorf("pr-check line %d pushes, signs or aliases docparse: %s", i+1, strings.TrimSpace(lines[i]))
+				}
+			}
+		}
+	}
+	if strings.Contains(strings.Join(lines[prStart:prEnd], "\n"), "push: true") {
+		t.Error("pr-check contains push: true")
+	}
+}
+
+// trivyStepFails reports whether the step holding line idx is a trivy step
+// with exit-code: '1' in its own with: block.
+func trivyStepFails(lines []string, idx int) bool {
+	start := idx
+	for start > 0 && !strings.HasPrefix(strings.TrimSpace(lines[start]), "- ") {
+		start--
+	}
+	step := strings.Join(stepAt(lines, start), "\n")
+	return strings.Contains(step, "aquasecurity/trivy-action") && strings.Contains(step, "exit-code: '1'")
 }
 
 // TestShortTagWidthIsPinned asserts git rev-parse pins the short SHA width

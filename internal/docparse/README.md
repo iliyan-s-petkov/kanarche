@@ -7,10 +7,10 @@
 | What | Pin |
 |---|---|
 | Base | `debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f` (Debian 13.7) |
-| Poppler | `poppler-utils=25.03.0-5+deb13u4` |
+| Poppler | poppler-utils 25.03, unpinned from the trixie base (`25.03.0-5+deb13u4` at time of writing) |
 | Go build stage | same `golang:1.26.9@sha256:...` as `Dockerfile` |
 
-The poppler pin is exact. When Debian ships a new revision the build fails until the pin is bumped, and the integration test checks that the image's `pdftotext -v`, this file and the Dockerfile agree.
+The base is pinned by digest. poppler-utils is not pinned, so a rebuild picks up Debian security revisions. The integration test holds `pdftotext -v` to the 25.x series at 25.03 or later. Trivy in the publish workflow is the CVE gate.
 
 ## NVD check (2026-10-11)
 
@@ -41,6 +41,6 @@ Per file the test kills the run at 20 s.
 
 ## Tests
 
-`go test -tags docparse ./internal/docparse/integration/...` builds both targets, runs each hostile input in its own container and expects a refusal record or a killed run, never `ok`. Inputs are generated in `hostile_test.go`; nothing is committed or downloaded. `TestNetworkNone` dials a listener container the test starts on the default bridge: the control run must reach it, the sandboxed run must not (I1).
+`go test -tags docparse ./internal/docparse/integration/...` builds both targets, runs each hostile input in its own container and expects a refusal record or a killed run, never `ok`. Inputs are generated in `hostile_test.go`; nothing is committed or downloaded. `TestPositiveControls` runs the same flags on the Varna test excerpt laid out as a PDF and on the committed Burgas workbook `internal/upstream/rzi/testdata/burgas-control.xls` (kept current by the burgas package tests). Both must give an ok record with the same blocks as the extractor gives in process. `TestNetworkNone` dials a listener container the test starts on the default bridge: the control run must reach it, the sandboxed run must not (I1).
 
 The xlsx inputs are refused as `unsupported format` until the Dobrich extractor lands; they then exercise its caps.
