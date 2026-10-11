@@ -16,6 +16,7 @@
     <a class="about-toc__sub" href="#start-layers">{{.T "about.start.group.layers.title"}}</a>
     <a class="about-toc__sub" href="#start-history">{{.T "about.start.group.history.title"}}</a>
     <a class="about-toc__sub" href="#start-keep">{{.T "about.start.group.keep.title"}}</a>
+    <a class="about-toc__sub" href="#start-access">{{.T "about.start.group.access.title"}}</a>
     <a href="#privacy">{{.T "about.privacy.heading"}}</a>
     <a href="#visitors">{{.T "about.visitors.heading"}}</a>
     <a href="#station">{{.T "about.station.heading"}}</a>
@@ -51,6 +52,11 @@
       <svg class="about-value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>
       <h3 class="about-value__title">{{.T "about.values.phone.title"}}</h3>
       <p>{{.T "about.values.phone.body"}}</p>
+    </div>
+    <div class="about-value">
+      <svg class="about-value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="4.5" r="1.8"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5.5M12 15.5l-3.5 5M12 15.5l3.5 5"/></svg>
+      <h3 class="about-value__title">{{.T "about.values.access.title"}}</h3>
+      <p>{{.T "about.values.access.body"}}</p>
     </div>
   </div>
 </section>
@@ -105,6 +111,10 @@
     {{template "about-step" (.Step "share")}}
     {{template "about-step" (.Step "embed")}}
     {{template "about-step" (.Step "table")}}
+  </ol>
+  <h3 id="start-access" class="about-group">{{.T "about.start.group.access.title"}}</h3>
+  <ol class="about-steps">
+    {{template "about-step" (.Step "access")}}
   </ol>
 </section>
 
