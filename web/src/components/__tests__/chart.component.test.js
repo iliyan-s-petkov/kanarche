@@ -391,7 +391,8 @@ describe('Chart.svelte', () => {
     const text = {
       summary: '{metric}, {period}: latest {latest}, lowest {min}, highest {max}.',
       none: '{metric}, {period}: no readings.',
-      caption: 'Readings for {metric}, {period}',
+      captionHourly: 'Hourly averages for {metric}, {period}',
+      captionDaily: 'Daily averages for {metric}, {period}',
     }
     const alt = { metricLabel: 'PM2.5', valueUnit: 'µg/m³', periodLabel: '24 hours', timeLabel: 'Time', text }
     const body = { t: ['2026-08-14T00:00:00Z', '2026-08-14T01:00:00Z'], v: [12.3, 13.1] }
@@ -414,7 +415,7 @@ describe('Chart.svelte', () => {
       expect(table.closest('.sr-only')).not.toBeNull()
       // role=img makes its children presentational, so the table must sit outside it.
       expect(table.closest('[role="img"]')).toBeNull()
-      expect(table.querySelector('caption').textContent).toBe('Readings for PM2.5, 24 hours')
+      expect(table.querySelector('caption').textContent).toBe('Hourly averages for PM2.5, 24 hours')
       expect([...table.querySelectorAll('thead th')].map((h) => [h.textContent, h.getAttribute('scope')]))
         .toEqual([['Time', 'col'], ['PM2.5 (µg/m³)', 'col']])
       const rows = table.querySelectorAll('tbody tr')

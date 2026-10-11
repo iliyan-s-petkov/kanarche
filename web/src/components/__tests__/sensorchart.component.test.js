@@ -55,7 +55,8 @@ const props = {
   text: {
     summary: '{metric}, {period}: latest {latest}, lowest {min}, highest {max}.',
     none: '{metric}, {period}: no readings.',
-    caption: 'Readings for {metric}, {period}',
+    captionHourly: 'Hourly averages for {metric}, {period}',
+    captionDaily: 'Daily averages for {metric}, {period}',
   },
 }
 
@@ -292,11 +293,11 @@ describe('SensorChart.svelte', () => {
     const { target } = render()
     await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
     expect(target.querySelector('[role="img"]').getAttribute('aria-label')).toContain('ФПЧ2.5, 24 часа: latest 13.1 µg/m³')
-    expect(target.querySelector('table caption').textContent).toBe('Readings for ФПЧ2.5, 24 часа')
+    expect(target.querySelector('table caption').textContent).toBe('Hourly averages for ФПЧ2.5, 24 часа')
 
     setValue(periodSelect(target), '7d')
     await vi.waitFor(() => expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toContain('ФПЧ2.5, 7 дни:'))
-    expect(target.querySelector('table caption').textContent).toBe('Readings for ФПЧ2.5, 7 дни')
+    expect(target.querySelector('table caption').textContent).toBe('Hourly averages for ФПЧ2.5, 7 дни')
   })
 
   it('summarises every ticked metric in one image label', async () => {

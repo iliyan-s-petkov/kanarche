@@ -282,7 +282,8 @@ function buildChartSnippet(sensor, options, d, link) {
           text: {
             summary: d.tChartTextSummary || '',
             none: d.tChartTextNone || '',
-            caption: d.tChartTextCaption || '',
+            captionHourly: d.tChartTextCaptionByHour || '',
+            captionDaily: d.tChartTextCaptionByDay || '',
           },
         },
       })

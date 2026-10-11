@@ -51,15 +51,27 @@ export function formatReading(value, lang) {
   return new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(value)
 }
 
+// Short month name in the page language; Bulgarian has no short name in ICU (it yields "10"), so a numeric result falls back to the long name.
+function monthName(date, lang, timeZone) {
+  const part = (opts) => new Intl.DateTimeFormat(lang, { ...opts, timeZone }).formatToParts(date).find((p) => p.type === 'month')?.value ?? ''
+  const short = part({ month: 'short' }).replace(/\.$/, '')
+  return /^\d+$/.test(short) ? part({ month: 'long' }) : short
+}
+
+const datePart = (date, lang, timeZone, type) =>
+  new Intl.DateTimeFormat(lang, { [type]: 'numeric', timeZone }).formatToParts(date).find((p) => p.type === type)?.value ?? ''
+
 // "4 Oct 07:45": day, month, 24-hour time, in the page language; seconds are epoch seconds.
-// Bulgarian has no short month name in ICU (it yields "10"), so a numeric result falls back to the long name.
 export function formatStamp(seconds, lang, timeZone) {
   const date = new Date(seconds * 1000)
-  const part = (opts, type) => new Intl.DateTimeFormat(lang, { ...opts, timeZone }).formatToParts(date).find((p) => p.type === type)?.value ?? ''
-  let month = part({ month: 'short' }, 'month').replace(/\.$/, '')
-  if (/^\d+$/.test(month)) month = part({ month: 'long' }, 'month')
   const time = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone }).format(date)
-  return `${part({ day: 'numeric' }, 'day')} ${month} ${time}`
+  return `${datePart(date, lang, timeZone, 'day')} ${monthName(date, lang, timeZone)} ${time}`
+}
+
+// "4 Oct 2026": the same, date only.
+export function formatDay(seconds, lang, timeZone) {
+  const date = new Date(seconds * 1000)
+  return `${datePart(date, lang, timeZone, 'day')} ${monthName(date, lang, timeZone)} ${datePart(date, lang, timeZone, 'year')}`
 }
 
 // What the card says. series: the visible lines at the hovered index as { name, colour, unit, value };
