@@ -126,6 +126,7 @@
         label={row.label}
         value={row.missing ? noValue : number(row.value, locale)}
         unit={row.unit}
+        band={row.band}
         model={row.model}
         missing={row.missing}
         pressed={link.metrics.includes(row.metric)}

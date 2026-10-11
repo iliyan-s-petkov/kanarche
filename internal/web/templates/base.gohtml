@@ -166,7 +166,13 @@
      mapwindow.WINDOW_CHOICES — now, then each published window, coarsest last —
      which is why it is one comma-separated attribute rather than five whose
      names would have to spell "24h" as a dataset key. */}}
-{{define "mapLayerLabels"}}data-t-map-title="{{.T "map.label"}}"
+{{define "mapLayerLabels"}}data-t-band-good="{{.T "band.good"}}"
+     data-t-band-fair="{{.T "band.fair"}}"
+     data-t-band-moderate="{{.T "band.moderate"}}"
+     data-t-band-poor="{{.T "band.poor"}}"
+     data-t-band-very-poor="{{.T "band.very_poor"}}"
+     data-t-band-extremely-poor="{{.T "band.extremely_poor"}}"
+     data-t-map-title="{{.T "map.label"}}"
      data-t-attribution-toggle="{{.T "map.attribution.toggle"}}"
      data-t-window-label="{{.T "map.window.label"}}"
      data-t-windows="{{.T "map.window.live"}},{{.T "map.window.24h"}},{{.T "map.window.48h"}},{{.T "map.window.7d"}}"
@@ -299,7 +305,24 @@
      data-t-network="{{.T "panel.network"}}"
      data-t-station-code="{{.T "panel.station.code"}}"
      data-t-station-type="{{.T "panel.station.type"}}"
-     data-t-station-area="{{.T "panel.station.area"}}"></div>{{end}}
+     data-t-station-area="{{.T "panel.station.area"}}"
+     {{template "bandLabels" .}}></div>{{end}}
+
+{{/* The six band names, as words beside every colour (EAQI labels, band.* keys). */}}
+{{define "bandLabels"}}data-t-band-good="{{.T "band.good"}}"
+     data-t-band-fair="{{.T "band.fair"}}"
+     data-t-band-moderate="{{.T "band.moderate"}}"
+     data-t-band-poor="{{.T "band.poor"}}"
+     data-t-band-very-poor="{{.T "band.very_poor"}}"
+     data-t-band-extremely-poor="{{.T "band.extremely_poor"}}"{{end}}
+
+{{/* Sensors in the map view as buttons, filled by the map island (web/src/lib/mapnearby.svelte.js).
+     Hidden until it mounts: with no script there is no map to list. */}}
+{{define "nearbyList"}}<div class="nearby-host" data-nearby hidden
+     data-t-title="{{.T "nearby.title"}}"
+     data-t-empty="{{.T "nearby.empty"}}"
+     data-t-more="{{.T "nearby.more"}}"
+     data-t-sensor="{{.T "panel.title"}}"></div>{{end}}
 
 {{/* The figures strip, given a []Readout. Shared because the home page and an
      area page draw the same cells from different sums, and a second copy of

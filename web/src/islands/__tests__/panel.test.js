@@ -95,6 +95,12 @@ const PANEL_ATTR_FIXTURES = {
   tNearbyLow: 'Nearby lowest',
   tNearbyMedian: 'Nearby median',
   tNearbyHigh: 'Nearby highest',
+  tBandGood: 'good',
+  tBandFair: 'fair',
+  tBandModerate: 'moderate',
+  tBandPoor: 'poor',
+  tBandVeryPoor: 'very poor',
+  tBandExtremelyPoor: 'extremely poor',
 }
 
 // islandFrom returns the REAL server template's island container as a live DOM
@@ -174,6 +180,9 @@ function datasetKeysReadByPanelJs() {
   const src = readFileSync(join(here, '..', 'panel.js'), 'utf8')
   const keys = new Set()
   for (const m of src.matchAll(/\bd\.([a-zA-Z_]\w*)\b/g)) keys.add(m[1])
+  // readBandNames(d) reads the six band attributes by name from lib/bandname.js.
+  const bands = readFileSync(join(here, '..', '..', 'lib', 'bandname.js'), 'utf8')
+  for (const m of bands.matchAll(/'(tBand\w+)'/g)) keys.add(m[1])
   return keys
 }
 

@@ -22,6 +22,8 @@ import { getViewState } from '../lib/viewstate.svelte.js'
 import { getFavourite } from '../lib/favourite.svelte.js'
 import { findSensor, getScales, normaliseSensor } from '../lib/sensors.svelte.js'
 import { gaugeModel } from '../lib/gauge.js'
+import { bandName, readBandNames } from '../lib/bandname.js'
+import { bandsFor } from '../lib/mappaint.js'
 import { createPanelScroll } from '../lib/panelscroll.js'
 import { watchPanelScroll } from '../lib/panelwatch.svelte.js'
 
@@ -86,6 +88,7 @@ export function mount(el) {
   const canStar = !document.body.classList.contains('embed')
 
   const flagCatalogue = flagCatalogueFrom(d)
+  const bandNames = readBandNames(d)
   const metricLabels = Object.fromEntries(options.map((o) => [o.metric, o.label]))
 
   // Memoised by sensor id: `chart` below is read on EVERY reactive
@@ -134,7 +137,12 @@ export function mount(el) {
         const sensor = findSensor(vs.sensorId)
         if (!sensor) return []
         const scales = getScales()
-        return panelRows(sensor, options, scales).map((row) => ({ ...row, model: gaugeModel(row, scales) }))
+        return panelRows(sensor, options, scales).map((row) => ({
+          ...row,
+          model: gaugeModel(row, scales),
+          // The band in words, so the arc's colour is not the only thing that says it.
+          band: row.missing ? '' : bandName(row.value, bandsFor(scales, row.metric), bandNames),
+        }))
       },
       // Composed from the (non-templated) i18n label plus the sensor id —
       // see SensorPanel.svelte's own comment on why `sensor` itself is not

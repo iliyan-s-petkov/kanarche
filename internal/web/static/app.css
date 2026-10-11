@@ -554,6 +554,30 @@ strong, b { font-weight: var(--weight-emphasis); }
    follows, so an open panel sat flush against the readout strip and its raised
    shadow fell across the first card — which reads as the panel overlapping it. */
 .place-host:not(:empty) { margin-block-end: var(--space-4); }
+/* Sensors in the map view as buttons (NearbyList.svelte). A closed fold under the map. */
+.nearby-host { margin-block-end: var(--space-4); }
+.nearby > summary { display: flex; align-items: center; min-block-size: 44px; font-weight: var(--weight-emphasis); cursor: pointer; }
+.nearby > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.nearby__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--space-2); }
+.nearby__item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; inline-size: 100%; min-block-size: 44px;
+  padding: var(--space-2) var(--space-3); text-align: start; font: inherit; color: var(--fg);
+  background: var(--surface); border: 1px solid var(--border-faint); border-radius: var(--radius-sm); cursor: pointer;
+}
+.nearby__item:hover { background: var(--surface-2); }
+.nearby__item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nearby__name { font-weight: var(--weight-emphasis); }
+.nearby__reading { color: var(--fg-2); font-size: var(--text-compact); }
+.nearby__more, .nearby__empty { margin: var(--space-2) 0 0; color: var(--muted); font-size: var(--text-compact); }
+/* The reading card at a hovered or list-focused hex cell. Positioned by hextip.js. */
+.hex-tip {
+  position: absolute; z-index: 3; pointer-events: none; max-inline-size: 90%;
+  transform: translate(-50%, calc(-100% - 12px)); padding: var(--space-1) var(--space-2);
+  font-size: var(--text-compact); color: var(--fg); background: var(--overlay-bg);
+  border: 1px solid var(--border-faint); border-radius: var(--radius-sm); white-space: nowrap;
+}
+.hex-tip--below { transform: translate(-50%, 12px); }
+.hex-tip[hidden] { display: none; }
 /* The home page from 1024px: the map's panel carries the whole card (lib/panelhost.js).
    Hidden by visibility, not display, so the station sheet the card renders still shows over the page. */
 @media (min-width: 1024px) {
