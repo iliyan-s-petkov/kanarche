@@ -31,6 +31,37 @@ func TestCounterExposition(t *testing.T) {
 	}
 }
 
+func TestGaugeVecExposition(t *testing.T) {
+	v := metrics.GaugeVec("airbg_test_gaugevec", "Labelled gauge.", "source", "status")
+	v.With("b", "ok").Set(1)
+	v.With("a", `x"y`).Set(0)
+	v.With("b", "ok").Set(2)
+
+	body := scrape(t)
+	for _, want := range []string{
+		"# TYPE airbg_test_gaugevec gauge",
+		`airbg_test_gaugevec{source="a",status="x\"y"} 0`,
+		`airbg_test_gaugevec{source="b",status="ok"} 2`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("exposition missing %q\ngot:\n%s", want, body)
+		}
+	}
+	if strings.Index(body, `source="a"`) > strings.Index(body, `source="b"`) {
+		t.Error("series not sorted")
+	}
+}
+
+func TestGaugeVecRefusesWrongArity(t *testing.T) {
+	v := metrics.GaugeVec("airbg_test_gaugevec_arity", "Labelled gauge.", "source", "status")
+	defer func() {
+		if recover() == nil {
+			t.Error("With(1 value) on a 2-label vec did not panic")
+		}
+	}()
+	v.With("only-one")
+}
+
 func TestCounterVecEscapesLabelValues(t *testing.T) {
 	v := metrics.CounterVec("airbg_test_labelled_total", "Labelled.", "route")
 	// A label value containing a quote, a backslash and a newline. All three

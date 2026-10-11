@@ -78,6 +78,17 @@ type siteDate struct {
 // good file. It is all or nothing: on any reject, accepted is nil and the
 // status is not ok.
 func Validate(f File, sites []store.BathingSite, last LastGood, now time.Time) ([]Sample, []Reject, Status) {
+	accepted, rejects, status := ValidateRows(f, sites, last, now)
+	if status != StatusOK {
+		return nil, rejects, status
+	}
+	return accepted, nil, status
+}
+
+// ValidateRows is Validate without the all-or-nothing cut: it also returns
+// the rows that passed when others did not. Only an operator approval may
+// publish that partial set, never the ingest loop. A rejected file has none.
+func ValidateRows(f File, sites []store.BathingSite, last LastGood, now time.Time) ([]Sample, []Reject, Status) {
 	v := &validator{today: sofiaDate(now)}
 	if f.Error != "" {
 		v.reject(-1, -1, "", "", "extractor rejected the document")
@@ -91,7 +102,7 @@ func Validate(f File, sites []store.BathingSite, last LastGood, now time.Time) (
 		v.reject(-1, -1, "", "", "block count drifted from last good file")
 	}
 	if len(v.rejects) > 0 {
-		return nil, v.rejects, StatusNeedsReview
+		return v.accepted, v.rejects, StatusNeedsReview
 	}
 	return v.accepted, nil, StatusOK
 }
