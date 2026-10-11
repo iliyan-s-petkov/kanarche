@@ -45,6 +45,13 @@ func (p *problems) positive(path string, d time.Duration) {
 	}
 }
 
+// within rejects a duration outside [lo, hi].
+func (p *problems) within(path string, d, lo, hi time.Duration) {
+	if d < lo || d > hi {
+		p.addf("%s = %v, must be between %v and %v", path, d, lo, hi)
+	}
+}
+
 func (p *problems) positiveInt(path string, n int) {
 	if n <= 0 {
 		p.addf("%s = %d, must be greater than zero", path, n)
@@ -586,11 +593,11 @@ func (c Config) validateSeaRZI(p *problems) {
 	if r.InboxDir == r.OutboxDir {
 		p.addf("sea.rzi.inbox_dir and outbox_dir must differ")
 	}
-	p.positive("sea.rzi.in_season_interval", r.InSeasonInterval)
-	p.positive("sea.rzi.off_season_interval", r.OffSeasonInterval)
-	p.positive("sea.rzi.request_timeout", r.RequestTimeout)
-	if r.MaxFileBytes <= 0 {
-		p.addf("sea.rzi.max_file_bytes must be positive, got %d", r.MaxFileBytes)
+	p.within("sea.rzi.in_season_interval", r.InSeasonInterval, time.Minute, 7*24*time.Hour)
+	p.within("sea.rzi.off_season_interval", r.OffSeasonInterval, time.Minute, 7*24*time.Hour)
+	p.within("sea.rzi.request_timeout", r.RequestTimeout, time.Millisecond, 5*time.Minute)
+	if r.MaxFileBytes <= 0 || r.MaxFileBytes > 64<<20 {
+		p.addf("sea.rzi.max_file_bytes must be in 1..%d, got %d", 64<<20, r.MaxFileBytes)
 	}
 	for _, s := range []struct{ key, page string }{{"varna", r.Varna.PageURL}, {"burgas", r.Burgas.PageURL}, {"dobrich", r.Dobrich.PageURL}} {
 		u, err := url.Parse(s.page)

@@ -45,7 +45,7 @@ var specs = []Spec{
 		ID:    SourceVarna,
 		Hosts: []string{"rzi-varna.com", "www.rzi-varna.com"},
 		Kind:  kindPDF,
-		// The schedule PDF is grafik_mvodi-<year>.pdf: the name must start the segment.
+		// Matches mvodi-<year>.pdf as a whole segment, so grafik_mvodi-<year>.pdf does not match.
 		pattern: func(y string) *regexp.Regexp { return regexp.MustCompile(`(^|/)mvodi-` + y + `\.pdf$`) },
 	},
 	{
@@ -84,8 +84,9 @@ func specFor(id string) (Spec, bool) {
 	return Spec{}, false
 }
 
+// allows is https, no userinfo, no explicit port, host exactly on the list.
 func (s Spec) allows(u *url.URL) bool {
-	return u.Scheme == "https" && slices.Contains(s.Hosts, u.Host)
+	return u.Scheme == "https" && u.User == nil && u.Port() == "" && slices.Contains(s.Hosts, u.Host)
 }
 
 var hrefPattern = regexp.MustCompile(`(?i)\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')`)

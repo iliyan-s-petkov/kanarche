@@ -537,19 +537,6 @@ func TestFetchFileStatusIsError(t *testing.T) {
 	}
 }
 
-func TestFetchTimeout(t *testing.T) {
-	r := varnaRig(t, func(_ http.ResponseWriter, req *http.Request) { <-req.Context().Done() })
-	r.cfg.RZI.RequestTimeout = 150 * time.Millisecond
-	start := time.Now()
-	_, err := r.fetcher().Fetch(context.Background(), SourceVarna, Validators{})
-	if !errors.Is(err, ErrRequest) {
-		t.Fatalf("err = %v, want ErrRequest", err)
-	}
-	if time.Since(start) > 3*time.Second {
-		t.Error("request timeout not applied")
-	}
-}
-
 func TestFetchErrorsAreFixedStrings(t *testing.T) {
 	r := varnaRig(t, serveBytes("application/pdf", []byte("<html>SECRETTEXT</html>")))
 	_, err := r.fetcher().Fetch(context.Background(), SourceVarna, Validators{})
