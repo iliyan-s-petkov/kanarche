@@ -386,4 +386,61 @@ describe('Chart.svelte', () => {
     expect(opts.series[1].dash).toEqual([2, 4])
     expect(opts.series[2].dash).toBeUndefined()
   })
+
+  describe('text alternative', () => {
+    const text = {
+      summary: '{metric}, {period}: latest {latest}, lowest {min}, highest {max}.',
+      none: '{metric}, {period}: no readings.',
+      caption: 'Readings for {metric}, {period}',
+    }
+    const alt = { metricLabel: 'PM2.5', valueUnit: 'µg/m³', periodLabel: '24 hours', timeLabel: 'Time', text }
+    const body = { t: ['2026-08-14T00:00:00Z', '2026-08-14T01:00:00Z'], v: [12.3, 13.1] }
+
+    it('labels the plot as an image with a one-line summary', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }))
+      vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+      const target = render({ url: '/api/v1/area/alt/series', ...alt })
+      await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
+      expect(target.querySelector('[role="img"]').getAttribute('aria-label'))
+        .toBe('PM2.5, 24 hours: latest 13.1 µg/m³, lowest 12.3 µg/m³, highest 13.1 µg/m³.')
+    })
+
+    it('holds the readings in a visually hidden table beside the image, not inside it', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }))
+      vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+      const target = render({ url: '/api/v1/area/alt2/series', ...alt })
+      await vi.waitFor(() => expect(target.querySelector('table')).not.toBeNull())
+      const table = target.querySelector('table')
+      expect(table.closest('.sr-only')).not.toBeNull()
+      // role=img makes its children presentational, so the table must sit outside it.
+      expect(table.closest('[role="img"]')).toBeNull()
+      expect(table.querySelector('caption').textContent).toBe('Readings for PM2.5, 24 hours')
+      expect([...table.querySelectorAll('thead th')].map((h) => [h.textContent, h.getAttribute('scope')]))
+        .toEqual([['Time', 'col'], ['PM2.5 (µg/m³)', 'col']])
+      const rows = table.querySelectorAll('tbody tr')
+      expect(rows).toHaveLength(2)
+      expect(rows[0].querySelector('th').getAttribute('scope')).toBe('row')
+      expect([...rows[1].querySelectorAll('td')].map((c) => c.textContent)).toEqual(['13.1'])
+    })
+
+    it('says there are no readings, with no table, for an empty window', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ t: [], v: [] }), { status: 200 }))
+      const target = render({ url: '/api/v1/area/alt3/series', ...alt })
+      await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
+      const label = target.querySelector('[role="img"]').getAttribute('aria-label')
+      expect(label).toBe('PM2.5, 24 hours: no readings.')
+      expect(label).not.toMatch(/NaN/)
+      expect(target.querySelector('table')).toBeNull()
+    })
+
+    it('has no image role while loading or when the data is unavailable', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('boom'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const target = render({ url: '/api/v1/area/alt4/series', ...alt })
+      expect(target.querySelector('[role="img"]')).toBeNull()
+      await vi.waitFor(() => expect(target.textContent).toContain(props.unavailable))
+      expect(target.querySelector('[role="img"]')).toBeNull()
+      expect(target.querySelector('table')).toBeNull()
+    })
+  })
 })

@@ -271,6 +271,11 @@ function buildChartSnippet(sensor, options, d, link) {
           timeLabel: d.tChartTime || '',
           empty: d.tChartEmpty || '',
           unavailable: d.tChartUnavailable || '',
+          text: {
+            summary: d.tChartTextSummary || '',
+            none: d.tChartTextNone || '',
+            caption: d.tChartTextCaption || '',
+          },
         },
       })
       return () => unmount(component)
