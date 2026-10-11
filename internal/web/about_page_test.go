@@ -183,8 +183,8 @@ func TestAboutStartScreenshots(t *testing.T) {
 		start := body[strings.Index(body, `id="start"`):]
 		start = start[:strings.Index(start, `id="privacy"`)]
 		imgs := imgTagRe.FindAllString(start, -1)
-		if len(imgs) != 42 {
-			t.Fatalf("%s: %d screenshots in #start, want 42 (21 cards x light and dark)", p, len(imgs))
+		if len(imgs) != 44 {
+			t.Fatalf("%s: %d screenshots in #start, want 44 (22 cards x light and dark)", p, len(imgs))
 		}
 		for _, tag := range imgs {
 			a := map[string]string{}

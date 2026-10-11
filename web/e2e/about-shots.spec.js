@@ -241,6 +241,22 @@ const SCENES = {
     return { clip: await clipAround(page, ['.scroll-cue'], { pad: 200 }) }
   },
 
+  // The "Sensors in view" list under the map, opened and reached with Tab so the real focus ring shows.
+  async access(page, { prefix }) {
+    await overSofia(page, prefix, 13)
+    const list = page.locator('details.nearby')
+    await list.scrollIntoViewIfNeeded()
+    await list.locator('summary').focus()
+    await page.keyboard.press('Enter')
+    const first = list.locator('button.nearby__item').first()
+    await expect(first).toBeVisible({ timeout: 20_000 })
+    await page.keyboard.press('Tab')
+    await expect(first).toBeFocused()
+    await expect(first).not.toHaveCSS('box-shadow', 'none')
+    await page.waitForTimeout(600)
+    return { clip: await clipAround(page, ['details.nearby'], { pad: 24 }) }
+  },
+
   async pollen(page, { prefix, lang }) {
     await page.goto(`${prefix}/`)
     await mapReady(page)

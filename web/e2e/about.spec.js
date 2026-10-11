@@ -47,7 +47,7 @@ for (const [w, h] of [[390, 844], [1280, 800]]) {
     // One light screenshot per guide card.
     const shots = page.locator('#start .about-shot__img--light')
     const cards = await page.locator('#start .about-steps > li').count()
-    expect(cards).toBeGreaterThanOrEqual(21)
+    expect(cards).toBeGreaterThanOrEqual(22)
     await expect(shots).toHaveCount(cards)
     for (let i = 0; i < cards; i++) {
       await shots.nth(i).scrollIntoViewIfNeeded()

@@ -238,6 +238,7 @@ var aboutGuide = []struct {
 	{"layers", []string{"pollen", "sea", "wind", "official"}},
 	{"history", []string{"replay", "charts"}},
 	{"keep", []string{"favourite", "share", "embed", "table"}},
+	{"access", []string{"access"}},
 }
 
 // catalogueKey reads one key straight from the catalogue file, so the tests
@@ -383,6 +384,24 @@ func TestAboutValuesIncludePhone(t *testing.T) {
 	for _, k := range []string{"title", "body"} {
 		if v := catalogueKey(t, "en", "about.values.phone."+k); !strings.Contains(body, v) {
 			t.Errorf("values strip lacks about.values.phone.%s", k)
+		}
+	}
+}
+
+// TestAboutValuesIncludeAccess. The values strip gains an accessibility item
+// after the phone one.
+func TestAboutValuesIncludeAccess(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, lang := range []struct{ path, code string }{{"/en/about", "en"}, {"/about", "bg"}} {
+		body := fetch(t, rr, lang.path).Body.String()
+		last := strings.Index(body, catalogueKey(t, lang.code, "about.values.phone.title"))
+		for _, k := range []string{"title", "body"} {
+			at := strings.Index(body, catalogueKey(t, lang.code, "about.values.access."+k))
+			if at < 0 {
+				t.Errorf("%s values strip lacks about.values.access.%s", lang.code, k)
+			} else if at < last {
+				t.Errorf("%s access %s comes before the phone item", lang.code, k)
+			}
 		}
 	}
 }
