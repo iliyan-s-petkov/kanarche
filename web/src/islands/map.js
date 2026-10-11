@@ -33,20 +33,15 @@ import { findSensor } from '../lib/sensors.svelte.js'
 import { createSeaPanelLazy } from '../lib/seapanel-lazy.js'
 import { SEA_LAYER_ID } from '../lib/sea.js'
 import { POLLEN_FILL_LAYER_ID, pollenHref } from '../lib/pollen.js'
+import { ringCentroid } from '../lib/geometry.js'
+import { bandsFor } from '../lib/mappaint.js'
+import { describeReading } from '../lib/nearbylist.js'
+import { createHexTip } from '../lib/hextip.js'
+import { installNearbyList } from '../lib/mapnearby.svelte.js'
 
 // The flat cells and their tilted columns: one feature, two ways of drawing it.
 const HEX_CELL_LAYERS = [HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID]
 
-
-// Mean of a polygon ring's vertices, dropping the closing vertex GeoJSON
-// repeats to match the first — averaging it in would double-weight one corner.
-function ringCentroid(ring) {
-  const [fx, fy] = ring[0]
-  const last = ring[ring.length - 1]
-  const pts = (last[0] === fx && last[1] === fy) ? ring.slice(0, -1) : ring
-  const sum = pts.reduce(([sx, sy], [x, y]) => [sx + x, sy + y], [0, 0])
-  return [sum[0] / pts.length, sum[1] / pts.length]
-}
 
 // Empty strings are dropped so MapLibre keeps its English default for them.
 function mapLibreLocale(t) {
@@ -234,6 +229,14 @@ export function mount(el) {
   map.on('click', LAYER_ID, onMarkerClick)
   map.on('click', FAULTY_LAYER_ID, onMarkerClick)
 
+  // The one way a cell's sensor opens, shared by the cell click and the nearby list.
+  const openCellSensor = (id) => {
+    vs.openSensor(Number(id))
+    // The hash alone is not the panel: it reads the registry, which a map
+    // with no area selected never fills.
+    openDeepLinkedSensor(map, state, cfg, chrome, vs, getJSON, { move: false })
+  }
+
   // The cells inherit that click wherever the markers have stepped aside.
   // A cell naming one station opens the panel; a bin of several has none to
   // name, so it selects the area its centre falls nearest instead.
@@ -243,10 +246,7 @@ export function mount(el) {
     seaPanel.close()
     const id = e.features?.[0]?.properties?.sensorId
     if (id !== undefined && id !== null) {
-      vs.openSensor(Number(id))
-      // The hash alone is not the panel: it reads the registry, which a map
-      // with no area selected never fills.
-      openDeepLinkedSensor(map, state, cfg, chrome, vs, getJSON, { move: false })
+      openCellSensor(id)
       return
     }
     // cellArea returns null once an area is already selected — that must not
@@ -294,17 +294,41 @@ export function mount(el) {
   // sliding from a cell straight onto a point circle fires no leave, and a
   // refresh can replace the source under a cell the pointer never left.
   let hoveredHexId = null
+  // The reading card for the hovered or list-focused cell.
+  const tip = createHexTip(map.getContainer())
+  const tipText = (reading) => `${cfg.metricLabels[cfg.metric] || cfg.metric}: ${reading}`
   const clearHexHover = () => {
+    tip.hide()
     if (hoveredHexId === null) return
     map.setFeatureState({ source: HEX_SOURCE_ID, id: hoveredHexId }, { hover: false })
     hoveredHexId = null
   }
-  const hoverHex = (e) => {
-    const id = e.features?.[0]?.id
-    if (id === undefined || id === hoveredHexId) return
+  const markHex = (id) => {
     clearHexHover()
     hoveredHexId = id
     map.setFeatureState({ source: HEX_SOURCE_ID, id }, { hover: true })
+  }
+  const hoverHex = (e) => {
+    const feature = e.features?.[0]
+    const id = feature?.id
+    if (id === undefined || id === hoveredHexId) return
+    markHex(id)
+    const value = feature.properties?.value
+    if (typeof value !== 'number') return
+    const reading = describeReading(value, {
+      bands: bandsFor(state.scales, cfg.metric),
+      names: cfg.bandNames,
+      unit: cfg.metricUnits[cfg.metric] ?? '',
+      lang: cfg.lang,
+    })
+    tip.show(tipText(reading), e.point)
+  }
+  // A list item stands in for the pointer: same highlight and card, and a spoken
+  // announcement only when focus got there by keyboard.
+  const previewCell = (item, keyboard) => {
+    if (item.featureId !== undefined) markHex(item.featureId)
+    tip.show(tipText(item.reading), map.project([item.lon, item.lat]))
+    if (keyboard) tip.announce(tipText(item.reading))
   }
   // Both layers: a feature is a polygon or a point, never both. The cell layers share one
   // listener so moving from a ground footprint onto its column is not a leave.
@@ -321,6 +345,11 @@ export function mount(el) {
   map.getContainer?.()?.addEventListener?.(PAINT_EVENT, (e) => {
     if (e.detail?.source === HEX_SOURCE_ID) clearHexHover()
   })
+
+  const nearbyEl = document.querySelector('[data-nearby]')
+  const stopNearby = nearbyEl
+    ? installNearbyList({ map, el: nearbyEl, cfg, state, onopen: (item) => openCellSensor(item.id), onpreview: previewCell, onunpreview: clearHexHover })
+    : () => {}
 
   // The province outlines answer a click the two handlers above did not.
   //
@@ -355,6 +384,6 @@ export function mount(el) {
   return {
     map,
     chrome,
-    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear() },
+    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); tip.destroy() },
   }
 }

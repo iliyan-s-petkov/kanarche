@@ -119,7 +119,13 @@ const indexHostGolden = `<div class="place-host place-host--docked" data-island=
      data-t-network="Network"
      data-t-station-code="EoI code"
      data-t-station-type="Station type"
-     data-t-station-area="Area type"></div>`
+     data-t-station-area="Area type"
+     data-t-band-good="good"
+     data-t-band-fair="fair"
+     data-t-band-moderate="moderate"
+     data-t-band-poor="poor"
+     data-t-band-very-poor="very poor"
+     data-t-band-extremely-poor="extremely poor"></div>`
 
 const areaHostGolden = `<div class="place-host" data-island="panel"
      data-metrics="C6H6,CO,NO2,NOX,O3,P1,P2,SO2,humidity,noise_LA_max,noise_LAeq,pressure,temperature"
@@ -177,7 +183,13 @@ const areaHostGolden = `<div class="place-host" data-island="panel"
      data-t-network="Network"
      data-t-station-code="EoI code"
      data-t-station-type="Station type"
-     data-t-station-area="Area type"></div>`
+     data-t-station-area="Area type"
+     data-t-band-good="good"
+     data-t-band-fair="fair"
+     data-t-band-moderate="moderate"
+     data-t-band-poor="poor"
+     data-t-band-very-poor="very poor"
+     data-t-band-extremely-poor="extremely poor"></div>`
 
 const embedHostGolden = `<div class="place-host embed__panel" data-island="panel"
      data-metrics="C6H6,CO,NO2,NOX,O3,P1,P2,SO2,humidity,noise_LA_max,noise_LAeq,pressure,temperature"
@@ -235,4 +247,10 @@ const embedHostGolden = `<div class="place-host embed__panel" data-island="panel
      data-t-network="Network"
      data-t-station-code="EoI code"
      data-t-station-type="Station type"
-     data-t-station-area="Area type"></div>`
+     data-t-station-area="Area type"
+     data-t-band-good="good"
+     data-t-band-fair="fair"
+     data-t-band-moderate="moderate"
+     data-t-band-poor="poor"
+     data-t-band-very-poor="very poor"
+     data-t-band-extremely-poor="extremely poor"></div>`

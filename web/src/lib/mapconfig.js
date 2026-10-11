@@ -2,6 +2,7 @@ import { parseMetricList, splitAttr, byMetric } from './metrics.js'
 import { LAYER_ORDER } from './maplayers.js'
 import { seaColours, readSeaTexts } from './sea.js'
 import { readPollenTexts } from './pollen.js'
+import { readBandNames } from './bandname.js'
 
 // Whether the colour key is unrolled. Its own key, not part of the layers
 // menu's state: the menu decides whether the key exists, this decides whether
@@ -118,6 +119,8 @@ export function readConfig(el) {
     // data-metric-labels, and for the same reason a per-window attribute cannot
     // work: data-t-window-24h arrives in the dataset as tWindow-24h.
     windowLabels: splitAttr(d.tWindows),
+    // Band names in the page language, for the hex readout and the nearby list.
+    bandNames: readBandNames(d),
     zoomCity: Number(d.zoomCity),
     zoomSensor: Number(d.zoomSensor),
     // Strings come from the server, not from a JS catalogue: Go owns the

@@ -2,9 +2,9 @@
   // Draws the model from lib/gauge.js; no arithmetic here.
   import { arcPath, needlePoint } from '../lib/gauge.js'
 
-  let { label, value, unit, model = { fraction: null, colour: null, stops: [] }, missing = false, onselect = null, pressed = false } = $props()
+  let { label, value, unit, band = '', model = { fraction: null, colour: null, stops: [] }, missing = false, onselect = null, pressed = false } = $props()
 
-  const ariaLabel = $derived(missing ? `${label}: ${value}` : `${label}: ${value} ${unit}`)
+  const ariaLabel = $derived(missing ? `${label}: ${value}` : `${label}: ${value} ${unit}${band ? `, ${band}` : ''}`)
 </script>
 
 <svelte:element
@@ -38,5 +38,5 @@
     {/if}
   </svg>
   <span class="gauge__value">{missing ? value : `${value} ${unit}`}</span>
-  <span class="gauge__label">{label}</span>
+  <span class="gauge__label">{label}{#if band && !missing}<span class="gauge__name"> · {band}</span>{/if}</span>
 </svelte:element>
