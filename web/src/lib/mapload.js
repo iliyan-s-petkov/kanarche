@@ -32,7 +32,7 @@ import { emptyCollection } from './mapfeatures.js'
 import {
   markerMaxZoom, hexOutlinePaint, hexFillPaint, hexPointPaint,
   hexLabelPaint, layerPaint, NOT_OFFICIAL, officialLayout, officialPaint, labelLayout,
-  hexLabelLayout, labelPaint, MARKER_PIXEL_RATIO, NOT_FAULTY, IS_FAULTY, faultyPaint,
+  hexLabelLayout, hexLabelSize, labelPaint, MARKER_PIXEL_RATIO, NOT_FAULTY, IS_FAULTY, faultyPaint,
 } from './mappaint.js'
 import { addBasemapOverlay } from './mapstyle.js'
 import { setWind, refreshWind } from './mapwind.js'
@@ -45,7 +45,7 @@ import {
 } from './pollen.js'
 import {
   refresh, refreshHexes, onMetricChange, applyMetricColours, initData,
-  mapHint, repaintSensors, setSourceViewAvailability,
+  mapHint, repaintSensors, setSourceViewAvailability, mapInlineSize,
 } from './mapdata.js'
 import {
   locateVisitor, openDeepLinkedSensor, placeVisitor, prefetchPlacement, LOCATE_TIMEOUT_MS,
@@ -157,8 +157,13 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
         ['has', 'value'],
         ['!=', ['get', 'value'], null],
       ],
-      layout: hexLabelLayout(cfg),
+      layout: hexLabelLayout(cfg, mapInlineSize(map)),
       paint: hexLabelPaint(cfg),
+    })
+    // Rotation or a window resize can cross the phone breakpoint; MapLibre
+    // skips the relayout when the size is unchanged.
+    map.on('resize', () => {
+      map.setLayoutProperty(HEX_LABEL_LAYER_ID, 'text-size', hexLabelSize(mapInlineSize(map)))
     })
 
     // Between the grid and the markers: the outlines frame the readings, so

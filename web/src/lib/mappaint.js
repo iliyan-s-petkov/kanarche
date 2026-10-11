@@ -2,7 +2,7 @@ import { rampValueStops } from './ramp.js'
 import { DIAMOND_RADIUS_PX } from './markericon.js'
 import { OFFICIAL_SOURCE } from './sourcefilter.svelte.js'
 import {
-  GRID_MIN_ZOOM_FRACTIONAL, POINT_TIER_MIN_ZOOM_FRACTIONAL,
+  GRID_MIN_ZOOM_FRACTIONAL, POINT_TIER_MIN_ZOOM_FRACTIONAL, isPhoneInline,
 } from './hexes.js'
 import {
   OFFICIAL_IMAGE_ID, HEX_LABEL_LAYER_ID, LAYER_ID, OFFICIAL_LAYER_ID, LABEL_LAYER_ID, FAULTY_LAYER_ID,
@@ -268,13 +268,39 @@ export function labelLayout(cfg) {
   }
 }
 
+// The cell has more room than a dot label, so its number is set larger. A
+// phone cell is half the width, so it steps down a size.
+const HEX_LABEL_SIZE_DESKTOP = 14
+const HEX_LABEL_SIZE_PHONE = 12
+
+// From 100 up the decimal adds width and no information. The cut is 99.95 so a
+// value that would round to "100.0" prints as "100".
+const HEX_LABEL_WHOLE_FROM = 99.95
+
+// hexLabelSize is the text-size for a map of this width in CSS px.
+export function hexLabelSize(inlineSize = Infinity) {
+  return isPhoneInline(inlineSize) ? HEX_LABEL_SIZE_PHONE : HEX_LABEL_SIZE_DESKTOP
+}
+
 // hexLabelLayout is the same number, printed in the middle of a cell instead
-// of beside a dot. It reuses labelLayout's formatting — one decimal, the
-// basemap's own fontstack, overlap thinning — and differs only in placement:
-// there is no dot to clear, so the number is centred on the cell it describes.
-export function hexLabelLayout(cfg) {
+// of beside a dot: centred, a size up, medium weight, whole from 100 up. The
+// map island re-applies text-size when its width crosses the phone breakpoint.
+export function hexLabelLayout(cfg, inlineSize = Infinity) {
   const { 'text-offset': _offset, 'text-anchor': _anchor, ...shared } = labelLayout(cfg)
-  return { ...shared, 'text-anchor': 'center' }
+  const locale = cfg.lang || 'bg'
+  return {
+    ...shared,
+    'text-field': [
+      'case',
+      ['>=', ['get', 'value'], HEX_LABEL_WHOLE_FROM],
+      // Rounded first: the style spec treats a 0 fraction-digit option as unset.
+      ['number-format', ['round', ['get', 'value']], { locale }],
+      shared['text-field'],
+    ],
+    'text-font': ['Noto Sans Medium'],
+    'text-size': hexLabelSize(inlineSize),
+    'text-anchor': 'center',
+  }
 }
 
 export function labelPaint(cfg) {
@@ -284,7 +310,7 @@ export function labelPaint(cfg) {
     // teal to the darkest purple, and over the basemap's own streets, without
     // re-tinting the served colour underneath it.
     'text-halo-color': cfg.markerStrokeColour,
-    'text-halo-width': 1.4,
+    'text-halo-width': 2,
   }
 }
 
