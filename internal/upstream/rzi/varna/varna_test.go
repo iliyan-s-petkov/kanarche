@@ -395,7 +395,7 @@ func TestRowShapeFailsClosed(t *testing.T) {
 		"two planned":      {line(cellAt{0, d}, cellAt{12, d}, cellAt{colDate, d}, cellAt{colIE, "1"}, cellAt{colEC, "1"})},
 		"value no date":    {row("", "", "15", "15", "")},
 		"tab":              {row(d, d, "15", "15", "a\tb")},
-		"zero width":       {row(d, d, "15", "15", "a​b")},
+		"zero width":       {row(d, d, "15", "15", "a\u200bb")},
 		"repl no label":    {row("(2026-06-09)", d, "15", "15", "")},
 		"repl wrong date":  {line(cellAt{0, labelRepl}), row("(2026-06-10)", d, "15", "15", "")},
 		"label unused":     {line(cellAt{0, labelRepl}), row(d, d, "15", "15", "")},
