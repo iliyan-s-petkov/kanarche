@@ -69,10 +69,10 @@ func TestMapIslandCarriesMapLibreStrings(t *testing.T) {
 		path, title, toggle string
 		framed              bool
 	}{
-		{"/", "Карта на качеството на въздуха", "Показване на източниците", false},
-		{"/en/", "Air quality map", "Toggle attribution", false},
-		{"/area/sofia", "Карта на качеството на въздуха", "Показване на източниците", false},
-		{"/embed", "Карта на качеството на въздуха", "Показване на източниците", true},
+		{"/", "Интерактивна карта на качеството на въздуха", "Показване на източниците", false},
+		{"/en/", "Interactive air quality map", "Toggle attribution", false},
+		{"/area/sofia", "Интерактивна карта на качеството на въздуха", "Показване на източниците", false},
+		{"/embed", "Интерактивна карта на качеството на въздуха", "Показване на източниците", true},
 	}
 	for _, c := range cases {
 		var body string

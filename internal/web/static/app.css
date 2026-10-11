@@ -1330,6 +1330,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     .langpick__extra--first { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
   }
   .langpick__list { max-inline-size: calc(100vw - var(--space-4)); }
+  /* 320px reflow: the masthead was 25px wider than the viewport. */
+  @media (max-width: 360px) {
+    .masthead { padding-inline: var(--space-2); gap: var(--space-1); }
+    .langpick__btn { padding-inline: var(--space-1); }
+  }
 
   /* Width-derived fit makes the map short on a phone; one explicit height on
      .map--hero instead. The shell no longer fixes its own height too — a
