@@ -52,6 +52,11 @@ const props = {
   timeLabel: 'Време',
   empty: 'Няма измервания.',
   unavailable: 'Данните не са налични.',
+  text: {
+    summary: '{metric}, {period}: latest {latest}, lowest {min}, highest {max}.',
+    none: '{metric}, {period}: no readings.',
+    caption: 'Readings for {metric}, {period}',
+  },
 }
 
 let component
@@ -281,5 +286,36 @@ describe('SensorChart.svelte', () => {
     expect(periodSelect(target).value).toBe('24h')
     expect(target.querySelector('input[name="panel-metric"][value="P2"]').checked).toBe(true)
     expect(target.querySelector('input[name="panel-metric"][value="temperature"]').checked).toBe(false)
+  })
+
+  it('rewrites the image summary and the table when the reader picks another period', async () => {
+    const { target } = render()
+    await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
+    expect(target.querySelector('[role="img"]').getAttribute('aria-label')).toContain('ФПЧ2.5, 24 часа: latest 13.1 µg/m³')
+    expect(target.querySelector('table caption').textContent).toBe('Readings for ФПЧ2.5, 24 часа')
+
+    setValue(periodSelect(target), '7d')
+    await vi.waitFor(() => expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toContain('ФПЧ2.5, 7 дни:'))
+    expect(target.querySelector('table caption').textContent).toBe('Readings for ФПЧ2.5, 7 дни')
+  })
+
+  it('summarises every ticked metric in one image label', async () => {
+    const { target } = render()
+    await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
+    tick(target, 'temperature')
+    await vi.waitFor(() => expect(target.querySelector('[role="img"]')?.getAttribute('aria-label')).toContain('Температура, 24 часа:'))
+    expect(target.querySelector('[role="img"]').getAttribute('aria-label')).toContain('ФПЧ2.5, 24 часа:')
+    expect([...target.querySelectorAll('table thead th')].map((h) => h.textContent))
+      .toEqual(['Време', 'ФПЧ2.5 (µg/m³)', 'Температура (°C)'])
+  })
+
+  it('drops the image role while the next period loads, so a stale summary is never read out', async () => {
+    const { target } = render()
+    await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
+    // The next request never answers.
+    globalThis.fetch.mockImplementation(() => new Promise(() => {}))
+    setValue(periodSelect(target), '7d')
+    await vi.waitFor(() => expect(target.querySelector('[role="img"]')).toBeNull())
+    expect(target.querySelector('table')).toBeNull()
   })
 })

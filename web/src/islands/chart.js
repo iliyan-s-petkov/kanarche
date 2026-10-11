@@ -62,6 +62,11 @@ export function mount(el) {
       timeLabel: d.tTime || '',
       empty: d.tEmpty || '',
       unavailable: d.tUnavailable || '',
+      text: {
+        summary: d.tTextSummary || '',
+        none: d.tTextNone || '',
+        caption: d.tTextCaption || '',
+      },
     },
   })
 }

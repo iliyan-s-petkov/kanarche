@@ -30,7 +30,7 @@
     resetLabel, rangeInvalid,
     nearbyLegend = '', nearbyOff = '', nearbySingleOnly = '', nearbyLabels = {},
     colours = [],
-    timeLabel, empty, unavailable,
+    timeLabel, empty, unavailable, text = {},
     periodShortLabels = [], moreLabel = '', aboutLabel = '', shareLabel = '', embedLabel = '',
     shareDone = '', embedDone = '', copyFailed = '',
     link = createPanelLink(),
@@ -59,6 +59,8 @@
   const unitOf = (m) => unitFor(getScales(), m)
 
   const query = $derived(periodQuery(period, from, to))
+  const periodLabel = $derived(
+    period === CUSTOM ? customLabel : (periodLabels[periods.indexOf(period)] ?? period))
 
   // Keyed by DEVICE, not by station: the series endpoint is per device, and the
   // temperature at this address was recorded by the box beside the particulate
@@ -236,7 +238,7 @@
         <p class="chart-message">{rangeInvalid}</p>
       {:else if chartSources.length}
         {#key resetToken}
-          <Chart sources={chartSources} {timeLabel} {empty} {unavailable} fill title="" />
+          <Chart sources={chartSources} {timeLabel} {empty} {unavailable} {periodLabel} {text} fill title="" />
         {/key}
       {/if}
     </div>
@@ -285,6 +287,8 @@
         {timeLabel}
         {empty}
         {unavailable}
+        {periodLabel}
+        {text}
         resizable
         title=""
       />

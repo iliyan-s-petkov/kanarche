@@ -6,6 +6,7 @@
   import { getJSON } from '../lib/api.js'
   import { legibleStroke } from '../lib/axiscolour.js'
   import { chartTooltip } from '../lib/charttooltip.js'
+  import { chartText } from '../lib/charttext.js'
 
   // Two ways in, one way through. `url`/`lineColour`/`valueLabel` describe a
   // single line — the area chart, which has only ever had one — and `sources`
@@ -24,6 +25,9 @@
   // "v". It is what lets one banded response draw three lines, and dash is how
   // those three are told apart: the sensor is solid, its surroundings dashed.
   //
+  // periodLabel and text ({ summary, none, caption } templates) feed the text alternative: the canvas gets
+  // role=img with a one-line summary, and the readings sit in a hidden table beside it.
+  //
   // metricLabel names the single line in the hover card; valueLabel is the unit there, so it is the fallback.
   //
   // fill sizes the plot to whatever height its container gives the frame, with no drag handle:
@@ -34,6 +38,7 @@
   let {
     url, lineColour, valueLabel, valueUnit = '', metricLabel = '', sources = null,
     title, timeLabel, empty, unavailable, resizable = false, fill = false,
+    periodLabel = '', text = {},
   } = $props()
 
   const defs = $derived(sources ?? [{ url, label: valueLabel, name: metricLabel || valueLabel, colour: lineColour, scale: 'y', unit: valueUnit }])
@@ -42,6 +47,18 @@
   // are in. 'loading' renders nothing rather than a spinner — the panel around
   // this component is already on screen with the current values.
   let status = $state('loading')
+  // The data behind the text alternative; null until a fetch has answered.
+  let readings = $state(null)
+  const alt = $derived(readings && text.summary
+    ? chartText({
+      lines: defs.map((s) => ({ name: s.name ?? s.label, unit: s.unit })),
+      data: readings,
+      periodLabel,
+      lang: document.documentElement.lang || undefined,
+      text,
+      timeLabel,
+    })
+    : null)
   let host
   let frame
 
@@ -110,6 +127,7 @@
     // readings" message would stay on screen over the new window's request —
     // claiming an answer about a period nobody has asked the server about yet.
     status = 'loading'
+    readings = null
 
     // Read here, outside the async body, so the effect depends on them: a
     // read after the first await happens outside the tracking context and the
@@ -139,7 +157,13 @@
       // Two points, not one: uPlot draws a single reading as a full plot with
       // axes and a legend, which reads as a trend the reader can follow. One
       // point is a number, and the empty state says so honestly.
-      if (data[0].length < 2) { status = 'empty'; return }
+      if (data[0].length < 2) {
+        // Empty means no readings, even if one point arrived.
+        readings = [[], ...lines.map(() => [])]
+        status = 'empty'
+        return
+      }
+      readings = data
       status = 'ok'
 
       // One axis per distinct scale, in the order the lines name them: the
@@ -258,7 +282,22 @@
 </script>
 
 <div bind:this={frame} class="chart-frame" class:chart-frame--resizable={resizable} class:chart-frame--fill={fill}>
-  <div bind:this={host} class="chart-host"></div>
+  <div bind:this={host} class="chart-host" role={alt ? 'img' : undefined} aria-label={alt?.summary}></div>
+  <!-- Beside the image, not in it: role=img hides its children from assistive tech. -->
+  {#if alt && alt.rows.length}
+    <!-- A div takes the 1px box; a bare table would size itself to its content. -->
+    <div class="sr-only">
+      <table>
+        <caption>{alt.caption}</caption>
+        <thead><tr>{#each alt.head as h, i (i)}<th scope="col">{h}</th>{/each}</tr></thead>
+        <tbody>
+          {#each alt.rows as row, r (r)}
+            <tr><th scope="row">{row[0]}</th>{#each row.slice(1) as cell, i (i)}<td>{cell}</td>{/each}</tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  {/if}
   {#if status === 'unavailable'}<p class="chart-message">{unavailable}</p>{/if}
   {#if status === 'empty'}<p class="chart-message">{empty}</p>{/if}
 </div>
