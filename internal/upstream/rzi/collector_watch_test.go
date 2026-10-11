@@ -1,9 +1,12 @@
 package rzi_test
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -32,6 +35,33 @@ func TestLoopLogsNoErrorWhenStoppedMidPass(t *testing.T) {
 	}
 }
 
+// syncBuf is a log sink that a test may read while the loop still writes.
+type syncBuf struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuf) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuf) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
+func captureSyncLog(t *testing.T) *syncBuf {
+	t.Helper()
+	b := &syncBuf{}
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(b, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(old) })
+	return b
+}
+
 // A failed pass is still an error.
 func TestLoopLogsAFailedPass(t *testing.T) {
 	r := newRig(t)
@@ -44,7 +74,7 @@ func TestLoopLogsAFailedPass(t *testing.T) {
 	}
 	c := rzi.NewCollector(r.cfg, r.st, &fakeFetcher{})
 	c.SetClockForTesting(func() time.Time { return r.now })
-	logs := captureLog(t)
+	logs := captureSyncLog(t)
 
 	done := make(chan struct{})
 	go func() { c.Loop(ctx); close(done) }()
