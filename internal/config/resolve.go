@@ -249,6 +249,26 @@ type Sea struct {
 	// MaxRows is the nrOfHits page size; a page that comes back full is treated as truncated.
 	MaxRows int
 	Datahub SeaDatahub
+	RZI     SeaRZI
+}
+
+// SeaRZI configures the RZI document fetcher. The host allow-list per source
+// is code, not config. PageURL only picks the page on an allowed host.
+type SeaRZI struct {
+	Enabled           bool
+	InboxDir          string
+	OutboxDir         string
+	InSeasonInterval  time.Duration
+	OffSeasonInterval time.Duration
+	MaxFileBytes      int64
+	RequestTimeout    time.Duration
+	Varna             SeaRZISource
+	Burgas            SeaRZISource
+	Dobrich           SeaRZISource
+}
+
+type SeaRZISource struct {
+	PageURL string
 }
 
 // SeaDatahub pins the yearly EEA Excel release. SHA256 and Size are the pins:
@@ -618,6 +638,18 @@ func resolve(r *raw) Config {
 				MaxDownloadBytes: *r.Sea.Datahub.MaxDownloadBytes,
 				MaxDisagree:      *r.Sea.Datahub.MaxDisagree,
 				MinSiteCoverage:  *r.Sea.Datahub.MinSiteCoverage,
+			},
+			RZI: SeaRZI{
+				Enabled:           *r.Sea.RZI.Enabled,
+				InboxDir:          *r.Sea.RZI.InboxDir,
+				OutboxDir:         *r.Sea.RZI.OutboxDir,
+				InSeasonInterval:  r.Sea.RZI.InSeasonInterval.Std(),
+				OffSeasonInterval: r.Sea.RZI.OffSeasonInterval.Std(),
+				MaxFileBytes:      *r.Sea.RZI.MaxFileBytes,
+				RequestTimeout:    r.Sea.RZI.RequestTimeout.Std(),
+				Varna:             SeaRZISource{PageURL: *r.Sea.RZI.Varna.PageURL},
+				Burgas:            SeaRZISource{PageURL: *r.Sea.RZI.Burgas.PageURL},
+				Dobrich:           SeaRZISource{PageURL: *r.Sea.RZI.Dobrich.PageURL},
 			},
 		},
 		Geocoder: Geocoder{

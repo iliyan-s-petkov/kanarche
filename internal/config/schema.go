@@ -207,6 +207,25 @@ type rawSea struct {
 	MaxPayloadBytes *int64         `yaml:"max_payload_bytes"`
 	MaxRows         *int           `yaml:"max_rows"`
 	Datahub         *rawSeaDatahub `yaml:"datahub"`
+	RZI             *rawSeaRZI     `yaml:"rzi"`
+}
+
+// rawSeaRZI configures the RZI document fetcher. See internal/upstream/rzi.
+type rawSeaRZI struct {
+	Enabled           *bool            `yaml:"enabled"`
+	InboxDir          *string          `yaml:"inbox_dir"`
+	OutboxDir         *string          `yaml:"outbox_dir"`
+	InSeasonInterval  *Duration        `yaml:"in_season_interval"`
+	OffSeasonInterval *Duration        `yaml:"off_season_interval"`
+	MaxFileBytes      *int64           `yaml:"max_file_bytes"`
+	RequestTimeout    *Duration        `yaml:"request_timeout"`
+	Varna             *rawSeaRZISource `yaml:"varna"`
+	Burgas            *rawSeaRZISource `yaml:"burgas"`
+	Dobrich           *rawSeaRZISource `yaml:"dobrich"`
+}
+
+type rawSeaRZISource struct {
+	PageURL *string `yaml:"page_url"`
 }
 
 // rawSeaDatahub pins the yearly EEA Excel release read by extract-bathing-datahub.
