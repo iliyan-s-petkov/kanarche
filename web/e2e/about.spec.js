@@ -223,3 +223,24 @@ for (const [path, gone] of [['/en/about', 'Their map'], ['/about', 'Тяхнат
     await page.close()
   })
 }
+
+// Six value cards must fill whole rows at every width: a short last row
+// (five then one) reads as an orphan. Rows are the distinct offsetTop values.
+for (const width of [1280, 1024, 800, 390]) {
+  test(`about value cards fill complete rows at ${width}`, async ({ ctx }) => {
+    const page = await ctx.newPage()
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/en/about')
+    await page.locator('.about-value').first().waitFor()
+    const rows = await page.evaluate(() => {
+      const by = {}
+      for (const el of document.querySelectorAll('.about-value')) {
+        by[el.offsetTop] = (by[el.offsetTop] || 0) + 1
+      }
+      return Object.values(by)
+    })
+    expect(rows.reduce((a, b) => a + b, 0)).toBe(6)
+    expect(new Set(rows).size).toBe(1)
+    await page.close()
+  })
+}
