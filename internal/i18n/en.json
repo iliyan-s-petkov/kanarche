@@ -265,6 +265,7 @@
   "locate.hint": "See the air near you",
   "locate.denied": "Location access was denied.",
   "locate.failed": "We could not determine your location.",
+  "map.canvas_label": "Interactive air quality map",
   "map.error.rate_limited": "Data is rate limited, retrying",
   "map.error.unavailable": "Map data is unavailable right now",
   "map.fullscreen": "Full screen",
