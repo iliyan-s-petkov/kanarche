@@ -292,7 +292,10 @@ func isStepStart(line string, indent int) bool {
 // cosignSignsDigest matches the cosign sign invocation and requires it to
 // target the derived image name joined to the build step's digest output by
 // `@`, never a mutable `:tag`.
-var cosignSignsDigest = regexp.MustCompile(`cosign sign --yes \$\{\{\s*env\.IMAGE\s*\}\}@\$\{\{\s*steps\.build\.outputs\.digest\s*\}\}\s*$`)
+var cosignSignsDigest = regexp.MustCompile(`cosign sign --yes \$\{\{\s*env\.(IMAGE|DOCPARSE_IMAGE)\s*\}\}@\$\{\{\s*steps\.(build|build-docparse)\.outputs\.digest\s*\}\}\s*$`)
+
+// signPairs maps each signed image env to the build step whose digest it signs.
+var signPairs = map[string]string{"IMAGE": "build", "DOCPARSE_IMAGE": "build-docparse"}
 
 // imageFromRepository matches the step that defines IMAGE from the lowercased
 // github.repository, so the signed path follows the repository.
@@ -312,9 +315,12 @@ func TestCosignSignsTheDigestNotATag(t *testing.T) {
 			continue
 		}
 		// Every sign command must be digest-form; a tag form fails here.
-		if !cosignSignsDigest.MatchString(line) {
+		m := cosignSignsDigest.FindStringSubmatch(line)
+		if m == nil {
 			t.Errorf("%s:%d: `cosign sign` does not target `${{ env.IMAGE }}@${{ steps.build.outputs.digest }}`: %s",
 				publishWorkflowPath, i+1, strings.TrimSpace(line))
+		} else if signPairs[m[1]] != m[2] {
+			t.Errorf("%s:%d: `cosign sign` signs %s with the digest of step %s", publishWorkflowPath, i+1, m[1], m[2])
 		}
 		if signIdx == -1 {
 			signIdx = i
@@ -382,6 +388,111 @@ func TestLatestIsTaggedOnlyAfterSigning(t *testing.T) {
 		t.Errorf("%s: `imagetools create` (line %d) is not after `cosign sign` (line %d); `:latest` would be aliased before the image is signed",
 			publishWorkflowPath, imagetoolsIdx, cosignSignIdx)
 	}
+}
+
+var docparseFromRepository = regexp.MustCompile(`DOCPARSE_IMAGE=ghcr\.io/\$\{GITHUB_REPOSITORY,,\}-docparse"?\s*>>\s*"?\$GITHUB_ENV`)
+
+// stepAt returns the lines of the step starting at idx.
+func stepAt(lines []string, idx int) []string {
+	indent := line0Indent(lines[idx])
+	for i := idx + 1; i < len(lines); i++ {
+		if isStepStart(lines[i], indent) || (strings.TrimSpace(lines[i]) != "" && line0Indent(lines[i]) < indent) {
+			return lines[idx:i]
+		}
+	}
+	return lines[idx:]
+}
+
+// TestDocparseImageIsPublishedLikeTheMain pins the second image to the main
+// image's path: built from Dockerfile.docparse in the publish job, scanned,
+// then signed by digest, then aliased. The PR run only builds and scans it.
+func TestDocparseImageIsPublishedLikeTheMain(t *testing.T) {
+	lines := strings.Split(readWorkflow(t, publishWorkflowPath), "\n")
+	pubStart, pubEnd := jobSpan(lines, "publish")
+	prStart, prEnd := jobSpan(lines, "pr-check")
+	if pubStart == -1 || prStart == -1 {
+		t.Fatalf("%s lacks the publish or pr-check job", publishWorkflowPath)
+	}
+
+	defIdx, buildIdx, trivyIdx, signIdx, aliasIdx := -1, -1, -1, -1, -1
+	for i := pubStart; i < pubEnd; i++ {
+		line := lines[i]
+		switch {
+		case defIdx == -1 && docparseFromRepository.MatchString(line):
+			defIdx = i
+		case strings.TrimSpace(line) == "- id: build-docparse":
+			buildIdx = i
+		case trivyIdx == -1 && containsAll(line, []string{"image-ref:", "env.DOCPARSE_IMAGE", "steps.build-docparse.outputs.digest"}):
+			trivyIdx = i
+		case signIdx == -1 && containsAll(line, []string{"cosign sign", "env.DOCPARSE_IMAGE"}):
+			signIdx = i
+		case aliasIdx == -1 && containsAll(line, []string{"imagetools create", "DOCPARSE_IMAGE"}):
+			aliasIdx = i
+		}
+	}
+	if defIdx == -1 || buildIdx == -1 || trivyIdx == -1 || signIdx == -1 || aliasIdx == -1 {
+		t.Fatalf("publish job docparse steps missing: env=%d build=%d trivy=%d sign=%d alias=%d",
+			defIdx, buildIdx, trivyIdx, signIdx, aliasIdx)
+	}
+	if !(defIdx < buildIdx && buildIdx < trivyIdx && trivyIdx < signIdx && signIdx < aliasIdx) {
+		t.Errorf("docparse steps out of order: env=%d build=%d trivy=%d sign=%d alias=%d",
+			defIdx, buildIdx, trivyIdx, signIdx, aliasIdx)
+	}
+	build := strings.Join(stepAt(lines, buildIdx), "\n")
+	for _, want := range []string{"file: Dockerfile.docparse", "push: true", "env.DOCPARSE_IMAGE"} {
+		if !strings.Contains(build, want) {
+			t.Errorf("build-docparse step lacks %q", want)
+		}
+	}
+	if strings.Contains(build, "latest") {
+		t.Error("build-docparse step tags latest; alias only after signing")
+	}
+	if !trivyStepFails(lines, trivyIdx) {
+		t.Error("publish docparse trivy step has no exit-code: '1'")
+	}
+
+	prBuild, prTrivy := -1, -1
+	for i := prStart; i < prEnd; i++ {
+		switch {
+		case strings.TrimSpace(lines[i]) == "- id: build-docparse-pr":
+			prBuild = i
+		case prTrivy == -1 && strings.Contains(lines[i], "image-ref: ${{ env.DOCPARSE_IMAGE }}:pr-check"):
+			prTrivy = i
+		}
+	}
+	if prBuild == -1 || prTrivy == -1 || prTrivy < prBuild {
+		t.Fatalf("pr-check docparse build (%d) and trivy (%d) missing or out of order", prBuild, prTrivy)
+	}
+	b := strings.Join(stepAt(lines, prBuild), "\n")
+	if !strings.Contains(b, "file: Dockerfile.docparse") || !strings.Contains(b, "push: false") {
+		t.Error("pr-check docparse build is not Dockerfile.docparse with push: false")
+	}
+	if !trivyStepFails(lines, prTrivy) {
+		t.Error("pr-check docparse trivy step has no exit-code: '1'")
+	}
+	for i := prStart; i < prEnd; i++ {
+		if strings.Contains(lines[i], "DOCPARSE_IMAGE") {
+			for _, d := range []string{"push: true", "cosign", "imagetools"} {
+				if strings.Contains(lines[i], d) {
+					t.Errorf("pr-check line %d pushes, signs or aliases docparse: %s", i+1, strings.TrimSpace(lines[i]))
+				}
+			}
+		}
+	}
+	if strings.Contains(strings.Join(lines[prStart:prEnd], "\n"), "push: true") {
+		t.Error("pr-check contains push: true")
+	}
+}
+
+// trivyStepFails reports whether the step holding line idx is a trivy step
+// with exit-code: '1' in its own with: block.
+func trivyStepFails(lines []string, idx int) bool {
+	start := idx
+	for start > 0 && !strings.HasPrefix(strings.TrimSpace(lines[start]), "- ") {
+		start--
+	}
+	step := strings.Join(stepAt(lines, start), "\n")
+	return strings.Contains(step, "aquasecurity/trivy-action") && strings.Contains(step, "exit-code: '1'")
 }
 
 // TestShortTagWidthIsPinned asserts git rev-parse pins the short SHA width

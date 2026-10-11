@@ -1,0 +1,35 @@
+# Sandbox image for cmd/rzi-extract. Pins and run flags: internal/docparse/README.md.
+
+# Same pinned toolchain as Dockerfile.
+FROM --platform=$BUILDPLATFORM golang:1.26.9@sha256:f1f0bcc2c524a3ced375fcb4d1ecb7aa371aa7070e112599aaca45cc02d0101b AS build
+ARG TARGETARCH
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/rzi-extract ./cmd/rzi-extract
+
+# Test-only probe, built only for the probe target.
+FROM build AS probe-build
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/netprobe ./cmd/netprobe
+
+# Base pinned by digest; poppler-utils unpinned so Debian security revisions
+# apply. The integration test holds it to the 25.x series, Trivy gates CVEs.
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS docparse
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends poppler-utils \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir /in /out
+COPY --from=build /out/rzi-extract /usr/local/bin/rzi-extract
+USER 65534:65534
+ENTRYPOINT ["/usr/local/bin/rzi-extract"]
+
+# Integration tests only (I1): the docparse image plus netprobe.
+FROM docparse AS probe
+COPY --from=probe-build /out/netprobe /usr/local/bin/netprobe
+ENTRYPOINT ["/usr/local/bin/netprobe"]
+
+# Default target: the published image.
+FROM docparse

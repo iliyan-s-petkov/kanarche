@@ -23,13 +23,17 @@ func TestPublishWorkflowDerivesTheImageFromTheRepository(t *testing.T) {
 	if strings.Contains(wf, "iliyan-s-petkov") {
 		t.Error("publish.yml hard-codes the repository owner; derive it from github.repository")
 	}
-	// ghcr.io appears once: in the step that builds IMAGE from the lowercased repository.
-	if n := strings.Count(wf, "ghcr.io/"); n != 2 {
-		t.Errorf("publish.yml mentions ghcr.io/ %d times, want 2 (one IMAGE definition per job)", n)
+	// ghcr.io appears only in the IMAGE and DOCPARSE_IMAGE definitions, once per job.
+	if n := strings.Count(wf, "ghcr.io/"); n != 4 {
+		t.Errorf("publish.yml mentions ghcr.io/ %d times, want 4 (IMAGE and DOCPARSE_IMAGE per job)", n)
 	}
-	define := regexp.MustCompile(`echo "IMAGE=ghcr\.io/\$\{GITHUB_REPOSITORY,,\}" >> "\$GITHUB_ENV"`)
-	if n := len(define.FindAllString(wf, -1)); n != 2 {
-		t.Errorf("found %d IMAGE definitions from GITHUB_REPOSITORY, want 2 (pr-check and publish)", n)
+	for _, def := range []string{
+		`echo "IMAGE=ghcr\.io/\$\{GITHUB_REPOSITORY,,\}" >> "\$GITHUB_ENV"`,
+		`echo "DOCPARSE_IMAGE=ghcr\.io/\$\{GITHUB_REPOSITORY,,\}-docparse" >> "\$GITHUB_ENV"`,
+	} {
+		if n := len(regexp.MustCompile(def).FindAllString(wf, -1)); n != 2 {
+			t.Errorf("found %d definitions matching %s, want 2 (pr-check and publish)", n, def)
+		}
 	}
 	if strings.Contains(wf, "org.opencontainers.image.source=https://github.com/") {
 		t.Error("the OCI source label hard-codes github.com and the repository")
