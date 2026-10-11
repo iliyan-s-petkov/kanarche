@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "source": "rzi_varna",
+  "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "extractor_version": "rzi-extract/1",
+  "blocks": [
+    {
+      "point": "03001",
+      "name": "synthetic point one",
+      "lat": 43.3033,
+      "lon": 28.0533,
+      "rows": [
+        {"planned": "2026-06-02", "date": "2026-06-02", "ie": {"op": "<", "value": 15}, "ec": {"op": "=", "value": 30}, "unit": "MPN/100ml", "remarks": ""},
+        {"planned": "2026-07-14", "date": "2026-07-17", "ie": {"op": "=", "value": 46}, "ec": {"op": "=", "value": 120}, "unit": "MPN/100ml", "remarks": "пробата е изместена"}
+      ]
+    },
+    {
+      "point": "03002",
+      "name": "synthetic point two",
+      "lat": 43.2905,
+      "lon": 28.0452,
+      "rows": [
+        {"planned": "2026-06-02", "date": "2026-06-02", "ie": {"op": "=", "value": 4124}, "ec": {"op": "=", "value": 34659}, "unit": "MPN/100ml", "remarks": "след пороен дъжд"}
+      ]
+    },
+    {
+      "point": "03003",
+      "name": "synthetic point three",
+      "lat": 43.27,
+      "lon": 28.03,
+      "rows": [
+        {"planned": "", "date": "2026-09-16", "ie": {"op": "<", "value": 15}, "ec": {"op": "<", "value": 15}, "unit": "MPN/100ml", "remarks": ""}
+      ]
+    }
+  ],
+  "warnings": []
+}
