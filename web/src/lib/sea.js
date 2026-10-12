@@ -130,11 +130,13 @@ export function readSeaTexts(d) {
     sources: { rzi_varna: s('tSeaSourceRziVarna'), rzi_burgas: s('tSeaSourceRziBurgas'), rzi_dobrich: s('tSeaSourceRziDobrich') },
     sourceLink: s('tSeaSourceLink'),
     unitMpn: s('tSeaUnitMpn'),
+    newTab: s('tSeaNewTab'),
     // The legend (i) dialog, see infodialog.js.
     info: {
       label: s('tSeaInfoLabel'),
       title: s('tSeaInfoTitle'),
       body: s('tSeaInfoBody'),
+      rzi: s('tSeaInfoRzi'),
       linkMap: s('tSeaInfoLinkMap'),
       linkEea: s('tSeaInfoLinkEea'),
       linkDatahub: s('tSeaInfoLinkDatahub'),

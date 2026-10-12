@@ -49,6 +49,8 @@
   <svg class="sea-panel__swatch" viewBox="0 0 1 1" aria-hidden="true" focusable="false"><rect width="1" height="1" fill={colour} /></svg>
 {/snippet}
 
+{#snippet newTab()}{#if t.newTab}<span class="sr-only">, {t.newTab}</span>{/if}{/snippet}
+
 {#snippet reading(value, below, limits)}
   {@const level = seaLevel(value, below, limits)}
   {below ? '<' : ''}{value}{#if level}<span aria-hidden="true" class="sea-panel__mark"> {MARKS[level]}</span>{/if}
@@ -104,7 +106,7 @@
           <p class="sea-panel__credit-rzi">{latestCredit}</p>
           {#if t.latest.singleSampleNote}<p class="sea-panel__latest-note">{t.latest.singleSampleNote}</p>{/if}
         {/if}
-        {#if rziPage}<p class="sea-panel__credit"><a href={rziPage} rel="noopener noreferrer" target="_blank">{t.sourceLink}</a></p>{/if}
+        {#if rziPage}<p class="sea-panel__credit"><a href={rziPage} rel="noopener noreferrer" target="_blank">{t.sourceLink}{@render newTab()}</a></p>{/if}
         <p class="sea-panel__notice">{t.noticeUnofficial}</p>
       </div>
     {/if}
@@ -136,8 +138,8 @@
 
     <p class="sea-panel__note">{t.note}</p>
     <p class="sea-panel__credit">
-      <a href={creditURL} rel="noopener noreferrer" target="_blank">{t.credit}</a>
-      {#if d.site.profile_url}· <a href={d.site.profile_url} rel="noopener noreferrer" target="_blank">{t.profile}</a>{/if}
+      <a href={creditURL} rel="noopener noreferrer" target="_blank">{t.credit}{@render newTab()}</a>
+      {#if d.site.profile_url}· <a href={d.site.profile_url} rel="noopener noreferrer" target="_blank">{t.profile}{@render newTab()}</a>{/if}
     </p>
   {:else}
     <p class="sea-panel__msg" aria-busy="true">…</p>

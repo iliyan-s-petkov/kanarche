@@ -79,6 +79,13 @@ describe('seaInfoContent', () => {
     expect(SEA_LINKS.eea).toBe(c.links[1].href)
   })
 
+  it('adds the RZI paragraph second, only when the text is non-empty', () => {
+    const base = { title: 'T', body: 'B', linkMap: 'Map', linkEea: 'EEA' }
+    expect(seaInfoContent({ ...base, rzi: 'R' }).paragraphs).toEqual(['B', 'R'])
+    expect(seaInfoContent({ ...base, rzi: '' }).paragraphs).toEqual(['B'])
+    expect(seaInfoContent(base).paragraphs).toEqual(['B'])
+  })
+
   const info = { title: 'T', body: 'B', linkMap: 'Map', linkEea: 'EEA', linkDatahub: 'Dataset' }
   it('adds the Datahub dataset link from the API url', () => {
     const c = seaInfoContent(info, 'https://www.eea.europa.eu/en/datahub/datahubitem-view/x')
