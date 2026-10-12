@@ -2,7 +2,6 @@ package api
 
 import (
 	"cmp"
-	"context"
 	"slices"
 	"time"
 
@@ -32,36 +31,46 @@ func seaPages(c config.SeaRZI) map[string]string {
 
 // seaRZIInput is the RZI side of one encode.
 type seaRZIInput struct {
-	rows     []store.RZIRow
-	lastGood map[string]store.RZIFile
-	pages    map[string]string
-	now      time.Time
+	rows  []store.RZIRow
+	pages map[string]string
+	now   time.Time
 }
 
 // visible keeps the RZI rows the API may show, grouped by site and ascending
-// by date. A row is hidden when the EEA holds its season for the site, or has a
+// by date. Rows of a site the EEA does not list are counted per source in
+// dropped. A row is hidden when the EEA holds its season for the site, or has a
 // sample on the same date. Hidden rows stay in the store.
-func (in seaRZIInput) visible(d store.BathingData) map[string][]store.RZIRow {
+func (in seaRZIInput) visible(d store.BathingData) (visible map[string][]store.RZIRow, dropped map[string]int) {
 	type siteSeason struct {
 		site   string
 		season int
 	}
 	type siteDate struct {
 		site string
-		date time.Time
+		date string
 	}
 	seasons := map[siteSeason]bool{}
 	dates := map[siteDate]bool{}
+	known := map[string]bool{}
+	for _, site := range d.Sites {
+		known[site.ID] = true
+	}
+	// Dates compare as calendar dates, the form the API serves.
 	for _, c := range d.Classes {
 		seasons[siteSeason{c.SiteID, c.Season}] = true
 	}
 	for _, s := range d.Samples {
 		seasons[siteSeason{s.SiteID, s.Season}] = true
-		dates[siteDate{s.SiteID, s.Date.UTC()}] = true
+		dates[siteDate{s.SiteID, s.Date.Format(time.DateOnly)}] = true
 	}
 	out := map[string][]store.RZIRow{}
+	dropped = map[string]int{}
 	for _, r := range in.rows {
-		if seasons[siteSeason{r.SiteID, r.Season}] || dates[siteDate{r.SiteID, r.Date.UTC()}] {
+		if !known[r.SiteID] {
+			dropped[r.File.Source]++
+			continue
+		}
+		if seasons[siteSeason{r.SiteID, r.Season}] || dates[siteDate{r.SiteID, r.Date.Format(time.DateOnly)}] {
 			continue
 		}
 		out[r.SiteID] = append(out[r.SiteID], r)
@@ -69,15 +78,19 @@ func (in seaRZIInput) visible(d store.BathingData) map[string][]store.RZIRow {
 	for _, rs := range out {
 		slices.SortStableFunc(rs, func(a, b store.RZIRow) int { return a.Date.Compare(b.Date) })
 	}
-	return out
+	return out, dropped
 }
 
-// latest is the newest of rs (ascending), nil off-season.
+// latest is the newest of rs (ascending) from the current year by the Sofia
+// date. It is nil off-season, and when the newest sample is from an earlier year.
 func (in seaRZIInput) latest(rs []store.RZIRow) *seaLatest {
 	if len(rs) == 0 || !rzi.SeasonOpen(in.now) {
 		return nil
 	}
 	r := rs[len(rs)-1]
+	if r.Date.Year() != rzi.SofiaDate(in.now).Year() {
+		return nil
+	}
 	age := int(rzi.SofiaDate(in.now).Sub(r.Date.UTC()) / (24 * time.Hour))
 	return &seaLatest{
 		Date: r.Date.UTC().Format(time.DateOnly), Source: r.File.Source,
@@ -98,16 +111,8 @@ func (in seaRZIInput) info(rs []store.RZIRow) *seaRZIInfo {
 	if page == "" {
 		return nil
 	}
-	fetched := time.Time{}
-	if f, ok := in.lastGood[source]; ok {
-		fetched = f.FetchedAt
-	} else {
-		for _, r := range rs {
-			if r.File.Source == source && r.File.FetchedAt.After(fetched) {
-				fetched = r.File.FetchedAt
-			}
-		}
-	}
+	// The file that holds the newest sample, not the source's last good file.
+	fetched := rs[len(rs)-1].File.FetchedAt
 	return &seaRZIInfo{Source: source, PageURL: page, FetchedAt: fetched.UTC()}
 }
 
@@ -134,28 +139,4 @@ func (in seaRZIInput) merge(eea []seaSample, rs []store.RZIRow) []seaSample {
 	// ISO dates sort as text. Stable, so EEA rows keep their order.
 	slices.SortStableFunc(all, func(a, b seaSample) int { return cmp.Compare(b.Date, a.Date) })
 	return all
-}
-
-// loadRZI reads the RZI rows and the last good file of each source in them.
-func loadRZI(ctx context.Context, src DataSource) ([]store.RZIRow, map[string]store.RZIFile, error) {
-	rows, err := src.LoadRZI(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	good := map[string]store.RZIFile{}
-	asked := map[string]bool{}
-	for _, r := range rows {
-		if asked[r.File.Source] {
-			continue
-		}
-		asked[r.File.Source] = true
-		f, ok, err := src.RZILastGood(ctx, r.File.Source)
-		if err != nil {
-			return nil, nil, err
-		}
-		if ok {
-			good[r.File.Source] = f
-		}
-	}
-	return rows, good, nil
 }

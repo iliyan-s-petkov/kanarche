@@ -218,7 +218,3 @@ func TestNilAdmissionFailsClosed(t *testing.T) {
 func (s *blockingSource) LoadRZI(_ context.Context) ([]store.RZIRow, error) {
 	return nil, nil
 }
-
-func (s *blockingSource) RZILastGood(_ context.Context, _ string) (store.RZIFile, bool, error) {
-	return store.RZIFile{}, false, nil
-}

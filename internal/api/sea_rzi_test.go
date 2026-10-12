@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -51,7 +54,6 @@ func rziRow(site string, date time.Time, season, ec, ie int) store.RZIRow {
 func rziSource(rows ...store.RZIRow) *stubSource {
 	src := seaSource()
 	src.rzi = rows
-	src.rziLastGood = map[string]store.RZIFile{seaVarnaSource: rziFile(1)}
 	return src
 }
 
@@ -197,6 +199,17 @@ func TestSeaLatestIsNewestVisibleSample(t *testing.T) {
 	if got, _ := latestOf(t, d); got != nil {
 		t.Errorf("latest from an EEA-covered season: %+v", got)
 	}
+	// A current-year row hidden by an EEA sample on its date is newer than the visible one.
+	hiddenNewer := rziRow(seaCoastal, day(2026, 7, 10), 2026, 1, 1)
+	visible := rziRow(seaCoastal, day(2026, 7, 1), 2026, 55, 66)
+	src := rziSource(visible, hiddenNewer)
+	src.bathing.Samples = append(src.bathing.Samples,
+		store.BathingSample{SiteID: seaCoastal, Date: day(2026, 7, 10), Season: 2025, EC: 5, IE: 5})
+	d = rziDeps(t, src, sofiaAt(2026, 7, 20, 12, 0))
+	got, _ := latestOf(t, d)
+	if got == nil || got.Date != "2026-07-01" || got.EColi != 55 {
+		t.Errorf("latest = %+v, want the visible 2026-07-01 row", got)
+	}
 }
 
 type seaDetailRZI struct {
@@ -336,20 +349,32 @@ func TestSeaEEAClassCoversTheSeason(t *testing.T) {
 }
 
 // After a manual approve the samples of one source sit under two files.
-func TestSeaSamplesAcrossTwoFiles(t *testing.T) {
-	oldRow := rziRow(seaCoastal, day(2026, 6, 10), 2026, 1, 1)
-	oldRow.File = rziFile(1)
-	oldRow.File.FetchedAt = oldRow.File.FetchedAt.Add(-48 * time.Hour)
-	newRow := rziRow(seaCoastal, day(2026, 7, 14), 2026, 2, 2)
-	newRow.File = rziFile(2)
-	src := rziSource(oldRow, newRow)
-	src.rziLastGood = map[string]store.RZIFile{seaVarnaSource: rziFile(2)}
-	b, _ := detailOf(t, rziDeps(t, src, sofiaAt(2026, 7, 20, 12, 0)), seaCoastal)
-	if b.Site.RZI == nil || b.Site.RZI.FetchedAt != seaRZIFetched {
-		t.Errorf("rzi = %+v, want fetched_at of the last good file %s", b.Site.RZI, seaRZIFetched)
-	}
-	if len(b.Samples) != 4 {
-		t.Errorf("%d samples, want 4", len(b.Samples))
+// fetched_at is the file that holds the newest visible sample.
+func TestSeaFetchedAtIsTheFileOfTheNewestSample(t *testing.T) {
+	older := rziFile(1)
+	older.FetchedAt = older.FetchedAt.Add(-48 * time.Hour)
+	newer := rziFile(2)
+	for _, c := range []struct {
+		name       string
+		oldDay     time.Time
+		newDay     time.Time
+		wantFetch  string
+		wantSample int
+	}{
+		{"newest sample in the newer file", day(2026, 6, 10), day(2026, 7, 14), seaRZIFetched, 4},
+		{"newest sample kept in the older file", day(2026, 7, 14), day(2026, 6, 10), older.FetchedAt.Format(time.RFC3339), 4},
+	} {
+		oldRow := rziRow(seaCoastal, c.oldDay, 2026, 1, 1)
+		oldRow.File = older
+		newRow := rziRow(seaCoastal, c.newDay, 2026, 2, 2)
+		newRow.File = newer
+		b, _ := detailOf(t, rziDeps(t, rziSource(oldRow, newRow), sofiaAt(2026, 7, 20, 12, 0)), seaCoastal)
+		if b.Site.RZI == nil || b.Site.RZI.FetchedAt != c.wantFetch {
+			t.Errorf("%s: rzi = %+v, want fetched_at %s", c.name, b.Site.RZI, c.wantFetch)
+		}
+		if len(b.Samples) != c.wantSample {
+			t.Errorf("%s: %d samples, want %d", c.name, len(b.Samples), c.wantSample)
+		}
 	}
 }
 
@@ -478,5 +503,160 @@ func TestSeaRZIStoreErrorIsA500(t *testing.T) {
 	rec := serve(t, rziDeps(t, src, sofiaAt(2026, 7, 20, 12, 0)), get("/api/v1/sea/sites", "203.0.113.7"))
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want 500", rec.Code)
+	}
+}
+
+// A sample from last year is not this season's latest, even in season.
+func TestSeaLatestNeedsTheCurrentYear(t *testing.T) {
+	lastYear := rziRow(seaCoastal, day(2025, 9, 20), 2025, 10, 10)
+	thisYear := rziRow(seaCoastal, day(2026, 5, 2), 2026, 10, 10)
+	for _, c := range []struct {
+		name string
+		row  store.RZIRow
+		now  time.Time
+		want bool
+	}{
+		{"2025 sample on 2026-05-15", lastYear, sofiaAt(2026, 5, 15, 0, 0), false},
+		{"2025 sample on 2026-07-01", lastYear, sofiaAt(2026, 7, 1, 12, 0), false},
+		{"2025 sample on 2025-10-15", lastYear, sofiaAt(2025, 10, 15, 12, 0), true},
+		{"2026 sample on 2026-05-15", thisYear, sofiaAt(2026, 5, 15, 0, 0), true},
+	} {
+		got, _ := latestOf(t, rziDeps(t, rziSource(c.row), c.now))
+		if (got != nil) != c.want {
+			t.Errorf("%s: latest = %+v, want present %v", c.name, got, c.want)
+		}
+	}
+	// The samples table still lists last year's row.
+	b, _ := detailOf(t, rziDeps(t, rziSource(lastYear), sofiaAt(2026, 5, 15, 0, 0)), seaCoastal)
+	if len(b.Samples) != 3 {
+		t.Errorf("%d samples, want the RZI row listed too", len(b.Samples))
+	}
+}
+
+// The EEA date is compared as a calendar date, whatever time and zone it carries.
+func TestSeaEEADateComparesAsCalendarDate(t *testing.T) {
+	for name, eea := range map[string]time.Time{
+		"sofia midnight": time.Date(2025, 7, 2, 0, 0, 0, 0, sofia),
+		"utc midday":     time.Date(2025, 7, 2, 12, 30, 0, 0, time.UTC),
+	} {
+		src := rziSource(rziRow(seaCoastal, day(2025, 7, 2), 2025, 777, 777))
+		src.bathing.Samples = append(src.bathing.Samples,
+			store.BathingSample{SiteID: seaCoastal, Date: eea, Season: 2024, EC: 5, IE: 5})
+		b, raw := detailOf(t, rziDeps(t, src, sofiaAt(2026, 3, 1, 12, 0)), seaCoastal)
+		n := 0
+		for _, s := range b.Samples {
+			if s.Date == "2025-07-02" {
+				n++
+				if s.EColi != 5 {
+					t.Errorf("%s: e_coli = %d, want the EEA value 5", name, s.EColi)
+				}
+			}
+		}
+		if n != 1 {
+			t.Errorf("%s: %d rows on 2025-07-02, want 1: %s", name, n, raw)
+		}
+	}
+}
+
+// Rows of a site the EEA does not list are dropped, with one fixed log line per source.
+func TestSeaUnknownSiteRowsAreLoggedOnce(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	ghost1 := rziRow("BG0000000000000099", day(2026, 7, 1), 2026, 1, 1)
+	ghost2 := rziRow("BG0000000000000099", day(2026, 7, 8), 2026, 1, 1)
+	src := rziSource(ghost1, ghost2, rziRow(seaCoastal, day(2026, 7, 14), 2026, 5, 5))
+	d := rziDeps(t, src, sofiaAt(2026, 7, 20, 12, 0))
+	h := router(t, d)
+	serveOn(t, h, "/api/v1/sea/sites")
+	serveOn(t, h, "/api/v1/sea/sites/"+seaCoastal)
+	out := buf.String()
+	var lines []string
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "unknown sites") {
+			lines = append(lines, l)
+		}
+	}
+	if len(lines) != 1 || !strings.Contains(lines[0], "source=rzi_varna") || !strings.Contains(lines[0], "count=2") {
+		t.Errorf("log lines = %q, want one with source=rzi_varna count=2", lines)
+	}
+	if strings.Contains(out, "SECRET-REMARK") || strings.Contains(out, "BG0000000000000099") {
+		t.Errorf("the log carries document text: %s", out)
+	}
+}
+
+// Pins today's behaviour: with no page_url configured the rzi object is absent
+// and the source ids stay on latest and on the samples.
+func TestSeaUnconfiguredPageURLOmitsRZIObject(t *testing.T) {
+	d := rziDeps(t, rziSource(rziRow(seaCoastal, day(2026, 7, 14), 2026, 5, 5)), sofiaAt(2026, 7, 20, 12, 0))
+	d.Config.Sea.RZI.Varna.PageURL = ""
+	b, raw := detailOf(t, d, seaCoastal)
+	if b.Site.RZI != nil || bytes.Contains(raw, []byte(`"rzi"`)) {
+		t.Errorf("rzi object served without a page: %s", raw)
+	}
+	if b.Samples[0].Source != seaVarnaSource {
+		t.Errorf("sample source = %q, want %s", b.Samples[0].Source, seaVarnaSource)
+	}
+	if got, _ := latestOf(t, d); got == nil || got.Source != seaVarnaSource {
+		t.Errorf("latest = %+v, want source %s", got, seaVarnaSource)
+	}
+}
+
+// A clock that steps back inside the TTL must not move the cache backwards.
+func TestSeaCacheDoesNotFlapWhenTheClockStepsBack(t *testing.T) {
+	src := rziSource(rziRow(seaCoastal, day(2026, 7, 1), 2026, 1, 1))
+	times := []time.Time{sofiaAt(2026, 7, 23, 0, 10), sofiaAt(2026, 7, 22, 23, 30), sofiaAt(2026, 7, 23, 0, 20)}
+	i := 0
+	d := visitorsDeps(t, src)
+	d.Clock = func() time.Time { t := times[i]; i++; return t }
+	h := router(t, d)
+	for range times {
+		rec := serveOn(t, h, "/api/v1/sea/sites")
+		if !strings.Contains(rec.Body.String(), `"stale":true`) {
+			t.Errorf("body is not the day-22 answer: %s", rec.Body.String())
+		}
+	}
+	if src.rziCalls != 1 {
+		t.Errorf("%d RZI loads, want 1", src.rziCalls)
+	}
+}
+
+// Parallel requests on both endpoints make one load per Sofia day.
+func TestSeaParallelRequestsLoadOncePerDay(t *testing.T) {
+	src := rziSource(rziRow(seaCoastal, day(2026, 7, 1), 2026, 1, 1))
+	var mu sync.Mutex
+	now := sofiaAt(2026, 7, 22, 12, 0)
+	d := visitorsDeps(t, src)
+	d.Clock = func() time.Time { mu.Lock(); defer mu.Unlock(); return now }
+	h := router(t, d)
+	burst := func() {
+		var wg sync.WaitGroup
+		for i := 0; i < 40; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/" + seaCoastal} {
+					rec := httptest.NewRecorder()
+					h.ServeHTTP(rec, get(p, "203.0.113.7"))
+					if rec.Code != http.StatusOK {
+						t.Errorf("%s: status %d", p, rec.Code)
+					}
+				}
+			}()
+		}
+		wg.Wait()
+	}
+	burst()
+	if src.rziCalls != 1 {
+		t.Fatalf("%d RZI loads after the first burst, want 1", src.rziCalls)
+	}
+	mu.Lock()
+	now = sofiaAt(2026, 7, 23, 0, 5)
+	mu.Unlock()
+	burst()
+	if src.rziCalls != 2 {
+		t.Errorf("%d RZI loads after the next day, want 2", src.rziCalls)
 	}
 }

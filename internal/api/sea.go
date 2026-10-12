@@ -138,11 +138,15 @@ type seaCache struct {
 	ok  bool
 }
 
-func (c *seaCache) get(ctx context.Context, src DataSource, env seaEnv, now time.Time) (seaBodies, error) {
+// get reads the clock under the lock, so a request that waited behind a newer
+// reload cannot carry an older time into the cache. A clock that steps back is
+// served from the cache instead of reloading.
+func (c *seaCache) get(ctx context.Context, src DataSource, env seaEnv, clock func() time.Time) (seaBodies, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	now := clock()
 	day := rzi.SofiaDate(now)
-	if c.ok && now.Sub(c.fetched) < seaTTL && day.Equal(c.day) {
+	if c.ok && (now.Before(c.fetched) || (now.Sub(c.fetched) < seaTTL && day.Equal(c.day))) {
 		return c.bodies, nil
 	}
 	d, err := src.LoadBathing(ctx)
@@ -167,11 +171,12 @@ func (c *seaCache) get(ctx context.Context, src DataSource, env seaEnv, now time
 		}
 		sup = newSeaSupplement(ed, env.meta)
 	}
-	rows, good, err := loadRZI(ctx, src)
+	rows, err := src.LoadRZI(ctx)
 	if err != nil {
 		return seaBodies{}, err
 	}
-	b, err := encodeSea(d, importedAt, sup, seaRZIInput{rows: rows, lastGood: good, pages: env.pages, now: now})
+	in := seaRZIInput{rows: rows, pages: env.pages, now: now}
+	b, err := encodeSea(d, importedAt, sup, in)
 	if err != nil {
 		return seaBodies{}, err
 	}
@@ -214,7 +219,10 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement, i
 		}}, samples[s.SiteID]...)
 	}
 
-	visible := in.visible(d)
+	visible, dropped := in.visible(d)
+	for source, n := range dropped {
+		slog.Warn("sea rzi rows for unknown sites dropped", "source", source, "count", n)
+	}
 	list := seaSitesBody{ImportedAt: importedAt, Limits: bathing.LimitsByZone, Sites: make([]seaSite, 0, len(d.Sites))}
 	out := seaBodies{sites: make(map[string][]byte, len(d.Sites))}
 	for _, s := range d.Sites {
@@ -277,7 +285,7 @@ func (d Deps) seaEnv() seaEnv {
 
 // handleSeaSites serves every bathing site with its latest annual class.
 func (d Deps) handleSeaSites(w http.ResponseWriter, r *http.Request) {
-	b, err := d.sea.get(r.Context(), d.Store, d.seaEnv(), d.now())
+	b, err := d.sea.get(r.Context(), d.Store, d.seaEnv(), d.now)
 	if err != nil {
 		slog.Error("sea sites query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
@@ -293,7 +301,7 @@ func (d Deps) handleSeaSite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "The site id is not valid.")
 		return
 	}
-	b, err := d.sea.get(r.Context(), d.Store, d.seaEnv(), d.now())
+	b, err := d.sea.get(r.Context(), d.Store, d.seaEnv(), d.now)
 	if err != nil {
 		slog.Error("sea site query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")

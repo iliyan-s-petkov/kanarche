@@ -35,7 +35,6 @@ type DataSource interface {
 	VisitorDailyLast(ctx context.Context, n int) ([]store.VisitorDaily, error)
 	LoadBathing(ctx context.Context) (store.BathingData, error)
 	LoadRZI(ctx context.Context) ([]store.RZIRow, error)
-	RZILastGood(ctx context.Context, source string) (store.RZIFile, bool, error)
 	BathingLastImport(ctx context.Context) (time.Time, bool, error)
 	BathingSupplementEdition(ctx context.Context) (string, error)
 }
