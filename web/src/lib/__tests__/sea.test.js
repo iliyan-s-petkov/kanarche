@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SEA_CLASSES, seaClass, seaColours, seaFeatures, seaLevel, seaName, fillSeason, fillSlots, readSeaTexts,
+  SEA_CLASSES, seaClass, seaColours, seaFeatures, seaLevel, seaName, fillSeason, fillSlots, readSeaTexts, safePageURL,
 } from '../sea.js'
 
 const COLOURS = ['#0b4f9c', '#3a8fd9', '#8cc5e8', '#8e3a9c', '#9ca3af']
@@ -112,5 +112,20 @@ describe('readSeaTexts', () => {
     expect(t.classes.excellent).toBe('')
     expect(t.zones.lake).toBe('Lake')
     expect(t.eColi).toBe('E. coli')
+  })
+})
+
+describe('safePageURL', () => {
+  it('keeps an http(s) page and returns the parsed href', () => {
+    expect(safePageURL('https://rzi-varna.com/rezultati/')).toBe('https://rzi-varna.com/rezultati/')
+    expect(safePageURL('http://example.org')).toBe('http://example.org/')
+  })
+  it.each([
+    ' javascript:alert(1)', 'JAVASCRIPT:alert(1)', 'javascript:alert(1)', '//evil.com/x', 'data:text/html,<b>x</b>',
+    '/\\evil.com', '\\\\evil.com\\x', 'ftp://example.org/', '', null, undefined,
+    'https://rzi-varna.com/files/r.pdf', 'https://rzi-varna.com/r.XLS', 'https://rzi-varna.com/r.xlsx?x=1',
+    'https://rzi-varna.com/r.csv', 'https://rzi-varna.com/r.doc', 'https://rzi-varna.com/r.docx',
+  ])('rejects %s', (u) => {
+    expect(safePageURL(u)).toBe('')
   })
 })

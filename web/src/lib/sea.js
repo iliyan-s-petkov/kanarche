@@ -59,8 +59,18 @@ export function creditDate(iso) {
 
 export const isRZISource = (source) => typeof source === 'string' && source.startsWith('rzi_')
 
-// Only http(s) pages are linked.
-export const safePageURL = (url) => (/^https?:\/\//i.test(url || '') ? url : '')
+// Only an absolute http(s) results page is linked. A path that names a file is not a page.
+export function safePageURL(url) {
+  let u
+  try {
+    u = new URL(String(url ?? ''))
+  } catch {
+    return ''
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return ''
+  if (/\.(pdf|xlsx?|csv|docx?)$/i.test(u.pathname)) return ''
+  return u.href
+}
 
 // The credit line for one RZI sample. Empty when the template or the source name is missing,
 // and callers then show no value from that sample.

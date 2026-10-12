@@ -43,7 +43,7 @@ const latest = {
 const rziRow = { date: '2026-08-12', season: 2026, e_coli: 600, e_coli_below_detection: false, enterococci: 40, enterococci_below_detection: true, pre_season: false, source: 'rzi_varna' }
 const withRZI = (over = {}) => ({
   ...detail,
-  site: { ...detail.site, rzi: { source: 'rzi_varna', page_url: PAGE, fetched_at: '2026-08-13T05:00:00Z' } },
+  site: { ...detail.site, rzi: { source: 'rzi_varna', page_url: PAGE, fetched_at: '2026-08-13T05:00:00Z', season_open: true } },
   latest,
   samples: [{ ...rziRow, remarks: '<img src=x onerror=alert(1)>' }, { ...detail.samples[0], source: 'eea' }],
   ...over,
@@ -98,11 +98,14 @@ describe('SeaPanel latest lab result', () => {
     expect(root.querySelector('.sea-panel__latest-value')).toBeNull()
     expect(root.textContent).not.toContain('600')
     expect(root.querySelector('.sea-panel__credit-rzi')).toBeNull()
+    // No heading-only section either.
+    expect(root.querySelector('.sea-panel__latest')).toBeNull()
+    expect(root.querySelector('.sea-panel__row-credit')).toBeNull()
   })
 
   it('renders no RZI value when the source has no name', async () => {
     const root = await opened(withRZI({ latest: { ...latest, source: 'rzi_unknown' } }))
-    expect(root.querySelector('.sea-panel__latest-value')).toBeNull()
+    expect(root.querySelector('.sea-panel__latest')).toBeNull()
   })
 
   it('links to the RZI page, never to a file', async () => {
@@ -125,22 +128,63 @@ describe('SeaPanel latest lab result', () => {
     const block = root.querySelector('.sea-panel__latest')
     expect(block.querySelector('.sea-panel__stale').textContent).toBe('No sample in the last 21 days. Latest: 12.08.2026.')
     expect(block.querySelector('.sea-panel__latest-value')).toBeNull()
+    expect(block.querySelector('.sea-panel__credit-rzi').textContent).toBe('Source: RHI Varna, sample of 12.08.2026')
   })
 
   it('shows the off-season state when only the RZI page is known', async () => {
-    const root = await opened(withRZI({ latest: undefined }))
+    const body = withRZI({ latest: undefined })
+    body.site.rzi.season_open = false
+    const root = await opened(body)
     const block = root.querySelector('.sea-panel__latest')
     expect(block.querySelector('.sea-panel__off-season').textContent).toBe('Season closed. Results of 2026.')
     expect(block.querySelector('.sea-panel__latest-value')).toBeNull()
     expect(block.querySelector('a').getAttribute('href')).toBe(PAGE)
   })
 
-  it('marks RZI rows in the samples table with their source, and EEA rows not', async () => {
+  it('gives every RZI row its credit, and EEA rows none', async () => {
     const root = await opened(withRZI())
     const rows = [...root.querySelectorAll('.sea-panel__samples tbody tr')]
     expect(rows).toHaveLength(2)
-    expect(rows[0].querySelector('.sea-panel__row-source').textContent).toBe('RHI Varna')
-    expect(rows[1].querySelector('.sea-panel__row-source')).toBeNull()
+    expect(rows[0].querySelector('.sea-panel__row-credit').textContent).toBe('Source: RHI Varna, sample of 12.08.2026')
+    expect(rows[1].querySelector('.sea-panel__row-credit')).toBeNull()
+  })
+
+  it('credits each of several RZI rows with its own date and source', async () => {
+    const body = withRZI()
+    body.samples = [
+      { ...rziRow, date: '2026-08-12' },
+      { ...rziRow, date: '2026-07-29', source: 'rzi_burgas' },
+    ]
+    const root = await opened(body)
+    const credits = [...root.querySelectorAll('.sea-panel__row-credit')].map((n) => n.textContent)
+    expect(credits).toEqual(['Source: RHI Varna, sample of 12.08.2026', 'Source: RHI Burgas, sample of 29.07.2026'])
+  })
+
+  it('in season with prior-year rows only: no latest block, credited rows, no off-season text', async () => {
+    const body = withRZI({ latest: undefined })
+    body.samples = [{ ...rziRow, date: '2025-08-12', season: 2025 }]
+    const root = await opened(body)
+    expect(root.querySelector('.sea-panel__latest')).toBeNull()
+    expect(root.textContent).not.toContain('Season closed')
+    expect(root.querySelector('.sea-panel__row-credit').textContent).toBe('Source: RHI Varna, sample of 12.08.2025')
+  })
+
+  it('renders no empty paragraph when the stale or off-season template is empty', async () => {
+    const off = withRZI({ latest: undefined })
+    off.site.rzi.season_open = false
+    const a = await opened(off, { tSeaLatestOffSeason: '' })
+    expect(a.querySelector('.sea-panel__latest')).toBeNull()
+    const b = await opened(withRZI({ latest: { ...latest, stale: true } }), { tSeaLatestStale: '' })
+    expect(b.querySelector('.sea-panel__stale')).toBeNull()
+    expect(b.querySelector('.sea-panel__latest')).toBeNull()
+  })
+
+  it('ties the unit to both lab values', async () => {
+    const root = await opened(withRZI())
+    const unit = root.querySelector('.sea-panel__latest-unit')
+    for (const v of root.querySelectorAll('.sea-panel__latest-value')) {
+      expect(v.getAttribute('aria-describedby')).toBe(unit.id)
+    }
   })
 
   // I15: remarks are not in the view, and any text that looks like markup stays text.
@@ -149,7 +193,7 @@ describe('SeaPanel latest lab result', () => {
     const root = await opened(withRZI(), { tSeaSourceRziVarna: hostile })
     expect(root.querySelector('img')).toBeNull()
     expect(root.querySelector('.sea-panel__credit-rzi').textContent).toBe(`Source: ${hostile}, sample of 12.08.2026`)
-    expect(root.querySelector('.sea-panel__row-source').textContent).toBe(hostile)
+    expect(root.querySelector('.sea-panel__row-credit').textContent).toBe(`Source: ${hostile}, sample of 12.08.2026`)
     const plain = await opened(withRZI())
     expect(plain.innerHTML).not.toContain('onerror')
   })
@@ -157,7 +201,7 @@ describe('SeaPanel latest lab result', () => {
   it('shows no lab block and no source marker without RZI data', async () => {
     const root = await opened(detail)
     expect(root.querySelector('.sea-panel__latest')).toBeNull()
-    expect(root.querySelector('.sea-panel__row-source')).toBeNull()
+    expect(root.querySelector('.sea-panel__row-credit')).toBeNull()
     expect(root.textContent).not.toContain('Not an official source.')
   })
 })

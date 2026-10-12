@@ -113,7 +113,7 @@ func (in seaRZIInput) info(rs []store.RZIRow) *seaRZIInfo {
 	}
 	// The file that holds the newest sample, not the source's last good file.
 	fetched := rs[len(rs)-1].File.FetchedAt
-	return &seaRZIInfo{Source: source, PageURL: page, FetchedAt: fetched.UTC()}
+	return &seaRZIInfo{Source: source, PageURL: page, FetchedAt: fetched.UTC(), SeasonOpen: rzi.SeasonOpen(in.now)}
 }
 
 // merge adds the RZI samples to the EEA ones, both newest first, and labels

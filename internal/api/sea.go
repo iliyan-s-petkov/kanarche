@@ -56,6 +56,9 @@ type seaRZIInfo struct {
 	Source    string    `json:"source"`
 	PageURL   string    `json:"page_url"`
 	FetchedAt time.Time `json:"fetched_at"`
+	// SeasonOpen is the RZI season by the cache clock. With it false, a missing
+	// latest means the season is closed.
+	SeasonOpen bool `json:"season_open"`
 }
 
 // SeaSupplementMeta is the snapshot header data the API echoes. The caller
