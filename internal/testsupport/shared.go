@@ -54,6 +54,9 @@ func runPostgresContainer(ctx context.Context) (*tcpostgres.PostgresContainer, e
 		tcpostgres.WithDatabase("airbg"),
 		tcpostgres.WithUsername("airbg"),
 		tcpostgres.WithPassword("airbg"),
+		// No TimescaleDB background jobs: the retention policies run on the
+		// real clock, shortly after each migration, and drop fixed-date fixtures.
+		testcontainers.WithCmd("postgres", "-c", "timescaledb.max_background_workers=0"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
