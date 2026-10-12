@@ -1357,3 +1357,21 @@ func TestTilesEncodeTilesDynamic(t *testing.T) {
 		}
 	}
 }
+
+// The RZI extractor runs from a host timer, so the app gains no network and
+// no docker socket for it. The socket half is TestOnlyTheSocketProxyHolds...
+func TestAppGainsNoNetworkForRZI(t *testing.T) {
+	c := loadCompose(t)
+	app := service(t, c, "app")
+	if len(app.Networks) != 2 || app.Networks["edge"].IPv4Address == "" || app.Networks["back"].IPv4Address == "" {
+		t.Errorf("app networks = %v, want exactly edge and back", app.Networks)
+	}
+	if len(c.Networks) != 3 {
+		t.Errorf("compose networks = %d, want 3 (edge, back, sched)", len(c.Networks))
+	}
+	for _, v := range app.Volumes {
+		if strings.Contains(v, "docker.sock") {
+			t.Errorf("app mounts %q", v)
+		}
+	}
+}

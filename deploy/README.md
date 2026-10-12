@@ -266,3 +266,11 @@ The SSH rule limits new connections to 6 per minute sustained, with a burst allo
 The per-source part is the whole point, and it is why the rule uses a `meter` rather than a bare `limit`. A bare `limit` is one bucket shared by every source on the internet. Port 22 on a public address is scanned continuously, so strangers drain that bucket faster than it refills and the operator is locked out — with no way back in, because the lockout applies to the very port needed to fix it. That happened on 2026-09-21: only an already-established session could get in. A `meter` keys the budget by source address, so a scanner exhausts its own allowance and nobody else's.
 
 Recovery, if this rule ever does lock you out: from an existing session, `nft insert rule inet filter input tcp dport 22 ct state new counter accept` restores access without a reload. Take a `nft list ruleset` snapshot and arm a timed revert (`nohup sh -c "sleep 300; nft -f <snapshot>" &`) before editing this file on a host you can only reach over SSH.
+
+## Why the RZI extractor is a host timer
+
+`airbg-rzi-extract.timer` runs the sandboxed document extractor every 6 hours. The app does not start it, because starting a container needs the Docker socket and the app must never hold that. The run flags are in `internal/docparse/README.md`; `rzi_units_test.go` pins them.
+
+Nothing here is active yet. The units, `/etc/airbg/rzi-extract.env` (supplies `DOCPARSE_IMAGE`, a digest reference, no secrets), the `/var/lib/airbg/rzi/` directories and the app's two mounts are all installed by the ops role (part B). The app mounts are deliberately not in `docker-compose.prod.yml` until then, because Docker would create the missing directories root-owned.
+
+Intended ownership: the inbox is written by the app (`airbg_container_uid`) and read by 65534. The outbox is written by 65534 and read and moved by the app, so it needs a shared group and a setgid mode such as 2775.
