@@ -82,6 +82,16 @@ type stubSource struct {
 	bathingEdition      string
 	bathingEditionErr   error
 	bathingEditionCalls int
+
+	// rzi is what LoadRZI returns.
+	rzi      []store.RZIRow
+	rziErr   error
+	rziCalls int
+}
+
+func (s *stubSource) LoadRZI(_ context.Context) ([]store.RZIRow, error) {
+	s.rziCalls++
+	return s.rzi, s.rziErr
 }
 
 func (s *stubSource) BathingSupplementEdition(_ context.Context) (string, error) {

@@ -34,6 +34,7 @@ type DataSource interface {
 	AreaSeriesBand(ctx context.Context, slug, metric string, since time.Time, until *time.Time, hourly bool, bucket time.Duration) ([]store.AreaBand, error)
 	VisitorDailyLast(ctx context.Context, n int) ([]store.VisitorDaily, error)
 	LoadBathing(ctx context.Context) (store.BathingData, error)
+	LoadRZI(ctx context.Context) ([]store.RZIRow, error)
 	BathingLastImport(ctx context.Context) (time.Time, bool, error)
 	BathingSupplementEdition(ctx context.Context) (string, error)
 }
@@ -75,6 +76,10 @@ type Deps struct {
 	// SeaSupplement is the embedded snapshot's published date and source URL,
 	// read once at startup. The zero value serves empty strings.
 	SeaSupplement SeaSupplementMeta
+
+	// Clock is the time source of the sea cache and its season and staleness
+	// rules. Nil means time.Now.
+	Clock func() time.Time
 
 	// visitors is set by NewRouter, one per router.
 	visitors *visitorCache

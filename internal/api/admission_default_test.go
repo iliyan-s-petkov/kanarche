@@ -214,3 +214,7 @@ func TestNilAdmissionFailsClosed(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+func (s *blockingSource) LoadRZI(_ context.Context) ([]store.RZIRow, error) {
+	return nil, nil
+}

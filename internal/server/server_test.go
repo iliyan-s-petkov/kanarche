@@ -914,3 +914,7 @@ func TestRouteLabelCardinalityIsBoundedByPattern(t *testing.T) {
 			"most %d", len(delta), delta, wantMaxLabels)
 	}
 }
+
+func (b *blockingSeriesStore) LoadRZI(ctx context.Context) ([]store.RZIRow, error) {
+	return nil, errors.New("blockingSeriesStore: LoadRZI unexpectedly called")
+}
