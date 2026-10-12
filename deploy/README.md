@@ -269,4 +269,8 @@ Recovery, if this rule ever does lock you out: from an existing session, `nft in
 
 ## Why the RZI extractor is a host timer
 
-`airbg-rzi-extract.timer` runs the sandboxed document extractor every 6 hours. The app does not start it, because starting a container needs the Docker socket and the app must never hold that. The extractor shares nothing with the app except two directories: the app writes the inbox, the extractor reads it read-only and writes the outbox, which the app then ingests. The run flags are in `internal/docparse/README.md`; `rzi_units_test.go` pins them. `/etc/airbg/rzi-extract.env` supplies `DOCPARSE_IMAGE`, the signed digest, and holds no secrets.
+`airbg-rzi-extract.timer` runs the sandboxed document extractor every 6 hours. The app does not start it, because starting a container needs the Docker socket and the app must never hold that. The run flags are in `internal/docparse/README.md`; `rzi_units_test.go` pins them.
+
+Nothing here is active yet. The units, `/etc/airbg/rzi-extract.env` (supplies `DOCPARSE_IMAGE`, a digest reference, no secrets), the `/var/lib/airbg/rzi/` directories and the app's two mounts are all installed by the ops role (part B). The app mounts are deliberately not in `docker-compose.prod.yml` until then, because Docker would create the missing directories root-owned.
+
+Intended ownership: the inbox is written by the app (`airbg_container_uid`) and read by 65534. The outbox is written by 65534 and read and moved by the app, so it needs a shared group and a setgid mode such as 2775.

@@ -66,10 +66,6 @@ services:
       # path in the container unwritable, and without this the 26 MB station
       # CSV is refetched on every restart instead of falling back to disk.
       - /var/lib/airbg/eea:/var/lib/airbg/eea
-      # Writable: the app fills the inbox and moves processed records in the
-      # outbox. The extractor runs from a host timer, README.md.
-      - /var/lib/airbg/rzi/inbox:/var/lib/airbg/rzi/inbox
-      - /var/lib/airbg/rzi/outbox:/var/lib/airbg/rzi/outbox
     depends_on:
       db:
         condition: service_healthy

@@ -7,10 +7,17 @@ After=docker.service
 
 [Service]
 Type=oneshot
+# 3 sources, up to 4 files per batch at the 20 s per-file kill is 80 s; the rest is margin.
 TimeoutStartSec=180
 # Sets DOCPARSE_IMAGE to the signed digest. Holds no secrets.
 EnvironmentFile=/etc/airbg/rzi-extract.env
+# Refuse an empty or tag-only image reference.
+ExecStartPre=/bin/sh -c 'case "$DOCPARSE_IMAGE" in *@sha256:*) ;; *) echo "DOCPARSE_IMAGE must be a digest reference" >&2; exit 1;; esac'
+# A killed run must not leave a container that blocks the next one.
+ExecStartPre=-/usr/bin/docker rm -f airbg-rzi-extract
 ExecStart=/usr/bin/docker run --rm \
+  --name airbg-rzi-extract \
+  --stop-timeout 10 \
   --network none \
   --read-only \
   --tmpfs /tmp:size=16m,noexec \
@@ -24,3 +31,4 @@ ExecStart=/usr/bin/docker run --rm \
   -v /var/lib/airbg/rzi/inbox:/in:ro \
   -v /var/lib/airbg/rzi/outbox:/out \
   ${DOCPARSE_IMAGE}
+ExecStopPost=-/usr/bin/docker rm -f airbg-rzi-extract

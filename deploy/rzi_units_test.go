@@ -109,7 +109,19 @@ func rziDirs(t *testing.T) (inbox, outbox string) {
 	return in, out
 }
 
-// I1 and I2: the sandbox flags.
+// allowedTokens is every dash-prefixed token ExecStart may contain: the
+// sandbox flags' names plus the run options that do not widen the sandbox.
+// Anything else (--ipc, --userns, --volumes-from, --privileged, --flag=value
+// spellings) fails.
+func allowedTokens() map[string]bool {
+	m := map[string]bool{"--rm": true, "-v": true, "--name": true, "--stop-timeout": true}
+	for _, f := range sandboxFlags {
+		m[strings.Fields(f)[0]] = true
+	}
+	return m
+}
+
+// I1 and I2: the sandbox flags, each exactly once, and nothing else.
 func TestExtractUnitCarriesEverySandboxFlag(t *testing.T) {
 	args := extractExecStart(t)
 	if len(args) < 3 || args[0] != "/usr/bin/docker" || args[1] != "run" || args[2] != "--rm" {
@@ -119,6 +131,53 @@ func TestExtractUnitCarriesEverySandboxFlag(t *testing.T) {
 		if !hasSequence(args, f) {
 			t.Errorf("ExecStart lacks %q", f)
 		}
+	}
+	allowed := allowedTokens()
+	counts := map[string]int{}
+	for _, a := range args[3:] {
+		if !strings.HasPrefix(a, "-") {
+			continue
+		}
+		if !allowed[a] {
+			t.Errorf("ExecStart has token %q outside the allowlist", a)
+		}
+		counts[a]++
+	}
+	for _, f := range sandboxFlags {
+		name := strings.Fields(f)[0]
+		if counts[name] != 1 {
+			t.Errorf("flag %s appears %d times, want exactly once", name, counts[name])
+		}
+	}
+	if !hasSequence(args, "--name airbg-rzi-extract") || counts["--stop-timeout"] != 1 {
+		t.Errorf("ExecStart needs --name airbg-rzi-extract and one --stop-timeout")
+	}
+}
+
+// The unit fails closed on a missing or non-digest image, reads exactly one
+// env file, and clears a leftover container of its own name around the run.
+func TestExtractUnitGuardsImageAndLeftovers(t *testing.T) {
+	svc := unitSections(t, "airbg-rzi-extract.service")["Service"]
+	if got := svc["EnvironmentFile"]; len(got) != 1 || got[0] != "/etc/airbg/rzi-extract.env" {
+		t.Errorf("EnvironmentFile = %v, want exactly /etc/airbg/rzi-extract.env (no - prefix)", got)
+	}
+	guard, rmPre := false, false
+	for _, p := range svc["ExecStartPre"] {
+		if strings.Contains(p, "$DOCPARSE_IMAGE") && strings.Contains(p, "@sha256:") && strings.Contains(p, "exit 1") {
+			guard = true
+		}
+		if p == "-/usr/bin/docker rm -f airbg-rzi-extract" {
+			rmPre = true
+		}
+	}
+	if !guard {
+		t.Errorf("ExecStartPre lacks a DOCPARSE_IMAGE @sha256: guard that exits 1: %v", svc["ExecStartPre"])
+	}
+	if !rmPre {
+		t.Errorf("ExecStartPre lacks -/usr/bin/docker rm -f airbg-rzi-extract: %v", svc["ExecStartPre"])
+	}
+	if got := svc["ExecStopPost"]; len(got) != 1 || got[0] != "-/usr/bin/docker rm -f airbg-rzi-extract" {
+		t.Errorf("ExecStopPost = %v, want -/usr/bin/docker rm -f airbg-rzi-extract", got)
 	}
 }
 

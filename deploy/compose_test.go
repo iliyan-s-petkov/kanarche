@@ -1358,23 +1358,20 @@ func TestTilesEncodeTilesDynamic(t *testing.T) {
 	}
 }
 
-// RZI ingest: the app reads the extractor's outbox and fills the inbox, so it
-// mounts both read-write at the paths airbg.yaml configures. The extractor
-// runs from a host timer, so the app gains neither a network nor the socket.
-func TestAppMountsTheRZIDirectoriesAndGainsNoNetwork(t *testing.T) {
-	inbox, outbox := rziDirs(t)
+// The RZI extractor runs from a host timer, so the app gains no network and
+// no docker socket for it. The socket half is TestOnlyTheSocketProxyHolds...
+func TestAppGainsNoNetworkForRZI(t *testing.T) {
 	c := loadCompose(t)
 	app := service(t, c, "app")
-	for _, d := range []string{inbox, outbox} {
-		want := d + ":" + d
-		if !slices.Contains(app.Volumes, want) {
-			t.Errorf("app volumes %v lack %q (read-write)", app.Volumes, want)
-		}
-	}
 	if len(app.Networks) != 2 || app.Networks["edge"].IPv4Address == "" || app.Networks["back"].IPv4Address == "" {
 		t.Errorf("app networks = %v, want exactly edge and back", app.Networks)
 	}
 	if len(c.Networks) != 3 {
 		t.Errorf("compose networks = %d, want 3 (edge, back, sched)", len(c.Networks))
+	}
+	for _, v := range app.Volumes {
+		if strings.Contains(v, "docker.sock") {
+			t.Errorf("app mounts %q", v)
+		}
 	}
 }
