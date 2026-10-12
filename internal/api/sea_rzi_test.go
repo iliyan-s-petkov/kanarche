@@ -660,3 +660,88 @@ func TestSeaParallelRequestsLoadOncePerDay(t *testing.T) {
 		t.Errorf("%d RZI loads after the next day, want 2", src.rziCalls)
 	}
 }
+
+// detailRZI returns the detail body's rzi object and the raw body.
+func detailRZI(t *testing.T, d api.Deps) (map[string]json.RawMessage, map[string]json.RawMessage, string) {
+	t.Helper()
+	rec := serve(t, d, get("/api/v1/sea/sites/"+seaCoastal, "203.0.113.7"))
+	var b map[string]json.RawMessage
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	var site map[string]json.RawMessage
+	if err := json.Unmarshal(b["site"], &site); err != nil {
+		t.Fatal(err)
+	}
+	var info map[string]json.RawMessage
+	if raw, ok := site["rzi"]; ok {
+		if err := json.Unmarshal(raw, &info); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return info, b, rec.Body.String()
+}
+
+// season_open tells the panel whether a missing latest means the season is closed.
+func TestSeaDetailRZISeasonOpen(t *testing.T) {
+	cases := []struct {
+		name string
+		row  store.RZIRow
+		now  time.Time
+		want string
+	}{
+		{"in season, this year", rziRow(seaCoastal, day(2026, 7, 14), 2026, 15, 40), sofiaAt(2026, 7, 20, 12, 0), "true"},
+		{"in season, prior year rows only", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 7, 20, 12, 0), "true"},
+		{"off season", rziRow(seaCoastal, day(2026, 7, 14), 2026, 15, 40), sofiaAt(2026, 11, 20, 12, 0), "false"},
+		{"14 May 23:59", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 5, 14, 23, 59), "false"},
+		{"15 May 00:00", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 5, 15, 0, 0), "true"},
+		{"15 Oct 23:59", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 10, 15, 23, 59), "true"},
+		{"16 Oct 00:00", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 10, 16, 0, 0), "false"},
+	}
+	for _, c := range cases {
+		info, _, raw := detailRZI(t, rziDeps(t, rziSource(c.row), c.now))
+		if info == nil {
+			t.Fatalf("%s: no rzi object: %s", c.name, raw)
+		}
+		if got := string(info["season_open"]); got != c.want {
+			t.Errorf("%s: season_open = %s, want %s", c.name, got, c.want)
+		}
+	}
+}
+
+// No remarks key in the detail, and the stale flag reaches the detail latest.
+func TestSeaDetailStaleAndNoRemarks(t *testing.T) {
+	row := rziRow(seaCoastal, day(2026, 6, 1), 2026, 15, 40)
+	_, b, raw := detailRZI(t, rziDeps(t, rziSource(row), sofiaAt(2026, 7, 20, 12, 0)))
+	var l seaLatestBody
+	if err := json.Unmarshal(b["latest"], &l); err != nil {
+		t.Fatal(err)
+	}
+	if !l.Stale {
+		t.Errorf("latest = %+v, want stale", l)
+	}
+	if strings.Contains(raw, "remarks") || strings.Contains(raw, "SECRET-REMARK") {
+		t.Errorf("detail carries remarks: %s", raw)
+	}
+}
+
+// The panel reads latest from the detail body, so it matches the list.
+func TestSeaDetailCarriesLatest(t *testing.T) {
+	row := rziRow(seaCoastal, day(2026, 7, 14), 2026, 15, 40)
+	d := rziDeps(t, rziSource(row), sofiaAt(2026, 7, 20, 12, 0))
+	rec := serve(t, d, get("/api/v1/sea/sites/"+seaCoastal, "203.0.113.7"))
+	var b struct {
+		Latest *seaLatestBody `json:"latest"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if b.Latest == nil || b.Latest.Date != "2026-07-14" || b.Latest.Source != seaVarnaSource {
+		t.Fatalf("detail latest = %+v", b.Latest)
+	}
+	off := rziDeps(t, rziSource(row), sofiaAt(2026, 11, 20, 12, 0))
+	rec = serve(t, off, get("/api/v1/sea/sites/"+seaCoastal, "203.0.113.7"))
+	if strings.Contains(rec.Body.String(), `"latest"`) {
+		t.Errorf("off-season detail carries latest: %s", rec.Body.String())
+	}
+}

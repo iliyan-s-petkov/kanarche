@@ -51,6 +51,36 @@ export function fillSlots(template, values) {
   return String(template || '').replace(/\{(\w+)\}/g, (slot, name) => (name in values ? String(values[name]) : slot))
 }
 
+// The API's YYYY-MM-DD as DD.MM.YYYY, the form the RZI credit uses. Anything else is returned as sent.
+export function creditDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '')
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : String(iso ?? '')
+}
+
+export const isRZISource = (source) => typeof source === 'string' && source.startsWith('rzi_')
+
+// Only an absolute http(s) results page is linked. A path that names a file is not a page.
+export function safePageURL(url) {
+  let u
+  try {
+    u = new URL(String(url ?? ''))
+  } catch {
+    return ''
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return ''
+  if (u.username || u.password) return ''
+  if (/\.(pdf|xlsx?|csv|docx?)$/i.test(u.pathname)) return ''
+  return u.href
+}
+
+// The credit line for one RZI sample. Empty when the template or the source name is missing,
+// and callers then show no value from that sample.
+export function rziCredit(t, source, date) {
+  const region = t.sources?.[source] || ''
+  if (!region || !t.creditRzi) return ''
+  return fillSlots(t.creditRzi, { region, date: creditDate(date) })
+}
+
 // The data-t-sea-* attributes, grouped. Missing ones read as ''.
 export function readSeaTexts(d) {
   const s = (k) => d[k] || ''
@@ -88,6 +118,18 @@ export function readSeaTexts(d) {
     classSourceDatahub: s('tSeaClassSourceDatahub'),
     samplesPending: s('tSeaSamplesPending'),
     supplementNote: s('tSeaSupplementNote'),
+    // The RZI lab results shown next to the class. Keyed by the API's source id.
+    latest: {
+      heading: s('tSeaLatestHeading'),
+      singleSampleNote: s('tSeaLatestSingleSampleNote'),
+      stale: s('tSeaLatestStale'),
+      offSeason: s('tSeaLatestOffSeason'),
+    },
+    creditRzi: s('tSeaCreditRzi'),
+    noticeUnofficial: s('tSeaNoticeUnofficial'),
+    sources: { rzi_varna: s('tSeaSourceRziVarna'), rzi_burgas: s('tSeaSourceRziBurgas'), rzi_dobrich: s('tSeaSourceRziDobrich') },
+    sourceLink: s('tSeaSourceLink'),
+    unitMpn: s('tSeaUnitMpn'),
     // The legend (i) dialog, see infodialog.js.
     info: {
       label: s('tSeaInfoLabel'),

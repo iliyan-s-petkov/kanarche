@@ -56,6 +56,9 @@ type seaRZIInfo struct {
 	Source    string    `json:"source"`
 	PageURL   string    `json:"page_url"`
 	FetchedAt time.Time `json:"fetched_at"`
+	// SeasonOpen is the RZI season by the cache clock. With it false, a missing
+	// latest means the season is closed.
+	SeasonOpen bool `json:"season_open"`
 }
 
 // SeaSupplementMeta is the snapshot header data the API echoes. The caller
@@ -117,6 +120,8 @@ type seaSiteBody struct {
 	Limits     bathing.Limits `json:"limits"`
 	Classes    []seaClass     `json:"classes"`
 	Samples    []seaSample    `json:"samples"`
+	// Latest is the same value the list carries. Absent off-season and with no RZI data.
+	Latest *seaLatest `json:"latest,omitempty"`
 	// Supplement is omitted unless a served class came from datahub.
 	Supplement *seaSupplement `json:"supplement,omitempty"`
 }
@@ -245,6 +250,7 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement, i
 			Samples: nonNil(in.merge(samples[s.ID], visible[s.ID])),
 		}
 		detail.Site.RZI = in.info(visible[s.ID])
+		detail.Latest = row.Latest
 		// Only a site that shows a datahub class carries the credit.
 		for _, c := range classes[s.ID] {
 			if sup != nil && c.Source == store.SourceDatahub {
