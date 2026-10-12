@@ -218,6 +218,26 @@ describe('mountPlayer', () => {
     expect(exited).toHaveLength(1)
   })
 
+  // The button is on screen before the map has wired what a press does.
+  it('keeps a press made before anything listens and delivers it once', () => {
+    const { ui } = mount()
+    ui.button.click()
+    const pressed = []
+    ui.ontoggle(() => pressed.push('first'))
+    expect(pressed).toEqual(['first'])
+    ui.ontoggle(() => pressed.push('second'))
+    expect(pressed).toEqual(['first'])
+    ui.button.click()
+    expect(pressed).toEqual(['first', 'first', 'second'])
+  })
+
+  it('does not invent a press when none was made', () => {
+    const { ui } = mount()
+    const pressed = []
+    ui.ontoggle(() => pressed.push(true))
+    expect(pressed).toEqual([])
+  })
+
   // The exit must not also fire the play toggle: one press would then stop the
   // animation and immediately start it again.
   it('does not report an exit as a press', () => {

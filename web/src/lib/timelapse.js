@@ -262,7 +262,10 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
   doc.addEventListener('pointerdown', (e) => {
     if (!speedPanel.hidden && !speedBox.contains(e.target)) menuOpen(false)
   })
+  // A press before the map has wired a listener is kept for the first one.
+  let early = false
   button.addEventListener('click', () => {
+    if (toggles.length === 0) early = true
     for (const fn of toggles) fn()
   })
   slider.addEventListener('input', () => {
@@ -312,7 +315,13 @@ export function mountPlayer(frame, { label, playLabel, pauseLabel, exitLabel, sp
       speed.setAttribute('aria-label', `${speedName}, ${speedLabel(s)}`)
       for (const item of speedItems) item.setAttribute('aria-checked', String(item.dataset.speed === String(s)))
     },
-    ontoggle: (fn) => toggles.push(fn),
+    ontoggle: (fn) => {
+      toggles.push(fn)
+      if (early) {
+        early = false
+        fn()
+      }
+    },
     onspeed: (fn) => speeds.push(fn),
     onscrub: (fn) => scrubs.push(fn),
     onexit: (fn) => exits.push(fn),
