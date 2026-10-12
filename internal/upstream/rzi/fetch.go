@@ -77,6 +77,18 @@ type Result struct {
 type Options struct {
 	Transport *http.Transport
 	Now       func() time.Time
+	// Settled says a document hash was already judged, so it is not saved
+	// to the inbox again. Nil means nothing is settled.
+	Settled func(ctx context.Context, sha string) bool
+}
+
+// SettledIn reports a hash as settled when the store has a file row for it.
+// A store error counts as not settled, so the document is saved again.
+func SettledIn(sink Sink) func(ctx context.Context, sha string) bool {
+	return func(ctx context.Context, sha string) bool {
+		_, found, err := sink.RZIFileBySHA(ctx, sha)
+		return err == nil && found
+	}
 }
 
 // Fetcher downloads the current-year document of each configured source.
@@ -88,6 +100,7 @@ type Fetcher struct {
 	maxBytes  int64
 	inbox     string
 	pages     map[string]*url.URL
+	settled   func(ctx context.Context, sha string) bool
 }
 
 // New checks every page URL against its source's host allow-list.
@@ -100,6 +113,7 @@ func New(cfg config.Sea, opt Options) (*Fetcher, error) {
 		maxBytes:  cfg.RZI.MaxFileBytes,
 		inbox:     cfg.RZI.InboxDir,
 		pages:     map[string]*url.URL{},
+		settled:   opt.Settled,
 	}
 	if f.tr == nil {
 		f.tr = defaultTransport()
@@ -231,6 +245,11 @@ func (f *Fetcher) Fetch(ctx context.Context, id string, prior Validators) (Resul
 		return res, nil
 	}
 	res.Path = filepath.Join(f.inbox, res.SHA256+"."+spec.Kind.Ext)
+	if f.settled != nil && f.settled(ctx, res.SHA256) {
+		// The app prunes settled documents, so the inbox cannot say it.
+		res.Status = StatusUnchanged
+		return res, nil
+	}
 	if _, err := os.Stat(res.Path); err == nil {
 		res.Status = StatusUnchanged
 		return res, nil

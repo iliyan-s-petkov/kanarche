@@ -360,7 +360,9 @@ func (g *Ingester) lastGood(ctx context.Context, source string) (LastGood, error
 	return lg, nil
 }
 
-// move puts a record into an outbox subdirectory.
+// move puts a record into an outbox subdirectory, then drops its document
+// from the inbox. Approval reads the review record only, so review keeps no
+// original.
 func (g *Ingester) move(name, dir string) error {
 	dst := filepath.Join(g.cfg.OutboxDir, dir)
 	if err := os.MkdirAll(dst, 0o750); err != nil {
@@ -369,7 +371,26 @@ func (g *Ingester) move(name, dir string) error {
 	if err := os.Rename(filepath.Join(g.cfg.OutboxDir, name), filepath.Join(dst, name)); err != nil {
 		return fmt.Errorf("rzi outbox: %w", err)
 	}
+	g.pruneInbox(strings.TrimSuffix(name, ".json"))
 	return nil
+}
+
+// pruneInbox removes inbox/<sha>.* regular files. A failure is logged: the
+// document is only disk, and the next fetch of it is skipped as settled.
+func (g *Ingester) pruneInbox(sha string) {
+	// sha is 64 hex characters here, so the pattern has no metacharacters.
+	matches, err := filepath.Glob(filepath.Join(g.cfg.InboxDir, sha+".*"))
+	if err != nil {
+		return
+	}
+	for _, p := range matches {
+		if fi, err := os.Lstat(p); err != nil || !fi.Mode().IsRegular() {
+			continue
+		}
+		if err := os.Remove(p); err != nil {
+			slog.Warn("rzi inbox file not removed", "sha256", sha)
+		}
+	}
 }
 
 // rows is the number of sample rows in a record.

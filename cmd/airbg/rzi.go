@@ -23,7 +23,7 @@ func rziCollectorFor(cfg config.Config, sink rzi.Sink) (*rzi.Collector, error) {
 // newRZICollector builds the collector regardless of the enabled flag, for
 // the one-shot import-rzi.
 func newRZICollector(cfg config.Config, sink rzi.Sink) (*rzi.Collector, error) {
-	f, err := rzi.New(cfg.Sea, rzi.Options{})
+	f, err := rzi.New(cfg.Sea, rzi.Options{Settled: rzi.SettledIn(sink)})
 	if err != nil {
 		return nil, fmt.Errorf("rzi fetcher: %w", err)
 	}
