@@ -101,12 +101,19 @@ for (const shape of [
     await expect(key).toBeHidden()
 
     // Re-read the point: the legend and layer toggles above can shift the page since `at` was taken.
-    await mapSettled(page)
-    await expect.poll(async () => { at = await pollenAt(page); return at && `${at.slug}:${at.level}` }, { timeout: 20000 })
-      .toBe('sofia-oblast:high')
-    if (shape.context.hasTouch) await page.touchscreen.tap(at.x, at.y)
-    else await page.mouse.click(at.x, at.y)
-    await page.waitForURL(`**${shape.prefix}/area/sofia-oblast`)
+    // Each attempt re-reads the point, checks the map canvas is what sits there (not an
+    // overlay that moved in), and clicks; a click that lands mid-move is simply retried.
+    const canvasAt = (x, y) => page.evaluate(([px, py]) =>
+      document.elementFromPoint(px, py) === document.querySelector('[data-island="map"]').__map.getCanvas(), [x, y])
+    await expect(async () => {
+      await mapSettled(page)
+      at = await pollenAt(page)
+      expect(at && `${at.slug}:${at.level}`).toBe('sofia-oblast:high')
+      expect(await canvasAt(at.x, at.y)).toBe(true)
+      if (shape.context.hasTouch) await page.touchscreen.tap(at.x, at.y)
+      else await page.mouse.click(at.x, at.y)
+      await page.waitForURL(`**${shape.prefix}/area/sofia-oblast`, { timeout: 4000 })
+    }).toPass({ timeout: 30000 })
     expect(new URL(page.url()).pathname).toBe(`${shape.prefix}/area/sofia-oblast`)
     await context.close()
   })
