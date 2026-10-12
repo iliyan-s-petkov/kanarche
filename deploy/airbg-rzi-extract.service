@@ -1,0 +1,26 @@
+[Unit]
+# Sandboxed RZI document extractor. README.md, "Why the RZI extractor is a host
+# timer". Flags: internal/docparse/README.md, "Run flags".
+Description=Extract RZI bathing-water documents in a sandbox
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=180
+# Sets DOCPARSE_IMAGE to the signed digest. Holds no secrets.
+EnvironmentFile=/etc/airbg/rzi-extract.env
+ExecStart=/usr/bin/docker run --rm \
+  --network none \
+  --read-only \
+  --tmpfs /tmp:size=16m,noexec \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --user 65534:65534 \
+  --memory 256m \
+  --memory-swap 256m \
+  --cpus 0.5 \
+  --pids-limit 64 \
+  -v /var/lib/airbg/rzi/inbox:/in:ro \
+  -v /var/lib/airbg/rzi/outbox:/out \
+  ${DOCPARSE_IMAGE}

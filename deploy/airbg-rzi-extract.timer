@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the RZI document extractor every 6 hours
+
+[Timer]
+# Offset from the app's own 6 h fetch so a fresh inbox file is picked up soon.
+# Persistent runs a pass missed while the host was down.
+OnCalendar=*-*-* 00/6:17:00
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
