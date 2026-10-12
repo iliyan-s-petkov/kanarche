@@ -1,6 +1,6 @@
 <script>
   // One bathing site: the EEA's annual class first, then the samples against the zone's limits.
-  import { seaClass, seaLevel, seaName, fillSeason, fillSlots } from '../lib/sea.js'
+  import { seaClass, seaLevel, seaName, fillSeason, fillSlots, creditDate, isRZISource, rziCredit, safePageURL } from '../lib/sea.js'
 
   let { view, t, lang, colours, creditURL, onclose } = $props()
 
@@ -19,6 +19,15 @@
   const supplement = $derived(d?.supplement ?? null)
   // The edition's publish date is an ISO day; anything else is shown as sent.
   const publishedText = (iso) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? formatDate(iso) : iso)
+  // RZI lab samples are context next to the class. A sample shows only with its credit line,
+  // so a missing template or source name hides the value instead of showing it bare.
+  const rziPage = $derived(safePageURL(d?.site?.rzi?.page_url))
+  const latest = $derived(d?.latest ?? null)
+  const latestCredit = $derived(latest ? rziCredit(t, latest.source, latest.date) : '')
+  const rows = $derived((d?.samples ?? []).filter((s) => !isRZISource(s.source) || rziCredit(t, s.source, s.date)))
+  // With no latest the season is closed: the newest RZI sample says which year the table holds.
+  const offSeasonYear = $derived(d?.samples?.find((s) => isRZISource(s.source))?.season ?? null)
+  const hasLab = $derived(!!latest || (!!d?.site?.rzi && offSeasonYear !== null))
   const MARKS = ['', '▲', '▲▲']
   const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : '')
 
@@ -75,19 +84,40 @@
       <p class="sea-panel__supplement">{fillSlots(t.supplementNote, { edition: supplement.edition, published: publishedText(supplement.published) })}</p>
     {/if}
 
+    {#if hasLab}
+      <div class="sea-panel__latest">
+        <h3 class="sea-panel__h">{t.latest.heading}</h3>
+        {#if !latest}
+          <p class="sea-panel__off-season">{fillSlots(t.latest.offSeason, { year: offSeasonYear })}</p>
+        {:else if latest.stale}
+          <p class="sea-panel__stale">{fillSlots(t.latest.stale, { date: creditDate(latest.date) })}</p>
+        {:else if latestCredit}
+          <p class="sea-panel__latest-values">
+            <span class="sea-panel__latest-value">{t.eColi}: {@render reading(latest.e_coli, latest.e_coli_below_detection, d.limits.e_coli)}</span>
+            <span class="sea-panel__latest-value">{t.enterococci}: {@render reading(latest.enterococci, latest.enterococci_below_detection, d.limits.enterococci)}</span>
+            <span class="sea-panel__latest-unit">{t.unitMpn}</span>
+          </p>
+          <p class="sea-panel__credit-rzi">{latestCredit}</p>
+          <p class="sea-panel__latest-note">{t.latest.singleSampleNote}</p>
+        {/if}
+        {#if rziPage}<p class="sea-panel__credit"><a href={rziPage} rel="noopener noreferrer" target="_blank">{t.sourceLink}</a></p>{/if}
+        <p class="sea-panel__notice">{t.noticeUnofficial}</p>
+      </div>
+    {/if}
+
     <h3 class="sea-panel__h">{t.samples}</h3>
     {#if samplesPending}<p class="sea-panel__pending">{fillSlots(t.samplesPending, { season: current.season })}</p>{/if}
     <p class="sea-panel__limits">
       {t.limits} ({t.unit}): {t.eColi} {d.limits.e_coli[0]} / {d.limits.e_coli[1]}, {t.enterococci} {d.limits.enterococci[0]} / {d.limits.enterococci[1]}
     </p>
-    {#if d.samples.length}
+    {#if rows.length}
       <div class="sea-panel__scroll">
         <table class="sea-panel__samples">
           <thead><tr><th scope="col">{t.date}</th><th scope="col">{t.eColi}</th><th scope="col">{t.enterococci}</th></tr></thead>
           <tbody>
-            {#each d.samples as s (s.date)}
+            {#each rows as s (s.date)}
               <tr>
-                <th scope="row">{formatDate(s.date)}{#if s.pre_season} <span class="sea-panel__pre">{t.preSeason}</span>{/if}</th>
+                <th scope="row">{formatDate(s.date)}{#if s.pre_season} <span class="sea-panel__pre">{t.preSeason}</span>{/if}{#if isRZISource(s.source)} <span class="sea-panel__row-source">{t.sources[s.source]}</span>{/if}</th>
                 <td>{@render reading(s.e_coli, s.e_coli_below_detection, d.limits.e_coli)}</td>
                 <td>{@render reading(s.enterococci, s.enterococci_below_detection, d.limits.enterococci)}</td>
               </tr>

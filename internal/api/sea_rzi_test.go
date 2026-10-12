@@ -660,3 +660,24 @@ func TestSeaParallelRequestsLoadOncePerDay(t *testing.T) {
 		t.Errorf("%d RZI loads after the next day, want 2", src.rziCalls)
 	}
 }
+
+// The panel reads latest from the detail body, so it matches the list.
+func TestSeaDetailCarriesLatest(t *testing.T) {
+	row := rziRow(seaCoastal, day(2026, 7, 14), 2026, 15, 40)
+	d := rziDeps(t, rziSource(row), sofiaAt(2026, 7, 20, 12, 0))
+	rec := serve(t, d, get("/api/v1/sea/sites/"+seaCoastal, "203.0.113.7"))
+	var b struct {
+		Latest *seaLatestBody `json:"latest"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if b.Latest == nil || b.Latest.Date != "2026-07-14" || b.Latest.Source != seaVarnaSource {
+		t.Fatalf("detail latest = %+v", b.Latest)
+	}
+	off := rziDeps(t, rziSource(row), sofiaAt(2026, 11, 20, 12, 0))
+	rec = serve(t, off, get("/api/v1/sea/sites/"+seaCoastal, "203.0.113.7"))
+	if strings.Contains(rec.Body.String(), `"latest"`) {
+		t.Errorf("off-season detail carries latest: %s", rec.Body.String())
+	}
+}

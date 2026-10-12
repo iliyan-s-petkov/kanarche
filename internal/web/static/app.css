@@ -514,7 +514,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 .sea-panel__close:hover { color: var(--fg); }
 .sea-panel__close:focus-visible { box-shadow: var(--focus-ring); }
-.sea-panel__zone, .sea-panel__season, .sea-panel__limits, .sea-panel__key, .sea-panel__note, .sea-panel__credit, .sea-panel__pre, .sea-panel__source, .sea-panel__pending, .sea-panel__supplement {
+.sea-panel__zone, .sea-panel__season, .sea-panel__limits, .sea-panel__key, .sea-panel__note, .sea-panel__credit, .sea-panel__pre, .sea-panel__source, .sea-panel__pending, .sea-panel__supplement, .sea-panel__credit-rzi, .sea-panel__latest-note, .sea-panel__notice, .sea-panel__stale, .sea-panel__off-season, .sea-panel__row-source {
   color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption);
 }
 .sea-panel__class { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
@@ -528,7 +528,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 .sea-panel__samples th[scope="row"], .sea-panel__samples thead th:first-child { text-align: start; font-weight: normal; }
 .sea-panel__samples thead th { position: sticky; inset-block-start: 0; background: var(--bg); font-weight: var(--weight-emphasis); }
 .sea-panel__mark { color: var(--fg); }
-.sea-panel__pre { margin-inline-start: var(--space-1); }
+.sea-panel__pre, .sea-panel__row-source { margin-inline-start: var(--space-1); }
+.sea-panel__latest { margin-block-start: var(--space-3); }
+.sea-panel__latest-values { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-variant-numeric: tabular-nums; }
+.sea-panel__latest-value { white-space: nowrap; }
 .sea-panel__credit a { color: inherit; }
 @media (max-width: 672px) {
   .map-sea {
