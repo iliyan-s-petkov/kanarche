@@ -53,6 +53,7 @@ type Renderer struct {
 	defaultMetric   string
 	defaultPeriod   string
 	social          config.Social
+	rzi             config.SeaRZI
 	pollMinutes     int
 	// File order, which is the order the switcher offers them in and the order
 	// the config author chose — alphabetical would put "1y" first.
@@ -112,6 +113,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 		basemapStyleURL: cfg.Tiles.StyleURL(),
 		frontend:        cfg.Frontend,
 		social:          cfg.Social,
+		rzi:             cfg.Sea.RZI,
 		pollMinutes:     int(cfg.Upstream.PollInterval / time.Minute),
 		defaultMetric:   cfg.Series.DefaultMetric,
 		defaultPeriod:   cfg.Series.PeriodNames[0],
@@ -298,6 +300,8 @@ type PageData struct {
 	FooterAreas []FooterArea
 	// FacebookURL and LinkedInURL are the optional footer profiles; empty hides the icon.
 	FacebookURL, LinkedInURL string
+
+	rzi config.SeaRZI
 
 	cat *i18n.Catalogue
 	// sofiaLoc is the zone the area sentences' {time} placeholders are
@@ -949,6 +953,28 @@ func (p PageData) Year() int { return p.Now.Year() }
 // SourceIssuesURL is where the footer's Contact link goes until an email is chosen.
 func (p PageData) SourceIssuesURL() string { return sourceRepoURL + "/issues" }
 
+// RZIEnabled reports sea.rzi.enabled, the flag the collector and the importer
+// check before they ingest anything. The /licences item and the legend line
+// follow it, so the site never names a source it does not show.
+func (p PageData) RZIEnabled() bool { return p.rzi.Enabled }
+
+// RZIPage is one RHI result page: the catalogue key of its label and the
+// configured address.
+type RZIPage struct {
+	LabelKey string
+	URL      string
+}
+
+// RZIPages lists the three RHI result pages from sea.rzi.*.page_url, so the
+// addresses are written once, in the config.
+func (p PageData) RZIPages() []RZIPage {
+	return []RZIPage{
+		{"sea.source.rzi_varna", p.rzi.Varna.PageURL},
+		{"sea.source.rzi_burgas", p.rzi.Burgas.PageURL},
+		{"sea.source.rzi_dobrich", p.rzi.Dobrich.PageURL},
+	}
+}
+
 // SourceLicenceURL is the repository's LICENSE file.
 func (p PageData) SourceLicenceURL() string { return sourceRepoURL + "/blob/master/LICENSE" }
 
@@ -986,6 +1012,7 @@ func (rr *Renderer) newPageData(lang, path string, generatedAt time.Time) PageDa
 		BasemapStyleURL: rr.basemapStyleURL,
 		FooterAreas:     rr.footerAreas(lang),
 		FacebookURL:     rr.social.FacebookURL,
+		rzi:             rr.rzi,
 		LinkedInURL:     rr.social.LinkedInURL,
 
 		NoDataColour:       rr.frontend.NoDataColour,

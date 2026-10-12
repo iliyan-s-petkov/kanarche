@@ -20,7 +20,7 @@ const base = {
   tSeaCreditRzi: 'Source: {region}, sample of {date}',
   tSeaNoticeUnofficial: 'Not an official source.',
   tSeaSourceRziVarna: 'RHI Varna', tSeaSourceRziBurgas: 'RHI Burgas', tSeaSourceRziDobrich: 'RHI Dobrich',
-  tSeaSourceLink: 'Results on the RHI site', tSeaUnitMpn: 'MPN/100 ml',
+  tSeaSourceLink: 'Results on the RHI site', tSeaUnitMpn: 'MPN/100 ml', tSeaNewTab: 'opens in a new tab',
 }
 const cfgFor = (over = {}) => ({
   lang: 'en',
@@ -112,7 +112,7 @@ describe('SeaPanel latest lab result', () => {
     const root = await opened(withRZI())
     const a = root.querySelector('.sea-panel__latest a')
     expect(a.getAttribute('href')).toBe(PAGE)
-    expect(a.textContent).toBe('Results on the RHI site')
+    expect(a.textContent).toBe('Results on the RHI site, opens in a new tab')
     expect(a.getAttribute('rel')).toBe('noopener noreferrer')
   })
 
@@ -205,5 +205,22 @@ describe('SeaPanel latest lab result', () => {
     expect(root.querySelector('.sea-panel__latest')).toBeNull()
     expect(root.querySelector('.sea-panel__row-credit')).toBeNull()
     expect(root.textContent).not.toContain('Not an official source.')
+  })
+})
+
+describe('SeaPanel new-tab suffix', () => {
+  it('adds the screen-reader suffix to all three target=_blank links', async () => {
+    const root = await opened(withRZI())
+    const links = [...root.querySelectorAll('a[target="_blank"]')]
+    expect(links).toHaveLength(3)
+    for (const a of links) {
+      const hint = a.querySelector('.sr-only')
+      expect(hint?.textContent).toBe(', opens in a new tab')
+    }
+  })
+
+  it('adds no suffix when the text is missing', async () => {
+    const root = await opened(withRZI(), { tSeaNewTab: '' })
+    for (const a of root.querySelectorAll('a[target="_blank"]')) expect(a.querySelector('.sr-only')).toBeNull()
   })
 })

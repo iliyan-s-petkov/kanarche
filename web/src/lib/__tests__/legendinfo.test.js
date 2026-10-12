@@ -60,7 +60,7 @@ describe('popup copy attributes', () => {
     const t = readSeaTexts({
       tSeaInfoLabel: 'L', tSeaInfoTitle: 'T', tSeaInfoBody: 'B', tSeaInfoLinkMap: 'M', tSeaInfoLinkEea: 'E',
     })
-    expect(t.info).toEqual({ label: 'L', title: 'T', body: 'B', linkMap: 'M', linkEea: 'E', linkDatahub: '' })
+    expect(t.info).toEqual({ label: 'L', title: 'T', body: 'B', linkMap: 'M', linkEea: 'E', linkDatahub: '', rzi: '' })
   })
 })
 
