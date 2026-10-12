@@ -122,7 +122,7 @@ describe('safePageURL', () => {
   })
   it.each([
     ' javascript:alert(1)', 'JAVASCRIPT:alert(1)', 'javascript:alert(1)', '//evil.com/x', 'data:text/html,<b>x</b>',
-    '/\\evil.com', '\\\\evil.com\\x', 'ftp://example.org/', '', null, undefined,
+    '/\\evil.com', '\\\\evil.com\\x', 'ftp://example.org/', 'https://user:pw@example.org/', 'https://user@example.org/', '', null, undefined,
     'https://rzi-varna.com/files/r.pdf', 'https://rzi-varna.com/r.XLS', 'https://rzi-varna.com/r.xlsx?x=1',
     'https://rzi-varna.com/r.csv', 'https://rzi-varna.com/r.doc', 'https://rzi-varna.com/r.docx',
   ])('rejects %s', (u) => {

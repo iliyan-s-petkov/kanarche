@@ -68,6 +68,7 @@ export function safePageURL(url) {
     return ''
   }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return ''
+  if (u.username || u.password) return ''
   if (/\.(pdf|xlsx?|csv|docx?)$/i.test(u.pathname)) return ''
   return u.href
 }

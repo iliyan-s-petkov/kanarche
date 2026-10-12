@@ -179,11 +179,13 @@ describe('SeaPanel latest lab result', () => {
     expect(b.querySelector('.sea-panel__latest')).toBeNull()
   })
 
-  it('ties the unit to both lab values', async () => {
+  it('puts the unit inside each lab value, not on an aria-describedby link', async () => {
     const root = await opened(withRZI())
-    const unit = root.querySelector('.sea-panel__latest-unit')
-    for (const v of root.querySelectorAll('.sea-panel__latest-value')) {
-      expect(v.getAttribute('aria-describedby')).toBe(unit.id)
+    const values = [...root.querySelectorAll('.sea-panel__latest-value')]
+    expect(values).toHaveLength(2)
+    for (const v of values) {
+      expect(v.textContent).toContain('MPN/100 ml')
+      expect(v.hasAttribute('aria-describedby')).toBe(false)
     }
   })
 

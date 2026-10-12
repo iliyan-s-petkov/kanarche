@@ -97,9 +97,9 @@
           <p class="sea-panel__credit-rzi">{latestCredit}</p>
         {:else}
           <p class="sea-panel__latest-values">
-            <span class="sea-panel__latest-value" aria-describedby="sea-latest-unit">{t.eColi}: {@render reading(latest.e_coli, latest.e_coli_below_detection, d.limits.e_coli)}</span>
-            <span class="sea-panel__latest-value" aria-describedby="sea-latest-unit">{t.enterococci}: {@render reading(latest.enterococci, latest.enterococci_below_detection, d.limits.enterococci)}</span>
-            <span class="sea-panel__latest-unit" id="sea-latest-unit">{t.unitMpn}</span>
+            <span class="sea-panel__latest-value">{t.eColi}: {@render reading(latest.e_coli, latest.e_coli_below_detection, d.limits.e_coli)}<span class="sr-only"> {t.unitMpn}</span></span>
+            <span class="sea-panel__latest-value">{t.enterococci}: {@render reading(latest.enterococci, latest.enterococci_below_detection, d.limits.enterococci)}<span class="sr-only"> {t.unitMpn}</span></span>
+            <span class="sea-panel__latest-unit" aria-hidden="true">{t.unitMpn}</span>
           </p>
           <p class="sea-panel__credit-rzi">{latestCredit}</p>
           {#if t.latest.singleSampleNote}<p class="sea-panel__latest-note">{t.latest.singleSampleNote}</p>{/if}

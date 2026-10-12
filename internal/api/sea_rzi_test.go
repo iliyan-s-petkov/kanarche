@@ -693,6 +693,10 @@ func TestSeaDetailRZISeasonOpen(t *testing.T) {
 		{"in season, this year", rziRow(seaCoastal, day(2026, 7, 14), 2026, 15, 40), sofiaAt(2026, 7, 20, 12, 0), "true"},
 		{"in season, prior year rows only", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 7, 20, 12, 0), "true"},
 		{"off season", rziRow(seaCoastal, day(2026, 7, 14), 2026, 15, 40), sofiaAt(2026, 11, 20, 12, 0), "false"},
+		{"14 May 23:59", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 5, 14, 23, 59), "false"},
+		{"15 May 00:00", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 5, 15, 0, 0), "true"},
+		{"15 Oct 23:59", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 10, 15, 23, 59), "true"},
+		{"16 Oct 00:00", rziRow(seaCoastal, day(2025, 7, 14), 2025, 15, 40), sofiaAt(2026, 10, 16, 0, 0), "false"},
 	}
 	for _, c := range cases {
 		info, _, raw := detailRZI(t, rziDeps(t, rziSource(c.row), c.now))
