@@ -58,30 +58,40 @@ func TestNewRefusesUserinfoPageURL(t *testing.T) {
 	}
 }
 
-// The timeout must stop a stalled response, headers only or mid-body, well
-// before the handler gives up on its own.
-func TestFetchTimeoutBounded(t *testing.T) {
-	stall := func(req *http.Request) {
-		select {
-		case <-time.After(2 * time.Second):
-		case <-req.Context().Done():
-		}
+// stall blocks until cleanup releases it. The 2s backstop only matters when the
+// client timeout is missing, so the test fails instead of hanging.
+func stall(release <-chan struct{}) {
+	select {
+	case <-release:
+	case <-time.After(2 * time.Second):
 	}
+}
+
+// The timeout must stop a stalled response, headers only or mid-body, while
+// the handler is still blocked. The handler waits on a channel that only
+// cleanup closes: if it also returned on the request context, the server would
+// finish the response the moment the client gave up, and the client could see
+// that clean end instead of its own timeout.
+func TestFetchTimeoutBounded(t *testing.T) {
 	tests := []struct {
 		name string
-		file http.HandlerFunc
+		file func(w http.ResponseWriter, release <-chan struct{})
 	}{
-		{"no response", func(_ http.ResponseWriter, req *http.Request) { stall(req) }},
-		{"stalls mid-body", func(w http.ResponseWriter, req *http.Request) {
+		{"no response", func(_ http.ResponseWriter, release <-chan struct{}) { stall(release) }},
+		{"stalls mid-body", func(w http.ResponseWriter, release <-chan struct{}) {
 			w.Header().Set("Content-Type", "application/pdf")
 			_, _ = w.Write([]byte("%PDF-"))
 			w.(http.Flusher).Flush()
-			stall(req)
+			stall(release)
 		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := varnaRig(t, tt.file)
+			release := make(chan struct{})
+			r := varnaRig(t, func(w http.ResponseWriter, _ *http.Request) { tt.file(w, release) })
+			// Cleanups run last-in first-out: release the handler before the
+			// server closes, or Close would wait for it.
+			t.Cleanup(func() { close(release) })
 			r.cfg.RZI.RequestTimeout = 150 * time.Millisecond
 			start := time.Now()
 			_, err := r.fetcher().Fetch(context.Background(), SourceVarna, Validators{})
