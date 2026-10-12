@@ -1,10 +1,15 @@
 package rzi_test
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	"kanarche.eu/internal/store"
 	"kanarche.eu/internal/upstream/rzi"
 )
 
@@ -37,26 +42,44 @@ func TestIngestPrunesInboxOnOK(t *testing.T) {
 	}
 }
 
-func TestIngestPrunesInboxOnNeedsReview(t *testing.T) {
+// failSink fails the calls a test switches on and passes the rest through.
+type failSink struct {
+	rzi.Sink
+	replace, lookup bool
+}
+
+var errSink = errors.New("sink down")
+
+func (f failSink) ReplaceRZISource(ctx context.Context, source string, file store.RZIFile, xs []store.RZISample) error {
+	if f.replace {
+		return errSink
+	}
+	return f.Sink.ReplaceRZISource(ctx, source, file, xs)
+}
+
+func (f failSink) RZIFileBySHA(ctx context.Context, sha string) (store.RZIFile, bool, error) {
+	if f.lookup {
+		return store.RZIFile{}, false, errSink
+	}
+	return f.Sink.RZIFileBySHA(ctx, sha)
+}
+
+func TestIngestKeepsInboxOnNeedsReview(t *testing.T) {
 	r := newRig(t)
 	doc := r.inboxDoc(shaOf("b"))
 	drop(t, r.outbox, withBadUnit(varna(t, shaOf("b"))))
 
 	r.process()
 
-	if exists(doc) {
-		t.Error("needs_review document left in the inbox")
+	if !exists(doc) {
+		t.Error("needs_review document was pruned")
 	}
 	if !exists(filepath.Join(r.outbox, "review", shaOf("b")+".json")) {
 		t.Error("review record missing")
 	}
-	// Approval reads the review record only, never the inbox.
-	if _, err := r.ing.Approve(r.ctx, shaOf("b")); err != nil {
-		t.Fatalf("Approve after prune: %v", err)
-	}
 }
 
-func TestIngestPrunesInboxOnRejected(t *testing.T) {
+func TestIngestKeepsInboxOnRejected(t *testing.T) {
 	r := newRig(t)
 	f := fixture(t, "rejected.json")
 	doc := r.inboxDoc(f.SHA256)
@@ -64,12 +87,12 @@ func TestIngestPrunesInboxOnRejected(t *testing.T) {
 
 	r.process()
 
-	if exists(doc) {
-		t.Error("rejected document left in the inbox")
+	if !exists(doc) {
+		t.Error("rejected document was pruned")
 	}
 }
 
-func TestIngestPrunesInboxOnDuplicate(t *testing.T) {
+func TestIngestPrunesInboxOnDuplicateOfOK(t *testing.T) {
 	r := newRig(t)
 	drop(t, r.outbox, varna(t, shaOf("a")))
 	r.process()
@@ -80,11 +103,26 @@ func TestIngestPrunesInboxOnDuplicate(t *testing.T) {
 		t.Fatalf("stats = %+v", s)
 	}
 	if exists(doc) {
-		t.Error("duplicate's document left in the inbox")
+		t.Error("document of a stored ok file left in the inbox")
 	}
 }
 
-func TestIngestPrunesInboxOnRefusedRecord(t *testing.T) {
+func TestIngestKeepsInboxOnDuplicateOfNonOK(t *testing.T) {
+	r := newRig(t)
+	drop(t, r.outbox, withBadUnit(varna(t, shaOf("b"))))
+	r.process()
+	doc := r.inboxDoc(shaOf("b"))
+	drop(t, r.outbox, withBadUnit(varna(t, shaOf("b"))))
+
+	if s := r.process(); s.Duplicate != 1 {
+		t.Fatalf("stats = %+v", s)
+	}
+	if !exists(doc) {
+		t.Error("document of a needs_review file was pruned by a duplicate")
+	}
+}
+
+func TestIngestKeepsInboxOnRefusedRecord(t *testing.T) {
 	r := newRig(t)
 	doc := r.inboxDoc(shaOf("c"))
 	if err := os.WriteFile(filepath.Join(r.outbox, shaOf("c")+".json"), []byte("{not json"), 0o640); err != nil {
@@ -94,8 +132,22 @@ func TestIngestPrunesInboxOnRefusedRecord(t *testing.T) {
 	if s := r.process(); s.Refused != 1 {
 		t.Fatalf("stats = %+v", s)
 	}
-	if exists(doc) {
-		t.Error("document of a refused record left in the inbox")
+	if !exists(doc) {
+		t.Error("a refused record's name deleted an inbox document")
+	}
+}
+
+func TestIngestKeepsInboxOnStoreError(t *testing.T) {
+	r := newRig(t)
+	doc := r.inboxDoc(shaOf("a"))
+	drop(t, r.outbox, varna(t, shaOf("a")))
+	ing := rzi.NewIngester(r.cfg, failSink{Sink: r.st, replace: true}, func() time.Time { return r.now })
+
+	if _, err := ing.Process(r.ctx); err == nil {
+		t.Fatal("Process: want the store error")
+	}
+	if !exists(doc) {
+		t.Error("document pruned though the store write failed")
 	}
 }
 
@@ -116,15 +168,61 @@ func TestIngestKeepsInboxWhenRecordIsNotSettled(t *testing.T) {
 	}
 }
 
-func TestSettledInReportsStoredHashes(t *testing.T) {
+func TestIngestPruneSkipsSymlinkAndDirectory(t *testing.T) {
 	r := newRig(t)
-	r.seedOK(shaOf("1"), siteA, 1)
+	target := filepath.Join(t.TempDir(), "target")
+	if err := os.WriteFile(target, []byte("x"), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(r.cfg.InboxDir, shaOf("a")+".pdf")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(r.cfg.InboxDir, shaOf("a")+".xlsx")
+	if err := os.Mkdir(dir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	drop(t, r.outbox, varna(t, shaOf("a")))
+
+	r.process()
+
+	if !exists(link) || !exists(dir) || !exists(target) {
+		t.Errorf("symlink %v, directory %v or target %v was removed", exists(link), exists(dir), exists(target))
+	}
+}
+
+func TestSettledInIsTrueOnlyForOKRows(t *testing.T) {
+	r := newRig(t)
+	rej := fixture(t, "rejected.json")
+	drop(t, r.outbox, varna(t, shaOf("a")))
+	drop(t, r.outbox, withBadUnit(varna(t, shaOf("b"))))
+	drop(t, r.outbox, rej)
+	r.process()
 	settled := rzi.SettledIn(r.st)
 
-	if !settled(r.ctx, shaOf("1")) {
-		t.Error("stored hash not reported settled")
+	if !settled(r.ctx, shaOf("a")) {
+		t.Error("ok hash not settled")
 	}
-	if settled(r.ctx, shaOf("2")) {
+	if settled(r.ctx, shaOf("b")) {
+		t.Error("needs_review hash reported settled")
+	}
+	if settled(r.ctx, rej.SHA256) {
+		t.Error("rejected hash reported settled")
+	}
+	if settled(r.ctx, shaOf("9")) {
 		t.Error("unknown hash reported settled")
+	}
+}
+
+func TestSettledInStoreErrorIsNotSettledAndLogs(t *testing.T) {
+	r := newRig(t)
+	r.seedOK(shaOf("1"), siteA, 1)
+	buf := captureLog(t)
+
+	if rzi.SettledIn(failSink{Sink: r.st, lookup: true})(r.ctx, shaOf("1")) {
+		t.Error("store error reported settled")
+	}
+	if !strings.Contains(buf.String(), "level=WARN") {
+		t.Errorf("no warning logged: %q", buf.String())
 	}
 }

@@ -2,9 +2,32 @@ package rzi
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
+
+	"kanarche.eu/internal/store"
 )
+
+// downSink fails every lookup.
+type downSink struct{ Sink }
+
+func (downSink) RZIFileBySHA(context.Context, string) (store.RZIFile, bool, error) {
+	return store.RZIFile{}, false, errors.New("down")
+}
+
+func TestFetchSavesWhenSettledLookupFails(t *testing.T) {
+	body := []byte(pdfBody)
+	r := varnaRig(t, serveBytes("application/pdf", body))
+	f := settledFetcher(t, r, SettledIn(downSink{}))
+	res, err := f.Fetch(context.Background(), SourceVarna, Validators{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Status != StatusWritten || len(inboxNames(t, r.inbox)) != 1 {
+		t.Errorf("Status = %v, inbox = %v", res.Status, inboxNames(t, r.inbox))
+	}
+}
 
 func settledFetcher(t *testing.T, r *rig, settled func(context.Context, string) bool) *Fetcher {
 	t.Helper()

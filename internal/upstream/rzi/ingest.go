@@ -169,6 +169,9 @@ func (g *Ingester) one(ctx context.Context, name string, st *Stats) error {
 		if old.Status == store.RZIStatusNeedsReview {
 			return g.move(name, dirReview)
 		}
+		if old.Status == store.RZIStatusOK {
+			return g.settleOK(name)
+		}
 		return g.move(name, dirDone)
 	}
 
@@ -191,7 +194,7 @@ func (g *Ingester) one(ctx context.Context, name string, st *Stats) error {
 		}
 		st.OK++
 		slog.Info("rzi file accepted", "source", rec.Source, "sha256", sha, "rows", len(accepted))
-		return g.move(name, dirDone)
+		return g.settleOK(name)
 	case StatusNeedsReview:
 		// Nothing is written but the file row. The accepted rows wait for
 		// an operator (rzi-approve).
@@ -360,9 +363,18 @@ func (g *Ingester) lastGood(ctx context.Context, source string) (LastGood, error
 	return lg, nil
 }
 
-// move puts a record into an outbox subdirectory, then drops its document
-// from the inbox. Approval reads the review record only, so review keeps no
-// original.
+// settleOK moves a record of a stored ok file to done/, then drops its
+// document from the inbox. Only ok documents are pruned: the others stay so
+// a newer extractor can judge them again.
+func (g *Ingester) settleOK(name string) error {
+	if err := g.move(name, dirDone); err != nil {
+		return err
+	}
+	g.pruneInbox(strings.TrimSuffix(name, ".json"))
+	return nil
+}
+
+// move puts a record into an outbox subdirectory.
 func (g *Ingester) move(name, dir string) error {
 	dst := filepath.Join(g.cfg.OutboxDir, dir)
 	if err := os.MkdirAll(dst, 0o750); err != nil {
@@ -371,7 +383,6 @@ func (g *Ingester) move(name, dir string) error {
 	if err := os.Rename(filepath.Join(g.cfg.OutboxDir, name), filepath.Join(dst, name)); err != nil {
 		return fmt.Errorf("rzi outbox: %w", err)
 	}
-	g.pruneInbox(strings.TrimSuffix(name, ".json"))
 	return nil
 }
 

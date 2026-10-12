@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
 	"net"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // MaxPageBytes caps a discovery page.
@@ -82,12 +84,16 @@ type Options struct {
 	Settled func(ctx context.Context, sha string) bool
 }
 
-// SettledIn reports a hash as settled when the store has a file row for it.
-// A store error counts as not settled, so the document is saved again.
+// SettledIn reports a hash as settled when the store has an ok file row for
+// it. A store error counts as not settled, so the document is saved again.
 func SettledIn(sink Sink) func(ctx context.Context, sha string) bool {
 	return func(ctx context.Context, sha string) bool {
-		_, found, err := sink.RZIFileBySHA(ctx, sha)
-		return err == nil && found
+		row, found, err := sink.RZIFileBySHA(ctx, sha)
+		if err != nil {
+			slog.Warn("rzi settled lookup failed", "sha256", sha, "error", err)
+			return false
+		}
+		return found && row.Status == store.RZIStatusOK
 	}
 }
 
@@ -244,12 +250,13 @@ func (f *Fetcher) Fetch(ctx context.Context, id string, prior Validators) (Resul
 		res.Status = StatusUnchanged
 		return res, nil
 	}
-	res.Path = filepath.Join(f.inbox, res.SHA256+"."+spec.Kind.Ext)
+	// Ingest prunes ok documents, so the inbox cannot say a hash is done. A
+	// save just before the prune is harmless: the Duplicate path prunes it.
 	if f.settled != nil && f.settled(ctx, res.SHA256) {
-		// The app prunes settled documents, so the inbox cannot say it.
 		res.Status = StatusUnchanged
 		return res, nil
 	}
+	res.Path = filepath.Join(f.inbox, res.SHA256+"."+spec.Kind.Ext)
 	if _, err := os.Stat(res.Path); err == nil {
 		res.Status = StatusUnchanged
 		return res, nil

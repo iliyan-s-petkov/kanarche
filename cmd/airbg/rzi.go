@@ -23,11 +23,17 @@ func rziCollectorFor(cfg config.Config, sink rzi.Sink) (*rzi.Collector, error) {
 // newRZICollector builds the collector regardless of the enabled flag, for
 // the one-shot import-rzi.
 func newRZICollector(cfg config.Config, sink rzi.Sink) (*rzi.Collector, error) {
-	f, err := rzi.New(cfg.Sea, rzi.Options{Settled: rzi.SettledIn(sink)})
+	f, err := rzi.New(cfg.Sea, rziFetchOptions(sink))
 	if err != nil {
 		return nil, fmt.Errorf("rzi fetcher: %w", err)
 	}
 	return rzi.NewCollector(cfg.Sea.RZI, sink, f), nil
+}
+
+// rziFetchOptions is what the host gives the fetcher. Settled keeps it from
+// saving a document the app already accepted and pruned.
+func rziFetchOptions(sink rzi.Sink) rzi.Options {
+	return rzi.Options{Settled: rzi.SettledIn(sink)}
 }
 
 // approver is the part of the ingester the approve command needs.
