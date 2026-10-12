@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -39,6 +40,14 @@ type entry struct {
 	level  *Level            // gauge
 	vecMu  sync.RWMutex      // guards vec
 	vec    map[string]*Count // labelled counter, keyed by label value
+
+	labels []string             // gauge vec label names
+	gvec   map[string]*gaugeRow // gauge vec, keyed by the joined label values
+}
+
+type gaugeRow struct {
+	values []string
+	level  Level
 }
 
 var (
@@ -113,6 +122,41 @@ func CounterVec(name, help, label string) *Vec {
 	return &Vec{e: e}
 }
 
+// LevelVec is a gauge with several label dimensions.
+type LevelVec struct{ e *entry }
+
+// With returns the gauge for one set of label values, creating it on first
+// use. The count must match the labels; a mismatch is a programming error.
+// The same bounded-cardinality rule as Vec.With applies.
+func (v *LevelVec) With(values ...string) *Level {
+	if len(values) != len(v.e.labels) {
+		panic("metrics: " + v.e.name + ": wrong number of label values")
+	}
+	key := strings.Join(values, "\x00")
+	v.e.vecMu.RLock()
+	r, ok := v.e.gvec[key]
+	v.e.vecMu.RUnlock()
+	if ok {
+		return &r.level
+	}
+	v.e.vecMu.Lock()
+	defer v.e.vecMu.Unlock()
+	if r, ok := v.e.gvec[key]; ok {
+		return &r.level
+	}
+	r = &gaugeRow{values: slices.Clone(values)}
+	v.e.gvec[key] = r
+	return &r.level
+}
+
+func GaugeVec(name, help string, labels ...string) *LevelVec {
+	e := register(&entry{
+		name: name, help: help, kind: kindGauge, labels: labels,
+		gvec: map[string]*gaugeRow{},
+	})
+	return &LevelVec{e: e}
+}
+
 func Gauge(name, help string) *Level {
 	g := &Level{}
 	register(&entry{name: name, help: help, kind: kindGauge, level: g})
@@ -140,6 +184,23 @@ func Handler() http.Handler {
 			case e.level != nil:
 				fmt.Fprintf(&b, "%s %s\n", e.name,
 					strconv.FormatFloat(e.level.Value(), 'g', -1, 64))
+			case e.gvec != nil:
+				e.vecMu.RLock()
+				keys := make([]string, 0, len(e.gvec))
+				for k := range e.gvec {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				for _, k := range keys {
+					row := e.gvec[k]
+					pairs := make([]string, len(e.labels))
+					for i, l := range e.labels {
+						pairs[i] = l + `="` + escapeLabelValue(row.values[i]) + `"`
+					}
+					fmt.Fprintf(&b, "%s{%s} %s\n", e.name, strings.Join(pairs, ","),
+						strconv.FormatFloat(row.level.Value(), 'g', -1, 64))
+				}
+				e.vecMu.RUnlock()
 			default:
 				e.vecMu.RLock()
 				keys := make([]string, 0, len(e.vec))

@@ -29,6 +29,7 @@ import (
 	"kanarche.eu/internal/upstream/bathing"
 	"kanarche.eu/internal/upstream/cloudflare"
 	"kanarche.eu/internal/upstream/eea"
+	"kanarche.eu/internal/upstream/rzi"
 	"kanarche.eu/internal/web"
 	"kanarche.eu/internal/wind"
 
@@ -37,7 +38,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|extract-bathing-datahub|validate-config|contract|healthz>")
+		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|import-rzi|rzi-approve|extract-bathing-datahub|validate-config|contract|healthz>")
 		os.Exit(2)
 	}
 
@@ -264,6 +265,28 @@ func main() {
 			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan,
 			"supplement_applied", st.Supplement.Applied)
 
+	// One RZI pass: fetch, then ingest whatever the outbox holds.
+	case "import-rzi":
+		rc, err := newRZICollector(cfg, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator))
+		if err != nil {
+			slog.Error("import rzi", "error", err)
+			os.Exit(1)
+		}
+		st, err := rc.RunOnce(ctx)
+		if err != nil {
+			slog.Error("import rzi", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("import rzi complete", "ok", st.OK, "needs_review", st.NeedsReview,
+			"rejected", st.Rejected, "duplicate", st.Duplicate, "refused", st.Refused)
+
+	// Publish the passed rows of one needs_review RZI file, by hash.
+	case "rzi-approve":
+		ing := rzi.NewIngester(cfg.Sea.RZI, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator), time.Now)
+		if code := runRZIApprove(ctx, os.Args[2:], ing, os.Stdout, os.Stderr); code != 0 {
+			os.Exit(code)
+		}
+
 	case "purge-outside-boundary":
 		// Deliberately a separate, operator-invoked step (task-17 review
 		// finding 4) — never run automatically from import-areas or collect.
@@ -477,6 +500,29 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 		close(seaDone)
 	}
 
+	// RZI documents: off unless sea.rzi.enabled.
+	rziDone := make(chan struct{})
+	rziMetricsDone := make(chan struct{})
+	rzc, rziErr := rziCollectorFor(cfg, collectorStore)
+	if rziErr != nil {
+		slog.Error("rzi collector not started", "error", rziErr)
+	}
+	if rzc != nil {
+		go func() {
+			defer close(rziDone)
+			rzc.Loop(pollCtx)
+		}()
+		// The gauges follow the store on their own clock, so an approval
+		// shows within a minute whatever the fetch interval is.
+		go func() {
+			defer close(rziMetricsDone)
+			rzc.WatchMetrics(pollCtx, rzi.MetricsRefresh)
+		}()
+	} else {
+		close(rziDone)
+		close(rziMetricsDone)
+	}
+
 	err = srv.Run(ctx)
 
 	// Stop the poller and wait for it, so the process does not exit with a
@@ -488,5 +534,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	<-eeaDone
 	<-cfDone
 	<-seaDone
+	<-rziDone
+	<-rziMetricsDone
 	return err
 }
