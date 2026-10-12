@@ -61,13 +61,22 @@ func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
 	return st, err
 }
 
-// Interval is the wait between passes: in_season_interval from 15 May to
-// 15 October inclusive by the Sofia date, off_season_interval otherwise.
-func Interval(cfg config.SeaRZI, now time.Time) time.Duration {
+// SeasonOpen is true from 15 May to 15 October inclusive by the Sofia date.
+// The collector and the API share it.
+func SeasonOpen(now time.Time) bool {
 	d := sofiaDate(now)
 	start := time.Date(d.Year(), time.May, 15, 0, 0, 0, 0, time.UTC)
 	end := time.Date(d.Year(), time.October, 15, 0, 0, 0, 0, time.UTC)
-	if !d.Before(start) && !d.After(end) {
+	return !d.Before(start) && !d.After(end)
+}
+
+// SofiaDate is now's calendar date in Sofia, as UTC midnight.
+func SofiaDate(now time.Time) time.Time { return sofiaDate(now) }
+
+// Interval is the wait between passes: in_season_interval while SeasonOpen,
+// off_season_interval otherwise.
+func Interval(cfg config.SeaRZI, now time.Time) time.Duration {
+	if SeasonOpen(now) {
 		return cfg.InSeasonInterval
 	}
 	return cfg.OffSeasonInterval

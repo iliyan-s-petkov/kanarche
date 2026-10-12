@@ -11,10 +11,14 @@ import (
 
 	"kanarche.eu/internal/store"
 	"kanarche.eu/internal/upstream/bathing"
+	"kanarche.eu/internal/upstream/rzi"
 )
 
 // The data changes once a year and is imported weekly; an hour-old answer is never visibly stale.
 const seaTTL = time.Hour
+
+// An RZI sample older than this many days by the Sofia date is stale.
+const seaStaleDays = 21
 
 // Matches the bathing_site CHECK, so a bad id is a 400 without a lookup.
 var seaSiteID = regexp.MustCompile(`^[A-Z]{2}[A-Za-z0-9]{1,40}$`)
@@ -30,6 +34,28 @@ type seaSite struct {
 	Quality *string `json:"quality"`
 	// Source is the dataset behind Season and Quality, null with no class.
 	Source *string `json:"source"`
+	// Latest is the newest RZI sample. Absent off-season and with no RZI data.
+	Latest *seaLatest `json:"latest,omitempty"`
+}
+
+// seaLatest is one RZI sample, not a class. Stale marks one past seaStaleDays.
+type seaLatest struct {
+	Date             string `json:"date"`
+	Source           string `json:"source"`
+	EColi            int    `json:"e_coli"`
+	EColiBelow       bool   `json:"e_coli_below_detection"`
+	Enterococci      int    `json:"enterococci"`
+	EnterococciBelow bool   `json:"enterococci_below_detection"`
+	Unit             string `json:"unit"`
+	Stale            bool   `json:"stale"`
+}
+
+// seaRZIInfo credits the RZI page behind a site's RZI samples. PageURL is the
+// configured results page, never a file URL.
+type seaRZIInfo struct {
+	Source    string    `json:"source"`
+	PageURL   string    `json:"page_url"`
+	FetchedAt time.Time `json:"fetched_at"`
 }
 
 // SeaSupplementMeta is the snapshot header data the API echoes. The caller
@@ -63,6 +89,8 @@ type seaSiteInfo struct {
 	Lat        float64 `json:"lat"`
 	Lon        float64 `json:"lon"`
 	ProfileURL string  `json:"profile_url"`
+	// RZI is absent for a site with no visible RZI sample.
+	RZI *seaRZIInfo `json:"rzi,omitempty"`
 }
 
 type seaClass struct {
@@ -79,6 +107,8 @@ type seaSample struct {
 	Enterococci      int    `json:"enterococci"`
 	EnterococciBelow bool   `json:"enterococci_below_detection"`
 	PreSeason        bool   `json:"pre_season"`
+	// Source is eea or an RZI source id. Set only on a site that has RZI samples.
+	Source string `json:"source,omitempty"`
 }
 
 type seaSiteBody struct {
@@ -102,13 +132,17 @@ type seaCache struct {
 	mu      sync.Mutex
 	bodies  seaBodies
 	fetched time.Time
-	ok      bool
+	// day is the Sofia date of the load. Staleness and season turn on it, so a
+	// new day reloads inside the TTL.
+	day time.Time
+	ok  bool
 }
 
-func (c *seaCache) get(ctx context.Context, src DataSource, meta SeaSupplementMeta, now time.Time) (seaBodies, error) {
+func (c *seaCache) get(ctx context.Context, src DataSource, env seaEnv, now time.Time) (seaBodies, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.ok && now.Sub(c.fetched) < seaTTL {
+	day := rzi.SofiaDate(now)
+	if c.ok && now.Sub(c.fetched) < seaTTL && day.Equal(c.day) {
 		return c.bodies, nil
 	}
 	d, err := src.LoadBathing(ctx)
@@ -131,13 +165,17 @@ func (c *seaCache) get(ctx context.Context, src DataSource, meta SeaSupplementMe
 			slog.Error("sea supplement edition query failed", "error", err)
 			ed = ""
 		}
-		sup = newSeaSupplement(ed, meta)
+		sup = newSeaSupplement(ed, env.meta)
 	}
-	b, err := encodeSea(d, importedAt, sup)
+	rows, good, err := loadRZI(ctx, src)
 	if err != nil {
 		return seaBodies{}, err
 	}
-	c.bodies, c.fetched, c.ok = b, now, true
+	b, err := encodeSea(d, importedAt, sup, seaRZIInput{rows: rows, lastGood: good, pages: env.pages, now: now})
+	if err != nil {
+		return seaBodies{}, err
+	}
+	c.bodies, c.fetched, c.day, c.ok = b, now, day, true
 	return b, nil
 }
 
@@ -161,7 +199,7 @@ func hasDatahub(cs []store.BathingClass) bool {
 
 // encodeSea builds both shapes. Store order is site, then season or date
 // ascending; the detail lists are reversed to newest first.
-func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (seaBodies, error) {
+func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement, in seaRZIInput) (seaBodies, error) {
 	classes := map[string][]seaClass{}
 	for _, c := range d.Classes {
 		classes[c.SiteID] = append([]seaClass{{Season: c.Season, Quality: c.Quality, Source: c.Source}}, classes[c.SiteID]...)
@@ -176,6 +214,7 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (
 		}}, samples[s.SiteID]...)
 	}
 
+	visible := in.visible(d)
 	list := seaSitesBody{ImportedAt: importedAt, Limits: bathing.LimitsByZone, Sites: make([]seaSite, 0, len(d.Sites))}
 	out := seaBodies{sites: make(map[string][]byte, len(d.Sites))}
 	for _, s := range d.Sites {
@@ -183,6 +222,7 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (
 		if cs := classes[s.ID]; len(cs) > 0 {
 			row.Season, row.Quality, row.Source = &cs[0].Season, &cs[0].Quality, &cs[0].Source
 		}
+		row.Latest = in.latest(visible[s.ID])
 		list.Sites = append(list.Sites, row)
 		if sup != nil && row.Source != nil && *row.Source == store.SourceDatahub {
 			list.Supplement = sup
@@ -194,8 +234,9 @@ func encodeSea(d store.BathingData, importedAt *time.Time, sup *seaSupplement) (
 				Lat: s.Lat, Lon: s.Lon, ProfileURL: s.ProfileURL},
 			Limits:  bathing.LimitsByZone[s.Zone],
 			Classes: nonNil(classes[s.ID]),
-			Samples: nonNil(samples[s.ID]),
+			Samples: nonNil(in.merge(samples[s.ID], visible[s.ID])),
 		}
+		detail.Site.RZI = in.info(visible[s.ID])
 		// Only a site that shows a datahub class carries the credit.
 		for _, c := range classes[s.ID] {
 			if sup != nil && c.Source == store.SourceDatahub {
@@ -223,9 +264,20 @@ func nonNil[T seaClass | seaSample](s []T) []T {
 	return s
 }
 
+func (d Deps) now() time.Time {
+	if d.Clock != nil {
+		return d.Clock()
+	}
+	return time.Now()
+}
+
+func (d Deps) seaEnv() seaEnv {
+	return seaEnv{meta: d.SeaSupplement, pages: seaPages(d.Config.Sea.RZI)}
+}
+
 // handleSeaSites serves every bathing site with its latest annual class.
 func (d Deps) handleSeaSites(w http.ResponseWriter, r *http.Request) {
-	b, err := d.sea.get(r.Context(), d.Store, d.SeaSupplement, time.Now())
+	b, err := d.sea.get(r.Context(), d.Store, d.seaEnv(), d.now())
 	if err != nil {
 		slog.Error("sea sites query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
@@ -241,7 +293,7 @@ func (d Deps) handleSeaSite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "The site id is not valid.")
 		return
 	}
-	b, err := d.sea.get(r.Context(), d.Store, d.SeaSupplement, time.Now())
+	b, err := d.sea.get(r.Context(), d.Store, d.seaEnv(), d.now())
 	if err != nil {
 		slog.Error("sea site query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
