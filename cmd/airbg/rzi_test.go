@@ -125,6 +125,33 @@ func TestRZIApproveUsageAndExitCodes(t *testing.T) {
 	}
 }
 
+// fakeSink answers only the lookup the fetcher hook makes.
+type fakeSink struct {
+	rzi.Sink
+	row store.RZIFile
+}
+
+func (f fakeSink) RZIFileBySHA(context.Context, string) (store.RZIFile, bool, error) {
+	return f.row, true, nil
+}
+
+// The collector's fetcher must skip settled hashes, or a pruned inbox is
+// refilled on every pass.
+func TestRZIFetchOptionsWireSettled(t *testing.T) {
+	sha := strings.Repeat("a", 64)
+	opts := rziFetchOptions(fakeSink{row: store.RZIFile{Status: store.RZIStatusOK}})
+	if opts.Settled == nil {
+		t.Fatal("Settled is not wired")
+	}
+	if !opts.Settled(context.Background(), sha) {
+		t.Error("ok row not settled through the wired hook")
+	}
+	review := rziFetchOptions(fakeSink{row: store.RZIFile{Status: store.RZIStatusNeedsReview}})
+	if review.Settled(context.Background(), sha) {
+		t.Error("needs_review row settled through the wired hook")
+	}
+}
+
 // An error nobody anticipated may wrap text from the database or the disk.
 func TestRZIApproveDoesNotEchoUnknownErrors(t *testing.T) {
 	var out, errb bytes.Buffer

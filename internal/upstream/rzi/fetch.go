@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
 	"net"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/store"
 )
 
 // MaxPageBytes caps a discovery page.
@@ -77,6 +79,22 @@ type Result struct {
 type Options struct {
 	Transport *http.Transport
 	Now       func() time.Time
+	// Settled says a document hash was already judged, so it is not saved
+	// to the inbox again. Nil means nothing is settled.
+	Settled func(ctx context.Context, sha string) bool
+}
+
+// SettledIn reports a hash as settled when the store has an ok file row for
+// it. A store error counts as not settled, so the document is saved again.
+func SettledIn(sink Sink) func(ctx context.Context, sha string) bool {
+	return func(ctx context.Context, sha string) bool {
+		row, found, err := sink.RZIFileBySHA(ctx, sha)
+		if err != nil {
+			slog.Warn("rzi settled lookup failed", "sha256", sha, "error", err)
+			return false
+		}
+		return found && row.Status == store.RZIStatusOK
+	}
 }
 
 // Fetcher downloads the current-year document of each configured source.
@@ -88,6 +106,7 @@ type Fetcher struct {
 	maxBytes  int64
 	inbox     string
 	pages     map[string]*url.URL
+	settled   func(ctx context.Context, sha string) bool
 }
 
 // New checks every page URL against its source's host allow-list.
@@ -100,6 +119,7 @@ func New(cfg config.Sea, opt Options) (*Fetcher, error) {
 		maxBytes:  cfg.RZI.MaxFileBytes,
 		inbox:     cfg.RZI.InboxDir,
 		pages:     map[string]*url.URL{},
+		settled:   opt.Settled,
 	}
 	if f.tr == nil {
 		f.tr = defaultTransport()
@@ -227,6 +247,12 @@ func (f *Fetcher) Fetch(ctx context.Context, id string, prior Validators) (Resul
 	digest := sha256.Sum256(body)
 	res.SHA256 = hex.EncodeToString(digest[:])
 	if res.SHA256 == prior.SHA256 {
+		res.Status = StatusUnchanged
+		return res, nil
+	}
+	// Ingest prunes ok documents, so the inbox cannot say a hash is done. A
+	// save just before the prune is harmless: the Duplicate path prunes it.
+	if f.settled != nil && f.settled(ctx, res.SHA256) {
 		res.Status = StatusUnchanged
 		return res, nil
 	}
