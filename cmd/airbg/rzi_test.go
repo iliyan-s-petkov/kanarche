@@ -23,13 +23,18 @@ func shippedConfig(t *testing.T) config.Config {
 	return cfg
 }
 
-// serve starts the collector only when sea.rzi.enabled is true, and the
-// shipped config has it false.
+// The shipped config turns the RZI feature on.
+func TestShippedConfigEnablesRZI(t *testing.T) {
+	if !shippedConfig(t).Sea.RZI.Enabled {
+		t.Fatal("shipped config has sea.rzi.enabled = false")
+	}
+}
+
+// serve starts the collector only when sea.rzi.enabled is true. The flag is set
+// both ways here so the test does not depend on the shipped value.
 func TestServeStartsRZICollectorOnlyWhenEnabled(t *testing.T) {
 	cfg := shippedConfig(t)
-	if cfg.Sea.RZI.Enabled {
-		t.Fatal("shipped config has sea.rzi.enabled = true")
-	}
+	cfg.Sea.RZI.Enabled = false
 	c, err := rziCollectorFor(cfg, nil)
 	if err != nil || c != nil {
 		t.Fatalf("disabled: collector = %v, err = %v, want none", c, err)

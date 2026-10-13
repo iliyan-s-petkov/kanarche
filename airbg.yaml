@@ -316,10 +316,11 @@ sea:
     max_download_bytes: 134217728
     max_disagree: 0.005
     min_site_coverage: 0.8
-  # RZI bathing samples. See internal/upstream/rzi/fetch.go. Off until the
-  # extractor sandbox is deployed. Hosts per source are fixed in code.
+  # RZI bathing samples. See internal/upstream/rzi/fetch.go. On: serve runs
+  # the collector and the site shows the RZI copy. Hosts per source are
+  # fixed in code.
   rzi:
-    enabled: false
+    enabled: true
     inbox_dir: "/var/lib/airbg/rzi/inbox"
     outbox_dir: "/var/lib/airbg/rzi/outbox"
     in_season_interval: "6h"

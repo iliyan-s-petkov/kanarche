@@ -45,7 +45,7 @@
 </ul>
 
 <h2>{{.T "about.sources.heading"}}</h2>
-<p>{{.T "about.sources.body"}}</p>
+<p>{{.T "about.sources.body"}}{{if .RZIEnabled}} {{.T "about.sources.rzi"}}{{end}}</p>
 
 <h2>{{.T "about.privacy.heading"}}</h2>
 {{template "privacyStorage" .}}
