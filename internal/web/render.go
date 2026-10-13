@@ -814,7 +814,7 @@ func (p PageData) HasBasemap() bool { return p.BasemapStyleURL != "" }
 // function into an execution error, which is safer for a licence-required
 // link than silently rendering a dead href.
 func (p PageData) AttributionURL(source string) string {
-	for _, a := range api.Attributions() {
+	for _, a := range api.Attributions(true) {
 		if a.Source == source {
 			return a.URL
 		}
@@ -1218,6 +1218,13 @@ func involvedParts(body string, links map[string]involvedLink) []involvedPart {
 func (p PageData) AboutNoteParts() []involvedPart {
 	return involvedParts(p.T("about.station.note"), map[string]involvedLink{
 		"terms": {Href: p.Path("/terms"), Label: p.T("about.station.terms")},
+	})
+}
+
+// LicencesAPIParts is licences.api with {terms} as a link to the terms page.
+func (p PageData) LicencesAPIParts() []involvedPart {
+	return involvedParts(p.T("licences.api"), map[string]involvedLink{
+		"terms": {Href: p.Path("/terms"), Label: p.T("licences.api.terms")},
 	})
 }
 

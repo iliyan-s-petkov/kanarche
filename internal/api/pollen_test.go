@@ -68,7 +68,7 @@ func TestAreaPollenWithoutAForecastIs503(t *testing.T) {
 }
 
 func TestAttributionsCreditCAMSForPollen(t *testing.T) {
-	for _, a := range api.Attributions() {
+	for _, a := range api.Attributions(true) {
 		if a.Source == "open-meteo" {
 			if !strings.Contains(a.Text, "Copernicus") || !strings.Contains(a.Text, "Open-Meteo") {
 				t.Errorf("open-meteo attribution = %q, want it to name Copernicus CAMS for pollen", a.Text)

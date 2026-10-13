@@ -146,7 +146,7 @@ func New(opts Options) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("server: api origins: %w", err)
 	}
-	root.Handle("/api/", httpx.NoIndex(httpx.CORS(apiMux, apiOrigins)))
+	root.Handle("/api/", httpx.NoIndex(httpx.CORS(httpx.LicenceLink(apiMux), apiOrigins)))
 	root.Handle("/", renderer.Routes())
 
 	// The kit rides the public listener and its middleware chain deliberately:
