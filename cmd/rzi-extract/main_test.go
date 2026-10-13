@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,8 @@ import (
 
 	"kanarche.eu/internal/docparse/pdf"
 	"kanarche.eu/internal/upstream/rzi"
+	"kanarche.eu/internal/upstream/rzi/dobrich"
+	"kanarche.eu/internal/xlsx/xlsxtest"
 )
 
 // fakeRunner stands in for pdfinfo and pdftotext.
@@ -225,14 +228,65 @@ func TestPDFTextCapRejected(t *testing.T) {
 	}
 }
 
-func TestXLSXUnsupportedFormat(t *testing.T) {
+// dobrichBook builds a one-sheet workbook in the Dobrich layout: sheet
+// "КР №08001", label and coordinates, a header row and one data row.
+func dobrichBook(t *testing.T) []byte {
+	t.Helper()
+	text := []string{
+		"Пункт за вземане на проби №08001     Наименование \"Тест\"",
+		"Географски координати: ширина N 43º 43' 36\" дължина E 28º 34' 25\"",
+		"Планирана дата за пробонабиране",
+		"Дата на пробона-биране",
+		" Резултат от анализ за чревни ентерококи MPN/100cm3",
+		"Резултат от анализ за Ешерихия коли MPN/100cm3",
+		"<15",
+	}
+	var si []string
+	for _, s := range text {
+		si = append(si, "<si><t>"+strings.NewReplacer("&", "&amp;", "<", "&lt;", `"`, "&quot;").Replace(s)+"</t></si>")
+	}
+	str := func(ref string, i int) string {
+		return fmt.Sprintf(`<c r="%s" t="s"><v>%d</v></c>`, ref, i)
+	}
+	rows := []string{
+		`<row r="3">` + str("A3", 0) + `</row>`,
+		`<row r="4">` + str("A4", 1) + `</row>`,
+		`<row r="7">` + str("A7", 2) + str("B7", 3) + str("C7", 4) + str("D7", 5) + `</row>`,
+		`<row r="8"><c r="A8"><v>46181</v></c><c r="B8"><v>46181</v></c>` + str("C8", 6) + `<c r="D8"><v>192</v></c></row>`,
+	}
+	parts := xlsxtest.Minimal(xlsxtest.SheetXML(rows...), xlsxtest.SharedXML(si...))
+	wb := strings.Replace(xlsxtest.Workbook, `name="Sheet1"`, `name="КР №08001"`, 1)
+	parts = xlsxtest.Replace(parts, xlsxtest.Part{Name: xlsxtest.WorkbookName, Data: []byte(wb)})
+	b, err := xlsxtest.Build(xlsxtest.Options{Parts: parts})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func TestXLSXExtractsDobrichRecord(t *testing.T) {
+	e := newEnv(t)
+	h := e.put(dobrichBook(t), "xlsx")
+	if code := process(e.in, e.out, pdfKinds(&fakeRunner{})); code != 0 {
+		t.Fatalf("exit %d", code)
+	}
+	rec := e.record(h)
+	if rec.Error != "" || len(rec.Blocks) != 1 || len(rec.Blocks[0].Rows) != 1 {
+		t.Fatalf("error %q blocks %+v", rec.Error, rec.Blocks)
+	}
+	if rec.Source != rzi.SourceDobrich || rec.ExtractorVersion != dobrich.ExtractorVersion || rec.SHA256 != h {
+		t.Fatalf("header %+v", rec)
+	}
+}
+
+func TestXLSXGarbageGetsRecord(t *testing.T) {
 	e := newEnv(t)
 	h := e.put([]byte("PK\x03\x04rest"), "xlsx")
 	if code := process(e.in, e.out, pdfKinds(&fakeRunner{})); code != 0 {
 		t.Fatalf("exit %d", code)
 	}
 	rec := e.record(h)
-	if rec.Error != "unsupported format" || rec.Source != rzi.SourceDobrich {
+	if rec.Error == "" || rec.Error == "unsupported format" || rec.Source != rzi.SourceDobrich || len(rec.Blocks) != 0 {
 		t.Fatalf("%+v", rec)
 	}
 }

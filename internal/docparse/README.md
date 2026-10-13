@@ -51,4 +51,4 @@ Per file the test kills the run at 20 s.
 - `TestPositiveControls` runs the same flags on the Varna test excerpt laid out as a PDF. It also runs them on the committed Burgas workbook `internal/upstream/rzi/testdata/burgas-control.xls`, which the burgas package tests keep current. Both must give an ok record with the same blocks as the in-process extractor.
 - `TestNetworkNone` starts a listener container on the default bridge. The control run must reach it. The sandboxed run must not (I1).
 
-The xlsx inputs are refused as `unsupported format` until the Dobrich extractor lands. After that they exercise its caps.
+The xlsx inputs run through the Dobrich extractor and `internal/xlsx`. They exercise the zip, ratio, entry and XML depth caps and must come back as refusal records.
