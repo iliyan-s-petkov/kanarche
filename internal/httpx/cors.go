@@ -26,6 +26,8 @@ func CORS(next http.Handler, a *origin.Allowlist) http.Handler {
 		// header is the unambiguous refusal.
 		if o := r.Header.Get("Origin"); a.Allows(o) {
 			w.Header().Set("Access-Control-Allow-Origin", o)
+			// Link carries the licence pointer; cross-origin scripts cannot read it otherwise.
+			w.Header().Add("Access-Control-Expose-Headers", "Link")
 		}
 		next.ServeHTTP(&varyOnOrigin{ResponseWriter: w}, r)
 	})

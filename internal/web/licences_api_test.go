@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"html"
 	"strings"
 	"testing"
 
@@ -25,11 +26,11 @@ func TestLicencesPointsAtTheTermsForTheAPI(t *testing.T) {
 	for path, w := range want {
 		body := fetch(t, rziRenderer(t, true), path).Body.String()
 		link := `<a href="` + w.href + `">` + cat.T(rziLangs[path], "licences.api.terms") + `</a>`
-		if !strings.Contains(body, w.sentence+link+".") {
+		if !strings.Contains(body, html.EscapeString(w.sentence)+link+".") {
 			t.Errorf("%s lacks the API sentence ending in %s", path, link)
 		}
 		intro := strings.Index(body, cat.T(rziLangs[path], "licences.intro"))
-		api := strings.Index(body, w.sentence)
+		api := strings.Index(body, html.EscapeString(w.sentence))
 		if intro < 0 || api < intro {
 			t.Errorf("%s: API sentence must follow the intro", path)
 		}

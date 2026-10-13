@@ -20,10 +20,10 @@ type Attribution struct {
 	URL    string `json:"url"`
 }
 
-// Attributions lists every ingested source. ODbL 1.0 and the EEA reuse terms
+// Attributions lists every ingested source. RZI is listed only when its collector is enabled. ODbL 1.0 and the EEA reuse terms
 // both require the credit, so this must stay in step with the collectors.
-func Attributions() []Attribution {
-	return []Attribution{
+func Attributions(rzi bool) []Attribution {
+	out := []Attribution{
 		{
 			Source: "sensor.community",
 			Text:   "Citizen data from sensor.community contributors, ODbL 1.0",
@@ -56,12 +56,15 @@ func Attributions() []Attribution {
 			Text:   "Bathing water quality: European Environment Agency (EEA), WISE Bathing Water Directive data, CC BY 4.0",
 			URL:    "https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
 		},
-		{
+	}
+	if rzi {
+		out = append(out, Attribution{
 			Source: "rzi",
 			Text:   "Bathing water lab results: regional health inspectorates (RHI) Varna, Burgas and Dobrich. Derived data, CC BY 4.0",
 			URL:    "https://kanarche.eu/licences",
-		},
+		})
 	}
+	return out
 }
 
 // handleOverview serves one choropleth tier.
@@ -283,7 +286,7 @@ func (d Deps) handleMeta(w http.ResponseWriter, r *http.Request) {
 		CellStatistic:     "median",
 		CellStatChangedAt: snapshot.CellStatChangedAt,
 		TimelapseSpans:    timelapseSpans(),
-		Attributions:      Attributions(),
+		Attributions:      Attributions(d.Config.Sea.RZI.Enabled),
 		Disclaimer: "Low-cost sensor readings are indicative and are not " +
 			"reference-method measurements.",
 	})

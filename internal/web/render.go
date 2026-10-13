@@ -814,7 +814,7 @@ func (p PageData) HasBasemap() bool { return p.BasemapStyleURL != "" }
 // function into an execution error, which is safer for a licence-required
 // link than silently rendering a dead href.
 func (p PageData) AttributionURL(source string) string {
-	for _, a := range api.Attributions() {
+	for _, a := range api.Attributions(true) {
 		if a.Source == source {
 			return a.URL
 		}

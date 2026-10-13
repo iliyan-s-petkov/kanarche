@@ -141,20 +141,9 @@ func NewRouter(d Deps) *http.ServeMux {
 
 	mux := http.NewServeMux()
 	for pattern, h := range d.handlers() {
-		mux.HandleFunc(pattern, withLicenceLink(h))
+		mux.HandleFunc(pattern, h)
 	}
 	return mux
-}
-
-// licenceLink points every API response at the page that lists each source's licence.
-const licenceLink = `<https://kanarche.eu/licences>; rel="license"`
-
-// withLicenceLink adds the licence Link header before the handler writes.
-func withLicenceLink(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Link", licenceLink)
-		h(w, r)
-	}
 }
 
 // handlers is the single source of truth for the API router: pattern to
