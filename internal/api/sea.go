@@ -177,6 +177,8 @@ func (c *seaCache) load(ctx context.Context, src DataSource, env seaEnv, now tim
 	if b, ok := c.fresh(now); ok {
 		return b, nil
 	}
+	// now is the caller's, so a load that starts past midnight can store the
+	// old day once; the next call reloads.
 	day := rzi.SofiaDate(now)
 	d, err := src.LoadBathing(ctx)
 	if err != nil {
