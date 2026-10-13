@@ -20,6 +20,7 @@ import (
 	"kanarche.eu/internal/docparse/pdf"
 	"kanarche.eu/internal/upstream/rzi"
 	"kanarche.eu/internal/upstream/rzi/burgas"
+	"kanarche.eu/internal/upstream/rzi/dobrich"
 	"kanarche.eu/internal/upstream/rzi/varna"
 )
 
@@ -34,7 +35,7 @@ const (
 var reName = regexp.MustCompile(`^([0-9a-f]{64})\.(pdf|xls|xlsx)$`)
 
 // kind describes one input format. A nil extract means the format is
-// recognised but has no extractor yet.
+// recognised but has no extractor yet (none today).
 type kind struct {
 	source  string
 	magic   []byte
@@ -54,8 +55,11 @@ func newKinds(tools pdf.Tools) map[string]kind {
 			magic:   []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1},
 			extract: func(_ context.Context, data []byte) rzi.File { return burgas.Extract(data) },
 		},
-		// Dobrich: set extract to the XLSX extractor when it exists.
-		"xlsx": {source: rzi.SourceDobrich, magic: []byte("PK\x03\x04")},
+		"xlsx": {
+			source:  rzi.SourceDobrich,
+			magic:   []byte("PK\x03\x04"),
+			extract: func(_ context.Context, data []byte) rzi.File { return dobrich.Extract(data) },
+		},
 	}
 }
 

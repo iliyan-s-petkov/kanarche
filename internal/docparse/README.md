@@ -43,4 +43,4 @@ Per file the test kills the run at 20 s.
 
 `go test -tags docparse ./internal/docparse/integration/...` builds both targets, runs each hostile input in its own container and expects a refusal record or a killed run, never `ok`. Inputs are generated in `hostile_test.go`; nothing is committed or downloaded. `TestPositiveControls` runs the same flags on the Varna test excerpt laid out as a PDF and on the committed Burgas workbook `internal/upstream/rzi/testdata/burgas-control.xls` (kept current by the burgas package tests). Both must give an ok record with the same blocks as the extractor gives in process. `TestNetworkNone` dials a listener container the test starts on the default bridge: the control run must reach it, the sandboxed run must not (I1).
 
-The xlsx inputs are refused as `unsupported format` until the Dobrich extractor lands; they then exercise its caps.
+The xlsx inputs run through the Dobrich extractor and `internal/xlsx`, so they exercise the zip, ratio, entry and XML depth caps and must come back as refusal records.
