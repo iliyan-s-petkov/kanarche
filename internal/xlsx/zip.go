@@ -88,6 +88,7 @@ type Book struct {
 	maxTotal int64
 	sheets   []sheetRef
 	shared   string // shared-strings part, "" when absent
+	date1904 bool   // workbookPr date1904 is set
 
 	lim        limits
 	strs       []string // loaded on first Rows call
@@ -310,6 +311,11 @@ func (b *Book) readRels(ctx context.Context, name string) (map[string]rel, error
 	}
 }
 
+// Date1904 reports whether the workbook counts dates from 1904. Serial dates
+// are then 1462 days lower than in the default system, and callers that read
+// them must refuse or convert.
+func (b *Book) Date1904() bool { return b.date1904 }
+
 // readWorkbook maps sheet names to worksheet parts via the workbook rels.
 func (b *Book) readWorkbook(ctx context.Context, rels map[string]rel) error {
 	for _, r := range rels {
@@ -340,6 +346,14 @@ func (b *Book) readWorkbook(ctx context.Context, rels map[string]rel) error {
 			return fmt.Errorf("%s: %w", workbookPart, err)
 		}
 		se, ok := tok.(xml.StartElement)
+		if ok && se.Name.Local == "workbookPr" {
+			for _, a := range se.Attr {
+				if a.Name.Local == "date1904" && a.Name.Space == "" {
+					b.date1904 = a.Value == "1" || a.Value == "true"
+				}
+			}
+			continue
+		}
 		if !ok || se.Name.Local != "sheet" {
 			continue
 		}

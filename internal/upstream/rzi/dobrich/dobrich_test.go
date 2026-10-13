@@ -124,12 +124,14 @@ func TestDateCells(t *testing.T) {
 		data(8, nu(colPlan, d1), nu(colDate, d1+2), at(colIE, lt(15)), at(colEC, lt(15))),
 		data(9, nu(colPlan, d2), tx(colDate, "2026-06-26"), at(colIE, lt(15)), at(colEC, lt(15))),
 		data(10, nu(colPlan, d2), tx(colDate, "5.7.2026 г."), at(colIE, lt(15)), at(colEC, lt(15))),
+		// A date-time serial keeps its day.
+		data(11, nu(colPlan, d2), nu(colDate, d2+0.75), at(colIE, lt(15)), at(colEC, lt(15))),
 	)))
 	if f.Error != "" || len(f.Warnings) != 0 {
 		t.Fatalf("%+v", f)
 	}
 	r := f.Blocks[0].Rows
-	if r[0].Planned != "2026-06-08" || r[0].Date != "2026-06-10" || r[1].Date != "2026-06-26" || r[2].Date != "2026-07-05" {
+	if r[0].Planned != "2026-06-08" || r[0].Date != "2026-06-10" || r[1].Date != "2026-06-26" || r[2].Date != "2026-07-05" || r[3].Date != "2026-06-22" {
 		t.Fatalf("rows %+v", r)
 	}
 }
@@ -169,7 +171,7 @@ func TestOtherDateFailures(t *testing.T) {
 		"dotted year too old":   {data(8, nu(colPlan, d1), tx(colDate, "01.06.1899"), at(colIE, lt(15)), at(colEC, lt(15))), "unreadable sample date"},
 		"serial too small":      {data(8, nu(colPlan, d1), nu(colDate, 12), at(colIE, lt(15)), at(colEC, lt(15))), "unreadable sample date"},
 		"serial too large":      {data(8, nu(colPlan, d1), nu(colDate, 9999999), at(colIE, lt(15)), at(colEC, lt(15))), "unreadable sample date"},
-		"fractional serial":     {data(8, nu(colPlan, d1), nu(colDate, 46181.5), at(colIE, lt(15)), at(colEC, lt(15))), "unreadable sample date"},
+		"serial below floor":    {data(8, nu(colPlan, d1), nu(colDate, 60.9), at(colIE, lt(15)), at(colEC, lt(15))), "unreadable sample date"},
 		"planned unreadable":    {data(8, tx(colPlan, "soon"), nu(colDate, d1), at(colIE, lt(15)), at(colEC, lt(15))), "unreadable planned date"},
 		"date missing":          {data(8, nu(colPlan, d1), at(colIE, lt(15)), at(colEC, lt(15))), "sample date missing"},
 		"value missing":         {data(8, nu(colPlan, d1), nu(colDate, d1), at(colIE, lt(15))), "value missing"},
@@ -363,9 +365,52 @@ func TestRowCap(t *testing.T) {
 	if f.Error != "" || len(f.Blocks[0].Rows) != rzi.MaxRowsPerBlock {
 		t.Fatalf("at the cap: %q", f.Error)
 	}
+	// Over the cap drops that block only; other points are still read.
+	var rows []srow
+	for i := 0; i <= rzi.MaxRowsPerBlock; i++ {
+		rows = append(rows, okRow(8+i, d1+float64(i), lt(15), lt(15)))
+	}
+	f = Extract(book(t, pointSheet("08001", rows...), pointSheet("08002", okRow(8, d1, lt(15), lt(15)))))
+	if f.Error != "" || len(f.Blocks) != 1 || f.Blocks[0].Point != "08002" {
+		t.Fatalf("over the cap: %q, blocks %+v", f.Error, f.Blocks)
+	}
+	if !hasWarning(f, "point 08001: more than 60 rows") {
+		t.Fatalf("warnings %v", f.Warnings)
+	}
+	// With nothing else to extract the record is a plain refusal.
 	f = Extract(mk(rzi.MaxRowsPerBlock + 1))
-	if f.Error != "document over a structural cap" {
-		t.Fatalf("over the cap: %q, %d blocks", f.Error, len(f.Blocks))
+	if f.Error != "no sampling point blocks found" {
+		t.Fatalf("only capped block: %q", f.Error)
+	}
+}
+
+// date1904Book is the standard workbook with the 1904 date system flag.
+func date1904Book(t *testing.T, flag string) []byte {
+	t.Helper()
+	parts := bookParts([]sheetSpec{pointSheet("08001", okRow(8, d1, lt(15), lt(15)))})
+	for i, p := range parts {
+		if p.Name == xlsxtest.WorkbookName {
+			parts[i].Data = []byte(strings.Replace(string(p.Data), "<sheets>", `<workbookPr date1904="`+flag+`"/><sheets>`, 1))
+		}
+	}
+	b, err := xlsxtest.Build(xlsxtest.Options{Parts: parts})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func TestDate1904Refused(t *testing.T) {
+	for _, flag := range []string{"1", "true"} {
+		f := Extract(date1904Book(t, flag))
+		if f.Error != "workbook uses the 1904 date system" || len(f.Blocks) != 0 {
+			t.Fatalf("flag %s: error %q blocks %d", flag, f.Error, len(f.Blocks))
+		}
+	}
+	for _, flag := range []string{"0", "false"} {
+		if f := Extract(date1904Book(t, flag)); f.Error != "" || len(f.Blocks) != 1 {
+			t.Fatalf("flag %s: error %q", flag, f.Error)
+		}
 	}
 }
 

@@ -1,6 +1,7 @@
 package xlsx
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -104,4 +105,25 @@ func TestCellsBadCellType(t *testing.T) {
 	b := bookOf(t, xlsxtest.SheetXML(`<row r="1"><c r="A1" t="str"><v>x</v></c></row>`), shared())
 	_, err := gridOf(b)
 	wantErr(t, err, ErrCellType)
+}
+
+func TestDate1904Flag(t *testing.T) {
+	cases := map[string]bool{"": false, `<workbookPr/>`: false, `<workbookPr date1904="0"/>`: false,
+		`<workbookPr date1904="false"/>`: false, `<workbookPr date1904="1"/>`: true, `<workbookPr date1904="true"/>`: true}
+	for pr, want := range cases {
+		parts := xlsxtest.Minimal(xlsxtest.SheetXML(), xlsxtest.SharedXML())
+		wb := strings.Replace(xlsxtest.Workbook, "<sheets>", pr+"<sheets>", 1)
+		parts = xlsxtest.Replace(parts, xlsxtest.Part{Name: xlsxtest.WorkbookName, Data: []byte(wb)})
+		raw, err := xlsxtest.Build(xlsxtest.Options{Parts: parts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := Open(bytes.NewReader(raw), int64(len(raw)))
+		if err != nil {
+			t.Fatalf("%q: %v", pr, err)
+		}
+		if b.Date1904() != want {
+			t.Fatalf("%q: Date1904 = %v", pr, b.Date1904())
+		}
+	}
 }

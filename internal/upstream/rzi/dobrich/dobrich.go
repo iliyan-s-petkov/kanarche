@@ -38,6 +38,8 @@ const (
 var (
 	errCap  = errors.New("dobrich: structural cap")
 	errStop = errors.New("dobrich: stop reading sheet")
+	// errRowCap drops one block; errCap refuses the document.
+	errRowCap = errors.New("dobrich: too many rows in a block")
 )
 
 // Extract turns one Dobrich workbook into an outbox record. Refusals are
@@ -66,6 +68,10 @@ func Extract(data []byte) (f rzi.File) {
 	book, err := xlsx.Open(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return fail(errText(err))
+	}
+	// Serial dates would be off by 1462 days; refuse rather than guess.
+	if book.Date1904() {
+		return fail("workbook uses the 1904 date system")
 	}
 	// One sheet per point: more sheets than the contract has blocks is a cap.
 	names := book.Sheets()
@@ -122,10 +128,10 @@ type walker struct {
 	warnings []string
 }
 
-func (w *walker) warn(format string, a ...any) {
+func (w *walker) warn(msg string) {
 	switch {
 	case len(w.warnings) < maxWarnings:
-		w.warnings = append(w.warnings, fmt.Sprintf(format, a...))
+		w.warnings = append(w.warnings, msg)
 	case len(w.warnings) == maxWarnings:
 		w.warnings = append(w.warnings, "more warnings suppressed")
 	}
@@ -140,26 +146,30 @@ var sheetName = regexp.MustCompile(`^КР\s*№\s*(\d{5})$`)
 func (w *walker) sheet(n int, name string) (rzi.Block, bool, error) {
 	m := sheetName.FindStringSubmatch(strings.TrimSpace(name))
 	if m == nil {
-		w.warn("sheet %d: not a point sheet name", n)
+		w.warn(fmt.Sprintf("sheet %d: not a point sheet name", n))
 		return rzi.Block{}, false, nil
 	}
 	point := m[1]
 	s := &sheetReader{w: w, point: point}
 	err := w.book.Cells(name, s.row)
+	if errors.Is(err, errRowCap) {
+		w.warn(fmt.Sprintf("point %s: more than %d rows", point, rzi.MaxRowsPerBlock))
+		return rzi.Block{}, false, nil
+	}
 	if err != nil && !errors.Is(err, errStop) {
 		return rzi.Block{}, false, err
 	}
 	switch {
 	case !s.labelSeen:
-		w.warn("point %s: point label missing", point)
+		w.warn(fmt.Sprintf("point %s: point label missing", point))
 	case s.labelPoint != point:
-		w.warn("point %s: label point number differs from the sheet name", point)
+		w.warn(fmt.Sprintf("point %s: label point number differs from the sheet name", point))
 	case !s.coordsOK:
-		w.warn("point %s: coordinates missing or unreadable", point)
+		w.warn(fmt.Sprintf("point %s: coordinates missing or unreadable", point))
 	case s.hdr == hdrNone:
-		w.warn("point %s: table header missing", point)
+		w.warn(fmt.Sprintf("point %s: table header missing", point))
 	case s.hdr == hdrBad:
-		w.warn("point %s: table header not recognised", point)
+		w.warn(fmt.Sprintf("point %s: table header not recognised", point))
 	default:
 		return rzi.Block{
 			Point: point, Name: s.name, Lat: s.lat, Lon: s.lon,
@@ -375,30 +385,30 @@ func (s *sheetReader) dataRow(r xlsx.GridRow) error {
 		return nil
 	}
 	if !hasDate {
-		s.w.warn("point %s row %d: sample date missing", s.point, r.Num)
+		s.w.warn(fmt.Sprintf("point %s row %d: sample date missing", s.point, r.Num))
 		return nil
 	}
 	date, ok := parseDate(dc)
 	if !ok {
-		s.w.warn("point %s row %d: unreadable sample date", s.point, r.Num)
+		s.w.warn(fmt.Sprintf("point %s row %d: unreadable sample date", s.point, r.Num))
 		return nil
 	}
 	row := rzi.Row{Date: date, Unit: c.unit}
 	if pc, ok := cellAt(r, c.planned); ok {
 		if row.Planned, ok = parseDate(pc); !ok {
-			s.w.warn("point %s row %d: unreadable planned date", s.point, r.Num)
+			s.w.warn(fmt.Sprintf("point %s row %d: unreadable planned date", s.point, r.Num))
 			return nil
 		}
 	}
 	if !hasIE || !hasEC {
-		s.w.warn("point %s row %d: value missing", s.point, r.Num)
+		s.w.warn(fmt.Sprintf("point %s row %d: value missing", s.point, r.Num))
 		return nil
 	}
 	var ok1, ok2 bool
 	row.IE, ok1 = parseCount(ic)
 	row.EC, ok2 = parseCount(ec)
 	if !ok1 || !ok2 {
-		s.w.warn("point %s row %d: unreadable value", s.point, r.Num)
+		s.w.warn(fmt.Sprintf("point %s row %d: unreadable value", s.point, r.Num))
 		return nil
 	}
 	var parts []string
@@ -411,7 +421,7 @@ func (s *sheetReader) dataRow(r xlsx.GridRow) error {
 	}
 	row.Remarks = clip(strings.Join(parts, "; "), rzi.MaxRemarksRunes)
 	if len(s.rows) >= rzi.MaxRowsPerBlock {
-		return errCap
+		return errRowCap
 	}
 	s.rows = append(s.rows, row)
 	return nil
@@ -428,11 +438,13 @@ func parseDate(c xlsx.GridCell) (string, bool) {
 	if c.Num {
 		v, err := strconv.ParseFloat(c.Val, 64)
 		// 61 is 1900-03-01, after Excel's invented leap day.
-		if err != nil || v < 61 || v > 100000 || v != math.Trunc(v) {
+		// The fraction is the time of day, which is dropped. The negated
+		// form also refuses NaN.
+		if err != nil || !(v >= 61 && v <= 100000) {
 			return "", false
 		}
 		base := time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
-		return base.AddDate(0, 0, int(v)).Format(time.DateOnly), true
+		return base.AddDate(0, 0, int(math.Floor(v))).Format(time.DateOnly), true
 	}
 	txt := strings.TrimSpace(c.Val)
 	if isoDate.MatchString(txt) {

@@ -29,5 +29,5 @@ Line numbers shift if the source file changes. Check the `4 124` row is still in
 - Burgas and Dobrich data files. Their synthetic equivalents are built by test helpers.
   The Dobrich workbook (one sheet per point, label and coordinates above a header row) is
   rebuilt by `dobrich/testhelper_test.go` with `xlsxtest`. To check a downloaded copy, set
-  `RZI_DOBRICH_FILE` (and optionally `RZI_DOBRICH_SITES`, a JSON list of EEA sites) and run
+  `RZI_DOBRICH_FILE` (and optionally `RZI_DOBRICH_SITES`, a path to a JSON file listing EEA sites) and run
   `go test -run TestRealFile -v ./internal/upstream/rzi/dobrich/`. It logs counts only.
