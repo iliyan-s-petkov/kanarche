@@ -271,6 +271,6 @@ Recovery, if this rule ever does lock you out: from an existing session, `nft in
 
 `airbg-rzi-extract.timer` runs the sandboxed document extractor every 6 hours. The app does not start it, because starting a container needs the Docker socket and the app must never hold that. The run flags are in `internal/docparse/README.md`; `rzi_units_test.go` pins them.
 
-Nothing here is active yet. The units, `/etc/airbg/rzi-extract.env` (supplies `DOCPARSE_IMAGE`, a digest reference, no secrets), the `/var/lib/airbg/rzi/` directories and the app's two mounts are all installed by the ops role (part B). The app mounts are deliberately not in `docker-compose.prod.yml` until then, because Docker would create the missing directories root-owned.
+The ops role (part B) installs the units, `/etc/airbg/rzi-extract.env` (supplies `DOCPARSE_IMAGE`, a cosign-verified digest reference, no secrets) and the `/var/lib/airbg/rzi/` directories. `docker-compose.prod.yml` bind-mounts `inbox` and `outbox` into the app at the same paths. Deploy the role first: with a missing host directory Docker creates it root-owned and the app cannot write it. `sea.rzi.enabled` stays false until the first extractor run is checked.
 
-Intended ownership: the inbox is written by the app (`airbg_container_uid`) and read by 65534. The outbox is written by 65534 and read and moved by the app, so it needs a shared group and a setgid mode such as 2775.
+Ownership: the inbox is `airbg_container_uid:65534` mode 2750, so the app writes and 65534 reads through the group. The outbox is `65534:airbg_container_uid` mode 2770, so both write (the app moves files into `done/`, `review/` and `bad/`, which it creates itself) and others get nothing. Both are setgid so new files keep the group.
