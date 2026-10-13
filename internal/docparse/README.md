@@ -1,5 +1,9 @@
 # docparse sandbox image
 
+`internal/docparse/pdf` runs poppler's `pdfinfo` and `pdftotext` on one untrusted PDF. Production code imports it only from `cmd/rzi-extract`. The RZI pipeline that calls the extractor is in [internal/upstream/rzi/README.md](../upstream/rzi/README.md). The host timer that starts the sandbox is in [deploy/README.md](../../deploy/README.md).
+
+## Build
+
 `Dockerfile.docparse` builds `ghcr.io/<owner>/kanarche-docparse`: `cmd/rzi-extract` plus poppler, run once per batch with no network. The publish workflow builds, scans, signs (cosign keyless, same identity as the main image) and pushes it next to the main image.
 
 ## Pins
@@ -25,7 +29,7 @@ The sandbox flags below are the mitigation. Recheck on every pin bump.
 
 - poppler-utils only, `--no-install-recommends`, apt lists removed.
 - `USER 65534:65534`, entrypoint `/usr/local/bin/rzi-extract`.
-- Writes only to `/out` and a tmpfs `/tmp`; runs with a read-only root.
+- Writes only to `/out` and a tmpfs `/tmp`. It runs with a read-only root.
 - `netprobe` exists only in the `probe` build target, used by tests. It is not in the published image (tested).
 - The Debian base still contains a shell. Nothing in the run flags or entrypoint uses it.
 
@@ -41,6 +45,10 @@ Per file the test kills the run at 20 s.
 
 ## Tests
 
-`go test -tags docparse ./internal/docparse/integration/...` builds both targets, runs each hostile input in its own container and expects a refusal record or a killed run, never `ok`. Inputs are generated in `hostile_test.go`; nothing is committed or downloaded. `TestPositiveControls` runs the same flags on the Varna test excerpt laid out as a PDF and on the committed Burgas workbook `internal/upstream/rzi/testdata/burgas-control.xls` (kept current by the burgas package tests). Both must give an ok record with the same blocks as the extractor gives in process. `TestNetworkNone` dials a listener container the test starts on the default bridge: the control run must reach it, the sandboxed run must not (I1).
+`go test -tags docparse ./internal/docparse/integration/...` builds both targets. It runs each hostile input in its own container. Each run must end in a refusal record or a killed run, never `ok`.
 
-The xlsx inputs are refused as `unsupported format` until the Dobrich extractor lands; they then exercise its caps.
+- Inputs are generated in `hostile_test.go`. Nothing is committed or downloaded.
+- `TestPositiveControls` runs the same flags on the Varna test excerpt laid out as a PDF. It also runs them on the committed Burgas workbook `internal/upstream/rzi/testdata/burgas-control.xls`, which the burgas package tests keep current. Both must give an ok record with the same blocks as the in-process extractor.
+- `TestNetworkNone` starts a listener container on the default bridge. The control run must reach it. The sandboxed run must not (I1).
+
+The xlsx inputs are refused as `unsupported format` until the Dobrich extractor lands. After that they exercise its caps.
