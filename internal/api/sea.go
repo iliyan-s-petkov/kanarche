@@ -132,8 +132,13 @@ type seaBodies struct {
 	sites map[string][]byte
 }
 
-// seaCache holds encoded bodies for seaTTL. The lock spans the load so a burst makes one query.
+// seaLoadTimeout bounds one shared load; no single caller's context does.
+const seaLoadTimeout = 30 * time.Second
+
+// seaCache holds encoded bodies for seaTTL. Concurrent misses share one load
+// through flight, and a waiter can leave on its own context.
 type seaCache struct {
+	flight  flight[seaBodies]
 	mu      sync.Mutex
 	bodies  seaBodies
 	fetched time.Time
@@ -143,17 +148,38 @@ type seaCache struct {
 	ok  bool
 }
 
-// get reads the clock under the lock, so a request that waited behind a newer
-// reload cannot carry an older time into the cache. A clock that steps back is
-// served from the cache instead of reloading.
 func (c *seaCache) get(ctx context.Context, src DataSource, env seaEnv, clock func() time.Time) (seaBodies, error) {
+	now := clock()
+	if b, ok := c.fresh(now); ok {
+		return b, nil
+	}
+	return c.flight.do(ctx, seaLoadTimeout, func(ctx context.Context) (seaBodies, error) {
+		return c.load(ctx, src, env, now)
+	})
+}
+
+// fresh returns the cached bodies when now is inside the TTL on the same day.
+// A clock that steps back is served from the cache instead of reloading.
+func (c *seaCache) fresh(now time.Time) (seaBodies, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	now := clock()
 	day := rzi.SofiaDate(now)
 	if c.ok && (now.Before(c.fetched) || (now.Sub(c.fetched) < seaTTL && day.Equal(c.day))) {
-		return c.bodies, nil
+		return c.bodies, true
 	}
+	return seaBodies{}, false
+}
+
+// load rechecks freshness first: a load that finished after the caller's check
+// must not be repeated. A newer load already stored makes now older than
+// fetched, which fresh serves from the cache.
+func (c *seaCache) load(ctx context.Context, src DataSource, env seaEnv, now time.Time) (seaBodies, error) {
+	if b, ok := c.fresh(now); ok {
+		return b, nil
+	}
+	// now is the caller's, so a load that starts past midnight can store the
+	// old day once; the next call reloads.
+	day := rzi.SofiaDate(now)
 	d, err := src.LoadBathing(ctx)
 	if err != nil {
 		return seaBodies{}, err
@@ -185,7 +211,9 @@ func (c *seaCache) get(ctx context.Context, src DataSource, env seaEnv, clock fu
 	if err != nil {
 		return seaBodies{}, err
 	}
+	c.mu.Lock()
 	c.bodies, c.fetched, c.day, c.ok = b, now, day, true
+	c.mu.Unlock()
 	return b, nil
 }
 
