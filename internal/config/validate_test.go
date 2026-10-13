@@ -894,11 +894,11 @@ func TestWindForecastMustOutlastThePollInterval(t *testing.T) {
 	}
 }
 
-// The fetcher ships off, with the plan's cadence and caps.
+// The fetcher ships on, with the plan's cadence and caps.
 func TestSeaRZIShippedDefaults(t *testing.T) {
 	r := good(t).Sea.RZI
-	if r.Enabled {
-		t.Error("sea.rzi.enabled = true, want false")
+	if !r.Enabled {
+		t.Error("sea.rzi.enabled = false, want true")
 	}
 	if r.InSeasonInterval != 6*time.Hour || r.OffSeasonInterval != 24*time.Hour {
 		t.Errorf("intervals = %v, %v", r.InSeasonInterval, r.OffSeasonInterval)

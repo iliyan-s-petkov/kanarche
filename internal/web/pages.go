@@ -302,7 +302,11 @@ func (rr *Renderer) handleTerms(w http.ResponseWriter, r *http.Request) {
 
 // handleLicences serves /licences: every data source and the code licence.
 func (rr *Renderer) handleLicences(w http.ResponseWriter, r *http.Request) {
-	rr.render(w, r, http.StatusOK, "licences", rr.staticPageData(r, "seo.licences"))
+	data := rr.staticPageData(r, "seo.licences")
+	if data.RZIEnabled() {
+		data.Description = rr.cat.T(data.Lang, "seo.licences.description_rzi")
+	}
+	rr.render(w, r, http.StatusOK, "licences", data)
 }
 
 // staticPageData is the shared setup of the snapshot-free prose pages; keyBase
