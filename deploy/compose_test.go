@@ -1375,3 +1375,28 @@ func TestAppGainsNoNetworkForRZI(t *testing.T) {
 		}
 	}
 }
+
+// The two RZI bind mounts are host directories the ops role creates before the
+// stack. Both are writable because the app moves files in each.
+func TestAppMountsTheRZIInboxAndOutbox(t *testing.T) {
+	app := service(t, loadCompose(t), "app")
+	want := map[string]bool{
+		"/var/lib/airbg/rzi/inbox:/var/lib/airbg/rzi/inbox":   false,
+		"/var/lib/airbg/rzi/outbox:/var/lib/airbg/rzi/outbox": false,
+	}
+	for _, v := range app.Volumes {
+		if _, ok := want[v]; ok {
+			want[v] = true
+		} else if strings.Contains(v, "rzi") {
+			t.Errorf("unexpected rzi mount %q", v)
+		}
+	}
+	for v, found := range want {
+		if !found {
+			t.Errorf("app volumes missing %q", v)
+		}
+	}
+	if len(app.CapAdd) != 0 || !app.ReadOnly || len(app.CapDrop) != 1 || app.CapDrop[0] != "ALL" {
+		t.Errorf("app privileges changed: cap_add=%v read_only=%v cap_drop=%v", app.CapAdd, app.ReadOnly, app.CapDrop)
+	}
+}
