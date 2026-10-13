@@ -17,7 +17,7 @@ The extractor is a separate binary, see [cmd/rzi-extract](../../../cmd/rzi-extra
 
 - `varna`: PDF text from poppler, parsed in `varna/`.
 - `burgas`: XLS (BIFF) workbook, parsed in `burgas/`.
-- `dobrich`: XLSX. Discovery and fetch are in place. The extractor is not built yet, so xlsx inputs are refused as `unsupported format`. Dobrich XLSX: see OP 707.
+- `dobrich`: XLSX. Discovery and fetch are in place. The extractor is not built yet, so xlsx inputs are refused as `unsupported format`.
 
 ## Configuration
 
