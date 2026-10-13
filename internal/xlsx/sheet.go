@@ -60,13 +60,45 @@ func (b *Book) Rows(sheetName string, required []string, fn func(Row) error) err
 // that has at least one cell under a header column. fn's error is returned
 // unwrapped.
 func (b *Book) RowsContext(ctx context.Context, sheetName string, required []string, fn func(Row) error) error {
+	return b.stream(ctx, sheetName, &sheetReader{required: required, fn: fn})
+}
+
+// GridCell is one non-empty cell. Num is true for a numeric cell, false for
+// a shared string.
+type GridCell struct {
+	Col int // zero-based, 0 is A
+	Val string
+	Num bool
+}
+
+// GridRow is one worksheet row with its 1-based number. Cells are in column
+// order and never empty. The slice is reused: copy it to keep it.
+type GridRow struct {
+	Num   int
+	Cells []GridCell
+}
+
+// Cells is CellsContext with a background context.
+func (b *Book) Cells(sheetName string, fn func(GridRow) error) error {
+	return b.CellsContext(context.Background(), sheetName, fn)
+}
+
+// CellsContext streams the named sheet without a header row: fn gets every
+// row that holds at least one non-empty cell, under the same caps as
+// RowsContext. fn's error is returned unwrapped.
+func (b *Book) CellsContext(ctx context.Context, sheetName string, fn func(GridRow) error) error {
+	return b.stream(ctx, sheetName, &sheetReader{grid: fn})
+}
+
+// stream opens the named sheet and runs s over it.
+func (b *Book) stream(ctx context.Context, sheetName string, s *sheetReader) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	var part string
-	for _, s := range b.sheets {
-		if s.name == sheetName {
-			part = s.part
+	for _, sh := range b.sheets {
+		if sh.name == sheetName {
+			part = sh.part
 		}
 	}
 	if part == "" {
@@ -80,7 +112,7 @@ func (b *Book) RowsContext(ctx context.Context, sheetName string, required []str
 		return err
 	}
 	defer rc.Close()
-	s := &sheetReader{book: b, d: newDecoder(ctx, rc), required: required, fn: fn}
+	s.book, s.d = b, newDecoder(ctx, rc)
 	if err := s.run(); err != nil {
 		if s.rowNum > 0 && !errors.Is(err, errCallback) {
 			return fmt.Errorf("%s row %d: %w", sheetName, s.rowNum, err)
@@ -169,6 +201,7 @@ func (b *Book) loadShared(ctx context.Context) error {
 type cell struct {
 	col int
 	val string
+	num bool
 }
 
 type sheetReader struct {
@@ -176,6 +209,7 @@ type sheetReader struct {
 	d        *decoder
 	required []string
 	fn       func(Row) error
+	grid     func(GridRow) error // set instead of required and fn
 
 	sheetDataDepth int // 0 until <sheetData> opens
 	rows           int
@@ -189,7 +223,8 @@ type sheetReader struct {
 	val            []byte
 	hasV           bool
 
-	header map[int]string // column -> name, nil until row 1 is read
+	header    map[int]string // column -> name, nil until row 1 is read
+	gridCells []GridCell
 }
 
 var errCallback = errors.New("callback")
@@ -322,7 +357,7 @@ func (s *sheetReader) end(t xml.EndElement) (bool, error) {
 	switch s.d.depth - s.sheetDataDepth {
 	case -1:
 		if t.Name.Local == "sheetData" {
-			if s.header == nil {
+			if s.header == nil && s.grid == nil {
 				return true, fmt.Errorf("%w: no header row", ErrHeader)
 			}
 			return true, nil
@@ -360,12 +395,15 @@ func (s *sheetReader) endCell() error {
 	case !isDecimal(v):
 		return fmt.Errorf("%w: number %q", ErrCellValue, v)
 	default:
-		last.val = v
+		last.val, last.num = v, true
 	}
 	return nil
 }
 
 func (s *sheetReader) endRow() error {
+	if s.grid != nil {
+		return s.endGridRow()
+	}
 	if s.header == nil {
 		return s.readHeader()
 	}
@@ -384,6 +422,22 @@ func (s *sheetReader) endRow() error {
 		return nil
 	}
 	if err := s.fn(row); err != nil {
+		return callbackErr{err}
+	}
+	return nil
+}
+
+func (s *sheetReader) endGridRow() error {
+	s.gridCells = s.gridCells[:0]
+	for _, c := range s.cells {
+		if c.val != "" {
+			s.gridCells = append(s.gridCells, GridCell{Col: c.col - 1, Val: c.val, Num: c.num})
+		}
+	}
+	if len(s.gridCells) == 0 {
+		return nil
+	}
+	if err := s.grid(GridRow{Num: s.rowNum, Cells: s.gridCells}); err != nil {
 		return callbackErr{err}
 	}
 	return nil
