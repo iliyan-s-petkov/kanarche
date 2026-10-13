@@ -215,7 +215,7 @@ func TestTrustedProxyCIDRMatchesTheEdgeSubnet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile(.env.example) error = %v, want nil", err)
 	}
-	const key = "AIRBG_LISTEN_TRUSTED_PROXY_CIDRS="
+	const key = "KANARCHE_LISTEN_TRUSTED_PROXY_CIDRS="
 	var documented string
 	var found bool
 	for _, line := range strings.Split(string(data), "\n") {
@@ -260,10 +260,10 @@ func TestDesignPreviewAllowancesDefaultToFalse(t *testing.T) {
 		key  string
 		want string
 	}{
-		{"AIRBG_LISTEN_ALLOW_LOOPBACK_ORIGINS", "false"},
-		{"AIRBG_LISTEN_ALLOWED_ORIGINS", ""},
-		{"AIRBG_TILES_ALLOW_LOOPBACK_ORIGINS", "false"},
-		{"AIRBG_TILES_ALLOWED_ORIGINS", ""},
+		{"KANARCHE_LISTEN_ALLOW_LOOPBACK_ORIGINS", "false"},
+		{"KANARCHE_LISTEN_ALLOWED_ORIGINS", ""},
+		{"KANARCHE_TILES_ALLOW_LOOPBACK_ORIGINS", "false"},
+		{"KANARCHE_TILES_ALLOWED_ORIGINS", ""},
 	} {
 		if got := envExampleValue(t, tt.key); got != tt.want {
 			t.Errorf(".env.example says %s=%q, want %q", tt.key, got, tt.want)
@@ -275,13 +275,13 @@ func TestDesignPreviewAllowancesDefaultToFalse(t *testing.T) {
 // non-loopback listen.metrics_addr, so an example an operator copies verbatim
 // must already satisfy it — otherwise the app refuses to start.
 func TestExampleMetricsAddrIsLoopback(t *testing.T) {
-	got := envExampleValue(t, "AIRBG_LISTEN_METRICS_ADDR")
+	got := envExampleValue(t, "KANARCHE_LISTEN_METRICS_ADDR")
 	host, _, err := net.SplitHostPort(got)
 	if err != nil {
-		t.Fatalf("AIRBG_LISTEN_METRICS_ADDR = %q, must be host:port: %v", got, err)
+		t.Fatalf("KANARCHE_LISTEN_METRICS_ADDR = %q, must be host:port: %v", got, err)
 	}
 	if ip := net.ParseIP(host); host != "localhost" && (ip == nil || !ip.IsLoopback()) {
-		t.Errorf("AIRBG_LISTEN_METRICS_ADDR = %q, want a loopback host", got)
+		t.Errorf("KANARCHE_LISTEN_METRICS_ADDR = %q, want a loopback host", got)
 	}
 }
 
@@ -1204,13 +1204,13 @@ func TestNoProductionVhostSendsXRobotsTag(t *testing.T) {
 // The example .env is what an operator copies: it must name kanarche.eu as
 // canonical and keep both tile origins in connect-src for the redirect window.
 func TestExampleEnvIsCanonicalOnKanarche(t *testing.T) {
-	if got, want := envExampleValue(t, "AIRBG_LISTEN_BASE_URL"), "https://kanarche.eu"; got != want {
-		t.Errorf(".env.example AIRBG_LISTEN_BASE_URL = %q, want %q", got, want)
+	if got, want := envExampleValue(t, "KANARCHE_LISTEN_BASE_URL"), "https://kanarche.eu"; got != want {
+		t.Errorf(".env.example KANARCHE_LISTEN_BASE_URL = %q, want %q", got, want)
 	}
-	if got, want := envExampleValue(t, "AIRBG_TILES_PUBLIC_URL"), "https://tiles.kanarche.eu"; got != want {
-		t.Errorf(".env.example AIRBG_TILES_PUBLIC_URL = %q, want %q", got, want)
+	if got, want := envExampleValue(t, "KANARCHE_TILES_PUBLIC_URL"), "https://tiles.kanarche.eu"; got != want {
+		t.Errorf(".env.example KANARCHE_TILES_PUBLIC_URL = %q, want %q", got, want)
 	}
-	csp := envExampleValue(t, "AIRBG_LISTEN_CSP")
+	csp := envExampleValue(t, "KANARCHE_LISTEN_CSP")
 	var connect []string
 	for _, directive := range strings.Split(csp, ";") {
 		if fields := strings.Fields(directive); len(fields) > 0 && fields[0] == "connect-src" {
@@ -1398,5 +1398,21 @@ func TestAppMountsTheRZIInboxAndOutbox(t *testing.T) {
 	}
 	if len(app.CapAdd) != 0 || !app.ReadOnly || len(app.CapDrop) != 1 || app.CapDrop[0] != "ALL" {
 		t.Errorf("app privileges changed: cap_add=%v read_only=%v cap_drop=%v", app.CapAdd, app.ReadOnly, app.CapDrop)
+	}
+}
+
+// The app still reads AIRBG_* but logs a deprecation warning per key. The
+// example an operator copies must use the KANARCHE_* spelling. AIRBG_IMAGE_TAG
+// is compose interpolation only, never read by the app, so it keeps its name.
+func TestExampleEnvUsesKanarchePrefix(t *testing.T) {
+	data, err := os.ReadFile(".env.example")
+	if err != nil {
+		t.Fatalf("ReadFile(.env.example) error = %v, want nil", err)
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimPrefix(line, "# ")
+		if strings.HasPrefix(line, "AIRBG_") && !strings.HasPrefix(line, "AIRBG_IMAGE_TAG=") {
+			t.Errorf(".env.example still names %q, want the KANARCHE_ prefix", line)
+		}
 	}
 }

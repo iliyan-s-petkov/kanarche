@@ -148,7 +148,7 @@ Run these in order. Each step depends on the one before it.
    or defer validation to `docker compose up -d` in step 13.
 
 5. `cp deploy/.env.example /srv/airbg/.env`, fill in every value (database
-   credentials, `AIRBG_IMAGE_TAG`, `AIRBG_TILES_ARCHIVE`), then:
+   credentials, `AIRBG_IMAGE_TAG`, `KANARCHE_TILES_ARCHIVE`), then:
 
    ```bash
    chmod 600 /srv/airbg/.env
@@ -158,9 +158,9 @@ Run these in order. Each step depends on the one before it.
 6. Create the `collect` job's database credential file. `deploy/ofelia.ini`
    runs `collect` as a fresh container through the Docker API every 5
    minutes; that container inherits nothing from `app`'s `env_file: [.env]`,
-   so `AIRBG_DATABASE_URL` has to reach it a different way — a bind-mounted
+   so `KANARCHE_DATABASE_URL` has to reach it a different way — a bind-mounted
    file, the same pattern `/srv/airbg/pgpass` already uses for the backup job
-   (§7). Put the *same* connection string as `AIRBG_DATABASE_URL` in
+   (§7). Put the *same* connection string as `KANARCHE_DATABASE_URL` in
    `/srv/airbg/.env` on one line in `/srv/airbg/airbg_database_url`, then:
 
    ```bash
@@ -188,7 +188,7 @@ Run these in order. Each step depends on the one before it.
 7. `cp deploy/docker-compose.prod.yml deploy/Caddyfile deploy/ofelia.ini /srv/airbg/`
 
 8. Generate and install the tiles artefacts per `docs/tiles.md`, then set
-   `AIRBG_TILES_ARCHIVE` in `/srv/airbg/.env` to match the exact filename you
+   `KANARCHE_TILES_ARCHIVE` in `/srv/airbg/.env` to match the exact filename you
    installed.
 
 9. Pull the signed image and tag it `airbg:$TAG` (see §4 Releases). Nothing
@@ -331,7 +331,7 @@ ssh -L 9090:172.29.0.10:9090 airbg    # metrics
 
 Two caveats:
 
-- `AIRBG_LISTEN_BASE_URL` is `https://airbg.org` in production, so canonical
+- `KANARCHE_LISTEN_BASE_URL` is `https://airbg.org` in production, so canonical
   links, `hreflang` tags and the language switcher all point at production
   while you browse through the forward — relative navigation within the page
   behaves normally, but any absolute link takes you back to the live site.
@@ -352,7 +352,7 @@ build. Three names must agree, or the tiles listener refuses to start or
 browsers fetch a 404:
 
 1. The archive's filename on disk in `/var/lib/airbg/tiles/`.
-2. `AIRBG_TILES_ARCHIVE` in `/srv/airbg/.env`.
+2. `KANARCHE_TILES_ARCHIVE` in `/srv/airbg/.env`.
 3. The `pmtiles://` source URL embedded in `style.json`.
 
 The filename **must change on every regeneration** — tiles are served with a
@@ -400,7 +400,7 @@ on the next `collect` cycle.
 
 ## 8. Adding a language or changing copy
 
-Set `AIRBG_I18N_DIR` in `/srv/airbg/.env` to a host directory, drop a
+Set `KANARCHE_I18N_DIR` in `/srv/airbg/.env` to a host directory, drop a
 `<lang>.json` file into it following the shape of the embedded catalogues,
 and restart the `app` service. No image rebuild and no database migration is
 needed — the catalogue is read from disk at startup. See
