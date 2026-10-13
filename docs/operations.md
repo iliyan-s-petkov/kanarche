@@ -189,6 +189,8 @@ prefix, e.g. `/en/`.
 | GET | `/metrics` | private only |
 | GET | `/healthz` | private only |
 
+The API serves the same data as the site. Each source keeps its own licence. See /licences for the credit each source needs. GET /api/v1/overview returns the same credits as `attributions`. Every /api/v1 response carries `Link: <https://kanarche.eu/licences>; rel="license"`. The terms at /terms, including the no warranty section, cover the API.
+
 ### Where a bounding box is and is not accepted
 
 `/api/v1/overview` takes no bounding box. The API is tiered instead: a

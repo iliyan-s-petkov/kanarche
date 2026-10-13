@@ -1221,6 +1221,13 @@ func (p PageData) AboutNoteParts() []involvedPart {
 	})
 }
 
+// LicencesAPIParts is licences.api with {terms} as a link to the terms page.
+func (p PageData) LicencesAPIParts() []involvedPart {
+	return involvedParts(p.T("licences.api"), map[string]involvedLink{
+		"terms": {Href: p.Path("/terms"), Label: p.T("licences.api.terms")},
+	})
+}
+
 // TermsLicencesParts is terms.licences.body with {licences} as a link.
 func (p PageData) TermsLicencesParts() []involvedPart {
 	return involvedParts(p.T("terms.licences.body"), map[string]involvedLink{

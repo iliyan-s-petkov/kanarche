@@ -5,6 +5,7 @@
 <div class="page-head">
   <h1 class="t-title">{{.T "licences.title"}}</h1>
   <p class="t-body">{{.T "licences.intro"}}</p>
+  <p class="t-body">{{range .LicencesAPIParts}}{{if .Href}}<a href="{{.Href}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
 </div>
 
 <h2>{{.T "licences.data.heading"}}</h2>

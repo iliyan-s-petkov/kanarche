@@ -666,6 +666,8 @@
   "privacy.storage.heading": "Cookies and browser storage",
   "licences.title": "Licences",
   "licences.intro": "The data comes from several sources, each with its own licence. The Kanarche code is free software.",
+  "licences.api": "The public API at /api/v1 serves the same data as the map. Each source keeps its own licence. If you reuse the data, credit each source as listed below. The data comes as it is, with no warranty, as set out in the {terms}.",
+  "licences.api.terms": "Terms of use",
   "licences.data.heading": "Data",
   "licences.licence": "Licence",
   "licences.source": "Source",

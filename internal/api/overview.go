@@ -56,6 +56,11 @@ func Attributions() []Attribution {
 			Text:   "Bathing water quality: European Environment Agency (EEA), WISE Bathing Water Directive data, CC BY 4.0",
 			URL:    "https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
 		},
+		{
+			Source: "rzi",
+			Text:   "Bathing water lab results: regional health inspectorates (RHI) Varna, Burgas and Dobrich. Derived data, CC BY 4.0",
+			URL:    "https://kanarche.eu/licences",
+		},
 	}
 }
 

@@ -14,6 +14,7 @@ func TestAttributionsNameBothNetworksAndTheirMaps(t *testing.T) {
 		"eea":              "https://eea.government.bg/kav/",
 		"open-meteo":       "https://open-meteo.com/",
 		"eea-bathing":      "https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water",
+		"rzi":              "https://kanarche.eu/licences",
 		"cams-pollen":      "https://atmosphere.copernicus.eu/charts/packages/cams_air_quality/products/europe-air-quality-forecast-pollens",
 	}
 	seen := map[string]bool{}
@@ -41,7 +42,7 @@ func TestEveryIngestedSourceIsCredited(t *testing.T) {
 	for _, a := range api.Attributions() {
 		credited[a.Source] = true
 	}
-	for _, s := range []string{"sensor.community", "eea", "openstreetmap", "open-meteo", "eea-bathing"} {
+	for _, s := range []string{"sensor.community", "eea", "openstreetmap", "open-meteo", "eea-bathing", "rzi"} {
 		if !credited[s] {
 			t.Errorf("%s is used and not credited", s)
 		}
