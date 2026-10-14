@@ -2048,3 +2048,30 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 }
 /* Status and credit lines wrap on a narrow finder; room so the credit is not scrolled off. */
 .map-controls__find .combobox__list { max-block-size: min(26rem, 60vh); }
+.sea-chart { margin: 0 0 var(--space-3); }
+.sea-chart__svg { display: block; inline-size: 100%; block-size: auto; }
+.sea-chart__band--within { fill: var(--sea-band-within); }
+.sea-chart__band--between { fill: var(--sea-band-between); }
+.sea-chart__band--above { fill: var(--sea-band-above); }
+.sea-chart__grid { stroke: var(--border-faint); stroke-width: 0.5; }
+.sea-chart__limit { stroke: var(--fg-2); stroke-width: 1; stroke-dasharray: 4 3; }
+.sea-chart__tick, .sea-chart__limit-label { font-size: 9px; fill: var(--fg-2); font-variant-numeric: tabular-nums; }
+.sea-chart__dot { fill: var(--fg); stroke: var(--fg); stroke-width: 1.5; }
+.sea-chart__dot--below, .sea-chart__key-dot { fill: var(--bg); }
+.sea-chart__key-dot { stroke: var(--fg); stroke-width: 1.5; }
+.sea-chart__unit { margin: 0; font-size: var(--text-caption); color: var(--fg-2); }
+.sea-chart__empty, .sea-chart__credit { margin: 0 0 var(--space-2); font-size: var(--text-caption); color: var(--fg-2); }
+.sea-chart__legend { list-style: none; margin: var(--space-2) 0; padding: 0; display: grid; gap: var(--space-1); font-size: var(--text-caption); }
+.sea-chart__legend li { display: flex; align-items: center; gap: var(--space-2); }
+.sea-chart__swatch { inline-size: 12px; block-size: 12px; flex: none; }
+.sea-chart__table { inline-size: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--text-compact); }
+.sea-chart__table caption { text-align: start; color: var(--fg-2); padding-block-end: var(--space-1); }
+.sea-chart__table th, .sea-chart__table td { padding: var(--space-1); border-block-end: 1px solid var(--border-faint); text-align: end; }
+.sea-chart__table th[scope="row"], .sea-chart__table thead th:first-child { text-align: start; font-weight: normal; }
+.sea-chart__pre { color: var(--fg-2); font-size: var(--text-caption); }
+.sea-chart__toggle {
+  min-block-size: 44px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--fg); font: inherit; font-size: var(--text-compact); cursor: pointer;
+}
+.sea-chart__toggle:hover { background: var(--surface); }
+.sea-chart__toggle:focus-visible { box-shadow: var(--focus-ring); }
