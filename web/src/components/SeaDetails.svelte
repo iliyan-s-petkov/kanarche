@@ -28,11 +28,13 @@
   const metricName = $derived(metric === 'enterococci' ? t.enterococci : t.eColi)
   const seasonSources = $derived(sampleSources(samples.filter((s) => s.season === season), t))
   const allSources = $derived(sampleSources(samples, t))
-  const pending = $derived(pendingSeason({ classes: d.classes, samples }))
+  const pending = $derived(pendingSeason({ classes: d.classes, samples: d.samples }))
   const firstSeason = $derived(d.classes?.length ? Math.min(...d.classes.map((c) => c.season)) : null)
   const datahubClasses = $derived((d.classes ?? []).filter((c) => c.source === 'datahub'))
   const hasRZI = $derived(!!d.site?.rzi || samples.some((s) => isRZISource(s.source)))
   const rziPage = $derived(safePageURL(d.site?.rzi?.page_url))
+  // The profile is often a PDF, so only the scheme is checked.
+  const profileURL = $derived(httpURL(d.site?.profile_url))
 
   // The latest RZI result, as the card showed it before the redesign. It shows only with something
   // credited or the closed-season note, never as a bare heading.
@@ -43,6 +45,15 @@
   const staleText = $derived(latest?.stale && t.latest.stale ? fillSlots(t.latest.stale, { date: creditDate(latest.date) }) : '')
   const hasLab = $derived(latest ? !!latestCredit && (!latest.stale || !!staleText) : !!offSeasonText)
   const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : '')
+
+  function httpURL(url) {
+    try {
+      const u = new URL(String(url ?? ''))
+      return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : ''
+    } catch {
+      return ''
+    }
+  }
 
   export function show(from) {
     opener = from ?? null
@@ -98,7 +109,7 @@
   </div>
 
   <div class="sea-details__body">
-    <div role="tabpanel" id="sea-panel-samples" aria-labelledby="sea-tab-samples" hidden={tab !== 'samples'}>
+    <div role="tabpanel" id="sea-panel-samples" aria-labelledby="sea-tab-samples" tabindex="0" hidden={tab !== 'samples'}>
       {#if pending}<p class="sea-details__pending">{fillSlots(t.samplesPending, { season: pending })}</p>{/if}
       {#if seasons.length === 0}
         <p class="sea-details__msg">{t.noSamples}</p>
@@ -124,7 +135,7 @@
       {/if}
     </div>
 
-    <div role="tabpanel" id="sea-panel-seasons" aria-labelledby="sea-tab-seasons" hidden={tab !== 'seasons'}>
+    <div role="tabpanel" id="sea-panel-seasons" aria-labelledby="sea-tab-seasons" tabindex="0" hidden={tab !== 'seasons'}>
       {#if firstSeason !== null}
         <h3 class="sea-details__h">{fillSlots(t.seasonsSince, { first: firstSeason })}</h3>
         <SeaSeasonStrip classes={d.classes} {t} {colours} variant="grid" />
@@ -140,7 +151,7 @@
       {/if}
     </div>
 
-    <div role="tabpanel" id="sea-panel-about" aria-labelledby="sea-tab-about" hidden={tab !== 'about'}>
+    <div role="tabpanel" id="sea-panel-about" aria-labelledby="sea-tab-about" tabindex="0" hidden={tab !== 'about'}>
       <p>{t.info.body}</p>
       <p>{t.note}</p>
       <h3 class="sea-details__h">{t.limits} ({t.unit})</h3>
@@ -174,7 +185,7 @@
       </ul>
       <p class="sea-details__links">
         {#if creditURL}<a href={creditURL} rel="noopener noreferrer" target="_blank">{t.credit}{@render newTab()}</a>{/if}
-        {#if d.site.profile_url}· <a href={d.site.profile_url} rel="noopener noreferrer" target="_blank">{t.profile}{@render newTab()}</a>{/if}
+        {#if profileURL}{#if creditURL}· {/if}<a href={profileURL} rel="noopener noreferrer" target="_blank">{t.profile}{@render newTab()}</a>{/if}
       </p>
     </div>
   </div>

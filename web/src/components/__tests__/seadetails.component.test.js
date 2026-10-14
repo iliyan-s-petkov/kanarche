@@ -139,6 +139,11 @@ describe('SeaDetails tabs', () => {
     expect(samples.getAttribute('aria-selected')).toBe('true')
   })
 
+  it('makes every tab panel reachable by keyboard', () => {
+    const { dialog } = render()
+    for (const id of ['samples', 'seasons', 'about']) expect(panel(dialog, id).getAttribute('tabindex')).toBe('0')
+  })
+
   it('selects a tab on click and shows its panel', () => {
     const { dialog } = render()
     tabs(dialog)[1].click()
@@ -212,6 +217,21 @@ describe('Samples tab', () => {
   it('keeps the pending note for a datahub class with no samples yet', () => {
     const body = { ...twoSeasons, classes: [{ season: 2026, quality: 'good', source: 'datahub' }, ...twoSeasons.classes] }
     expect(render(body).dialog.querySelector('.sea-details__pending').textContent).toBe('Lab samples for 2026 are not published yet.')
+  })
+
+  it('drops the pending note once samples for that season exist', () => {
+    const body = { ...twoSeasons, classes: [{ season: 2025, quality: 'good', source: 'datahub' }, ...twoSeasons.classes] }
+    expect(render(body).dialog.querySelector('.sea-details__pending')).toBeNull()
+  })
+
+  it('has no pending note for a class that is not from the datahub', () => {
+    const body = { ...twoSeasons, classes: [{ season: 2026, quality: 'good', source: 'discodata' }, ...twoSeasons.classes] }
+    expect(render(body).dialog.querySelector('.sea-details__pending')).toBeNull()
+  })
+
+  it('counts a sample without a credit as existing, so the pending note stays away', () => {
+    const body = { ...twoSeasons, classes: [{ season: 2026, quality: 'good', source: 'datahub' }, ...twoSeasons.classes], samples: [...twoSeasons.samples, sample({ date: '2026-06-01', season: 2026, source: 'rzi_unknown' })] }
+    expect(render(body).dialog.querySelector('.sea-details__pending')).toBeNull()
   })
 
   it('shows a message and no chart when no season has samples', () => {
@@ -297,6 +317,17 @@ describe('About tab', () => {
     const links = about(detail, { t: textsWith({ tSeaNewTab: '' }) }).querySelectorAll('a[target="_blank"]')
     expect(links.length).toBeGreaterThan(0)
     for (const a of links) expect(a.querySelector('.sr-only')).toBeNull()
+  })
+
+  it('has no stray separator when there is no credit link', () => {
+    const p = about(detail, { creditURL: '' })
+    expect(p.querySelector('.sea-details__links').textContent.trim().startsWith('·')).toBe(false)
+    expect([...p.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['https://example.org/p.pdf'])
+  })
+
+  it('links the site profile only when it is an http(s) URL', () => {
+    const bad = { ...detail, site: { ...detail.site, profile_url: 'javascript:alert(1)' } }
+    expect([...about(bad).querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual([URL_EEA])
   })
 
   it('credits every distinct source of the samples once', () => {
