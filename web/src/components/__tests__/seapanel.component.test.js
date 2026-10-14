@@ -23,7 +23,7 @@ afterEach(() => {
 function renderPanel(body = detail, over = {}) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const calls = { info: [], details: [], close: 0 }
+  const calls = { info: [], close: 0 }
   app = mount(SeaPanel, {
     target,
     props: {
@@ -32,7 +32,6 @@ function renderPanel(body = detail, over = {}) {
       creditURL: 'https://www.eea.europa.eu/en/topics/in-depth/water/bathing-water',
       onclose: () => { calls.close++ },
       oninfo: (c) => calls.info.push(c),
-      ondetails: (b) => calls.details.push(b),
       ...over,
     },
   })
@@ -157,7 +156,8 @@ describe('SeaPanel card', () => {
       const { root } = renderPanel()
       expect(root.textContent).toContain('Seasons since 2023')
       expect([...root.querySelectorAll('.sea-seasons--strip .sea-cell')].map((c) => c.getAttribute('aria-label'))).toEqual(['2023 Poor', '2024 Excellent'])
-      expect(root.querySelectorAll('.sea-key__item')).toHaveLength(5)
+      // The card holds the details dialog, which has its own key.
+      expect([...root.querySelectorAll('.sea-key__item')].filter((n) => !n.closest('dialog'))).toHaveLength(5)
     })
   })
 
@@ -199,12 +199,10 @@ describe('SeaPanel card', () => {
     })
   })
 
-  it('calls ondetails with the button that was pressed', () => {
-    const { root, calls } = renderPanel()
-    const btn = root.querySelector('button.sea-panel__details')
-    expect(btn.textContent).toBe('Details and charts')
-    btn.click()
-    expect(calls.details).toEqual([btn])
+  it('has a Details and charts button and a details dialog, closed until pressed', () => {
+    const { root } = renderPanel()
+    expect(root.querySelector('button.sea-panel__details').textContent).toBe('Details and charts')
+    expect(root.querySelector('dialog.sea-details').open).toBe(false)
   })
 
   it('shows the loading mark with no detail and the failure text when it failed', () => {

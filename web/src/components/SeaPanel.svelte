@@ -9,8 +9,9 @@
   import SeaSwatch from './SeaSwatch.svelte'
   import SeaSeasonStrip from './SeaSeasonStrip.svelte'
   import SeaClassKey from './SeaClassKey.svelte'
+  import SeaDetails from './SeaDetails.svelte'
 
-  let { view, t, lang, colours, creditURL, onclose, oninfo = () => {}, ondetails = () => {} } = $props()
+  let { view, t, lang, colours, creditURL, onclose, oninfo = () => {} } = $props()
 
   const d = $derived(view.detail)
   const current = $derived(d?.classes?.[0] ?? null)
@@ -48,6 +49,7 @@
 
   // The close button takes focus on open, so Escape and Tab start inside the card.
   let closeButton = $state()
+  let details = $state()
   $effect(() => {
     if (view.id) closeButton?.focus({ preventScroll: true })
   })
@@ -113,7 +115,10 @@
       <SeaClassKey {t} {colours} />
     {/if}
 
-    <button type="button" class="sea-panel__details" onclick={(e) => ondetails(e.currentTarget)}>{t.details}</button>
+    <button type="button" class="sea-panel__details" onclick={(e) => details?.show(e.currentTarget)}>{t.details}</button>
+    {#key d.site.id}
+      <SeaDetails bind:this={details} {d} {t} {lang} {colours} {creditURL} />
+    {/key}
 
     <p class="sea-panel__sources">
       <span>{shownSources.map((s) => s.name).join(', ')}</span>
