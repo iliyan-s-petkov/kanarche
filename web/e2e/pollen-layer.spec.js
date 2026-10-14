@@ -80,8 +80,8 @@ for (const shape of [
     await toggle.click()
     await expect(key).toBeVisible()
     for (const part of metricKey(page)) await expect(part).toBeHidden()
-    if (process.env.AIRBG_SHOT_DIR) {
-      await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/pollen-layer-${shape.name}.png` })
+    if (process.env.KANARCHE_SHOT_DIR) {
+      await page.screenshot({ path: `${process.env.KANARCHE_SHOT_DIR}/pollen-layer-${shape.name}.png` })
     }
     await toggle.click()
     await expect(key).toBeHidden()
@@ -139,8 +139,8 @@ for (const shape of [
     const top = (loc) => loc.evaluate((e) => getComputedStyle(e).borderTopWidth)
     expect(await top(sea)).toBe('0px')
     expect(await top(pollen)).toBe('1px')
-    if (process.env.AIRBG_SHOT_DIR) {
-      await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/legend-sep-${shape.name}.png` })
+    if (process.env.KANARCHE_SHOT_DIR) {
+      await page.screenshot({ path: `${process.env.KANARCHE_SHOT_DIR}/legend-sep-${shape.name}.png` })
     }
     await context.close()
   })

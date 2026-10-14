@@ -12,7 +12,7 @@ import (
 // corpusDir holds the full real files. They are never committed (D3).
 func corpusDir(t *testing.T) string {
 	t.Helper()
-	dir := os.Getenv("AIRBG_RZI_CORPUS")
+	dir := os.Getenv("KANARCHE_RZI_CORPUS")
 	if dir == "" {
 		dir = "/tmp/airbg-verify/rzi"
 	}

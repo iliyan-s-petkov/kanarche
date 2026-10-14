@@ -10,7 +10,7 @@ package httpx
 // address and one bucket rate-limits the entire internet). Neither is
 // acceptable, and Cloudflare changes these ranges rarely.
 //
-// AIRBG_TRUSTED_PROXY_CIDRS overrides this list, so a range change is a config
+// KANARCHE_TRUSTED_PROXY_CIDRS overrides this list, so a range change is a config
 // edit and a restart, not a rebuild.
 func DefaultCloudflareCIDRs() []string {
 	return []string{

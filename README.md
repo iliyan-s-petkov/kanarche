@@ -84,7 +84,7 @@ lives in one JSON file per language in `internal/i18n/`), or pick up an issue.
 |---|---|
 | [development.md](docs/development.md) | Running locally, the four test tiers |
 | [operations.md](docs/operations.md) | Subcommands, how `serve` works, endpoints, database, container image |
-| [configuration.md](docs/configuration.md) | Every `airbg.yaml` key and `AIRBG_*` override |
+| [configuration.md](docs/configuration.md) | Every `airbg.yaml` key and `KANARCHE_*` override |
 | [deployment.md](docs/deployment.md) | The production host, step by step |
 | [embedding.md](docs/embedding.md) | Putting the map on another site |
 | [known-limitations.md](docs/known-limitations.md) | What the data cannot tell you |
@@ -101,8 +101,8 @@ Needs Go, Node.js and Docker.
 
 ```bash
 docker compose up -d db
-export AIRBG_DATABASE_URL='postgres://airbg:airbg@localhost:5432/airbg?sslmode=disable'
-export AIRBG_CONFIG="$PWD/airbg.yaml"
+export KANARCHE_DATABASE_URL='postgres://airbg:airbg@localhost:5432/airbg?sslmode=disable'
+export KANARCHE_CONFIG="$PWD/airbg.yaml"
 go run ./cmd/airbg migrate
 go run ./cmd/airbg import-areas data/boundaries/bulgaria.geojson country
 (cd web && npm ci --ignore-scripts && npm run build)

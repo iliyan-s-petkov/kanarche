@@ -14,11 +14,23 @@ func TestSocialIsEmptyInTheCommittedConfig(t *testing.T) {
 }
 
 func TestSocialURLsComeFromTheEnvironment(t *testing.T) {
-	t.Setenv("AIRBG_SOCIAL_FACEBOOK_URL", "https://www.facebook.com/airbg")
-	t.Setenv("AIRBG_SOCIAL_LINKEDIN_URL", "https://www.linkedin.com/company/airbg")
+	t.Setenv("KANARCHE_SOCIAL_FACEBOOK_URL", "https://www.facebook.com/airbg")
+	t.Setenv("KANARCHE_SOCIAL_LINKEDIN_URL", "https://www.linkedin.com/company/airbg")
 	cfg := good(t)
 	if cfg.Social.FacebookURL != "https://www.facebook.com/airbg" || cfg.Social.LinkedInURL != "https://www.linkedin.com/company/airbg" {
 		t.Errorf("social = %+v, want the environment values", cfg.Social)
+	}
+}
+
+// The AIRBG_ spelling is no longer read: only KANARCHE_ reaches the config.
+func TestLegacyAirbgPrefixIsIgnored(t *testing.T) {
+	t.Setenv("AIRBG_SOCIAL_FACEBOOK_URL", "https://www.facebook.com/old")
+	if got := good(t).Social.FacebookURL; got != "" {
+		t.Errorf("FacebookURL = %q with only AIRBG_ set, want empty", got)
+	}
+	t.Setenv("KANARCHE_SOCIAL_FACEBOOK_URL", "https://www.facebook.com/new")
+	if got := good(t).Social.FacebookURL; got != "https://www.facebook.com/new" {
+		t.Errorf("FacebookURL = %q with KANARCHE_ set, want the KANARCHE_ value", got)
 	}
 }
 

@@ -203,7 +203,7 @@ func TestAboutStartScreenshots(t *testing.T) {
 			img := fetch(t, rr, html.UnescapeString(a["src"]))
 			// Images for new cards land from another branch; TestAboutGuideCards
 			// owns the file-exists check and its pending switch.
-			if img.Code == http.StatusNotFound && os.Getenv("AIRBG_ABOUT_IMAGES_PENDING") == "1" {
+			if img.Code == http.StatusNotFound && os.Getenv("KANARCHE_ABOUT_IMAGES_PENDING") == "1" {
 				continue
 			}
 			if img.Code != http.StatusOK || img.Body.Len() == 0 || !strings.HasPrefix(img.Header().Get("Content-Type"), "image/webp") {

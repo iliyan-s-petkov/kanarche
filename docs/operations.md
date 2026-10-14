@@ -131,7 +131,7 @@ become the host's core count instead.
 
 ### Serving keys
 
-These `airbg.yaml` keys (or their `AIRBG_*` environment override — see
+These `airbg.yaml` keys (or their `KANARCHE_*` environment override — see
 [configuration.md](configuration.md) for the naming rule and the table of names
 renamed by Phase 3b) configure serving:
 
@@ -160,7 +160,7 @@ is firewalled to Cloudflare's ranges — see the firewall-rule section of
 [tiles.md](tiles.md).
 
 The one secret, environment-only and never written to `airbg.yaml`, is
-`AIRBG_DATABASE_URL`, the PostgreSQL connection string.
+`KANARCHE_DATABASE_URL`, the PostgreSQL connection string.
 
 ### Endpoints
 

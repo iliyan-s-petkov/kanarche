@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-// clearAmbientEnv unsets every AIRBG_* variable for the duration of the test.
+// clearAmbientEnv unsets every KANARCHE_* variable for the duration of the test.
 //
 // Without it this test reads the developer's or CI runner's shell: an ambient
-// AIRBG_STORE_COVERAGE_THRESHOLD=99 makes it report
+// KANARCHE_STORE_COVERAGE_THRESHOLD=99 makes it report
 // "store.coverage_threshold = 99, want 3" while airbg.yaml is untouched — a
 // failure that blames the wrong file. The proof this test exists to give is
 // about the committed file, so the environment layer must be out of the way.
@@ -22,7 +22,7 @@ func clearAmbientEnv(t *testing.T) {
 	t.Helper()
 	for _, kv := range os.Environ() {
 		name, _, ok := strings.Cut(kv, "=")
-		if !ok || !strings.HasPrefix(name, "AIRBG_") {
+		if !ok || !strings.HasPrefix(name, "KANARCHE_") {
 			continue
 		}
 		saved, had := os.LookupEnv(name)

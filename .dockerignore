@@ -13,7 +13,7 @@
 www-root
 
 # Local secrets. .env.example tells the operator to `cp .env.example .env`, and
-# .env then holds a real AIRBG_DATABASE_URL. The build stage is `COPY . .`, so
+# .env then holds a real KANARCHE_DATABASE_URL. The build stage is `COPY . .`, so
 # without this the credential lands in that layer: the shipped distroless image
 # stays clean (it copies only the binary and airbg.yaml), but an exported or
 # pushed build cache carries it. .env is not a build input under any

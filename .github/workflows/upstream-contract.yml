@@ -1,6 +1,6 @@
 # TestUpstreamContractLive is the only check that can detect sensor.community
 # changing its response shape, and it caught a Critical during Phase 1. It was
-# gated behind AIRBG_LIVE_TEST and nothing ever set it, so in practice it never
+# gated behind KANARCHE_LIVE_TEST and nothing ever set it, so in practice it never
 # ran anywhere except on a developer's machine, on purpose, which is the same as
 # not having it.
 #
@@ -35,7 +35,7 @@ jobs:
           go-version: '1.26.9'
       - name: live upstream contract check
         env:
-          AIRBG_LIVE_TEST: '1'
+          KANARCHE_LIVE_TEST: '1'
         # -count=1 defeats the test cache: a cached pass from a previous day
         # would make this workflow report success without contacting upstream at
         # all, which is precisely the failure mode being fixed.

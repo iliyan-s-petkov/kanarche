@@ -281,6 +281,6 @@ func TestEmptyTrustedListTrustsNothing(t *testing.T) {
 
 func TestNewIPResolverRejectsMalformedCIDR(t *testing.T) {
 	if _, err := httpx.NewIPResolver([]string{"not-a-cidr"}); err == nil {
-		t.Fatal("NewIPResolver accepted a malformed CIDR; a typo in AIRBG_TRUSTED_PROXY_CIDRS must fail at startup, not silently trust nothing at runtime")
+		t.Fatal("NewIPResolver accepted a malformed CIDR; a typo in KANARCHE_TRUSTED_PROXY_CIDRS must fail at startup, not silently trust nothing at runtime")
 	}
 }

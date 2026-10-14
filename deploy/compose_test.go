@@ -1401,8 +1401,8 @@ func TestAppMountsTheRZIInboxAndOutbox(t *testing.T) {
 	}
 }
 
-// The app still reads AIRBG_* but logs a deprecation warning per key. The
-// example an operator copies must use the KANARCHE_* spelling. AIRBG_IMAGE_TAG
+// The app reads only KANARCHE_* keys. The example an operator copies must use
+// that spelling. AIRBG_IMAGE_TAG
 // is compose interpolation only, never read by the app, so it keeps its name.
 func TestExampleEnvUsesKanarchePrefix(t *testing.T) {
 	data, err := os.ReadFile(".env.example")

@@ -4,11 +4,11 @@ import { resolve } from 'node:path'
 import { test, expect } from './fixtures.js'
 
 // Regenerates the About "Getting started" screenshots from the harness data.
-// Skipped unless AIRBG_SHOTS_DIR names the output directory (internal/web/static/about).
+// Skipped unless KANARCHE_SHOTS_DIR names the output directory (internal/web/static/about).
 // Needs a build made with VITE_E2E_MAP_HANDLE=1. Output: start-<scene>-<lang>-<theme>.webp, 560x460.
-// AIRBG_SHOTS_ONLY=tilt,legend limits the run to those scenes.
-const OUT = process.env.AIRBG_SHOTS_DIR
-const ONLY = (process.env.AIRBG_SHOTS_ONLY ?? '').split(',').filter(Boolean)
+// KANARCHE_SHOTS_ONLY=tilt,legend limits the run to those scenes.
+const OUT = process.env.KANARCHE_SHOTS_DIR
+const ONLY = (process.env.KANARCHE_SHOTS_ONLY ?? '').split(',').filter(Boolean)
 const W = 560
 const H = 460
 const MAX_BYTES = 60 * 1024
@@ -17,7 +17,7 @@ const SOFIA = [23.32, 42.69]
 // Layer labels come from the translation files, so the bg run finds the same controls.
 const STRINGS = Object.fromEntries(['en', 'bg'].map((l) => [l, JSON.parse(readFileSync(new URL(`../../internal/i18n/${l}.json`, import.meta.url), 'utf8'))]))
 
-test.skip(!OUT, 'set AIRBG_SHOTS_DIR to regenerate the About screenshots')
+test.skip(!OUT, 'set KANARCHE_SHOTS_DIR to regenerate the About screenshots')
 
 // Chromium encodes the WebP itself, so no image dependency is needed. With fit
 // 'contain' the PNG keeps its proportions and sits centred on a flat backdrop.

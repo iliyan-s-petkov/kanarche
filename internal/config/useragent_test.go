@@ -44,9 +44,9 @@ func TestGeocoderUserAgentIsDerivedFromBaseURL(t *testing.T) {
 }
 
 func TestGeocoderURLEnvOverride(t *testing.T) {
-	t.Setenv("AIRBG_GEOCODER_URL", "http://127.0.0.1:9999")
+	t.Setenv("KANARCHE_GEOCODER_URL", "http://127.0.0.1:9999")
 	cfg := good(t)
 	if cfg.Geocoder.URL != "http://127.0.0.1:9999" {
-		t.Errorf("Geocoder.URL = %q, want the AIRBG_GEOCODER_URL override", cfg.Geocoder.URL)
+		t.Errorf("Geocoder.URL = %q, want the KANARCHE_GEOCODER_URL override", cfg.Geocoder.URL)
 	}
 }

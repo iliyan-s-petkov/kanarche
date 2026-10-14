@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures.js'
 
-// Footer layout. Screenshots are written only when AIRBG_FOOTER_SHOTS is set.
-const SHOTS = process.env.AIRBG_FOOTER_SHOTS
+// Footer layout. Screenshots are written only when KANARCHE_FOOTER_SHOTS is set.
+const SHOTS = process.env.KANARCHE_FOOTER_SHOTS
 
 const open = async (ctx, width, height, scheme) => {
   const page = await ctx.newPage()
@@ -96,7 +96,7 @@ test('footer does not overflow horizontally at 672, 800, 1024', async ({ ctx }) 
 })
 
 test('footer screenshots at 1440 and 1024 BG', async ({ ctx }) => {
-  test.skip(!SHOTS, 'screenshots only with AIRBG_FOOTER_SHOTS')
+  test.skip(!SHOTS, 'screenshots only with KANARCHE_FOOTER_SHOTS')
   for (const w of [1440, 1024]) {
     const page = await ctx.newPage()
     await page.setViewportSize({ width: w, height: 900 })

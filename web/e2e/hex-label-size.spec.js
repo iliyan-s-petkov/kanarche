@@ -3,12 +3,12 @@ import { test, expect, mapSettled } from './fixtures.js'
 
 // The number in each hexagon: 14px on a desktop map, 12px on a phone, and a
 // cell wide enough to hold it. Needs a build made with VITE_E2E_MAP_HANDLE=1.
-// AIRBG_HEXLABEL_SHOTS=<dir> also writes the review screenshots.
+// KANARCHE_HEXLABEL_SHOTS=<dir> also writes the review screenshots.
 const LAYER = 'kanarche-hex-labels'
 const SOFIA = [23.32, 42.69]
 const DESKTOP = { width: 1280, height: 800 }
 const PHONE = { width: 390, height: 844 }
-const SHOTS = process.env.AIRBG_HEXLABEL_SHOTS
+const SHOTS = process.env.KANARCHE_HEXLABEL_SHOTS
 
 const openAt = async (page, size, zoom) => {
   await page.setViewportSize(size)
@@ -80,7 +80,7 @@ test.describe('hexagon number size', () => {
   })
 
   test('probe: label and cell widths', async ({ ctx }) => {
-    test.skip(!process.env.AIRBG_HEXLABEL_PROBE, 'diagnostic')
+    test.skip(!process.env.KANARCHE_HEXLABEL_PROBE, 'diagnostic')
     const page = await ctx.newPage()
     try {
       for (const size of [DESKTOP, PHONE]) {
@@ -97,7 +97,7 @@ test.describe('hexagon number size', () => {
 })
 
 test.describe('hexagon number screenshots', () => {
-  test.skip(!SHOTS, 'set AIRBG_HEXLABEL_SHOTS to write screenshots')
+  test.skip(!SHOTS, 'set KANARCHE_HEXLABEL_SHOTS to write screenshots')
 
   for (const [name, size] of [['desk', DESKTOP], ['phone', PHONE]]) {
     for (const zoom of [7, 10, 13]) {

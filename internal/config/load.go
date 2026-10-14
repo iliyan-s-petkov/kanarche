@@ -16,15 +16,15 @@ import (
 // PathEnv names the environment variable holding the config file path. There is
 // deliberately no default: guessing a path is a default in disguise, and this
 // project keeps no defaults in code.
-const PathEnv = "AIRBG_CONFIG"
+const PathEnv = "KANARCHE_CONFIG"
 
 // secretKeys are key names that must never appear in the committed file, at any
 // depth. Rejecting them is not tidiness: an ignored credential in a committed
 // file is a credential in git that looks like it is in use.
 var secretKeys = map[string]string{
-	"database_url": "AIRBG_DATABASE_URL",
-	"dsn":          "AIRBG_DATABASE_URL",
-	"password":     "AIRBG_DATABASE_URL",
+	"database_url": "KANARCHE_DATABASE_URL",
+	"dsn":          "KANARCHE_DATABASE_URL",
+	"password":     "KANARCHE_DATABASE_URL",
 	"key":          "an environment variable",
 	"api_key":      "an environment variable",
 	"secret":       "an environment variable",
@@ -34,11 +34,11 @@ var secretKeys = map[string]string{
 // "url" is legal under upstream but not under database, so it is checked by
 // full path rather than by name.
 var secretPaths = map[string]string{
-	"database.url": "AIRBG_DATABASE_URL",
+	"database.url": "KANARCHE_DATABASE_URL",
 }
 
 func envName(path string) string {
-	return "AIRBG_" + strings.ToUpper(strings.ReplaceAll(path, ".", "_"))
+	return "KANARCHE_" + strings.ToUpper(strings.ReplaceAll(path, ".", "_"))
 }
 
 func decodeStrict(data []byte, r *raw) error {
@@ -151,9 +151,9 @@ func missingKeys(v reflect.Value, prefix string) []string {
 	return missing
 }
 
-// applyEnv overlays AIRBG_* variables onto the decoded schema. The variable name
+// applyEnv overlays KANARCHE_* variables onto the decoded schema. The variable name
 // is derived from the same yaml tag the file uses, so the documented rule
-// ("AIRBG_" + key path, uppercased, dots to underscores") is true by
+// ("KANARCHE_" + key path, uppercased, dots to underscores") is true by
 // construction rather than by a hand-maintained table that can drift.
 //
 // series.periods is not overridable: there is no sane environment-variable name
@@ -186,7 +186,7 @@ func applyEnv(v reflect.Value, prefix string) error {
 			}
 			continue
 		}
-		val, ok := LookupEnv(envName(path))
+		val, ok := os.LookupEnv(envName(path))
 		if !ok {
 			continue
 		}
@@ -252,18 +252,18 @@ const (
 	// DatabaseURLEnv is env-only by design: it is a credential, and
 	// airbg.yaml is committed. It is the project's only secret — the basemap
 	// is self-hosted and has no vendor to authenticate to.
-	DatabaseURLEnv = "AIRBG_DATABASE_URL"
+	DatabaseURLEnv = "KANARCHE_DATABASE_URL"
 
 	// DatabaseURLFileEnv names a file containing the credential instead of
 	// carrying it directly. It exists for ofelia's one-shot `collect` job:
 	// job-run starts a fresh container through the Docker API and inherits no
-	// env/mounts from compose's env_file, so AIRBG_DATABASE_URL can't reach it
+	// env/mounts from compose's env_file, so KANARCHE_DATABASE_URL can't reach it
 	// the way it reaches the long-lived `app` service. This mirrors the
 	// PGPASSFILE pattern the backup job already uses — a root-owned, chmod
 	// 600, read-only host bind mount — except pg_dump reads PGPASSFILE itself
 	// while this binary has no equivalent client-library support, so it reads
-	// the file here instead. AIRBG_DATABASE_URL wins if both are set.
-	DatabaseURLFileEnv = "AIRBG_DATABASE_URL_FILE"
+	// the file here instead. KANARCHE_DATABASE_URL wins if both are set.
+	DatabaseURLFileEnv = "KANARCHE_DATABASE_URL_FILE"
 )
 
 // databaseURLFromEnv resolves the database credential from the environment:
@@ -276,10 +276,10 @@ const (
 // line; only surrounding whitespace is trimmed, so a stray second line ends up
 // inside the DSN.
 func databaseURLFromEnv() (string, error) {
-	if v := Getenv(DatabaseURLEnv); v != "" {
+	if v := os.Getenv(DatabaseURLEnv); v != "" {
 		return v, nil
 	}
-	path := Getenv(DatabaseURLFileEnv)
+	path := os.Getenv(DatabaseURLFileEnv)
 	if path == "" {
 		return "", nil
 	}
@@ -300,20 +300,19 @@ func databaseURLFromEnv() (string, error) {
 	return url, nil
 }
 
-// Load reads the configuration named by KANARCHE_CONFIG (AIRBG_CONFIG still
-// works). There is no fallback path: guessing one would be a default, and
-// this project keeps none.
+// Load reads the configuration named by KANARCHE_CONFIG. There is no fallback
+// path: guessing one would be a default, and this project keeps none.
 func Load() (Config, error) {
-	path := Getenv(PathEnv)
+	path := os.Getenv(PathEnv)
 	if path == "" {
 		return Config{}, fmt.Errorf("config: %s is not set; it must name the airbg.yaml to load", PathEnv)
 	}
 	return LoadFile(path)
 }
 
-// LoadOffline reads the file named by KANARCHE_CONFIG or AIRBG_CONFIG without a database credential.
+// LoadOffline reads the file named by KANARCHE_CONFIG without a database credential.
 func LoadOffline() (Config, error) {
-	path := Getenv(PathEnv)
+	path := os.Getenv(PathEnv)
 	if path == "" {
 		return Config{}, fmt.Errorf("config: %s is not set; it must name the airbg.yaml to load", PathEnv)
 	}

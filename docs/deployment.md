@@ -148,7 +148,7 @@ Run these in order. Each step depends on the one before it.
    or defer validation to `docker compose up -d` in step 13.
 
 5. `cp deploy/.env.example /srv/airbg/.env`, fill in every value (database
-   credentials, `AIRBG_IMAGE_TAG`, `KANARCHE_TILES_ARCHIVE`), then:
+   credentials, `KANARCHE_IMAGE_TAG`, `KANARCHE_TILES_ARCHIVE`), then:
 
    ```bash
    chmod 600 /srv/airbg/.env
@@ -284,7 +284,7 @@ Trivy, signs it with cosign (keyless, GitHub OIDC) only when the scan passes,
 and pushes it to `ghcr.io/iliyan-s-petkov/kanarche:<short-sha>`. The Ansible
 `airbg` role is the normal release path: it verifies the signature on the
 target, pulls by the signed digest, tags the result `airbg:<short-sha>`, writes
-`AIRBG_IMAGE_TAG`, runs `migrate`, and brings the stack up. See
+`KANARCHE_IMAGE_TAG`, runs `migrate`, and brings the stack up. See
 `deploy/README.md` § "image: pulled from GHCR by signed digest".
 
 Done by hand, the same sequence is:
@@ -298,7 +298,7 @@ ssh airbg "DIGEST=\$(cosign verify \
     | jq -r '.[0].critical.image[\"docker-manifest-digest\"]') \
   && docker pull ghcr.io/iliyan-s-petkov/kanarche@\$DIGEST \
   && docker tag ghcr.io/iliyan-s-petkov/kanarche@\$DIGEST airbg:$TAG \
-  && sed -i 's/^AIRBG_IMAGE_TAG=.*/AIRBG_IMAGE_TAG=$TAG/' /srv/airbg/.env \
+  && sed -i 's/^KANARCHE_IMAGE_TAG=.*/KANARCHE_IMAGE_TAG=$TAG/' /srv/airbg/.env \
   && cd /srv/airbg \
   && docker compose -f docker-compose.prod.yml run --rm app migrate \
   && docker compose -f docker-compose.prod.yml up -d"

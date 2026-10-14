@@ -33,13 +33,13 @@ func TestBrowser(t *testing.T) {
 	}
 
 	// The same airbg.yaml the binary ships with — an E2E against a bespoke
-	// config proves the config nobody runs. AIRBG_DATABASE_URL is only
+	// config proves the config nobody runs. KANARCHE_DATABASE_URL is only
 	// present to satisfy config.Validate; the pool this test actually talks
 	// to is the container pool above, wired in directly via store.New.
 	t.Setenv(config.PathEnv, filepath.Join("..", "..", "airbg.yaml"))
 	t.Setenv(config.DatabaseURLEnv, "postgres://user:pass@localhost:5432/airbg")
 	widenRateLimits(t)
-	t.Setenv("AIRBG_GEOCODER_URL", startGeocoderStub(t).URL)
+	t.Setenv("KANARCHE_GEOCODER_URL", startGeocoderStub(t).URL)
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatalf("config.Load: %v", err)
@@ -350,15 +350,15 @@ func seedReading(t *testing.T, st *store.Store, sensorID int64, metric string, v
 // /static, so a drained bucket 429s the map chunk and the spec times out.
 func widenRateLimits(t *testing.T) {
 	t.Helper()
-	t.Setenv("AIRBG_RATELIMIT_API_PER_SECOND", "500")
-	t.Setenv("AIRBG_RATELIMIT_API_BURST", "2000")
-	t.Setenv("AIRBG_RATELIMIT_SERIES_PER_SECOND", "50")
-	t.Setenv("AIRBG_RATELIMIT_SERIES_BURST", "200")
-	t.Setenv("AIRBG_RATELIMIT_PAGES_PER_SECOND", "1000")
-	t.Setenv("AIRBG_RATELIMIT_PAGES_BURST", "10000")
-	t.Setenv("AIRBG_RATELIMIT_GEOCODE_PER_SECOND", "50")
-	t.Setenv("AIRBG_RATELIMIT_GEOCODE_BURST", "200")
-	t.Setenv("AIRBG_GEOCODER_UPSTREAM_PER_SECOND", "50")
+	t.Setenv("KANARCHE_RATELIMIT_API_PER_SECOND", "500")
+	t.Setenv("KANARCHE_RATELIMIT_API_BURST", "2000")
+	t.Setenv("KANARCHE_RATELIMIT_SERIES_PER_SECOND", "50")
+	t.Setenv("KANARCHE_RATELIMIT_SERIES_BURST", "200")
+	t.Setenv("KANARCHE_RATELIMIT_PAGES_PER_SECOND", "1000")
+	t.Setenv("KANARCHE_RATELIMIT_PAGES_BURST", "10000")
+	t.Setenv("KANARCHE_RATELIMIT_GEOCODE_PER_SECOND", "50")
+	t.Setenv("KANARCHE_RATELIMIT_GEOCODE_BURST", "200")
+	t.Setenv("KANARCHE_GEOCODER_UPSTREAM_PER_SECOND", "50")
 }
 
 // startGeocoderStub stands in for Nominatim; the real one is never called. A

@@ -27,7 +27,7 @@ services:
     environment:
       # sslmode=disable is acceptable only because this connection never leaves
       # the compose network. Require TLS in production.
-      AIRBG_DATABASE_URL: ${AIRBG_DATABASE_URL:-postgres://${POSTGRES_USER:-airbg}:${POSTGRES_PASSWORD:-airbg}@db:5432/${POSTGRES_DB:-airbg}?sslmode=disable}
+      KANARCHE_DATABASE_URL: ${KANARCHE_DATABASE_URL:-postgres://${POSTGRES_USER:-airbg}:${POSTGRES_PASSWORD:-airbg}@db:5432/${POSTGRES_DB:-airbg}?sslmode=disable}
     depends_on:
       db:
         condition: service_healthy

@@ -27,7 +27,7 @@ import (
 // microseconds instead of piling up until the write timeout.
 //
 // It lives here, in the package that owns the control, because three packages
-// need the same number — config's AIRBG_MAX_DB_INFLIGHT default, api's
+// need the same number — config's KANARCHE_MAX_DB_INFLIGHT default, api's
 // fail-closed defaultAdmission, and server's fallback when Options omits it —
 // and this is the only one of the four that all of them can import without an
 // import cycle. Triplicated literals would let the documented default and the
