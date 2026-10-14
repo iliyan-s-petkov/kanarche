@@ -111,11 +111,17 @@ describe('SeaSeasonStrip', () => {
   // Review Focus 1: many seasons.
   it('names and focuses every one of twenty seasons with a gap in the middle', () => {
     const many = Array.from({ length: 20 }, (_, i) => ({ season: 2025 - i, quality: 'good', source: '' })).filter((c) => c.season !== 2015)
-    const el = render(SeaSeasonStrip, { classes: many, t: seaT, colours, variant: 'strip' })
+    const el = render(SeaSeasonStrip, { classes: many, t: seaT, colours, variant: 'grid' })
     const all = cells(el)
     expect(all).toHaveLength(20)
     expect(all.find((c) => c.getAttribute('aria-label') === '2015 Not classified')).toBeTruthy()
     expect(all.every((c) => c.getAttribute('tabindex') === '0')).toBe(true)
+  })
+  it('keeps only the newest ten cells in the strip, oldest left, ticked by the shown range', () => {
+    const many = Array.from({ length: 19 }, (_, i) => ({ season: 2025 - i, quality: 'good', source: '' }))
+    const el = render(SeaSeasonStrip, { classes: many, t: seaT, colours, variant: 'strip' })
+    expect(cells(el).map((c) => c.getAttribute('aria-label').slice(0, 4))).toEqual(['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'])
+    expect([...el.querySelectorAll('.sea-seasons__ticks span')].map((s) => s.textContent)).toEqual(['2016', '2025'])
   })
   // Review Focus 4: empty copy.
   it('mounts with no copy at all without throwing', () => {

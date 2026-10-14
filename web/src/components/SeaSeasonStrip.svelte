@@ -1,11 +1,10 @@
 <script>
-  // One cell per season. The strip (card) runs oldest to newest, the grid (Seasons tab) newest first.
-  import { seasonCells, cellName } from '../lib/sea.js'
+  // One cell per season. The strip (card) runs oldest to newest over the last ten seasons, the grid (Seasons tab) newest first.
+  import { seasonCells, stripCells, cellName } from '../lib/sea.js'
   import SeaSwatch from './SeaSwatch.svelte'
 
   let { classes, t, colours, variant = 'strip' } = $props()
-  const cells = $derived(seasonCells(classes))
-  const shown = $derived(variant === 'grid' ? [...cells].reverse() : cells)
+  const shown = $derived(variant === 'grid' ? [...seasonCells(classes)].reverse() : stripCells(classes))
 </script>
 
 {#if shown.length}

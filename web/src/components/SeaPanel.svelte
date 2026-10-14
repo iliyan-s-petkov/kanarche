@@ -2,7 +2,7 @@
   // One bathing site as a compact card: the official class first, then the last lab samples
   // against the zone's limits, then the season strip. History and charts live in SeaDetails.
   import {
-    seaName, creditedSamples, sourceCredit, fillSeason, fillSlots, creditDate, isRZISource, classLabel, chipLevel, latestSamples, sampleSources,
+    seaName, creditedSamples, sourceCredit, fillSeason, fillSlots, creditDate, isRZISource, stripCells, classLabel, chipLevel, latestSamples, sampleSources,
     formatDay, LEVEL_MARKS, levelText, offSeasonText,
   } from '../lib/sea.js'
   import { seaInfoContent } from '../lib/infodialog.js'
@@ -15,7 +15,8 @@
 
   const d = $derived(view.detail)
   const current = $derived(d?.classes?.[0] ?? null)
-  const firstSeason = $derived(d?.classes?.length ? Math.min(...d.classes.map((c) => c.season)) : null)
+  // The heading names the first season the strip shows.
+  const firstSeason = $derived(stripCells(d?.classes)[0]?.season ?? null)
   // Classes from the EEA annual dataset are marked.
   const fromDatahub = (c) => c?.source === 'datahub'
   const sourceText = (c) => fillSlots(t.classSourceDatahub, { year: c.season })

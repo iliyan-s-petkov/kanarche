@@ -159,6 +159,20 @@ describe('SeaPanel card', () => {
       // The card holds the details dialog, which has its own key.
       expect([...root.querySelectorAll('.sea-key__item')].filter((n) => !n.closest('dialog'))).toHaveLength(5)
     })
+    it('shows only the last ten of nineteen seasons on the card, headed and ticked by the first one shown, and keeps all nineteen in the grid', () => {
+      const classes = Array.from({ length: 19 }, (_, i) => ({ season: 2025 - i, quality: 'good', source: '' }))
+      const { root } = renderPanel({ ...detail, classes })
+      const strip = [...root.querySelectorAll('.sea-seasons--strip .sea-cell')].map((c) => c.getAttribute('aria-label'))
+      expect(strip).toHaveLength(10)
+      expect(strip[0]).toBe('2016 Good')
+      expect(strip[9]).toBe('2025 Good')
+      expect(root.querySelector('h3.sea-panel__h + .sea-seasons--strip')).not.toBeNull()
+      expect([...root.querySelectorAll('h3.sea-panel__h')].map((h) => h.textContent)).toContain('Seasons since 2016')
+      // The details dialog keeps the full history, so its own heading still starts at 2007.
+      expect(root.querySelector('dialog h3.sea-details__h + .sea-seasons--grid').previousElementSibling.textContent).toBe('Seasons since 2007')
+      expect([...root.querySelectorAll('.sea-seasons__ticks span')].map((s) => s.textContent)).toEqual(['2016', '2025'])
+      expect(root.querySelectorAll('.sea-seasons--grid .sea-cell')).toHaveLength(19)
+    })
   })
 
   describe('(i) buttons', () => {
