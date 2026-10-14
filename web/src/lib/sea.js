@@ -81,6 +81,145 @@ export function rziCredit(t, source, date) {
   return fillSlots(t.creditRzi, { region, date: creditDate(date) })
 }
 
+export const SEA_METRICS = ['e_coli', 'enterococci']
+export const LEVEL_MARKS = ['✓', '▲', '▲▲']
+
+const metricKey = (metric) => (metric === 'enterococci' ? 'enterococci' : 'e_coli')
+
+// Seasons that have at least one sample, newest first.
+export function seasonsWithSamples(samples) {
+  return [...new Set((samples ?? []).map((s) => s.season))].sort((a, b) => b - a)
+}
+
+// One metric of one season as chart points, oldest first.
+export function samplePoints(samples, season, metric) {
+  const key = metricKey(metric)
+  return (samples ?? [])
+    .filter((s) => s.season === season)
+    .map((s) => ({ date: s.date, value: s[key], below: !!s[`${key}_below_detection`], preSeason: !!s.pre_season, source: s.source ?? '' }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+}
+
+// The worse of the two indicators: 0 within, 1 over excellent, 2 over good.
+export function chipLevel(sample, limits) {
+  return Math.max(
+    seaLevel(sample.e_coli, sample.e_coli_below_detection, limits.e_coli),
+    seaLevel(sample.enterococci, sample.enterococci_below_detection, limits.enterococci),
+  )
+}
+
+export function classLabel(quality, t) {
+  return t.classes[quality ?? 'not_classified'] || t.classes.not_classified || quality || ''
+}
+
+// The legacy combined class takes sufficient's initial, as it takes its colour.
+export function classInitial(quality, t) {
+  return t.initials?.[seaClass(quality)] ?? ''
+}
+
+// The credit line of one source. Empty when an RZI source has no name or the template is missing,
+// and callers then show no value from that source.
+export function sourceCredit(t, source) {
+  if (!isRZISource(source)) return t.credit || ''
+  const region = t.sources?.[source] || ''
+  if (!region || !t.creditSource) return ''
+  return fillSlots(t.creditSource, { region })
+}
+
+// A sample shows only with its credit line.
+export function creditedSamples(samples, t) {
+  return (samples ?? []).filter((s) => sourceCredit(t, s.source))
+}
+
+export function latestSamples(samples, t, n = 3) {
+  return creditedSamples(samples, t)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    .slice(0, n)
+}
+
+// Each source once, in order of first appearance. A sample without a source is the EEA's.
+export function sampleSources(samples, t) {
+  const seen = new Map()
+  for (const s of samples ?? []) {
+    const id = isRZISource(s.source) ? s.source : 'eea'
+    if (seen.has(id)) continue
+    const credit = sourceCredit(t, id)
+    if (credit) seen.set(id, { id, name: id === 'eea' ? t.sourceEea : t.sources[id], credit })
+  }
+  return [...seen.values()]
+}
+
+// The text of a sample level. `within` is what level 0 reads as, empty where it needs no word.
+export function levelText(t, level, within = '') {
+  return level === 2 ? t.overGood : level === 1 ? t.overExcellent : within
+}
+
+// Scheme check only, for links that are often PDFs. safePageURL is the stricter one.
+export function httpURL(url) {
+  try {
+    const u = new URL(String(url ?? ''))
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : ''
+  } catch {
+    return ''
+  }
+}
+
+// The closed-season note: the API's season_open flag, no latest result, and the year of the newest
+// RZI sample says which results the table holds. `samples` are the credited ones.
+export function offSeasonText(t, d, samples) {
+  const year = (samples ?? []).find((s) => isRZISource(s.source))?.season ?? null
+  if (d?.site?.rzi?.season_open !== false || d.latest || year === null || !t.latest.offSeason) return ''
+  return fillSlots(t.latest.offSeason, { year })
+}
+
+// One cell per year from the first class to the last. A year with no class is not classified.
+export function seasonCells(classes) {
+  const bySeason = new Map((classes ?? []).map((c) => [c.season, c]))
+  if (bySeason.size === 0) return []
+  const years = [...bySeason.keys()]
+  const cells = []
+  for (let y = Math.min(...years); y <= Math.max(...years); y++) {
+    const c = bySeason.get(y)
+    cells.push({ season: y, quality: c?.quality ?? null, source: c?.source ?? '' })
+  }
+  return cells
+}
+
+export const cellName = (cell, t) => `${cell.season} ${classLabel(cell.quality, t)}`
+
+// Letter colour on a swatch: whichever of white and black has the higher contrast with it.
+export function inkFor(colour) {
+  const m = /^#([0-9a-f]{6})$/i.exec(colour || '')
+  if (!m) return 'dark'
+  const [r, g, b] = [0, 2, 4]
+    .map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? 'dark' : 'light'
+}
+
+// WAI-ARIA tabs: the index a key moves to, or null for a key the tabs ignore.
+export function nextTab(index, key, count) {
+  if (key === 'ArrowRight') return (index + 1) % count
+  if (key === 'ArrowLeft') return (index - 1 + count) % count
+  if (key === 'Home') return 0
+  if (key === 'End') return count - 1
+  return null
+}
+
+// The season of a datahub class whose lab samples are not published yet, else null.
+export function pendingSeason(d) {
+  const current = d?.classes?.[0]
+  if (current?.source !== 'datahub') return null
+  return (d.samples ?? []).some((s) => s.season === current.season) ? null : current.season
+}
+
+// An ISO day in the page language, as UTC. Anything else is returned as sent.
+export function formatDay(iso, lang) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return String(iso ?? '')
+  return new Intl.DateTimeFormat(lang || 'bg', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(`${iso}T00:00:00Z`))
+}
+
 // The data-t-sea-* attributes, grouped. Missing ones read as ''.
 export function readSeaTexts(d) {
   const s = (k) => d[k] || ''
@@ -141,5 +280,37 @@ export function readSeaTexts(d) {
       linkEea: s('tSeaInfoLinkEea'),
       linkDatahub: s('tSeaInfoLinkDatahub'),
     },
+    initials: {
+      excellent: s('tSeaInitialExcellent'),
+      good: s('tSeaInitialGood'),
+      sufficient: s('tSeaInitialSufficient'),
+      poor: s('tSeaInitialPoor'),
+    },
+    officialClass: s('tSeaOfficialClass'),
+    chips: {
+      heading: s('tSeaChipsHeading'),
+      keyWithin: s('tSeaChipsKeyWithin'),
+      none: s('tSeaChipsNone'),
+      infoLabel: s('tSeaChipsInfoLabel'),
+    },
+    seasonsSince: s('tSeaSeasonsSince'),
+    details: s('tSeaDetails'),
+    back: s('tSeaBack'),
+    tabs: { label: s('tSeaTabsLabel'), samples: s('tSeaTabsSamples'), seasons: s('tSeaTabsSeasons'), about: s('tSeaTabsAbout') },
+    metricLabel: s('tSeaMetricLabel'),
+    seasonPicker: s('tSeaSeasonPicker'),
+    chart: {
+      summary: s('tSeaChartSummary'),
+      caption: s('tSeaChartCaption'),
+      showTable: s('tSeaChartShowTable'),
+      showChart: s('tSeaChartShowChart'),
+      bandWithin: s('tSeaChartBandWithin'),
+      bandBetween: s('tSeaChartBandBetween'),
+      bandAbove: s('tSeaChartBandAbove'),
+      hollow: s('tSeaChartHollow'),
+    },
+    creditSource: s('tSeaCreditSource'),
+    sourceEea: s('tSeaSourcesEea'),
+    sourcesInfoLabel: s('tSeaSourcesInfoLabel'),
   }
 }

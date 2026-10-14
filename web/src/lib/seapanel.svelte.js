@@ -2,6 +2,7 @@
 import { mount } from 'svelte'
 import SeaPanel from '../components/SeaPanel.svelte'
 import { getJSON } from './api.js'
+import { createInfoDialog } from './infodialog.js'
 
 export function createSeaPanel(frame, cfg, fetchJSON = getJSON) {
   const view = $state({ id: null, detail: null, failed: false })
@@ -18,6 +19,16 @@ export function createSeaPanel(frame, cfg, fetchJSON = getJSON) {
     host.hidden = true
   }
 
+  // One (i) dialog for the card, built on first use and kept on the frame, outside the hidden host.
+  let infoDialog = null
+  function showInfo(content) {
+    if (!infoDialog) {
+      infoDialog = createInfoDialog(frame.ownerDocument, { closeLabel: cfg.t.sea.close })
+      frame.appendChild(infoDialog.el)
+    }
+    infoDialog.show(content)
+  }
+
   async function open(id) {
     view.id = id
     view.detail = null
@@ -26,7 +37,7 @@ export function createSeaPanel(frame, cfg, fetchJSON = getJSON) {
     if (!mounted) {
       mount(SeaPanel, {
         target: host,
-        props: { view, t: cfg.t.sea, lang: cfg.lang, colours: cfg.seaColours, creditURL: cfg.seaCreditURL, onclose: close },
+        props: { view, t: cfg.t.sea, lang: cfg.lang, colours: cfg.seaColours, creditURL: cfg.seaCreditURL, onclose: close, oninfo: showInfo },
       })
       mounted = true
     }

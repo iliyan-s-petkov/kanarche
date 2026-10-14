@@ -35,6 +35,16 @@
   --notice-bg: #fcf4d6;
   --notice-bg: color-mix(in srgb, var(--warn) 18%, var(--bg));
 
+  /* Letter on a sea class swatch. Fixed keywords: the swatch colours are config values, so the letter must not follow the theme. */
+  --sea-ink-light: white;
+  --sea-ink-dark: black;
+  /* Sea chart bands: tonal steps of the foreground, so they invert with the theme. Literal first, for a browser without color-mix. */
+  --sea-band-within: rgba(22, 22, 22, 0.04);
+  --sea-band-within: color-mix(in srgb, var(--fg) 4%, var(--bg));
+  --sea-band-between: rgba(22, 22, 22, 0.1);
+  --sea-band-between: color-mix(in srgb, var(--fg) 10%, var(--bg));
+  --sea-band-above: rgba(22, 22, 22, 0.2);
+  --sea-band-above: color-mix(in srgb, var(--fg) 20%, var(--bg));
   /* Layout, not colour, so it has nothing to follow. */
   --map-cap: 78vh;
   /* Phone chrome above an area page's map, worst case: city note plus a two-line h1 (the area h1 names the air quality, so a long city name wraps at 393px). Measured 374px on the fixture with the two-line h1 (349px before); was 22rem. */

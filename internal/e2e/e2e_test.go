@@ -62,6 +62,10 @@ func TestBrowser(t *testing.T) {
 	if shard := os.Getenv("E2E_SHARD"); shard != "" {
 		args = append(args, "--shard="+shard)
 	}
+	// E2E_SPEC=e2e/sea.spec.js runs one spec file; unset runs all of them.
+	if spec := os.Getenv("E2E_SPEC"); spec != "" {
+		args = append(args, spec)
+	}
 	cmd := startGroup(e2eContext(t), groupGrace, "npx", args...)
 	cmd.Dir = filepath.Join("..", "..", "web")
 	// Playwright's transform cache defaults to os.tmpdir(); a repo-scoped TMPDIR
@@ -251,13 +255,20 @@ func seedFixtures(t *testing.T, st *store.Store) {
 		Sites: []store.BathingSite{
 			{ID: "BG0000000000000001", NameBG: "ПЛАЖ ТЕСТ", NameEN: "PLAZH TEST", Zone: "coastal", Lat: 42.75, Lon: 23.45, ProfileURL: "https://example.org/profile.pdf"},
 		},
-		Classes: []store.BathingClass{
-			{SiteID: "BG0000000000000001", Season: 2023, Quality: "good"},
-			{SiteID: "BG0000000000000001", Season: 2024, Quality: "excellent"},
-		},
+		Classes: func() []store.BathingClass {
+			cs := []store.BathingClass{}
+			for y := 2014; y <= 2022; y++ {
+				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000001", Season: y, Quality: "good"})
+			}
+			return append(cs,
+				store.BathingClass{SiteID: "BG0000000000000001", Season: 2023, Quality: "good"},
+				store.BathingClass{SiteID: "BG0000000000000001", Season: 2024, Quality: "excellent"},
+			)
+		}(),
 		Samples: []store.BathingSample{
 			{SiteID: "BG0000000000000001", Date: time.Date(2024, 7, 2, 0, 0, 0, 0, time.UTC), Season: 2024, EC: 15, ECBelowDetection: true, IE: 150},
 			{SiteID: "BG0000000000000001", Date: time.Date(2024, 5, 20, 0, 0, 0, 0, time.UTC), Season: 2024, EC: 600, IE: 20, PreSeason: true},
+			{SiteID: "BG0000000000000001", Date: time.Date(2023, 7, 3, 0, 0, 0, 0, time.UTC), Season: 2023, EC: 30, IE: 10},
 		},
 	}
 	if err := st.ReplaceBathing(ctx, sea, now); err != nil {
