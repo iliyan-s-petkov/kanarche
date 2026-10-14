@@ -117,7 +117,7 @@ func TestSiteIndexMapNameTolerance(t *testing.T) {
 		{"250 m with empty name", "02024", "", 250, ErrSiteTooFar},
 		{"mixed case", "02040", "попски ПЛАЖ", 424, nil},
 		{"punctuation and hyphen", "02049", " Росенец—север. ", 500, nil},
-		{"format characters are dropped", "02024", "Гра​дина\x00", 718, nil},
+		{"format characters are dropped", "02024", "Гра\u200bдина\x00", 718, nil},
 		{"extra document token", "02024", "Градина 2", 718, ErrSiteTooFar},
 		{"name of only punctuation", "02024", "- .", 718, ErrSiteTooFar},
 	}
