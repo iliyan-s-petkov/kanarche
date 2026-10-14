@@ -36,14 +36,14 @@ const chipDates = (root) => [...root.querySelectorAll('.sea-chip__date')].map((n
 describe('SeaPanel RZI samples', () => {
   it('shows an RZI sample as a chip with the mark of its worse indicator and names its source', () => {
     const root = render(withRZI())
-    expect(chipDates(root)).toEqual(['Aug 12, 2026', 'Jul 2, 2024'])
+    expect(chipDates(root)).toEqual(['Aug 12, 2026'])
     expect(root.querySelector('.sea-chip__mark').textContent).toBe('▲▲')
-    expect(root.querySelector('.sea-panel__sources span').textContent).toBe('RHI Varna, EEA')
+    expect(root.querySelector('.sea-panel__sources span').textContent).toBe('RHI Varna')
   })
 
   it('shows no RZI chip when the credit template is missing', () => {
-    const root = render(withRZI(), textsWith({ tSeaCreditSource: '' }))
-    expect(chipDates(root)).toEqual(['Jul 2, 2024'])
+    const root = render(withRZI({ samples: [rziRow, { ...rziRow, date: '2026-07-01', source: 'eea' }] }), textsWith({ tSeaCreditSource: '' }))
+    expect(chipDates(root)).toEqual(['Jul 1, 2026'])
     expect(root.querySelector('.sea-panel__sources span').textContent).toBe('EEA')
   })
 
@@ -56,6 +56,22 @@ describe('SeaPanel RZI samples', () => {
   it('shows the stale line with the date when the latest sample is stale', () => {
     const root = render(withRZI({ latest: { ...latest, stale: true } }))
     expect(root.querySelector('.sea-panel__fresh').textContent).toBe('No sample in the last 21 days. Latest: 12.08.2026.')
+  })
+
+  it('shows only samples of the newest season', () => {
+    const root = render(withRZI({ samples: [rziRow, sample({ date: '2025-08-01', season: 2025, source: 'eea' })] }))
+    expect(chipDates(root)).toEqual(['Aug 12, 2026'])
+  })
+
+  it('shows no stale line when the latest sample source has no name', () => {
+    const root = render(withRZI({ latest: { ...latest, stale: true, source: 'rzi_unknown' } }))
+    expect(root.querySelector('.sea-panel__fresh')).toBeNull()
+  })
+
+  it('shows no off-season line when no RZI sample is credited', () => {
+    const body = withRZI({ latest: undefined, samples: [{ ...rziRow, source: 'rzi_unknown' }] })
+    body.site.rzi.season_open = false
+    expect(render(body).querySelector('.sea-panel__fresh')).toBeNull()
   })
 
   it('shows nothing extra when the latest sample is fresh', () => {
@@ -101,7 +117,7 @@ describe('SeaPanel RZI samples', () => {
     const hostile = '<img src=x onerror=alert(1)>'
     const root = render(withRZI(), textsWith({ tSeaSourceRziVarna: hostile }))
     expect(root.querySelector('img')).toBeNull()
-    expect(root.querySelector('.sea-panel__sources span').textContent).toBe(`${hostile}, EEA`)
+    expect(root.querySelector('.sea-panel__sources span').textContent).toBe(hostile)
     expect(render(withRZI()).innerHTML).not.toContain('onerror')
   })
 })

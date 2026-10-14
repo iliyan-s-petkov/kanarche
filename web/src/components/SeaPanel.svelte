@@ -2,7 +2,7 @@
   // One bathing site as a compact card: the official class first, then the last lab samples
   // against the zone's limits, then the season strip. History and charts live in SeaDetails.
   import {
-    seaName, fillSeason, fillSlots, creditDate, isRZISource, classLabel, chipLevel, latestSamples, sampleSources,
+    seaName, creditedSamples, sourceCredit, fillSeason, fillSlots, creditDate, isRZISource, classLabel, chipLevel, latestSamples, sampleSources,
     formatDay, LEVEL_MARKS,
   } from '../lib/sea.js'
   import { seaInfoContent } from '../lib/infodialog.js'
@@ -20,16 +20,20 @@
   const sourceText = (c) => fillSlots(t.classSourceDatahub, { year: c.season })
 
   // A sample shows only with its credit line, so an RZI row with no region name or no template is dropped.
-  const chips = $derived(latestSamples(d?.samples, t, 3))
+  // Chips come from the newest season that has a credited sample, so last year's results never pass for this season's.
+  const credited = $derived(creditedSamples(d?.samples, t))
+  const newestSeason = $derived(credited.length ? Math.max(...credited.map((s) => s.season)) : null)
+  const chips = $derived(latestSamples(credited.filter((s) => s.season === newestSeason), t, 3))
   const shownSources = $derived(sampleSources(chips, t))
   const hasRZI = $derived(chips.some((s) => isRZISource(s.source)))
 
   // Freshness is the API's flag on the newest RZI sample. Off season is the API's season_open flag,
   // and the newest RZI sample says which year the table holds.
   const latest = $derived(d?.latest ?? null)
-  const offSeasonYear = $derived(d?.samples?.find((s) => isRZISource(s.source))?.season ?? null)
+  const offSeasonYear = $derived(credited.find((s) => isRZISource(s.source))?.season ?? null)
   const offSeasonText = $derived(d?.site?.rzi?.season_open === false && !latest && offSeasonYear !== null && t.latest.offSeason ? fillSlots(t.latest.offSeason, { year: offSeasonYear }) : '')
-  const staleText = $derived(latest?.stale && t.latest.stale ? fillSlots(t.latest.stale, { date: creditDate(latest.date) }) : '')
+  // Both lines need a credited lab source, as the lab block did.
+  const staleText = $derived(latest?.stale && sourceCredit(t, latest.source) && t.latest.stale ? fillSlots(t.latest.stale, { date: creditDate(latest.date) }) : '')
   const freshText = $derived(staleText || offSeasonText)
 
   const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : t.chips.keyWithin)
