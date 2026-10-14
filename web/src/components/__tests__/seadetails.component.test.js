@@ -359,6 +359,21 @@ describe('About tab', () => {
     expect(credits(dialog, 'about')).toEqual(['Data: EEA, CC BY 4.0'])
   })
 
+  // The EEA line is the link in .sea-details__links, so an EEA-only site has no list left to show.
+  it('renders no credits list for an EEA-only site with a credit link', () => {
+    const eeaOnly = {
+      ...twoSeasons,
+      classes: twoSeasons.classes.map((c) => ({ ...c, source: 'eea' })),
+      samples: twoSeasons.samples.map((s) => ({ ...s, source: 'eea' })),
+    }
+    const { dialog, api } = render(eeaOnly)
+    api.show()
+    tabs(dialog)[2].click()
+    flushSync()
+    expect(panel(dialog, 'about').querySelector('.sea-details__credits')).toBeNull()
+    expect(panel(dialog, 'about').querySelector('.sea-details__links a').textContent).toContain('Data: EEA, CC BY 4.0')
+  })
+
   const PAGE = 'https://rzi-varna.com/rezultati/'
   const latest = { date: '2026-08-12', source: 'rzi_varna', e_coli: 600, e_coli_below_detection: false, enterococci: 40, enterococci_below_detection: true, unit: 'MPN/100ml', stale: false }
   const rziBody = (page = PAGE, over = {}) => ({

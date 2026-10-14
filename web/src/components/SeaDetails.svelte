@@ -28,6 +28,8 @@
   const points = $derived(season === null ? [] : samplePoints(samples, season, metric))
   const metricName = $derived(metric === 'enterococci' ? t.enterococci : t.eColi)
   const allSources = $derived(sampleSources(samples, t))
+  // With a credit link the EEA line is that link, so it is not listed again.
+  const listedSources = $derived(allSources.filter((s) => !(creditURL && s.id === 'eea')))
   const pending = $derived(pendingSeason({ classes: d.classes, samples: d.samples }))
   const firstSeason = $derived(d.classes?.length ? Math.min(...d.classes.map((c) => c.season)) : null)
   const datahubClasses = $derived((d.classes ?? []).filter((c) => c.source === 'datahub'))
@@ -166,9 +168,11 @@
         <p class="sea-details__notice">{t.noticeUnofficial}</p>
         {#if rziPage}<p><a href={rziPage} rel="noopener noreferrer" target="_blank">{t.sourceLink}{@render newTab()}</a></p>{/if}
       {/if}
-      <ul class="sea-details__credits">
-        {#each allSources as s (s.id)}{#if !(creditURL && s.id === 'eea')}<li>{s.credit}</li>{/if}{/each}
-      </ul>
+      {#if listedSources.length}
+        <ul class="sea-details__credits">
+          {#each listedSources as s (s.id)}<li>{s.credit}</li>{/each}
+        </ul>
+      {/if}
       <p class="sea-details__links">
         {#if creditURL}<a href={creditURL} rel="noopener noreferrer" target="_blank">{t.credit}{@render newTab()}</a>{/if}
         {#if profileURL}{#if creditURL}· {/if}<a href={profileURL} rel="noopener noreferrer" target="_blank">{t.profile}{@render newTab()}</a>{/if}
