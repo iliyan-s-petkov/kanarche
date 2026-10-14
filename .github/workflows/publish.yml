@@ -53,6 +53,8 @@ jobs:
           tags: ${{ env.DOCPARSE_IMAGE }}:pr-check
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=docparse
+          # apt layer rebuilt every run so Debian security fixes land; a cached layer froze libcurl at a vulnerable revision.
+          no-cache-filters: docparse
           cache-to: type=gha,mode=max,scope=docparse
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
@@ -130,6 +132,8 @@ jobs:
           tags: ${{ env.DOCPARSE_IMAGE }}:${{ steps.tag.outputs.short }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=docparse
+          # apt layer rebuilt every run so Debian security fixes land; a cached layer froze libcurl at a vulnerable revision.
+          no-cache-filters: docparse
           cache-to: type=gha,mode=max,scope=docparse
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
