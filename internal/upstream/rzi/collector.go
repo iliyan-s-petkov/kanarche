@@ -3,6 +3,7 @@ package rzi
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"kanarche.eu/internal/config"
@@ -14,6 +15,9 @@ const retryAfter = time.Hour
 
 // MetricsRefresh is how often the status gauges are re-read from the store.
 const MetricsRefresh = time.Minute
+
+// OutboxRefresh is how often the outbox is ingested between fetch passes.
+const OutboxRefresh = 10 * time.Minute
 
 // Fetcher downloads one source into the inbox. *Fetcher satisfies it.
 type Fetching interface {
@@ -28,6 +32,8 @@ type Collector struct {
 	fetcher Fetching
 	ing     *Ingester
 	clock   func() time.Time
+	// passMu is held for one ingest pass.
+	passMu sync.Mutex
 }
 
 func NewCollector(cfg config.SeaRZI, sink Sink, fetcher Fetching) *Collector {
@@ -54,6 +60,14 @@ func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
 		slog.Info("rzi fetch", "source", id, "status", res.Status)
 		c.ing.NoteFetch(res)
 	}
+	return c.ingest(ctx)
+}
+
+// ingest processes the outbox and refreshes the metrics. The lock keeps the
+// fetch loop and the outbox watcher from running a pass at the same time.
+func (c *Collector) ingest(ctx context.Context) (Stats, error) {
+	c.passMu.Lock()
+	defer c.passMu.Unlock()
 	st, err := c.ing.Process(ctx)
 	if mErr := c.ing.PublishMetrics(ctx); mErr != nil {
 		slog.Warn("rzi metrics", "error", mErr)
@@ -107,6 +121,32 @@ func (c *Collector) Loop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.After(wait):
+		}
+	}
+}
+
+// WatchOutbox ingests the outbox every interval until ctx is done, so a
+// record the host extractor writes does not wait for the next fetch pass. It
+// never fetches.
+func (c *Collector) WatchOutbox(ctx context.Context, every time.Duration) {
+	t := time.NewTicker(every)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			st, err := c.ingest(ctx)
+			if err != nil {
+				if ctx.Err() == nil {
+					slog.Warn("rzi outbox pass failed", "error", err)
+				}
+				continue
+			}
+			if st.OK+st.NeedsReview+st.Rejected+st.Duplicate+st.Refused > 0 {
+				slog.Info("rzi outbox pass", "ok", st.OK, "needs_review", st.NeedsReview,
+					"rejected", st.Rejected, "duplicate", st.Duplicate, "refused", st.Refused)
+			}
 		}
 	}
 }

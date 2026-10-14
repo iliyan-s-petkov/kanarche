@@ -269,7 +269,7 @@ Recovery, if this rule ever does lock you out: from an existing session, `nft in
 
 ## Why the RZI extractor is a host timer
 
-`airbg-rzi-extract.timer` runs the sandboxed document extractor every 6 hours. The app does not start it, because starting a container needs the Docker socket and the app must never hold that. The run flags are in `internal/docparse/README.md`; `rzi_units_test.go` pins them.
+`airbg-rzi-extract.timer` runs the sandboxed document extractor every 6 hours. The app does not start it, because starting a container needs the Docker socket and the app must never hold that. The run flags are in `internal/docparse/README.md`; `rzi_units_test.go` pins them. The app ingests the outbox every 10 minutes, so a record does not wait for the next fetch pass.
 
 The ops role (part B) installs the units, `/etc/airbg/rzi-extract.env` (supplies `DOCPARSE_IMAGE`, a cosign-verified digest reference, no secrets) and the `/var/lib/airbg/rzi/` directories. `docker-compose.prod.yml` bind-mounts `inbox` and `outbox` into the app at the same paths. Deploy the role first: with a missing host directory Docker creates it root-owned and the app cannot write it. `sea.rzi.enabled` stays false until the first extractor run is checked.
 

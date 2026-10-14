@@ -191,7 +191,7 @@ func (v *validator) checkBlocks(f File, idx SiteIndex, last LastGood) {
 			v.reject(bi, -1, point, "", "duplicate point")
 		}
 		points[point] = true
-		siteID, err := idx.Map(f.Source, b.Point, b.Lat, b.Lon)
+		siteID, err := idx.Map(f.Source, b.Point, b.Name, b.Lat, b.Lon)
 		if err != nil {
 			v.reject(bi, -1, point, "", err.Error())
 		}
