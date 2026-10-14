@@ -503,6 +503,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// RZI documents: off unless sea.rzi.enabled.
 	rziDone := make(chan struct{})
 	rziMetricsDone := make(chan struct{})
+	rziOutboxDone := make(chan struct{})
 	rzc, rziErr := rziCollectorFor(cfg, collectorStore)
 	if rziErr != nil {
 		slog.Error("rzi collector not started", "error", rziErr)
@@ -518,9 +519,16 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 			defer close(rziMetricsDone)
 			rzc.WatchMetrics(pollCtx, rzi.MetricsRefresh)
 		}()
+		// The host extractor writes the outbox on its own timer, so ingest
+		// it on a short one too instead of waiting for the next fetch pass.
+		go func() {
+			defer close(rziOutboxDone)
+			rzc.WatchOutbox(pollCtx, rzi.OutboxRefresh)
+		}()
 	} else {
 		close(rziDone)
 		close(rziMetricsDone)
+		close(rziOutboxDone)
 	}
 
 	err = srv.Run(ctx)
@@ -536,5 +544,6 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	<-seaDone
 	<-rziDone
 	<-rziMetricsDone
+	<-rziOutboxDone
 	return err
 }
