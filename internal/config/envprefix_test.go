@@ -3,9 +3,35 @@ package config
 import (
 	"bytes"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// Load and LoadOffline both resolve the config path through the prefix lookup,
+// so an image that sets only KANARCHE_CONFIG works and AIRBG_CONFIG still does.
+func TestConfigPathPrefixes(t *testing.T) {
+	file := filepath.Join("..", "..", "airbg.yaml")
+	for _, tt := range []struct{ name, set, other string }{
+		{"kanarche only", "KANARCHE_CONFIG", "AIRBG_CONFIG"},
+		{"legacy only", "AIRBG_CONFIG", "KANARCHE_CONFIG"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			captureWarn(t)
+			t.Setenv(tt.other, "")
+			os.Unsetenv(tt.other)
+			t.Setenv(tt.set, file)
+			if _, err := LoadOffline(); err != nil {
+				t.Fatalf("LoadOffline error = %v, want nil", err)
+			}
+			t.Setenv(DatabaseURLEnv, "postgres://u:p@h/d")
+			if _, err := Load(); err != nil {
+				t.Fatalf("Load error = %v, want nil", err)
+			}
+		})
+	}
+}
 
 // captureWarn routes slog output to a buffer for the duration of the test.
 func captureWarn(t *testing.T) *bytes.Buffer {

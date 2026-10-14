@@ -233,7 +233,7 @@ from the LAN before anything is exposed. The role installs it only when run with
 `-e airbg_open_origin=true`, prints a warning task when it does, and installs the
 production file otherwise.
 
-It must be the real hostnames. `AIRBG_LISTEN_BASE_URL` is `https://airbg.org` and the CSP
+It must be the real hostnames. `KANARCHE_LISTEN_BASE_URL` is `https://airbg.org` and the CSP
 allows `connect-src 'self' https://tiles.airbg.org`, so browsing the VM by IP or by any
 other name loads a page whose tile requests the browser then blocks — an empty map that
 looks like a tiles bug. LAN DNS answers both names locally; see the OPNsense repo's

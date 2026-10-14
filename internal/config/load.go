@@ -300,8 +300,9 @@ func databaseURLFromEnv() (string, error) {
 	return url, nil
 }
 
-// Load reads the configuration named by AIRBG_CONFIG. There is no fallback
-// path: guessing one would be a default, and this project keeps none.
+// Load reads the configuration named by KANARCHE_CONFIG (AIRBG_CONFIG still
+// works). There is no fallback path: guessing one would be a default, and
+// this project keeps none.
 func Load() (Config, error) {
 	path := Getenv(PathEnv)
 	if path == "" {
@@ -310,9 +311,9 @@ func Load() (Config, error) {
 	return LoadFile(path)
 }
 
-// LoadOffline reads the file named by AIRBG_CONFIG without a database credential.
+// LoadOffline reads the file named by KANARCHE_CONFIG or AIRBG_CONFIG without a database credential.
 func LoadOffline() (Config, error) {
-	path := os.Getenv(PathEnv)
+	path := Getenv(PathEnv)
 	if path == "" {
 		return Config{}, fmt.Errorf("config: %s is not set; it must name the airbg.yaml to load", PathEnv)
 	}

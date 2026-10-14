@@ -45,9 +45,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s 
 FROM gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
 COPY --from=build /out/airbg /airbg
 # airbg.yaml is mandatory: there is no defaults layer in code, so the image
-# must carry a config file and AIRBG_CONFIG must name it.
+# must carry a config file and KANARCHE_CONFIG must name it.
 COPY airbg.yaml /etc/airbg/airbg.yaml
-ENV AIRBG_CONFIG=/etc/airbg/airbg.yaml
+ENV KANARCHE_CONFIG=/etc/airbg/airbg.yaml
 # The design kit, served read-only at /design-kit/. Copied from the repo rather
 # than fetched, so the running kit is exactly the committed one and the route
 # fails at startup — not at first request — if design_kit.dir goes wrong.

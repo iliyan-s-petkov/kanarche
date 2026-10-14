@@ -62,7 +62,7 @@ services:
         ipv4_address: 172.29.0.10
     volumes:
       - /var/lib/airbg/tiles:/var/lib/airbg/tiles:ro
-      # Writable: AIRBG_EEA_METADATA_CACHE. read_only below makes every other
+      # Writable: KANARCHE_EEA_METADATA_CACHE. read_only below makes every other
       # path in the container unwritable, and without this the 26 MB station
       # CSV is refetched on every restart instead of falling back to disk.
       - /var/lib/airbg/eea:/var/lib/airbg/eea
@@ -161,7 +161,7 @@ services:
     logging: *journal
 
 networks:
-  # Subnets are explicit so AIRBG_LISTEN_TRUSTED_PROXY_CIDRS is a value you can
+  # Subnets are explicit so KANARCHE_LISTEN_TRUSTED_PROXY_CIDRS is a value you can
   # write down. Trusting the wrong CIDR means CF-Connecting-IP is ignored and
   # every visitor shares one rate-limit bucket.
   edge:
