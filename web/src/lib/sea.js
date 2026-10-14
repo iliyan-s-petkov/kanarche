@@ -185,6 +185,10 @@ export function seasonCells(classes) {
   return cells
 }
 
+// The card's strip is the newest STRIP_SEASONS cells, oldest left; the Seasons tab keeps them all.
+export const STRIP_SEASONS = 10
+export const stripCells = (classes) => seasonCells(classes).slice(-STRIP_SEASONS)
+
 export const cellName = (cell, t) => `${cell.season} ${classLabel(cell.quality, t)}`
 
 // Letter colour on a swatch: whichever of white and black has the higher contrast with it.

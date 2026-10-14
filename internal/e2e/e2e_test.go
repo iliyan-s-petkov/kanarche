@@ -254,11 +254,17 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	sea := store.BathingData{
 		Sites: []store.BathingSite{
 			{ID: "BG0000000000000001", NameBG: "ПЛАЖ ТЕСТ", NameEN: "PLAZH TEST", Zone: "coastal", Lat: 42.75, Lon: 23.45, ProfileURL: "https://example.org/profile.pdf"},
+			// A long-history site with a stale RZI sample: its card is the tallest one the phone sheet must hold.
+			{ID: "BG0000000000000002", NameBG: "ДЪЛГА ИСТОРИЯ", NameEN: "LONG HISTORY", Zone: "coastal", Lat: 42.75, Lon: 23.53, ProfileURL: "https://example.org/profile2.pdf"},
 		},
 		Classes: func() []store.BathingClass {
 			cs := []store.BathingClass{}
 			for y := 2014; y <= 2022; y++ {
 				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000001", Season: y, Quality: "good"})
+			}
+			// Nineteen classified seasons, 2007 to 2025.
+			for y := 2007; y <= 2025; y++ {
+				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000002", Season: y, Quality: "good"})
 			}
 			return append(cs,
 				store.BathingClass{SiteID: "BG0000000000000001", Season: 2023, Quality: "good"},
@@ -273,6 +279,14 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	}
 	if err := st.ReplaceBathing(ctx, sea, now); err != nil {
 		t.Fatalf("ReplaceBathing: %v", err)
+	}
+	// An RZI sample thirty days old is past the 21-day freshness window, so the card shows the stale note.
+	// In season only: outside it the card shows the closed-season note instead, also a line of text.
+	staleDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -30)
+	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 1}
+	rziSample := store.RZISample{SiteID: "BG0000000000000002", Date: staleDay, Season: staleDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml"}
+	if err := st.ReplaceRZISource(ctx, "rzi_varna", rziFile, []store.RZISample{rziSample}); err != nil {
+		t.Fatalf("ReplaceRZISource: %v", err)
 	}
 
 	// The 30d and 1y periods read reading_hourly, which only the rollup fills.

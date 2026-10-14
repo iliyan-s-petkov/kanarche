@@ -15,6 +15,8 @@ async function axeViolations(page, selector) {
 // The bathing-water layer: off by default, a square per site, a card with the class and samples.
 // The site is seeded in internal/e2e/e2e_test.go at 23.45, 42.75.
 const SITE = [23.45, 42.75]
+// The long-history site: nineteen seasons and a stale RZI sample.
+const LONG_SITE = [23.53, 42.75]
 
 async function prepareMap(page, path) {
   await page.goto(path)
@@ -45,13 +47,13 @@ async function toggleSea(page, label, on) {
 }
 
 // Waits for the square to render, then returns its page coordinates.
-const sitePoint = (page) => page.evaluate((c) => {
+const sitePoint = (page, c = SITE) => page.evaluate((c) => {
   const map = document.querySelector('[data-island="map"]').__map
   if (!map.queryRenderedFeatures({ layers: ['sea-sites'] }).length) return null
   const box = map.getCanvas().getBoundingClientRect()
   const p = map.project(c)
   return { x: box.left + p.x, y: box.top + p.y }
-}, SITE)
+}, c)
 
 test('the bathing layer is off by default, and a site opens its compact card', async ({ browser }, testInfo) => {
   testInfo.setTimeout(60000)
@@ -81,7 +83,7 @@ test('the bathing layer is off by default, and a site opens its compact card', a
   await expect(chips.nth(0).locator('.sea-chip__mark')).toHaveText('▲')
   await expect(chips.nth(1).locator('.sea-chip__mark')).toHaveText('▲▲')
   await expect(chips.nth(1)).toContainText('pre-season')
-  await expect(card.locator('.sea-seasons--strip .sea-cell')).toHaveCount(11)
+  await expect(card.locator('.sea-seasons--strip .sea-cell')).toHaveCount(10)
   await expect(card.locator('.sea-seasons--strip .sea-cell').last()).toHaveAttribute('aria-label', '2024 Excellent')
   await expect(card.locator('.sea-key__item:not(dialog *)')).toHaveCount(5)
   await expect(page.locator('.map-dock')).toBeHidden()
@@ -94,6 +96,28 @@ test('the bathing layer is off by default, and a site opens its compact card', a
   await expect(card).toBeVisible()
   await toggleSea(page, 'Bathing water', false)
   await expect(page.locator('.map-sea')).toBeHidden()
+  await context.close()
+})
+
+test('390: the long-history card fits the sheet with its stale note, one strip row, Details on screen', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(60000)
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  const page = await context.newPage()
+  await prepareMap(page, '/en/')
+  await toggleSea(page, 'Bathing water', true)
+  let pt = null
+  await expect.poll(async () => { pt = await sitePoint(page, LONG_SITE); return pt }, { timeout: 20000 }).not.toBeNull()
+  await page.mouse.click(pt.x, pt.y)
+  const sheet = page.locator('.map-sea')
+  await expect(sheet.locator('.sea-panel__title')).toHaveText('Long History')
+  await expect(sheet.locator('.sea-seasons--strip .sea-cell')).toHaveCount(10)
+  await expect(sheet.locator('.sea-panel__fresh')).toBeVisible()
+  const rows = await sheet.locator('.sea-seasons--strip .sea-cell').evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size)
+  expect(rows).toBe(1)
+  const fit = await sheet.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }))
+  expect(fit.scroll, JSON.stringify(fit)).toBeLessThanOrEqual(fit.client)
+  const dbtn = await sheet.locator('.sea-panel__details').boundingBox()
+  expect(dbtn.y + dbtn.height).toBeLessThanOrEqual(844)
   await context.close()
 })
 
@@ -112,7 +136,7 @@ test('390: the card is a bottom sheet in Bulgarian', async ({ browser }, testInf
   const frame = await page.locator('[data-island="map"]').boundingBox()
   expect(Math.round(box.width)).toBe(Math.round(frame.width))
   expect(Math.abs(box.y + box.height - (frame.y + frame.height))).toBeLessThanOrEqual(1)
-  // Eleven seasons wrap, they do not scroll sideways.
+  // The strip never scrolls sideways.
   expect(await sheet.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   // The card fits the sheet without vertical scrolling, and the Details button is on screen.
   const fit = await sheet.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }))
