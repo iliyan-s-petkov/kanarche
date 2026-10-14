@@ -149,6 +149,29 @@ export function sampleSources(samples, t) {
   return [...seen.values()]
 }
 
+// The text of a sample level. `within` is what level 0 reads as, empty where it needs no word.
+export function levelText(t, level, within = '') {
+  return level === 2 ? t.overGood : level === 1 ? t.overExcellent : within
+}
+
+// Scheme check only, for links that are often PDFs. safePageURL is the stricter one.
+export function httpURL(url) {
+  try {
+    const u = new URL(String(url ?? ''))
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : ''
+  } catch {
+    return ''
+  }
+}
+
+// The closed-season note: the API's season_open flag, no latest result, and the year of the newest
+// RZI sample says which results the table holds. `samples` are the credited ones.
+export function offSeasonText(t, d, samples) {
+  const year = (samples ?? []).find((s) => isRZISource(s.source))?.season ?? null
+  if (d?.site?.rzi?.season_open !== false || d.latest || year === null || !t.latest.offSeason) return ''
+  return fillSlots(t.latest.offSeason, { year })
+}
+
 // One cell per year from the first class to the last. A year with no class is not classified.
 export function seasonCells(classes) {
   const bySeason = new Map((classes ?? []).map((c) => [c.season, c]))

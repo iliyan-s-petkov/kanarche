@@ -197,12 +197,26 @@ describe('SeaPanel card', () => {
       const { root } = renderPanel(withSamples([sample({ date: '2024-07-02' }), sample({ date: '2024-06-01' })]))
       expect(root.querySelector('.sea-panel__sources span').textContent).toBe('EEA')
     })
+
+    it('names the EEA for the class even with no samples, so it is never a lone info button', () => {
+      const { root } = renderPanel(withSamples([]))
+      expect(root.querySelector('.sea-panel__sources span').textContent).toBe('EEA')
+    })
+
+    it('names the EEA for the class next to an RZI-only chip source', () => {
+      const { root } = renderPanel(withSamples([sample({ date: '2024-07-02', source: 'rzi_varna' })]))
+      expect(root.querySelector('.sea-panel__sources span').textContent).toBe('EEA, RHI Varna')
+    })
   })
 
   it('has a Details and charts button and a details dialog, closed until pressed', () => {
     const { root } = renderPanel()
     expect(root.querySelector('button.sea-panel__details').textContent).toBe('Details and charts')
     expect(root.querySelector('dialog.sea-details').open).toBe(false)
+  })
+
+  it('tells assistive tech the Details button opens a dialog', () => {
+    expect(renderPanel().root.querySelector('button.sea-panel__details').getAttribute('aria-haspopup')).toBe('dialog')
   })
 
   it('shows the loading mark with no detail and the failure text when it failed', () => {

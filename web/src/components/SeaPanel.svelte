@@ -3,7 +3,7 @@
   // against the zone's limits, then the season strip. History and charts live in SeaDetails.
   import {
     seaName, creditedSamples, sourceCredit, fillSeason, fillSlots, creditDate, isRZISource, classLabel, chipLevel, latestSamples, sampleSources,
-    formatDay, LEVEL_MARKS,
+    formatDay, LEVEL_MARKS, levelText, offSeasonText,
   } from '../lib/sea.js'
   import { seaInfoContent } from '../lib/infodialog.js'
   import SeaSwatch from './SeaSwatch.svelte'
@@ -25,19 +25,17 @@
   const credited = $derived(creditedSamples(d?.samples, t))
   const newestSeason = $derived(credited.length ? Math.max(...credited.map((s) => s.season)) : null)
   const chips = $derived(latestSamples(credited.filter((s) => s.season === newestSeason), t, 3))
-  const shownSources = $derived(sampleSources(chips, t))
+  // The class is the EEA's, so the EEA is named first whenever there is one.
+  const shownSources = $derived(sampleSources([...(d?.classes?.length ? [{ source: '' }] : []), ...chips], t))
   const hasRZI = $derived(chips.some((s) => isRZISource(s.source)))
 
   // Freshness is the API's flag on the newest RZI sample. Off season is the API's season_open flag,
   // and the newest RZI sample says which year the table holds.
   const latest = $derived(d?.latest ?? null)
-  const offSeasonYear = $derived(credited.find((s) => isRZISource(s.source))?.season ?? null)
-  const offSeasonText = $derived(d?.site?.rzi?.season_open === false && !latest && offSeasonYear !== null && t.latest.offSeason ? fillSlots(t.latest.offSeason, { year: offSeasonYear }) : '')
+  const offSeasonNote = $derived(offSeasonText(t, d ?? {}, credited))
   // Both lines need a credited lab source, as the lab block did.
   const staleText = $derived(latest?.stale && sourceCredit(t, latest.source) && t.latest.stale ? fillSlots(t.latest.stale, { date: creditDate(latest.date) }) : '')
-  const freshText = $derived(staleText || offSeasonText)
-
-  const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : t.chips.keyWithin)
+  const freshText = $derived(staleText || offSeasonNote)
 
   const classInfo = $derived(seaInfoContent(t.info, d?.supplement?.url ?? ''))
   const samplesInfo = $derived({ title: t.chips.heading, paragraphs: [t.latest.singleSampleNote, t.info.rzi, hasRZI ? t.noticeUnofficial : ''], links: [] })
@@ -98,7 +96,7 @@
           <li class="sea-chip">
             <span class="sea-chip__date">{formatDay(s.date, lang)}</span>
             <span class="sea-chip__mark" aria-hidden="true">{LEVEL_MARKS[level]}</span>
-            <span class="sr-only">, {levelText(level)}</span>
+            <span class="sr-only">, {levelText(t, level, t.chips.keyWithin)}</span>
             {#if s.pre_season}<span class="sea-chip__pre">{t.preSeason}</span>{/if}
           </li>
         {/each}
@@ -115,7 +113,7 @@
       <SeaClassKey {t} {colours} />
     {/if}
 
-    <button type="button" class="sea-panel__details" onclick={(e) => details?.show(e.currentTarget)}>{t.details}</button>
+    <button type="button" class="sea-panel__details" aria-haspopup="dialog" onclick={(e) => details?.show(e.currentTarget)}>{t.details}</button>
     {#key d.site.id}
       <SeaDetails bind:this={details} {d} {t} {lang} {colours} {creditURL} />
     {/key}

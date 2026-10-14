@@ -1,10 +1,11 @@
 <script>
   // The details view of one bathing site, in a native dialog: samples with a chart, the season
-  // history, and what the data is. Tab, indicator and season are kept while this component lives;
-  // SeaPanel remounts it per site, which resets them.
+  // history, and what the data is. Tab, indicator and season are kept while this component lives.
+  // SeaPanel unmounts it while another site loads (its detail is null then), and the {#key} on the
+  // site id remounts it for a direct switch, so either way they reset.
   import {
     seaName, fillSlots, formatDay, safePageURL, isRZISource, nextTab, pendingSeason, seaLevel, rziCredit, creditDate,
-    creditedSamples, seasonsWithSamples, samplePoints, sampleSources, SEA_METRICS,
+    creditedSamples, seasonsWithSamples, samplePoints, sampleSources, SEA_METRICS, levelText, httpURL, offSeasonText,
   } from '../lib/sea.js'
   import SeaSampleChart from './SeaSampleChart.svelte'
   import SeaSeasonStrip from './SeaSeasonStrip.svelte'
@@ -26,7 +27,6 @@
   const season = $derived(seasons.includes(chosenSeason) ? chosenSeason : (seasons[0] ?? null))
   const points = $derived(season === null ? [] : samplePoints(samples, season, metric))
   const metricName = $derived(metric === 'enterococci' ? t.enterococci : t.eColi)
-  const seasonSources = $derived(sampleSources(samples.filter((s) => s.season === season), t))
   const allSources = $derived(sampleSources(samples, t))
   const pending = $derived(pendingSeason({ classes: d.classes, samples: d.samples }))
   const firstSeason = $derived(d.classes?.length ? Math.min(...d.classes.map((c) => c.season)) : null)
@@ -40,20 +40,9 @@
   // credited or the closed-season note, never as a bare heading.
   const latest = $derived(d.latest ?? null)
   const latestCredit = $derived(latest ? rziCredit(t, latest.source, latest.date) : '')
-  const offSeasonYear = $derived(samples.find((s) => isRZISource(s.source))?.season ?? null)
-  const offSeasonText = $derived(d.site?.rzi?.season_open === false && !latest && offSeasonYear !== null && t.latest.offSeason ? fillSlots(t.latest.offSeason, { year: offSeasonYear }) : '')
+  const offSeasonNote = $derived(offSeasonText(t, d, samples))
   const staleText = $derived(latest?.stale && t.latest.stale ? fillSlots(t.latest.stale, { date: creditDate(latest.date) }) : '')
-  const hasLab = $derived(latest ? !!latestCredit && (!latest.stale || !!staleText) : !!offSeasonText)
-  const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : '')
-
-  function httpURL(url) {
-    try {
-      const u = new URL(String(url ?? ''))
-      return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : ''
-    } catch {
-      return ''
-    }
-  }
+  const hasLab = $derived(latest ? !!latestCredit && (!latest.stale || !!staleText) : !!offSeasonNote)
 
   export function show(from) {
     opener = from ?? null
@@ -86,7 +75,7 @@
   {@const level = seaLevel(value, below, limits)}
   {below ? '<' : ''}{value}{#if level}<span aria-hidden="true"> {MARKS[level]}</span>{/if}
   {#if below}<span class="sr-only">, {t.belowDetection}</span>{/if}
-  {#if level}<span class="sr-only">, {levelText(level)}</span>{/if}
+  {#if level}<span class="sr-only">, {levelText(t, level)}</span>{/if}
 {/snippet}
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -129,9 +118,6 @@
           {/if}
         </div>
         <SeaSampleChart {points} limits={d.limits[metric]} {metricName} {season} {t} {lang} />
-        <ul class="sea-details__credits">
-          {#each seasonSources as s (s.id)}<li>{s.credit}</li>{/each}
-        </ul>
       {/if}
     </div>
 
@@ -160,7 +146,7 @@
         <div class="sea-details__latest">
           <h3 class="sea-details__h">{t.latest.heading}</h3>
           {#if !latest}
-            <p class="sea-details__off-season">{offSeasonText}</p>
+            <p class="sea-details__off-season">{offSeasonNote}</p>
           {:else if latest.stale}
             <p class="sea-details__stale">{staleText}</p>
             <p class="sea-details__credit-rzi">{latestCredit}</p>
@@ -181,7 +167,7 @@
         {#if rziPage}<p><a href={rziPage} rel="noopener noreferrer" target="_blank">{t.sourceLink}{@render newTab()}</a></p>{/if}
       {/if}
       <ul class="sea-details__credits">
-        {#each allSources as s (s.id)}<li>{s.credit}</li>{/each}
+        {#each allSources as s (s.id)}{#if !(creditURL && s.id === 'eea')}<li>{s.credit}</li>{/if}{/each}
       </ul>
       <p class="sea-details__links">
         {#if creditURL}<a href={creditURL} rel="noopener noreferrer" target="_blank">{t.credit}{@render newTab()}</a>{/if}

@@ -3,7 +3,7 @@ import {
   SEA_CLASSES, seaClass, seaColours, seaFeatures, seaLevel, seaName, fillSeason, fillSlots, readSeaTexts, safePageURL,
   SEA_METRICS, LEVEL_MARKS, seasonsWithSamples, samplePoints, chipLevel, classInitial, classLabel,
   sourceCredit, creditedSamples, latestSamples, sampleSources, seasonCells, cellName, inkFor, nextTab,
-  pendingSeason, formatDay,
+  pendingSeason, formatDay, levelText, httpURL, offSeasonText,
 } from '../sea.js'
 import { seaT, textsWith, limits, sample, textAttrs } from '../../components/__tests__/seafixtures.js'
 
@@ -335,5 +335,38 @@ describe('readSeaTexts redesign copy', () => {
     expect(t.tabs.about).toBe('')
     expect(t.chart.summary).toBe('')
     expect(t.creditSource).toBe('')
+  })
+})
+
+describe('levelText', () => {
+  it('names the level, with the given text for within', () => {
+    expect(levelText(seaT, 2)).toBe(seaT.overGood)
+    expect(levelText(seaT, 1)).toBe(seaT.overExcellent)
+    expect(levelText(seaT, 0)).toBe('')
+    expect(levelText(seaT, 0, 'within')).toBe('within')
+  })
+})
+
+describe('httpURL', () => {
+  it('passes http and https only', () => {
+    expect(httpURL('https://example.org/p.pdf')).toBe('https://example.org/p.pdf')
+    expect(httpURL('http://example.org/')).toBe('http://example.org/')
+    expect(httpURL('javascript:alert(1)')).toBe('')
+    expect(httpURL(undefined)).toBe('')
+    expect(httpURL('nope')).toBe('')
+  })
+})
+
+describe('offSeasonText', () => {
+  const rzi = [sample({ date: '2025-07-02', season: 2025, source: 'rzi_varna' })]
+  const closed = { site: { rzi: { season_open: false } }, latest: null }
+  it('names the year of the newest RZI sample while the season is closed', () => {
+    expect(offSeasonText(seaT, closed, rzi)).toBe(seaT.latest.offSeason.replace('{year}', '2025'))
+  })
+  it('is empty while open, with a latest result, with no RZI sample, or with no template', () => {
+    expect(offSeasonText(seaT, { site: { rzi: { season_open: true } }, latest: null }, rzi)).toBe('')
+    expect(offSeasonText(seaT, { ...closed, latest: {} }, rzi)).toBe('')
+    expect(offSeasonText(seaT, closed, [])).toBe('')
+    expect(offSeasonText({ ...seaT, latest: { ...seaT.latest, offSeason: '' } }, closed, rzi)).toBe('')
   })
 })

@@ -114,6 +114,11 @@ test('390: the card is a bottom sheet in Bulgarian', async ({ browser }, testInf
   expect(Math.abs(box.y + box.height - (frame.y + frame.height))).toBeLessThanOrEqual(1)
   // Eleven seasons wrap, they do not scroll sideways.
   expect(await sheet.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  // The card fits the sheet without vertical scrolling, and the Details button is on screen.
+  const fit = await sheet.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }))
+  expect(fit.scroll, JSON.stringify(fit)).toBeLessThanOrEqual(fit.client)
+  const dbtn = await sheet.locator('.sea-panel__details').boundingBox()
+  expect(dbtn.y + dbtn.height).toBeLessThanOrEqual(844)
   const cell = sheet.locator('.sea-cell').first()
   expect((await cell.boundingBox()).width).toBeGreaterThanOrEqual(24)
   expect(await cell.getAttribute('tabindex')).toBe('0')

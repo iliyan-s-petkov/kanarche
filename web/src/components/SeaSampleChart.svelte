@@ -3,7 +3,7 @@
   // The geometry is lib/seachart.js. A chart is a picture, so it carries its text summary and
   // a table of the same readings behind a toggle.
   import { chartLayout, chartSummary } from '../lib/seachart.js'
-  import { seaLevel, LEVEL_MARKS, formatDay, fillSlots, sampleSources } from '../lib/sea.js'
+  import { seaLevel, LEVEL_MARKS, formatDay, fillSlots, sampleSources, levelText } from '../lib/sea.js'
 
   let { points, limits, metricName, season, t, lang } = $props()
 
@@ -13,7 +13,6 @@
   const layout = $derived(empty ? null : chartLayout(points, limits, (iso) => formatDay(iso, lang)))
   const summary = $derived(empty ? '' : chartSummary({ points, limits, template: t.chart.summary, metric: metricName, season }))
   const caption = $derived(fillSlots(t.chart.caption, { metric: metricName, season }))
-  const levelText = (level) => (level === 2 ? t.overGood : level === 1 ? t.overExcellent : '')
   const bands = $derived([t.chart.bandWithin, t.chart.bandBetween, t.chart.bandAbove])
   const credits = $derived(sampleSources(points, t))
 </script>
@@ -33,7 +32,7 @@
               <th scope="row">{formatDay(p.date, lang)}</th>
               <td>
                 {p.below ? '<' : ''}{p.value}
-                {#if level}<span aria-hidden="true" class="sea-chart__mark"> {LEVEL_MARKS[level]}</span><span class="sr-only">, {levelText(level)}</span>{/if}
+                {#if level}<span aria-hidden="true" class="sea-chart__mark"> {LEVEL_MARKS[level]}</span><span class="sr-only">, {levelText(t, level)}</span>{/if}
                 {#if p.below}<span class="sr-only">, {t.belowDetection}</span>{/if}
                 {#if p.preSeason}<span class="sea-chart__pre"> {t.preSeason}</span>{/if}
               </td>
@@ -58,7 +57,7 @@
           <circle class={d.below ? 'sea-chart__dot sea-chart__dot--below' : 'sea-chart__dot'} cx={d.cx} cy={d.cy} r="4" />
         {/each}
         {#each layout.xLabels as x, i (i)}
-          <text class="sea-chart__tick" x={x.x} y={layout.plot.y + layout.plot.h + 16} text-anchor="middle">{x.label}</text>
+          <text class="sea-chart__tick" x={x.x} y={layout.plot.y + layout.plot.h + 16} text-anchor={x.anchor}>{x.label}</text>
         {/each}
       </svg>
       <p class="sea-chart__unit">{t.unit}</p>

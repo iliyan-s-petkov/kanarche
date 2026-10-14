@@ -38,7 +38,7 @@ describe('SeaPanel RZI samples', () => {
     const root = render(withRZI())
     expect(chipDates(root)).toEqual(['Aug 12, 2026'])
     expect(root.querySelector('.sea-chip__mark').textContent).toBe('▲▲')
-    expect(root.querySelector('.sea-panel__sources span').textContent).toBe('RHI Varna')
+    expect(root.querySelector('.sea-panel__sources span').textContent).toBe('EEA, RHI Varna')
   })
 
   it('shows no RZI chip when the credit template is missing', () => {
@@ -117,7 +117,7 @@ describe('SeaPanel RZI samples', () => {
     const hostile = '<img src=x onerror=alert(1)>'
     const root = render(withRZI(), textsWith({ tSeaSourceRziVarna: hostile }))
     expect(root.querySelector('img')).toBeNull()
-    expect(root.querySelector('.sea-panel__sources span').textContent).toBe(hostile)
+    expect(root.querySelector('.sea-panel__sources span').textContent).toBe(`EEA, ${hostile}`)
     expect(render(withRZI()).innerHTML).not.toContain('onerror')
   })
 })

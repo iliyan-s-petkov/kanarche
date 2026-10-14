@@ -39,7 +39,12 @@ export function chartLayout(points, [excellent, good], dateLabel) {
     limitLines: [{ y: yExcellent, value: excellent }, { y: yGood, value: good }],
     ticks: Array.from({ length: decades + 1 }, (_, i) => ({ y: y(10 ** i), label: String(10 ** i) })),
     dots: points.map((p, i) => ({ cx: x(times[i]), cy: y(p.value), below: p.below, label: dateLabel(p.date) })),
-    xLabels: labels.map((i) => (i === 0 ? byTime[0] : byTime[byTime.length - 1])).map((i) => ({ x: x(times[i]), label: dateLabel(points[i].date) })),
+    // End labels hug the plot edges and grow inward, so the newest date is never cut off at the svg edge.
+    xLabels: labels.map((i, n) => {
+      const p = points[i === 0 ? byTime[0] : byTime[byTime.length - 1]]
+      if (labels.length === 1) return { x: x(times[points.indexOf(p)]), anchor: 'middle', label: dateLabel(p.date) }
+      return n === 0 ? { x: plot.x, anchor: 'start', label: dateLabel(p.date) } : { x: plot.x + plot.w, anchor: 'end', label: dateLabel(p.date) }
+    }),
   }
 }
 

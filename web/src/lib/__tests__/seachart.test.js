@@ -40,6 +40,14 @@ describe('chartLayout', () => {
     expect(l.xLabels.map((x) => x.label)).toEqual(['2024-05-20', '2024-07-02'])
     expect(chartLayout([pt('2024-05-20', 5)], LIMITS, label).xLabels).toHaveLength(1)
   })
+  it('anchors the first label at the plot start and the last at the plot end, so neither clips', () => {
+    expect(l.xLabels.map((x) => x.anchor)).toEqual(['start', 'end'])
+    expect(l.xLabels[0].x).toBe(l.plot.x)
+    expect(l.xLabels[1].x).toBe(l.plot.x + l.plot.w)
+    expect(l.xLabels[1].x).toBeLessThanOrEqual(l.width)
+    const one = chartLayout([pt('2024-05-20', 5)], LIMITS, label)
+    expect(one.xLabels[0].anchor).toBe('middle')
+  })
   it('centres a single point', () => {
     const one = chartLayout([pt('2024-05-20', 5)], LIMITS, label)
     expect(one.dots[0].cx).toBeCloseTo(one.plot.x + one.plot.w / 2, 5)

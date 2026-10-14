@@ -203,15 +203,18 @@ describe('Samples tab', () => {
     expect(dialog.querySelector('svg.sea-chart__svg')).not.toBeNull()
   })
 
-  it('credits each source once under the chart', () => {
+  it('credits each source once under the chart, with no second list', () => {
     const { dialog } = render(twoSeasons)
-    expect(credits(dialog, 'samples')).toEqual(['Data: EEA, CC BY 4.0'])
+    expect(dialog.querySelector('#sea-panel-samples .sea-chart__credit').textContent).toBe('Data: EEA, CC BY 4.0')
+    expect(panel(dialog, 'samples').textContent.split('Data: EEA, CC BY 4.0')).toHaveLength(2)
   })
 
   it('credits an RZI source by its region next to the EEA', () => {
     const body = { ...twoSeasons, samples: [sample({ date: '2025-07-02', season: 2025, source: 'rzi_varna' }), sample({ date: '2025-06-02', season: 2025, source: 'eea' })] }
     const { dialog } = render(body)
-    expect(credits(dialog, 'samples')).toEqual(['Source: RHI Varna', 'Data: EEA, CC BY 4.0'])
+    const lines = [...panel(dialog, 'samples').querySelectorAll('.sea-chart__credit')].map((p) => p.textContent)
+    expect(lines).toEqual(['Data: EEA, CC BY 4.0', 'Source: RHI Varna'])
+    expect(panel(dialog, 'samples').textContent.split('Source: RHI Varna')).toHaveLength(2)
   })
 
   it('keeps the pending note for a datahub class with no samples yet', () => {
@@ -341,7 +344,19 @@ describe('About tab', () => {
       ],
     }
     const { dialog } = render(body)
-    expect(credits(dialog, 'about')).toEqual(['Source: RHI Varna', 'Data: EEA, CC BY 4.0', 'Source: RHI Burgas'])
+    expect(credits(dialog, 'about')).toEqual(['Source: RHI Varna', 'Source: RHI Burgas'])
+  })
+
+  it('shows the EEA credit sentence once in About, as the link', () => {
+    const { dialog } = render(twoSeasons)
+    const about = panel(dialog, 'about')
+    expect(about.textContent.split('Data: EEA, CC BY 4.0')).toHaveLength(2)
+    expect(about.querySelector('.sea-details__links a').textContent).toContain('Data: EEA, CC BY 4.0')
+  })
+
+  it('keeps the EEA credit as plain text when there is no credit link', () => {
+    const { dialog } = render(twoSeasons, { creditURL: '' })
+    expect(credits(dialog, 'about')).toEqual(['Data: EEA, CC BY 4.0'])
   })
 
   const PAGE = 'https://rzi-varna.com/rezultati/'
