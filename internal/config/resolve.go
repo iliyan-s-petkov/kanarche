@@ -77,7 +77,7 @@ type Timeouts struct {
 }
 
 type Database struct {
-	// URL is env-only (AIRBG_DATABASE_URL). It is a credential, and the config
+	// URL is env-only (KANARCHE_DATABASE_URL). It is a credential, and the config
 	// file is committed.
 	URL               string
 	APIConns          int32
@@ -225,7 +225,7 @@ type EEA struct {
 // Cloudflare configures the visitor_daily job. See
 // internal/upstream/cloudflare/README.md. ZoneID is not secret (the zone is
 // public knowledge once the domain resolves), so it lives here; the API
-// token is env-only (AIRBG_CF_ANALYTICS_TOKEN) and is not a field of this
+// token is env-only (KANARCHE_CF_ANALYTICS_TOKEN) and is not a field of this
 // struct at all.
 type Cloudflare struct {
 	Enabled        bool

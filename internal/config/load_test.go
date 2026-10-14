@@ -101,11 +101,11 @@ func TestRejectSecretsAllowsCommittedFile(t *testing.T) {
 
 func TestEnvName(t *testing.T) {
 	tests := []struct{ path, want string }{
-		{"listen.addr", "AIRBG_LISTEN_ADDR"},
-		{"listen.metrics_addr", "AIRBG_LISTEN_METRICS_ADDR"},
-		{"upstream.poll_interval", "AIRBG_UPSTREAM_POLL_INTERVAL"},
-		{"quality.ranges.pressure.min", "AIRBG_QUALITY_RANGES_PRESSURE_MIN"},
-		{"quality.ranges.noise_LAeq.max", "AIRBG_QUALITY_RANGES_NOISE_LAEQ_MAX"},
+		{"listen.addr", "KANARCHE_LISTEN_ADDR"},
+		{"listen.metrics_addr", "KANARCHE_LISTEN_METRICS_ADDR"},
+		{"upstream.poll_interval", "KANARCHE_UPSTREAM_POLL_INTERVAL"},
+		{"quality.ranges.pressure.min", "KANARCHE_QUALITY_RANGES_PRESSURE_MIN"},
+		{"quality.ranges.noise_LAeq.max", "KANARCHE_QUALITY_RANGES_NOISE_LAEQ_MAX"},
 	}
 	for _, tt := range tests {
 		if got := envName(tt.path); got != tt.want {
@@ -153,8 +153,8 @@ func TestReadRawRejectsSecretsViaSecretPaths(t *testing.T) {
 	if !strings.Contains(err.Error(), "database.url") {
 		t.Errorf("error %q does not name database.url", err)
 	}
-	if !strings.Contains(err.Error(), "AIRBG_DATABASE_URL") {
-		t.Errorf("error %q does not mention AIRBG_DATABASE_URL", err)
+	if !strings.Contains(err.Error(), "KANARCHE_DATABASE_URL") {
+		t.Errorf("error %q does not mention KANARCHE_DATABASE_URL", err)
 	}
 }
 
@@ -162,13 +162,13 @@ func TestReadRawRejectsSecretsViaSecretPaths(t *testing.T) {
 func TestApplyEnvOverridesEveryScalarKind(t *testing.T) {
 	path := filepath.Join("..", "..", "airbg.yaml")
 
-	t.Setenv("AIRBG_LISTEN_ADDR", "0.0.0.0:9999")
-	t.Setenv("AIRBG_LISTEN_MAX_CONNS", "512")
-	t.Setenv("AIRBG_UPSTREAM_POLL_INTERVAL", "11m")
-	t.Setenv("AIRBG_QUALITY_MAD_SCALE", "2.5")
-	t.Setenv("AIRBG_STORE_COVERAGE_THRESHOLD", "7")
-	t.Setenv("AIRBG_UPSTREAM_MAX_PAYLOAD_BYTES", "1024")
-	t.Setenv("AIRBG_LISTEN_TRUSTED_PROXY_CIDRS", "10.0.0.0/8,192.168.0.0/16")
+	t.Setenv("KANARCHE_LISTEN_ADDR", "0.0.0.0:9999")
+	t.Setenv("KANARCHE_LISTEN_MAX_CONNS", "512")
+	t.Setenv("KANARCHE_UPSTREAM_POLL_INTERVAL", "11m")
+	t.Setenv("KANARCHE_QUALITY_MAD_SCALE", "2.5")
+	t.Setenv("KANARCHE_STORE_COVERAGE_THRESHOLD", "7")
+	t.Setenv("KANARCHE_UPSTREAM_MAX_PAYLOAD_BYTES", "1024")
+	t.Setenv("KANARCHE_LISTEN_TRUSTED_PROXY_CIDRS", "10.0.0.0/8,192.168.0.0/16")
 
 	r, err := readRaw(path)
 	if err != nil {
@@ -202,7 +202,7 @@ func TestApplyEnvOverridesEveryScalarKind(t *testing.T) {
 
 // A nested leaf three levels down must follow the same rule.
 func TestApplyEnvOverridesNestedLeaf(t *testing.T) {
-	t.Setenv("AIRBG_QUALITY_RANGES_PRESSURE_MIN", "700")
+	t.Setenv("KANARCHE_QUALITY_RANGES_PRESSURE_MIN", "700")
 	r, err := readRaw(filepath.Join("..", "..", "airbg.yaml"))
 	if err != nil {
 		t.Fatalf("readRaw error = %v, want nil", err)
@@ -215,12 +215,12 @@ func TestApplyEnvOverridesNestedLeaf(t *testing.T) {
 // An unparseable override must be a startup error naming the variable, never a
 // silently-ignored value that leaves the file's setting in place.
 func TestApplyEnvRejectsGarbage(t *testing.T) {
-	t.Setenv("AIRBG_LISTEN_MAX_CONNS", "many")
+	t.Setenv("KANARCHE_LISTEN_MAX_CONNS", "many")
 	_, err := readRaw(filepath.Join("..", "..", "airbg.yaml"))
 	if err == nil {
-		t.Fatal("readRaw error = nil, want an error for AIRBG_LISTEN_MAX_CONNS=many")
+		t.Fatal("readRaw error = nil, want an error for KANARCHE_LISTEN_MAX_CONNS=many")
 	}
-	if !strings.Contains(err.Error(), "AIRBG_LISTEN_MAX_CONNS") {
+	if !strings.Contains(err.Error(), "KANARCHE_LISTEN_MAX_CONNS") {
 		t.Errorf("error %q does not name the offending variable", err)
 	}
 }
@@ -230,7 +230,7 @@ func TestApplyEnvRejectsGarbage(t *testing.T) {
 func TestApplyEnvSuppliesAbsentKey(t *testing.T) {
 	body := "listen:\n  metrics_addr: \"127.0.0.1:9090\"\n"
 	path := writeTemp(t, body)
-	t.Setenv("AIRBG_LISTEN_ADDR", "127.0.0.1:8080")
+	t.Setenv("KANARCHE_LISTEN_ADDR", "127.0.0.1:8080")
 	_, err := readRaw(path)
 	if err == nil {
 		t.Fatal("readRaw error = nil, want a missing-key error for the other keys")
@@ -240,7 +240,7 @@ func TestApplyEnvSuppliesAbsentKey(t *testing.T) {
 	}
 }
 
-// AIRBG_DATABASE_URL_FILE exists for ofelia's one-shot `collect` job, which is
+// KANARCHE_DATABASE_URL_FILE exists for ofelia's one-shot `collect` job, which is
 // started fresh through the Docker API and inherits no compose env_file. It
 // must actually deliver the credential, not just be accepted.
 func TestDatabaseURLFileIsRead(t *testing.T) {
@@ -258,8 +258,8 @@ func TestDatabaseURLFileIsRead(t *testing.T) {
 	}
 }
 
-// AIRBG_DATABASE_URL is the credential itself, not a path, so it must win over
-// AIRBG_DATABASE_URL_FILE when both happen to be set — the direct value is
+// KANARCHE_DATABASE_URL is the credential itself, not a path, so it must win over
+// KANARCHE_DATABASE_URL_FILE when both happen to be set — the direct value is
 // never shadowed by a stale or wrong file path.
 func TestDatabaseURLEnvTakesPrecedenceOverFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "pgpass")
@@ -294,11 +294,11 @@ func TestDatabaseURLFileMissingIsAnError(t *testing.T) {
 
 // An empty credential file must say so. Before this, an operator who created
 // /srv/airbg/airbg_database_url but never wrote the DSN into it got
-// "AIRBG_DATABASE_URL is not set in the environment; it is required" from
+// "KANARCHE_DATABASE_URL is not set in the environment; it is required" from
 // Validate — describing a variable they had never touched, not the empty file
-// they had just made. The message must name AIRBG_DATABASE_URL_FILE, name the
+// they had just made. The message must name KANARCHE_DATABASE_URL_FILE, name the
 // path, and say the file is empty; and it must not send the reader after
-// AIRBG_DATABASE_URL, which was not the problem.
+// KANARCHE_DATABASE_URL, which was not the problem.
 func TestDatabaseURLFileEmptyIsAnErrorNamingTheFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "airbg_database_url")
 	// Whitespace only: TrimSpace makes this indistinguishable from truly empty,
@@ -323,8 +323,8 @@ func TestDatabaseURLFileEmptyIsAnErrorNamingTheFile(t *testing.T) {
 	if !strings.Contains(msg, "empty") {
 		t.Errorf("error %q does not say the file is empty; that is the one fact the operator needs", msg)
 	}
-	// The old message blamed AIRBG_DATABASE_URL for being unset. Mentioning it
-	// alone is not wrong (AIRBG_DATABASE_URL_FILE contains it as a prefix), so
+	// The old message blamed KANARCHE_DATABASE_URL for being unset. Mentioning it
+	// alone is not wrong (KANARCHE_DATABASE_URL_FILE contains it as a prefix), so
 	// this checks for the misleading claim itself.
 	if strings.Contains(msg, "is not set") {
 		t.Errorf("error %q still claims something is not set; %s was set, and it named a file that exists", msg, DatabaseURLFileEnv)
@@ -332,7 +332,7 @@ func TestDatabaseURLFileEmptyIsAnErrorNamingTheFile(t *testing.T) {
 }
 
 // LoadFile must actually wire databaseURLFromEnv in, not just have it
-// available unused — this proves AIRBG_DATABASE_URL_FILE reaches Config
+// available unused — this proves KANARCHE_DATABASE_URL_FILE reaches Config
 // through the real entry point ofelia's collect job invokes.
 func TestLoadFileAcceptsDatabaseURLFile(t *testing.T) {
 	clearAmbientEnv(t)

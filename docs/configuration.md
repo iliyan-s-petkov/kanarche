@@ -11,14 +11,11 @@ values Phase 3b pinned against pre-sweep behaviour, in
 
 Configuration is resolved in exactly two layers, in this order:
 
-1. **The file** named by `AIRBG_CONFIG` (see below) — a YAML document
+1. **The file** named by `KANARCHE_CONFIG` (see below) — a YAML document
    matching the schema in `internal/config/schema.go`.
-2. **The environment** — `AIRBG_*` variables that override individual keys
+2. **The environment** — `KANARCHE_*` variables that override individual keys
    from the file (see §3), plus the two secrets that are environment-only
    (§4).
-
-Every `AIRBG_*` name is also read as `KANARCHE_*`, which wins when both are set.
-The `AIRBG_*` prefix is deprecated but still read, and logs a warning per key.
 
 There is no third layer and no compiled-in fallback. A key that is present in
 neither the file nor the environment is a **startup error**, not a zero
@@ -29,14 +26,14 @@ fixing configuration is not a one-restart-per-key exercise.
 
 ## 2. Where the file comes from
 
-`AIRBG_CONFIG` must name the path to the config file. There is **no fallback
+`KANARCHE_CONFIG` must name the path to the config file. There is **no fallback
 path** — the loader does not guess `./airbg.yaml` or `/etc/airbg/airbg.yaml`
 on its own. Guessing a path is a default in disguise, and this project keeps
-none. If `AIRBG_CONFIG` is unset, every subcommand that loads configuration
+none. If `KANARCHE_CONFIG` is unset, every subcommand that loads configuration
 (`serve`, `collect`, `validate-config`, etc.) fails immediately with:
 
 ```
-config: AIRBG_CONFIG is not set; it must name the airbg.yaml to load
+config: KANARCHE_CONFIG is not set; it must name the airbg.yaml to load
 ```
 
 ## 3. The override rule
@@ -44,15 +41,15 @@ config: AIRBG_CONFIG is not set; it must name the airbg.yaml to load
 Any key in the file can be overridden by an environment variable. The rule is
 mechanical, with no lookup table and no exceptions among overridable keys:
 
-**`AIRBG_` + the full dotted key path, uppercased, with `.` replaced by `_`.**
+**`KANARCHE_` + the full dotted key path, uppercased, with `.` replaced by `_`.**
 
 Four worked examples:
 
 ```
-listen.addr                      → AIRBG_LISTEN_ADDR
-listen.metrics_addr              → AIRBG_LISTEN_METRICS_ADDR
-upstream.poll_interval           → AIRBG_UPSTREAM_POLL_INTERVAL
-quality.ranges.pressure.min      → AIRBG_QUALITY_RANGES_PRESSURE_MIN
+listen.addr                      → KANARCHE_LISTEN_ADDR
+listen.metrics_addr              → KANARCHE_LISTEN_METRICS_ADDR
+upstream.poll_interval           → KANARCHE_UPSTREAM_POLL_INTERVAL
+quality.ranges.pressure.min      → KANARCHE_QUALITY_RANGES_PRESSURE_MIN
 ```
 
 The rule is true by construction, not by a hand-maintained table that can
@@ -66,7 +63,7 @@ One value is **never** read from the file, because it is a credential and
 
 | Variable | Holds |
 | --- | --- |
-| `AIRBG_DATABASE_URL` | The PostgreSQL connection string |
+| `KANARCHE_DATABASE_URL` | The PostgreSQL connection string |
 
 Writing it into `airbg.yaml` is a **hard rejection at load time**, not a
 silently-ignored value. So is any recognisable secret-shaped key name, at any
@@ -87,7 +84,7 @@ basemap"](#the-basemap) below.
 
 ## 5. What cannot be overridden from the environment
 
-`series.periods` cannot be set or adjusted via `AIRBG_*`. There is no sane
+`series.periods` cannot be set or adjusted via `KANARCHE_*`. There is no sane
 environment-variable name for "the third list entry's `window` field" — a list
 of structured records belongs in the file, not flattened into a variable name.
 To change a period's window, cache lifetime, or add/remove a period entirely,
@@ -95,27 +92,14 @@ edit `airbg.yaml` directly.
 
 ## 6. The renamed variables
 
-Phase 3b's cutover to `airbg.yaml` renamed most existing `AIRBG_*` variables to
-match the mechanical rule in §3. This is a **breaking change**: the old names
-are no longer read by the loader at all, silently or otherwise.
+Phase 3b's cutover to `airbg.yaml` renamed most variables to match the
+mechanical rule in §3, and the prefix is now `KANARCHE_`. Names from before the
+cutover and the `AIRBG_` spelling are not read at all, silently or otherwise.
 
-| old | new |
-| --- | --- |
-| `AIRBG_LISTEN_ADDR` | `AIRBG_LISTEN_ADDR` (unchanged) |
-| `AIRBG_METRICS_ADDR` | `AIRBG_LISTEN_METRICS_ADDR` |
-| `AIRBG_BASE_URL` | `AIRBG_LISTEN_BASE_URL` |
-| `AIRBG_POLL_INTERVAL` | `AIRBG_UPSTREAM_POLL_INTERVAL` |
-| `AIRBG_UPSTREAM_URL` | `AIRBG_UPSTREAM_URL` (unchanged) |
-| `AIRBG_DB_API_CONNS` | `AIRBG_DATABASE_API_CONNS` |
-| `AIRBG_DB_COLLECTOR_CONNS` | `AIRBG_DATABASE_COLLECTOR_CONNS` |
-| `AIRBG_MAX_CONNS` | `AIRBG_LISTEN_MAX_CONNS` |
-| `AIRBG_MAX_DB_INFLIGHT` | `AIRBG_DATABASE_MAX_INFLIGHT` |
-| `AIRBG_TRUSTED_PROXY_CIDRS` | `AIRBG_LISTEN_TRUSTED_PROXY_CIDRS` |
-
-`AIRBG_DATABASE_URL` (§4) and `AIRBG_CONFIG` (§2) are new names with no
-predecessor. `AIRBG_LIVE_TEST` is a test-only switch, not configuration, and is
-unaffected by any of this. `AIRBG_BASEMAP_STYLE_URL` and `AIRBG_BASEMAP_KEY`
-were later **deleted**, not renamed — see ["The basemap"](#the-basemap) below.
+`KANARCHE_DATABASE_URL` (§4) and `KANARCHE_CONFIG` (§2) are new names with no
+predecessor. `KANARCHE_LIVE_TEST` is a test-only switch, not configuration.
+`KANARCHE_BASEMAP_STYLE_URL` and `KANARCHE_BASEMAP_KEY` were later **deleted**,
+not renamed, see ["The basemap"](#the-basemap) below.
 
 ## 7. `airbg validate-config`
 
@@ -136,7 +120,7 @@ not deploy."
   missing, or a semantic check failed (see §9). The problem is printed to
   stderr.
 
-It **never prints a secret**. `AIRBG_DATABASE_URL` is reported only as `(set)`
+It **never prints a secret**. `KANARCHE_DATABASE_URL` is reported only as `(set)`
 or `(not set)` — never its value — so the command is safe to run in a CI log.
 This also holds for the failure path: a malformed `tiles.public_url` is
 reported by reason only (e.g. "invalid port"), never by echoing the URL

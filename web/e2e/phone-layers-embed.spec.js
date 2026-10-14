@@ -17,7 +17,7 @@ for (const lang of ['bg', 'en']) {
       const panel = page.locator('.map__layers .colmenu__panel')
       await expect(panel).toBeVisible()
 
-      if (process.env.AIRBG_SHOT_DIR) await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/phone-${lang}-${theme}-layers.png` })
+      if (process.env.KANARCHE_SHOT_DIR) await page.screenshot({ path: `${process.env.KANARCHE_SHOT_DIR}/phone-${lang}-${theme}-layers.png` })
       const pb = await panel.boundingBox()
       expect(pb.x, 'panel left edge').toBeGreaterThanOrEqual(0)
       expect(pb.x + pb.width, 'panel right edge').toBeLessThanOrEqual(390)
@@ -57,7 +57,7 @@ for (const vp of [{ width: 390, height: 844, shot: 'phone-embed.png' }, { width:
     await expect(legend).toBeVisible()
     await expect(foot).toBeVisible()
     await page.waitForTimeout(500)
-    if (process.env.AIRBG_SHOT_DIR) await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/${vp.shot}` })
+    if (process.env.KANARCHE_SHOT_DIR) await page.screenshot({ path: `${process.env.KANARCHE_SHOT_DIR}/${vp.shot}` })
     const l = await legend.boundingBox()
     const f = await foot.boundingBox()
     expect(overlap(l, f), `legend ${JSON.stringify(l)} vs footline ${JSON.stringify(f)}`).toBe(false)

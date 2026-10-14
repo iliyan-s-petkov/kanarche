@@ -16,7 +16,7 @@ import (
 // The files are never committed (decision D3).
 func corpusText(t *testing.T, name string) string {
 	t.Helper()
-	dir := os.Getenv("AIRBG_RZI_CORPUS")
+	dir := os.Getenv("KANARCHE_RZI_CORPUS")
 	if dir == "" {
 		dir = "/tmp/airbg-verify/rzi"
 	}

@@ -31,7 +31,7 @@ short of the ~52-week query-range cap the API itself enforces.
 
 ## The token
 
-`AIRBG_CF_ANALYTICS_TOKEN` is env-only, exactly like `AIRBG_DATABASE_URL`:
+`KANARCHE_CF_ANALYTICS_TOKEN` is env-only, exactly like `KANARCHE_DATABASE_URL`:
 writing it to `airbg.yaml` is a startup error (the generic `token` key check
 in `internal/config/load.go` catches it — there is no field for it in the
 config schema at all to begin with). If it is unset, `Collector.Loop` logs

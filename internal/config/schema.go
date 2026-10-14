@@ -7,7 +7,7 @@ package config
 // coverage_threshold: 0 paints a single sensor as a whole oblast.
 //
 // The yaml tags are load-bearing twice over: they name the file's keys, and the
-// environment overlay derives AIRBG_* names from the tag path (see envName).
+// environment overlay derives KANARCHE_* names from the tag path (see envName).
 type raw struct {
 	Listen     *rawListen     `yaml:"listen"`
 	Timeouts   *rawTimeouts   `yaml:"timeouts"`
@@ -186,7 +186,7 @@ type rawEEA struct {
 }
 
 // rawCloudflare configures the daily-uniques job. The API token is
-// deliberately absent here — it is env-only (AIRBG_CF_ANALYTICS_TOKEN), like
+// deliberately absent here — it is env-only (KANARCHE_CF_ANALYTICS_TOKEN), like
 // database.url — and the generic secret-key check rejects a "token" key
 // anywhere in this file, so there is nothing to add to make that an error.
 type rawCloudflare struct {

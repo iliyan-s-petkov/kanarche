@@ -191,12 +191,12 @@ func TestParseMissingColumnIsError(t *testing.T) {
 	}
 }
 
-// TestParseRealFile runs against a downloaded workbook when AIRBG_REAL_XLSX
+// TestParseRealFile runs against a downloaded workbook when KANARCHE_REAL_XLSX
 // names one. It is skipped otherwise so the suite never needs the file.
 func TestParseRealFile(t *testing.T) {
-	path := os.Getenv("AIRBG_REAL_XLSX")
+	path := os.Getenv("KANARCHE_REAL_XLSX")
 	if path == "" {
-		t.Skip("AIRBG_REAL_XLSX not set")
+		t.Skip("KANARCHE_REAL_XLSX not set")
 	}
 	f, err := os.Open(path)
 	if err != nil {

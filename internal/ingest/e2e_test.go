@@ -189,10 +189,10 @@ func TestEndToEndFromRecordedPayload(t *testing.T) {
 // sensors routinely, and that is a data-quality problem, not a contract
 // break. A test that fails on data quality forever is noise that trains
 // people to ignore it right when it has something real (an actual schema
-// change) to say. Run with: AIRBG_LIVE_TEST=1 go test ./internal/ingest/
+// change) to say. Run with: KANARCHE_LIVE_TEST=1 go test ./internal/ingest/
 func TestUpstreamContractLive(t *testing.T) {
-	if os.Getenv("AIRBG_LIVE_TEST") == "" {
-		t.Skip("set AIRBG_LIVE_TEST=1 to run against the live upstream API")
+	if os.Getenv("KANARCHE_LIVE_TEST") == "" {
+		t.Skip("set KANARCHE_LIVE_TEST=1 to run against the live upstream API")
 	}
 
 	client := upstream.New(testUpstreamConfig(

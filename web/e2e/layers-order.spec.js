@@ -30,6 +30,6 @@ test('the layers menu lists Inactive stations directly above Faulty stations', a
     .locator('span:not(.colmenu__mark)').boundingBox()).x
   expect(await textX('Inactive stations')).toBe(await textX('Faulty stations'))
 
-  if (process.env.AIRBG_SHOT_DIR) await page.screenshot({ path: `${process.env.AIRBG_SHOT_DIR}/inactive-menu.png` })
+  if (process.env.KANARCHE_SHOT_DIR) await page.screenshot({ path: `${process.env.KANARCHE_SHOT_DIR}/inactive-menu.png` })
   await context.close()
 })

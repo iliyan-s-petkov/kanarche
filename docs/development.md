@@ -23,14 +23,14 @@ development-only fallback, so `docker compose up` works with no setup. Copy
 
 ```bash
 docker compose up -d db
-export AIRBG_DATABASE_URL='postgres://airbg:airbg@localhost:5432/airbg?sslmode=disable'
-export AIRBG_CONFIG="$PWD/airbg.yaml"
+export KANARCHE_DATABASE_URL='postgres://airbg:airbg@localhost:5432/airbg?sslmode=disable'
+export KANARCHE_CONFIG="$PWD/airbg.yaml"
 go run ./cmd/airbg migrate
 go run ./cmd/airbg import-areas data/boundaries/bulgaria.geojson country
 go run ./cmd/airbg collect
 ```
 
-`AIRBG_CONFIG` must name the path to `airbg.yaml`; there is no fallback path.
+`KANARCHE_CONFIG` must name the path to `airbg.yaml`; there is no fallback path.
 See [configuration.md](configuration.md) for the full configuration reference.
 
 The `import-areas ... country` step is not optional. Until a `country`
@@ -94,11 +94,11 @@ Postgres container as the `integration` tier) and Playwright's browsers
 To check the live upstream contract:
 
 ```bash
-AIRBG_LIVE_TEST=1 go test ./internal/ingest/ -run TestUpstreamContractLive
+KANARCHE_LIVE_TEST=1 go test ./internal/ingest/ -run TestUpstreamContractLive
 ```
 
 This test makes a real network call to data.sensor.community and is skipped
-unless `AIRBG_LIVE_TEST=1` is set.
+unless `KANARCHE_LIVE_TEST=1` is set.
 
 **The container test suite can flake under load.** A single transient failure
 in `internal/store` has been observed during a full `-race` run, self-resolving

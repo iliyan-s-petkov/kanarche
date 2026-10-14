@@ -5,14 +5,14 @@
 # missing key is an error, never a zero value — for most of these, zero is the
 # dangerous setting.
 #
-# Any key can be overridden by an environment variable named AIRBG_ + the key
+# Any key can be overridden by an environment variable named KANARCHE_ + the key
 # path, uppercased, with dots as underscores:
-#   listen.metrics_addr         -> AIRBG_LISTEN_METRICS_ADDR
-#   quality.ranges.pressure.min -> AIRBG_QUALITY_RANGES_PRESSURE_MIN
+#   listen.metrics_addr         -> KANARCHE_LISTEN_METRICS_ADDR
+#   quality.ranges.pressure.min -> KANARCHE_QUALITY_RANGES_PRESSURE_MIN
 #
 # One setting is deliberately absent and env-only, because it is a secret and
 # this file is committed:
-#   AIRBG_DATABASE_URL  - the PostgreSQL connection string
+#   KANARCHE_DATABASE_URL  - the PostgreSQL connection string
 # Writing it into this file is a startup error, not an ignore. The basemap is
 # self-hosted (see tiles: below) and has no vendor to authenticate to.
 
@@ -269,7 +269,7 @@ eea:
   max_payload_bytes: 67108864
 
 # Address search proxy (internal/geocode). Queries are personal data: never
-# logged. AIRBG_GEOCODER_URL overrides url. See docs/configuration.md.
+# logged. KANARCHE_GEOCODER_URL overrides url. See docs/configuration.md.
 geocoder:
   url: "https://nominatim.openstreetmap.org"
   request_timeout: "5s"
@@ -280,7 +280,7 @@ geocoder:
 
 # Daily unique visitors, pulled from Cloudflare's GraphQL analytics API. See
 # internal/upstream/cloudflare/README.md. The API token is env-only
-# (AIRBG_CF_ANALYTICS_TOKEN, OpenProject #591) — writing it here is a startup
+# (KANARCHE_CF_ANALYTICS_TOKEN, OpenProject #591) — writing it here is a startup
 # error, same as database.url. zone_id is not secret: it is derivable from the
 # domain once it resolves through Cloudflare, so it is committed here.
 cloudflare:
@@ -643,7 +643,7 @@ design_kit:
   dir: "/design-kit"  # design-kit/ in the repo, copied in by the Dockerfile
 
 # Footer profile links, rendered only when set (https URLs). GitHub always shows.
-# Env: AIRBG_SOCIAL_FACEBOOK_URL, AIRBG_SOCIAL_LINKEDIN_URL.
+# Env: KANARCHE_SOCIAL_FACEBOOK_URL, KANARCHE_SOCIAL_LINKEDIN_URL.
 social:
   facebook_url: ""
   linkedin_url: ""

@@ -16,7 +16,7 @@ import (
 
 // TokenEnv is where the API token comes from. Env-only, like
 // config.DatabaseURLEnv: it is a credential and airbg.yaml is committed.
-const TokenEnv = "AIRBG_CF_ANALYTICS_TOKEN"
+const TokenEnv = "KANARCHE_CF_ANALYTICS_TOKEN"
 
 // dateFormat is the Date scalar Cloudflare's GraphQL schema expects and
 // returns: calendar days, no time-of-day.

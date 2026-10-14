@@ -22,7 +22,7 @@ type IPResolver struct {
 // directly-exposed origin.
 //
 // A malformed CIDR is a startup error, not a warning. The alternative is a
-// typo in AIRBG_TRUSTED_PROXY_CIDRS silently emptying the trusted list, at
+// typo in KANARCHE_TRUSTED_PROXY_CIDRS silently emptying the trusted list, at
 // which point every request behind Cloudflare is attributed to a Cloudflare
 // edge address — a handful of buckets shared by the entire internet, which
 // rate-limits all legitimate visitors and no attacker.

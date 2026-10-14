@@ -90,7 +90,7 @@ func (l *Limiter) clock() time.Time {
 
 func (l *Limiter) shardFor(key string) *shard {
 	// A modulo, not a power-of-two mask: shardCount now comes from
-	// config.RateLimit.ShardCount (and can be overridden by AIRBG_RATE_LIMIT_SHARD_COUNT),
+	// config.RateLimit.ShardCount (and can be overridden by KANARCHE_RATE_LIMIT_SHARD_COUNT),
 	// so it is no longer guaranteed to be a power of two the way the old
 	// hardcoded 32 was.
 	h := maphash.String(l.seed, key)
