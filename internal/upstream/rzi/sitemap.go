@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"strings"
+	"unicode"
 
 	"kanarche.eu/internal/store"
 )
@@ -11,6 +12,10 @@ import (
 // MaxSiteDistanceMetres is how far a document coordinate may sit from the
 // EEA coordinate of the mapped site.
 const MaxSiteDistanceMetres = 200
+
+// MaxNamedSiteDistanceMetres is the limit when the document point name
+// matches the EEA site name.
+const MaxNamedSiteDistanceMetres = 1000
 
 var (
 	ErrSource        = errors.New("rzi: unknown source")
@@ -54,8 +59,9 @@ func NewSiteIndex(sites []store.BathingSite) SiteIndex {
 
 // Map returns the EEA id for point. The suffix must match exactly one site,
 // that site must carry the source's region prefix, and the document
-// coordinate must be within MaxSiteDistanceMetres of it.
-func (x SiteIndex) Map(source, point string, lat, lon float64) (string, error) {
+// coordinate must be within MaxSiteDistanceMetres of it, or within
+// MaxNamedSiteDistanceMetres when name matches the site name.
+func (x SiteIndex) Map(source, point, name string, lat, lon float64) (string, error) {
 	reg, ok := regions[source]
 	if !ok {
 		return "", ErrSource
@@ -77,11 +83,47 @@ func (x SiteIndex) Map(source, point string, lat, lon float64) (string, error) {
 	if !strings.HasPrefix(s.ID, reg.eeaPrefix) {
 		return "", ErrRegion
 	}
+	limit := float64(MaxSiteDistanceMetres)
+	if nameMatches(name, s.NameBG) {
+		limit = MaxNamedSiteDistanceMetres
+	}
 	// Written as !(d <= max) so a NaN distance is refused too.
-	if !(distanceMetres(lat, lon, s.Lat, s.Lon) <= MaxSiteDistanceMetres) {
+	if !(distanceMetres(lat, lon, s.Lat, s.Lon) <= limit) {
 		return "", ErrSiteTooFar
 	}
 	return s.ID, nil
+}
+
+// nameMatches is true when doc has tokens and every one is a token of site.
+func nameMatches(doc, site string) bool {
+	d := nameTokens(doc)
+	if len(d) == 0 {
+		return false
+	}
+	have := map[string]bool{}
+	for _, t := range nameTokens(site) {
+		have[t] = true
+	}
+	for _, t := range d {
+		if !have[t] {
+			return false
+		}
+	}
+	return true
+}
+
+// nameTokens drops control and format characters, case-folds, and splits on
+// everything that is not a letter or digit.
+func nameTokens(s string) []string {
+	clean := strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || unicode.Is(unicode.Cf, r) {
+			return -1
+		}
+		return unicode.ToLower(unicode.ToUpper(r))
+	}, s)
+	return strings.FieldsFunc(clean, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
 }
 
 // validPoint is ^[0-9]{5}$ over ASCII digits only.

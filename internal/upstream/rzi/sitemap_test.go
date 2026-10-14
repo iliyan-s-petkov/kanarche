@@ -79,12 +79,53 @@ func TestSiteIndexMap(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			id, err := x.Map(tc.source, tc.point, tc.lat, tc.lon)
+			id, err := x.Map(tc.source, tc.point, "", tc.lat, tc.lon)
 			if !errors.Is(err, tc.want) {
 				t.Fatalf("err = %v, want %v", err, tc.want)
 			}
 			if id != tc.wantID {
 				t.Fatalf("id = %q, want %q", id, tc.wantID)
+			}
+		})
+	}
+}
+
+func TestSiteIndexMapNameTolerance(t *testing.T) {
+	x := NewSiteIndex([]store.BathingSite{
+		{ID: "BG3412181178002024", NameBG: "КЪМПИНГ ГРАДИНА", Zone: "coastal", Lat: 42.40, Lon: 27.70},
+		{ID: "BG3411348619002040", NameBG: "ПОПСКИ ПЛАЖ", Zone: "coastal", Lat: 42.30, Lon: 27.60},
+		{ID: "BG3411000000002049", NameBG: "ПЛАЖ РОСЕНЕЦ-СЕВЕР", Zone: "coastal", Lat: 42.20, Lon: 27.50},
+	})
+	lons := map[string]float64{"02024": 27.70, "02040": 27.60, "02049": 27.50}
+	lats := map[string]float64{"02024": 42.40, "02040": 42.30, "02049": 42.20}
+	cases := []struct {
+		name  string
+		point string
+		doc   string
+		north float64 // metres north of the EEA coordinate
+		want  error
+	}{
+		{"718 m with matching name", "02024", "Градина", 718, nil},
+		{"718 m without name", "02024", "", 718, ErrSiteTooFar},
+		{"718 m with other name", "02024", "Росенец", 718, ErrSiteTooFar},
+		{"424 m with matching name", "02040", "Попски плаж", 424, nil},
+		{"424 m without name", "02040", "", 424, ErrSiteTooFar},
+		{"43 km with matching name", "02049", "Росенец-север", 43000, ErrSiteTooFar},
+		{"1001 m with matching name", "02024", "Градина", 1001, ErrSiteTooFar},
+		{"999 m with matching name", "02024", "Градина", 999, nil},
+		{"150 m with empty name", "02024", "", 150, nil},
+		{"250 m with empty name", "02024", "", 250, ErrSiteTooFar},
+		{"mixed case", "02040", "попски ПЛАЖ", 424, nil},
+		{"punctuation and hyphen", "02049", " Росенец—север. ", 500, nil},
+		{"format characters are dropped", "02024", "Гра​дина\x00", 718, nil},
+		{"extra document token", "02024", "Градина 2", 718, ErrSiteTooFar},
+		{"name of only punctuation", "02024", "- .", 718, ErrSiteTooFar},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := x.Map(SourceBurgas, tc.point, tc.doc, offsetNorth(lats[tc.point], tc.north), lons[tc.point])
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("err = %v, want %v", err, tc.want)
 			}
 		})
 	}
