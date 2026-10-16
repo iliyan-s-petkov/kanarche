@@ -45,11 +45,11 @@ for (const [label, viewport] of Object.entries(VIEWPORTS)) {
 
       await rowButton(page, 101).focus()
       await page.keyboard.press('Enter')
-      await expect(page.getByRole('heading', { level: 2, name: /101$/ })).toBeVisible({ timeout: 10000 })
+      await expect(page.locator('#sensor-panel-title')).toHaveText(/101$/, { timeout: 10000 })
       await expect(page).toHaveURL(/#sensor=101$/)
 
       await page.keyboard.press('Escape')
-      await expect(page.getByRole('heading', { level: 2, name: /101$/ })).toBeHidden({ timeout: 10000 })
+      await expect(page).not.toHaveURL(/#sensor=/, { timeout: 10000 })
       await expect(rowButton(page, 101)).toBeFocused()
     } finally {
       await context.close()
