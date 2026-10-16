@@ -234,6 +234,22 @@ describe('the desktop bottom panel', () => {
     expect(document.activeElement).toBe(ctx.canvas)
   })
 
+  it('Escape returns focus to the map when the opener re-rendered away or never held focus', async () => {
+    vp = stubViewport(true)
+    ctx = page()
+    // A nearby-list button: focused when the panel opens, replaced by a re-render before it closes.
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+    ctx.vs.openSensor(101)
+    await settle()
+    opener.remove()
+    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await settle()
+    expect(ctx.vs.sensorId).toBeNull()
+    expect(document.activeElement, 'focus fell to body').toBe(ctx.canvas)
+  })
+
   it('moves the panel info button into the dock header, opens the station sheet and leaves none behind', async () => {
     vp = stubViewport(true)
     ctx = page()

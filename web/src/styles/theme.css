@@ -81,3 +81,19 @@
   --pollen-moderate: var(--accent);
   --pollen-high: var(--warn);
 }
+
+/* High-contrast preference: muted text, borders, the focus ring and the map overlays move to the foreground end of the palette.
+   :root:root:root outranks the kit's dark-theme selectors, which would otherwise win on specificity. */
+@media (prefers-contrast: more) {
+  :root:root:root {
+    --muted: var(--fg-2);
+    --meta: var(--fg-2);
+    --border: var(--fg-2);
+    --border-soft: var(--fg-2);
+    --border-faint: var(--fg-2);
+    --focus-ring: 0 0 0 2px var(--bg), 0 0 0 5px var(--fg);
+    --overlay-bg: var(--bg);
+    --glass-bg: var(--bg);
+    --glass-border: var(--fg);
+  }
+}
