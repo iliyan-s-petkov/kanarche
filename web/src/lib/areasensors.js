@@ -53,8 +53,11 @@ export function pageView(rows, perPage, page) {
 
 const fill = (s, vars) => Object.entries(vars).reduce((out, [k, v]) => out.replaceAll(`{${k}}`, String(v)), s || '')
 
-export function statusText(t, { from, to, total }) {
-  return total ? fill(t.status, { from, to, total }) : t.empty || ''
+// available: rows before the filter, so an area with no sensors is not told its filter matched nothing.
+export function statusText(t, { from, to, total }, available) {
+  if (total === 1 && t.rangeOne) return t.rangeOne
+  if (total) return fill(t.status, { from, to, total })
+  return (available ? t.empty : t.none) || ''
 }
 
 export function summaryText(t, n) {

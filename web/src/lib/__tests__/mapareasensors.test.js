@@ -65,6 +65,25 @@ describe('installAreaSensors', () => {
     expect(map.jumpTo.mock.calls[0][0].zoom).toBe(DEEP_LINK_ZOOM + 3)
   })
 
+  it('keeps the shell hidden until this area has loaded', () => {
+    stop = installAreaSensors({ map: fakeMap(), el: host(), cfg: { slug: 'sofia', lang: 'en' }, onopen: () => {} })
+    flushSync()
+    expect(el.hidden).toBe(true)
+    setSensors(body, 'elsewhere')
+    flushSync()
+    expect(el.hidden).toBe(true)
+    setSensors(body, 'sofia')
+    flushSync()
+    expect(el.hidden).toBe(false)
+  })
+
+  it('reads the empty-area and singular range labels', () => {
+    setSensors({ sensors: { id: [] } }, 'sofia')
+    stop = installAreaSensors({ map: fakeMap(), el: host({ tNone: 'No live sensors in this area.' }), cfg: { slug: 'sofia', lang: 'en' }, onopen: () => {} })
+    flushSync()
+    expect(el.querySelector('[role="status"]').textContent.trim()).toBe('No live sensors in this area.')
+  })
+
   it('survives a malformed district attribute', () => {
     setSensors(body, 'sofia')
     stop = installAreaSensors({ map: fakeMap(), el: host({ districts: '{oops', tColDistrict: 'District' }), cfg: { slug: 'sofia', lang: 'en' }, onopen: () => {} })

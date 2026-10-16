@@ -18,7 +18,9 @@ const texts = {
   filterPlaceholder: 'Sensor number',
   filterHint: 'Type a sensor number to narrow the list.',
   status: 'Showing {from} to {to} of {total} sensors',
+  rangeOne: 'Showing 1 sensor',
   empty: 'No sensor matches this filter.',
+  none: 'No live sensors in this area.',
   noValue: 'no reading',
   page: 'Page',
   pageOf: 'of',
@@ -133,7 +135,7 @@ describe('AreaSensors', () => {
     expect(status(el)).toBe('Showing 1 to 25 of 30 sensors')
     type(el, '12')
     expect(rows(el)).toHaveLength(1)
-    expect(status(el)).toBe('Showing 1 to 1 of 1 sensors')
+    expect(status(el)).toBe('Showing 1 sensor')
     type(el, '999')
     expect(status(el)).toBe('No sensor matches this filter.')
     expect(rows(el)).toHaveLength(1)
@@ -176,9 +178,34 @@ describe('AreaSensors', () => {
     expect(second.textContent).toBe('2')
   })
 
-  it('lists nothing from another area the map adopted', () => {
-    setSensors(bodyOf(3), 'elsewhere')
+  // No "(0)" while this area loads, nor for a body from another area the map adopted.
+  it('renders nothing until this area has loaded', () => {
     const el = render()
-    expect(el.querySelectorAll('tbody button')).toHaveLength(0)
+    expect(el.querySelector('details')).toBeNull()
+    setSensors(bodyOf(3), 'elsewhere')
+    flushSync()
+    expect(el.querySelector('details')).toBeNull()
+    setSensors(bodyOf(3), 'sofia')
+    flushSync()
+    expect(el.querySelector('summary').textContent.trim()).toBe('All sensors in this area (3)')
+  })
+
+  it('tells the reader when this area has no live sensors', () => {
+    setSensors({ sensors: { id: [], P2: [], P1: [], last_seen: [] } }, 'sofia')
+    const el = render()
+    expect(status(el)).toBe('No live sensors in this area.')
+    expect(rows(el)[0].textContent.trim()).toBe('No live sensors in this area.')
+  })
+
+  it('reports ready once this area has loaded', () => {
+    const onready = vi.fn()
+    host = document.createElement('div')
+    document.body.append(host)
+    component = mount(AreaSensors, { target: host, props: { texts, names, area: 'Sofia', slug: 'sofia', lang: 'en', onopen: () => {}, onready } })
+    flushSync()
+    expect(onready).not.toHaveBeenCalled()
+    setSensors(bodyOf(2), 'sofia')
+    flushSync()
+    expect(onready).toHaveBeenCalled()
   })
 })

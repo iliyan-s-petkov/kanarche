@@ -29,7 +29,9 @@ export function textsFrom(d) {
     filterPlaceholder: d.tFilterPlaceholder || '',
     filterHint: d.tFilterHint || '',
     status: d.tStatus || '',
+    rangeOne: d.tRangeOne || '',
     empty: d.tEmpty || '',
+    none: d.tNone || '',
     noValue: d.tNoValue || '',
     page: d.tPage || '',
     pageOf: d.tPageOf || '',
@@ -69,8 +71,9 @@ export function installAreaSensors({ map, el, cfg, onopen }) {
       districts,
       lang: cfg.lang,
       onopen: open,
+      // Shown only once this area's sensors are in, so a loading or adopted body never reads "(0)".
+      onready: () => { el.hidden = false },
     },
   })
-  el.hidden = false
   return () => unmount(component)
 }

@@ -79,6 +79,8 @@ func TestAreaSensorTableShellCarriesItsCopy(t *testing.T) {
 		"data-t-filter":      "Filter sensors",
 		"data-t-status":      "Showing {from} to {to} of {total} sensors",
 		"data-t-empty":       "No sensor matches this filter.",
+		"data-t-none":        "No live sensors in this area.",
+		"data-t-range-one":   "Showing 1 sensor",
 		"data-t-page-next":   "Next page",
 		"data-t-per-page":    "Rows per page",
 		"data-t-p2":          "PM2.5",

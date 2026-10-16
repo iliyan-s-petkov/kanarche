@@ -73,6 +73,16 @@ describe('returnFocus', () => {
     expect(document.activeElement).toBe(c)
   })
 
+  // A connected opener can still refuse focus: hidden, disabled, or inside a closed sheet.
+  it('falls back to the map canvas when the opener refuses focus', () => {
+    const c = canvas()
+    const opener = document.createElement('button')
+    opener.disabled = true
+    document.body.append(opener)
+    returnFocus(opener)
+    expect(document.activeElement).toBe(c)
+  })
+
   it('falls back to the map canvas when nothing had focus', () => {
     const c = canvas()
     returnFocus(document.body)

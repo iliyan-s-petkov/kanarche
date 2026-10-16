@@ -32,9 +32,12 @@ export function watchPanelScroll({ shownId, initialId, scroll, onReturn = () => 
   })
 }
 
-// Back to the opener if it is still on the page, else to the map canvas.
+// Back to the opener if it is still on the page and takes focus, else to the map canvas.
 export function returnFocus(opener, doc = globalThis.document) {
   const ok = opener?.isConnected && opener !== doc.body && typeof opener.focus === 'function'
-  const target = ok ? opener : doc.querySelector('.maplibregl-canvas')
-  target?.focus({ preventScroll: true })
+  if (ok) {
+    opener.focus({ preventScroll: true })
+    if (doc.activeElement === opener) return
+  }
+  doc.querySelector('.maplibregl-canvas')?.focus({ preventScroll: true })
 }

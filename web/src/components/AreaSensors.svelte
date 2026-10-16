@@ -10,7 +10,7 @@
     sensorRows, filterSensorRows, pageView, statusText, summaryText, fill,
   } from '../lib/areasensors.js'
 
-  let { texts, names, area, slug, districts = {}, lang = 'bg', onopen } = $props()
+  let { texts, names, area, slug, districts = {}, lang = 'bg', onopen, onready } = $props()
 
   let query = $state('')
   let perPage = $state(DEFAULT_PER_PAGE)
@@ -23,6 +23,7 @@
     if (getSensorArea() === slug) own = b
     return own
   })
+  $effect(() => { if (body) onready?.() })
 
   const all = $derived(sensorRows(body, {
     districts,
@@ -54,6 +55,7 @@
   const reading = (v) => (typeof v === 'number' ? number(v, lang) : texts.noValue)
 </script>
 
+{#if body}
 <details class="area-sensors">
   <summary>{summaryText(texts, all.length)}</summary>
 
@@ -73,7 +75,7 @@
       >
       <span class="sr-only" id="area-sensors-filter-hint">{texts.filterHint}</span>
     </div>
-    <p class="meta area-sensors__status" role="status">{statusText(texts, view)}</p>
+    <p class="meta area-sensors__status" role="status">{statusText(texts, view, all.length)}</p>
   </div>
 
   <div class="area-sensors__scroll">
@@ -109,7 +111,7 @@
             <td>{#if row.updated}<time datetime={row.updated}>{formatLocalStamp(row.updated, lang)}</time>{/if}</td>
           </tr>
         {:else}
-          <tr><td colspan={columns}>{texts.empty}</td></tr>
+          <tr><td colspan={columns}>{statusText(texts, view, all.length)}</td></tr>
         {/each}
       </tbody>
     </table>
@@ -146,3 +148,4 @@
     {/if}
   </nav>
 </details>
+{/if}

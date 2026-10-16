@@ -80,12 +80,21 @@ describe('pageView', () => {
 })
 
 describe('texts', () => {
-  const t = { status: 'Showing {from} to {to} of {total} sensors', empty: 'No sensor matches this filter.', summary: 'All sensors in this area ({n})', summaryOne: 'The sensor in this area' }
+  const t = {
+    status: 'Showing {from} to {to} of {total} sensors', rangeOne: 'Showing 1 sensor', empty: 'No sensor matches this filter.',
+    none: 'No live sensors in this area.', summary: 'All sensors in this area ({n})', summaryOne: 'The sensor in this area',
+  }
   it('fills the status from the view', () => {
-    expect(statusText(t, { from: 1, to: 25, total: 264 }, 'en')).toBe('Showing 1 to 25 of 264 sensors')
+    expect(statusText(t, { from: 1, to: 25, total: 264 }, 264)).toBe('Showing 1 to 25 of 264 sensors')
   })
-  it('says nothing matches for an empty result', () => {
-    expect(statusText(t, { from: 0, to: 0, total: 0 }, 'en')).toBe('No sensor matches this filter.')
+  it('names a single sensor in the singular', () => {
+    expect(statusText(t, { from: 1, to: 1, total: 1 }, 30)).toBe('Showing 1 sensor')
+  })
+  it('says nothing matches when a filter emptied the result', () => {
+    expect(statusText(t, { from: 0, to: 0, total: 0 }, 30)).toBe('No sensor matches this filter.')
+  })
+  it('says the area has no live sensors when there is nothing to filter', () => {
+    expect(statusText(t, { from: 0, to: 0, total: 0 }, 0)).toBe('No live sensors in this area.')
   })
   it('uses the singular summary for one sensor', () => {
     expect(summaryText(t, 1)).toBe('The sensor in this area')
