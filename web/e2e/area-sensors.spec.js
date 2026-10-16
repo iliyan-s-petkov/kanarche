@@ -75,7 +75,7 @@ for (const [label, viewport] of Object.entries(VIEWPORTS)) {
   }
 }
 
-test('a refresh that moves the area into another band says so once, then the line says Data from again', async ({ browser }, testInfo) => {
+test('only a refresh that moves the area into another band is spoken, and only once', async ({ browser }, testInfo) => {
   testInfo.setTimeout(90000)
   const context = await browser.newContext({ viewport: VIEWPORTS.desktop })
   const page = await context.newPage()
@@ -91,20 +91,29 @@ test('a refresh that moves the area into another band says so once, then the lin
     await page.goto('/en/area/sofia')
     await mapSettled(page)
     await expect(summary(page)).toHaveText(/All sensors in this area \([1-9]\d*\)/, { timeout: 20000 })
-    const status = page.locator('.data-refresh__status')
-    await expect(status).toHaveText(/^Data from /)
+    const live = page.locator('.data-refresh [role="status"]')
+    const trigger = page.locator('.data-refresh__btn--icon')
+    await expect(live).toHaveText('')
+    await expect(trigger).toHaveAttribute('title', /Data from /)
 
     const refreshNow = async () => {
-      await page.locator('.data-refresh__btn--icon').click()
+      await trigger.click()
       await page.getByRole('button', { name: 'Refresh now' }).click()
     }
+    // A value-only refresh is never spoken: the time moves in the title, the live region stays empty.
+    await refreshNow()
+    await expect(trigger).not.toHaveAttribute('aria-busy', 'true', { timeout: 15000 })
+    await expect(trigger).toHaveAttribute('title', /Data from /)
+    await expect(live).toHaveText('')
+
     worse = true
     await refreshNow()
-    await expect(status).toHaveText(/^.+: air quality is now [a-z ]+, was [a-z ]+\.$/, { timeout: 15000 })
-    expect(((await status.textContent()) ?? '').length).toBeLessThan(80)
+    await expect(live).toHaveText(/^.+: air quality is now [a-z ]+, was [a-z ]+\.$/, { timeout: 15000 })
+    expect(((await live.textContent()) ?? '').length).toBeLessThan(80)
 
     await refreshNow()
-    await expect(status).toHaveText(/^Data from /, { timeout: 15000 })
+    await expect(trigger).not.toHaveAttribute('aria-busy', 'true', { timeout: 15000 })
+    await expect(live).toHaveText('', { timeout: 15000 })
   } finally {
     await context.close()
   }

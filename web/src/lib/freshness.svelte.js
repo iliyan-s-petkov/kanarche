@@ -104,6 +104,7 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
       schedule()
     },
     get changed() { return changed },
+    current: probe,
     provide(fn) {
       providers.add(fn)
       return () => providers.delete(fn)

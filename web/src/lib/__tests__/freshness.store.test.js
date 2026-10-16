@@ -332,4 +332,13 @@ describe('category change on refresh', () => {
     await f.request()
     expect(f.changed).toBeNull()
   })
+
+  it('reports what the reader is looking at now', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    expect(f.current()).toBeNull()
+    let band = 'good'
+    f.watch(() => area(band))
+    band = 'poor'
+    expect(f.current()).toEqual(area('poor'))
+  })
 })
