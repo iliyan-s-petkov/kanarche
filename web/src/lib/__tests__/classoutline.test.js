@@ -73,10 +73,12 @@ describe('classOutlineWidth', () => {
 
 describe('classOutlineExpr', () => {
   it('evaluates to the same weight as classOutlineWidth for every class a feature can carry', () => {
-    for (const band of [-1, 0, 1, 2, 3, 4, 5, 7]) {
+    for (const band of [-1, 0, 1, 2, 3, 4, 5, 7, 99]) {
       expect(evalWidth(classOutlineExpr(), band)).toBe(classOutlineWidth(band))
     }
+    // A feature with no band, or a null one, draws the lightest weight.
     expect(evalWidth(classOutlineExpr(), undefined)).toBe(CLASS_OUTLINE_PX[0])
+    expect(evalWidth(classOutlineExpr(), null)).toBe(CLASS_OUTLINE_PX[0])
   })
 
   it('adds the extra px on top of the class weight', () => {
@@ -97,10 +99,41 @@ describe('outline ink', () => {
     expect(css).toMatch(/\.class-outline\s*\{[^}]*stroke:\s*var\(--class-outline-ink\)/)
   })
 
-  it('marks a swatch shape as outlined', () => {
+  it('marks a swatch shape as outlined and leaves its colour to the stylesheet', () => {
     const shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    outlineSwatch(shape, 2, '#161616')
+    outlineSwatch(shape, 2)
     expect(shape.classList.contains('class-outline')).toBe(true)
+    expect(shape.getAttribute('data-class')).toBe('2')
+    expect(shape.hasAttribute('stroke')).toBe(false)
+    expect(shape.hasAttribute('stroke-width')).toBe(false)
+  })
+
+  it('weights an outlined swatch from the tokens, one rule per class, and clamps the class to the ladder', () => {
+    const css = readFileSync('../internal/web/static/app.css', 'utf8')
+    CLASS_OUTLINE_PX.forEach((_, i) => {
+      expect(css).toMatch(new RegExp(`\\.class-outline\\[data-class="${i}"\\][^{]*\\{[^}]*var\\(--class-outline-${i}\\)`))
+    })
+    const shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    outlineSwatch(shape, 9)
+    expect(shape.getAttribute('data-class')).toBe('5')
+    outlineSwatch(shape, -1)
+    expect(shape.getAttribute('data-class')).toBe('0')
+  })
+
+  it('strokes in CanvasText under forced colours', () => {
+    const css = readFileSync('../internal/web/static/app.css', 'utf8')
+    expect(css).toMatch(/@media \(forced-colors: active\)\s*\{\s*\.class-outline\s*\{[^}]*stroke:\s*CanvasText/)
+  })
+
+  it('draws the lightest class at least 1px under prefers-contrast: more, in both sheets', () => {
+    for (const path of ['../internal/web/static/theme.css', 'src/styles/theme.css']) {
+      expect(readFileSync(path, 'utf8')).toMatch(/@media \(prefers-contrast: more\)\s*\{[^@]*--class-outline-0:\s*1px;/)
+    }
+  })
+
+  it('keeps the chip hexagon on an unscaled stroke so it weighs what the legend swatch does', () => {
+    const css = readFileSync('../internal/web/static/app.css', 'utf8')
+    expect(css).toMatch(/svg\.chip__swatch polygon\s*\{[^}]*vector-effect:\s*non-scaling-stroke/)
   })
 
   // The basemap stays light in dark mode, so the map's outlines and halos keep the dark label ink in both themes.

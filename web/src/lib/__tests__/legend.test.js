@@ -6,7 +6,6 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi } from 'vitest'
-import { classOutlineWidth } from '../classoutline.js'
 import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows, legendTitle, rampGradient, renderLegend, setWindRow } from '../legend.js'
 
 // Shaped like /api/v1/scales: ascending, upper INCLUSIVE, the top band open
@@ -96,13 +95,13 @@ describe('renderLegend', () => {
   })
 
   // A11Y-05: each band swatch carries its class outline, so the key and the map match without hue.
-  // Stroke doubled and unscaled: the svg clips the outer half, leaving an inset of the class weight.
-  it('outlines each band swatch in the ink at its class weight, worst heaviest, and the no-data swatch not at all', () => {
-    const el = draw({ ink: '#161616' })
+  // The weight and ink come from app.css, keyed on data-class.
+  it('outlines each band swatch at its class weight, worst heaviest, and the no-data swatch not at all', () => {
+    const el = draw()
     const bands = [...el.querySelectorAll('.scale__band-swatch rect')]
-    expect(bands.map((r) => r.getAttribute('stroke-width'))).toEqual([2, 1, 0].map((i) => String(2 * classOutlineWidth(i))))
+    expect(bands.map((r) => r.getAttribute('data-class'))).toEqual(['2', '1', '0'])
     for (const r of bands) {
-      expect(r.getAttribute('stroke')).toBe('#161616')
+      expect(r.classList.contains('class-outline')).toBe(true)
       expect(r.getAttribute('vector-effect')).toBe('non-scaling-stroke')
     }
     expect(el.querySelector('.scale__none rect').hasAttribute('stroke')).toBe(false)

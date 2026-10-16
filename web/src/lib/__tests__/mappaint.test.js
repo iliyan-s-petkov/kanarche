@@ -213,8 +213,8 @@ describe('hexOutlinePaint', () => {
     const [, , hovered, normal] = paint['line-width']
     expect(normal).toEqual(classOutlineExpr())
     expect(hovered).toEqual(classOutlineExpr(1))
-    // Inset by half its own width, so a cell's weight is drawn inside it and a neighbour cannot claim it.
-    expect(paint['line-offset']).toEqual(['/', classOutlineExpr(), 2])
+    // Hexagon rings run counter-clockwise and diamond rings clockwise, so no single offset sign insets both.
+    expect(paint).not.toHaveProperty('line-offset')
     const [, , hoveredOpacity, normalOpacity] = paint['line-opacity']
     expect(normalOpacity).toBeGreaterThanOrEqual(0.6)
     expect(hoveredOpacity).toBeGreaterThan(normalOpacity)

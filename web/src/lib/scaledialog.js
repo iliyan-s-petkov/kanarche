@@ -18,7 +18,7 @@ import { fillSlots } from './sea.js'
 // business, because only the caller knows whether a scale has loaded yet.
 // `t` holds the catalogue strings: title and unit templates, the corner mark's
 // own name, and the range words.
-export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang, t = {}, ink }) {
+export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang, t = {} }) {
   const el = doc.createElement('dialog')
   el.className = 'scaleinfo'
 
@@ -86,7 +86,7 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
       item.className = 'scaleinfo__band'
       const mark = swatch(doc, row.colour)
       // Same class outline as the key and the map (A11Y-05).
-      outlineSwatch(mark.firstChild, i, ink)
+      outlineSwatch(mark.firstChild, i)
       item.appendChild(mark)
 
       const name = doc.createElement('span')

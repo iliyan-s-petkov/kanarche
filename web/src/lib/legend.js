@@ -99,7 +99,7 @@ export function legendRows(bands, { noDataColour, noDataLabel, lang, words }) {
 // `info`, when given, adds the (i) that opens the scale dialog. Optional
 // because the key is drawn once before any scale has loaded, and an (i) that
 // opens an empty dialog is worse than no (i) at all.
-export function renderLegend(el, { title, toggleLabel, bands, noData, info, bandsLabel, ink }) {
+export function renderLegend(el, { title, toggleLabel, bands, noData, info, bandsLabel }) {
   // Reuse the toggle across moveend refreshes so focus and in-flight clicks keep their target.
   let toggle = el.querySelector(':scope > .scale__toggle')
   if (toggle) toggle.remove()
@@ -165,7 +165,7 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info, band
     item.className = 'scale__band'
     const bandSwatch = swatch(band.colour, 'scale__band-swatch')
     // The class outline the map draws round a cell of this band, so the key matches by weight too.
-    outlineSwatch(bandSwatch.firstChild, band.class, ink)
+    outlineSwatch(bandSwatch.firstChild, band.class)
     item.appendChild(bandSwatch)
 
     const name = document.createElement('span')

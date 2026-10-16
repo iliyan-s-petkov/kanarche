@@ -23,12 +23,10 @@ export function classOutlineExpr(extra = 0) {
   return extra ? ['+', width, extra] : width
 }
 
-// Strokes a band swatch's shape at its class weight. The stroke is doubled and unscaled
-// because the svg clips its outer half, which leaves an inset of exactly the weight.
-// The class-outline rule in app.css repaints the stroke in the theme's ink; the attribute is the fallback.
-export function outlineSwatch(shape, index, ink) {
+// Marks a band swatch's shape for its class outline. Colour and weight come from the
+// .class-outline[data-class] rules in app.css, doubled because the svg clips its outer half.
+export function outlineSwatch(shape, index) {
   shape.classList.add('class-outline')
-  shape.setAttribute('stroke', ink || 'currentColor')
-  shape.setAttribute('stroke-width', String(2 * classOutlineWidth(index)))
+  shape.setAttribute('data-class', String(Math.max(0, Math.min(TOP, index))))
   shape.setAttribute('vector-effect', 'non-scaling-stroke')
 }

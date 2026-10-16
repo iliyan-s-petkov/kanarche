@@ -42,8 +42,9 @@ const emulate = async (page, type) => {
   return cdp
 }
 
-// Per line of [x, y] device pixels, how many change between two shots. Decoded in the page, which leaves them as captured.
-const changedAlong = (page, on, off, lines) => page.evaluate(async ([a, b, lines]) => {
+// Per line of [x, y] device pixels, the change between two shots: pixels past a threshold, or with soft their summed
+// change in whole-pixel equivalents so an antialiased edge counts for its coverage. Decoded in the page, which leaves them as captured.
+const changedAlong = (page, on, off, lines, soft = false) => page.evaluate(async ([a, b, lines, soft]) => {
   const decode = async (b64) => {
     const img = new Image()
     img.src = `data:image/png;base64,${b64}`
@@ -56,11 +57,12 @@ const changedAlong = (page, on, off, lines) => page.evaluate(async ([a, b, lines
     return { w: img.width, data: g.getImageData(0, 0, img.width, img.height).data }
   }
   const [p, q] = [await decode(a), await decode(b)]
-  return lines.map((pts) => pts.filter(([x, y]) => {
+  return lines.map((pts) => pts.reduce((sum, [x, y]) => {
     const i = (y * p.w + x) * 4
-    return Math.max(Math.abs(p.data[i] - q.data[i]), Math.abs(p.data[i + 1] - q.data[i + 1]), Math.abs(p.data[i + 2] - q.data[i + 2])) > 24
-  }).length)
-}, [on.toString('base64'), off.toString('base64'), lines])
+    const d = Math.max(Math.abs(p.data[i] - q.data[i]), Math.abs(p.data[i + 1] - q.data[i + 1]), Math.abs(p.data[i + 2] - q.data[i + 2]))
+    return sum + (soft ? d / 255 : d > 24 ? 1 : 0)
+  }, 0))
+}, [on.toString('base64'), off.toString('base64'), lines, soft])
 
 // Six squares in a row, one per class, stroked with the hex outline layer's own paint. Canvas px.
 const addProbe = (page) => page.evaluate(([outline, probe]) => {
@@ -69,7 +71,7 @@ const addProbe = (page) => page.evaluate(([outline, probe]) => {
   const ring = (b) => [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1], [b.x0, b.y0]].map((p) => map.unproject(p).toArray())
   map.addSource(probe, { type: 'geojson', data: { type: 'FeatureCollection', features: boxes.map((b) => ({ type: 'Feature', properties: { band: b.band }, geometry: { type: 'Polygon', coordinates: [ring(b)] } })) } })
   const paint = {}
-  for (const k of ['line-width', 'line-offset', 'line-color']) paint[k] = map.getPaintProperty(outline, k)
+  for (const k of ['line-width', 'line-color']) paint[k] = map.getPaintProperty(outline, k)
   map.addLayer({ id: probe, type: 'line', source: probe, paint })
   return boxes
 }, [OUTLINE, PROBE])
@@ -95,7 +97,7 @@ const mapWeights = async (page, boxes) => {
     for (let x = (b.x0 - 8) * DPR; x <= (b.x1 + 8) * DPR; x++) row.push([x, ((b.y0 + b.y1) / 2) * DPR])
     return row
   })
-  return changedAlong(page, on, off, lines)
+  return changedAlong(page, on, off, lines, true)
 }
 
 // Outline px per class in the legend: the column through each band swatch's middle.
@@ -105,8 +107,7 @@ const legendWeights = async (page) => {
   await expect(swatches).toHaveCount(6)
   const strokes = (on) => swatches.evaluateAll((els, on) => els.forEach((e) => {
     const shape = e.firstElementChild
-    if (!on) shape.dataset.w = shape.getAttribute('stroke-width')
-    shape.setAttribute('stroke-width', on ? shape.dataset.w : '0')
+    shape.style.strokeWidth = on ? '' : '0'
   }), on)
   const on = await bands.screenshot()
   const boxes = await bands.evaluate((list) => {
@@ -190,6 +191,7 @@ test.describe('class outline weight under colour-vision deficiency', () => {
     return {
       paint: layers.map(([id, prop]) => rgb(map.getPaintProperty(id, prop))),
       legend: css('.scale--onmap .scale__band-swatch .class-outline'),
+      fg: rgb('var(--fg)'),
     }
   }, [[OUTLINE, 'line-color'], ['kanarche-hex-point', 'circle-stroke-color'], ['kanarche-markers', 'circle-stroke-color'], ['kanarche-markers-official', 'icon-halo-color']])
 
@@ -208,6 +210,8 @@ test.describe('class outline weight under colour-vision deficiency', () => {
         const got = await inks(page)
         expect(got.paint).toEqual([MAP_INK, MAP_INK, MAP_INK, MAP_INK])
         expect(got.legend).toBe(INK[theme])
+        // The legend stroke is the theme's own foreground, not a colour restated here.
+        expect(got.legend).toBe(got.fg)
         await page.goto('/en/areas')
         expect(await page.locator('svg.chip__swatch polygon').first().evaluate((e) => getComputedStyle(e).stroke)).toBe(INK[theme])
       })

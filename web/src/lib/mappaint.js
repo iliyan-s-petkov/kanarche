@@ -96,12 +96,11 @@ const HOVERED = ['boolean', ['feature-state', 'hover'], false]
 // around the cell and through its fill.
 //
 // Hover thickens the line instead of recolouring it: colour here is the reading.
-// The width is the cell's class weight (A11Y-05), inset by half so each cell owns its own edge.
+// The width is the cell's class weight (A11Y-05). No line-offset: hexagon and diamond rings wind opposite ways.
 export function hexOutlinePaint(cfg) {
   return {
     'line-color': cfg.labelColour,
     'line-width': ['case', HOVERED, classOutlineExpr(1), classOutlineExpr()],
-    'line-offset': ['/', classOutlineExpr(), 2],
     'line-opacity': ['case', HOVERED, 0.95, 0.7],
   }
 }

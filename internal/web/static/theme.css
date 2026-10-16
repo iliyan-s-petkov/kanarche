@@ -149,6 +149,7 @@
     --overlay-bg: var(--bg);
     --glass-bg: var(--bg);
     --glass-border: var(--fg);
+    --class-outline-0: 1px;
   }
 }
 

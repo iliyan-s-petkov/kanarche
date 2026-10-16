@@ -8,7 +8,6 @@ import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi } from 'vitest'
 import { bandRange, scaleFor, scaleInfo } from '../scaleinfo.js'
 import { createScaleDialog } from '../scaledialog.js'
-import { classOutlineWidth } from '../classoutline.js'
 
 // Shaped like /api/v1/scales, including the fields the key never reads: notes
 // in both languages and the guideline link, which are the whole point of the
@@ -83,7 +82,7 @@ describe('createScaleDialog', () => {
   const open = (scale, lang = 'bg') => {
     const d = createScaleDialog(document, {
       closeLabel: 'Затвори', sourceLabel: 'Официалният документ',
-      disclaimer: 'Ориентировъчни данни', lang, t: DIALOG_T, ink: '#161616',
+      disclaimer: 'Ориентировъчни данни', lang, t: DIALOG_T,
     })
     document.body.appendChild(d.el)
     // jsdom implements <dialog> but not showModal in every version the project
@@ -124,11 +123,11 @@ describe('createScaleDialog', () => {
   })
 
   // A11Y-05: the dialog's swatches carry the same class outline as the map and the key.
-  it('outlines each band swatch in the ink at its class weight', () => {
+  it('marks each band swatch with its class outline', () => {
     const rects = [...open(EAQI).querySelectorAll('rect')]
     rects.forEach((r, i) => {
-      expect(r.getAttribute('stroke')).toBe('#161616')
-      expect(r.getAttribute('stroke-width')).toBe(String(2 * classOutlineWidth(i)))
+      expect(r.classList.contains('class-outline')).toBe(true)
+      expect(r.getAttribute('data-class')).toBe(String(Math.min(i, 5)))
       expect(r.getAttribute('vector-effect')).toBe('non-scaling-stroke')
     })
   })
