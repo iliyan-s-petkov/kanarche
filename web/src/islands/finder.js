@@ -22,6 +22,12 @@ export function mount(el, doc = document) {
     placeholder: d.tPlaceholder || '',
     hint: d.tHint || '',
     empty: d.tEmpty || '',
+    // centred is set on the map tab only: the list tab navigates away on a pick.
+    status: {
+      results: d.tStatusResults || '',
+      resultsOne: d.tStatusResultsOne || '',
+      centred: d.tStatusCentred || '',
+    },
   }
 
   // Two tabs, two lists and two meanings for a pick. The list tab has the

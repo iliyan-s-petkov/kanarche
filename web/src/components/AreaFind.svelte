@@ -11,12 +11,13 @@
   // that contract is what is built here rather than the shorter thing the
   // mockup happens to do.
   import { matchAreas, exactMatch, splitMark, areaGroup } from '../lib/find.js'
+  import { fillSlots } from '../lib/sea.js'
 
   // `address` switches on the last-row address search (map tab only):
   // { search(q) -> Promise<rows>, onpick, onclear, row, loading, none, busy,
   //   error, credit, creditHref }. The request runs only on Enter or a click
   // on that row, never while typing.
-  let { areas, lang = 'bg', label, placeholder, hint, empty, onpick, address = null, groups = null, id = 'area-find' } = $props()
+  let { areas, lang = 'bg', label, placeholder, hint, empty, onpick, address = null, groups = null, id = 'area-find', status = null } = $props()
 
   let query = $state('')
   let open = $state(false)
@@ -31,6 +32,10 @@
 
   const MIN_ADDRESS_RUNES = 3
   const listId = `${id}-listbox`
+  // What the live region last had cause to say: 'typed' after an edit, 'centred'
+  // after a pick that moves the map. Focus alone says nothing.
+  let said = $state('')
+  let pickedName = $state('')
   const matches = $derived(matchAreas(areas, query, lang))
   // Headings only when both groups have matches; one kind alone has nothing to
   // be told apart from. Each segment keeps its flat start index for option ids.
@@ -44,6 +49,14 @@
     ]
   })
   const trimmed = $derived(query.trim())
+  // The polite line a reader hears, since focus never leaves the input.
+  const statusText = $derived.by(() => {
+    if (!status) return ''
+    if (said === 'centred' && status.centred) return fillSlots(status.centred, { name: pickedName })
+    if (said !== 'typed' || !trimmed || addr.status !== 'idle') return ''
+    if (matches.length === 0) return empty
+    return matches.length === 1 ? status.resultsOne : fillSlots(status.results, { n: matches.length })
+  })
   const canSearch = $derived(!!address && [...trimmed].length >= MIN_ADDRESS_RUNES)
   const showResults = $derived(addr.status === 'results')
   const showStatus = $derived(addr.status !== 'idle' && addr.status !== 'results')
@@ -84,6 +97,7 @@
   }
 
   function oninput() {
+    said = 'typed'
     resetAddress()
     if (!query.trim()) address?.onclear?.()
     show()
@@ -101,6 +115,8 @@
   function pick(match) {
     if (!match) return
     query = match.name
+    said = 'centred'
+    pickedName = match.name
     hide()
     onpick(match)
   }
@@ -213,6 +229,7 @@
        open list, a screen-reader user does not, and a visible line of
        instructions under a search field is clutter for both. -->
   <span class="sr-only" id="{id}-hint">{hint}</span>
+  <span class="sr-only" role="status" aria-live="polite">{statusText}</span>
   <!-- tabindex -1: the list scrolls, so it would otherwise be a Tab stop that
        hides itself while focused. A press on it must not take focus either. -->
   <ul class="combobox__list" id={listId} role="listbox" tabindex="-1" hidden={!open} onmousedown={(e) => e.preventDefault()}>
