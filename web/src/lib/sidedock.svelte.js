@@ -222,7 +222,9 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     measure()
     const back = returnTo
     returnTo = null
-    if (back?.isConnected && back !== doc.body && typeof back.focus === 'function') back.focus({ preventScroll: true })
+    // An opener that re-rendered away (the nearby list does) or never held focus falls back to the map canvas.
+    const usable = back?.isConnected && back !== doc.body && typeof back.focus === 'function'
+    ;(usable ? back : frame.querySelector('canvas'))?.focus({ preventScroll: true })
   }
 
   // Idempotent: reads the panel as it is now and mounts, updates or unmounts.

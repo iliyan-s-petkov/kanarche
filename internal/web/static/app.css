@@ -664,7 +664,7 @@ strong, b { font-weight: var(--weight-emphasis); }
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
   border-bottom: none; padding: 0 0 var(--space-1); margin: 0 0 var(--space-1);
 }
-.panel-close { display: inline-flex; align-items: center; gap: var(--space-2); flex: none; }
+.panel-close { display: inline-flex; align-items: center; gap: var(--space-2); flex: none; min-block-size: 24px; min-inline-size: 24px; }
 .panel-close__ico { flex: none; }
 /* Favourite star: sits next to the close button wherever the card is. */
 .panel-star {
@@ -899,7 +899,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* The station's own description, under its readings and quieter than them:
    hardware and coordinates answer "what am I looking at", not "how is the air". */
 .panel-details { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-faint); }
-.panel-details > summary { font-size: var(--text-compact); font-weight: var(--weight-emphasis); color: var(--fg-2); cursor: pointer; }
+.panel-details > summary { display: flex; align-items: center; min-block-size: 24px; font-size: var(--text-compact); font-weight: var(--weight-emphasis); color: var(--fg-2); cursor: pointer; }
 .panel-details[open] > summary { margin-bottom: var(--space-2); }
 .panel-details > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 .panel-details dd { color: var(--fg-2); }
@@ -1327,6 +1327,8 @@ html:has(> body.embed) { block-size: 100%; }
   .map-shell:has(> .map--hero) .scroll-cue::before { inset: -12px -4px 0; }
 }
 .map-shell:has(.map:fullscreen, .map--faux-full) .scroll-cue { display: none; }
+/* An open sensor card scrolls the page under the masthead, which covers the tab; the card is already the content below. */
+body:has(.sensor-panel, .map-sensor-sheet, .map-dock) .scroll-cue { display: none; }
 /* The caption clears the tab. */
 .map-shell:has(.scroll-cue) + .map-tier { margin-block-start: calc(28px + var(--space-1)); }
 @media (hover: hover) { .map-shell:has(.scroll-cue) + .map-tier { margin-block-start: var(--space-2); } }
