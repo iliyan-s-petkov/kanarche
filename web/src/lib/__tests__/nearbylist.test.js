@@ -14,6 +14,18 @@ const base = {
   readingOf: (value) => `${value} µg/m³ · good`,
 }
 
+describe('buildNearby spoken reading', () => {
+  it('carries a spoken reading beside the printed one', () => {
+    const out = buildNearby([pt(1, 23.5, 42.51, 5)], { ...base, readingSpokenOf: (value) => `${value} micrograms per cubic metre · good` })
+    expect(out.items[0].reading).toBe('5 µg/m³ · good')
+    expect(out.items[0].readingSpoken).toBe('5 micrograms per cubic metre · good')
+  })
+
+  it('leaves it empty when the caller gives none', () => {
+    expect(buildNearby([pt(1, 23.5, 42.51, 5)], base).items[0].readingSpoken).toBe('')
+  })
+})
+
 describe('buildNearby', () => {
   it('sorts by distance from the view centre', () => {
     const out = buildNearby([pt(1, 23.9, 42.9, 5), pt(2, 23.5, 42.51, 6), pt(3, 23.6, 42.6, 7)], base)

@@ -4,6 +4,7 @@ import { mount as mountComponent, unmount } from 'svelte'
 import NearbyList from '../components/NearbyList.svelte'
 import { buildNearby, describeReading, positionText } from './nearbylist.js'
 import { bandsFor } from './mappaint.js'
+import { spokenUnit } from './spokenunit.js'
 import { findSensor } from './sensors.svelte.js'
 import { HEX_SOURCE_ID, PAINT_EVENT } from './mapids.js'
 
@@ -37,6 +38,7 @@ export function installNearbyList({ map, el, cfg, state, onopen, onpreview, onun
       limit: NEARBY_LIMIT,
       nameOf: (id) => findSensor(id)?.stationName || `${d.tSensor || ''} ${id}`.trim(),
       readingOf: (value) => describeReading(value, read),
+      readingSpokenOf: (value) => describeReading(value, { ...read, unit: spokenUnit(read.unit) }),
       positionOf: (offset) => positionText(offset, words, cfg.lang),
     })
     model.items = next.items

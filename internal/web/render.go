@@ -360,7 +360,10 @@ type Readout struct {
 	Label string
 	Value string
 	Unit  string
-	Tier  string
+	// UnitSpoken is what a screen reader says for Unit; empty when the symbol
+	// is already speakable or the cell has no unit.
+	UnitSpoken string
+	Tier       string
 	// Gauge draws the figure inside an arc of Percent, filled in Colour — the
 	// two µg/m³ cells, where a number alone says nothing about how bad it is.
 	// A count has no scale to be a fraction of, so it stays a plain figure.
@@ -450,8 +453,10 @@ func (p PageData) Readouts() []Readout {
 	if len(values) > 0 {
 		medianValue := medianOf(values)
 		highest.Value, highest.Unit = formatValue(topValue, p.Lang), unit
+		highest.UnitSpoken = p.readoutUnitSpoken(p.DefaultMetric)
 		highest.Tier = top + " · " + p.T("areas.tier")
 		median.Value, median.Unit = formatValue(medianValue, p.Lang), unit
+		median.UnitSpoken = p.readoutUnitSpoken(p.DefaultMetric)
 		highest.gauge(p.DefaultMetric, topValue)
 		median.gauge(p.DefaultMetric, medianValue)
 	}
@@ -518,10 +523,11 @@ func (p PageData) AreaReadouts() []Readout {
 			return
 		}
 		c := Readout{
-			Label: p.T("metric." + m),
-			Value: formatValue(v, p.Lang),
-			Unit:  p.T("unit." + m),
-			Tier:  tier,
+			Label:      p.T("metric." + m),
+			Value:      formatValue(v, p.Lang),
+			Unit:       p.T("unit." + m),
+			Tier:       tier,
+			UnitSpoken: p.readoutUnitSpoken(m),
 		}
 		c.gauge(m, v)
 		out = append(out, c)

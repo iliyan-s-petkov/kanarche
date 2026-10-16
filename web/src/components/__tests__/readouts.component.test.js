@@ -20,6 +20,26 @@ function render(cards) {
 const gauged = { label: 'Максимум · ФПЧ2.5', metric: 'ФПЧ2.5', value: '30', unit: 'µg/m³', tier: 'Овча купел · 9 сензора', gauge: { percent: 60, colour: '#a00' } }
 const plain = { label: 'Този сензор', metric: 'ФПЧ2.5', value: '1', unit: 'от 9', tier: 'Под медианата', gauge: null }
 
+describe('Readouts spoken units', () => {
+  afterEach(() => { document.head.innerHTML = '' })
+
+  it('hides the symbol from speech and says the words beside it', () => {
+    document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
+    const el = render([gauged])
+    const unit = el.querySelector('.readout__unit')
+    expect(unit.textContent).toBe('µg/m³')
+    expect(unit.getAttribute('aria-hidden')).toBe('true')
+    expect(el.querySelector('.gauge__figure .visually-hidden, .gauge__figure .sr-only').textContent.trim()).toBe('micrograms per cubic metre')
+  })
+
+  it('leaves a unit that is not a symbol alone', () => {
+    document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
+    const el = render([plain])
+    expect(el.querySelector('.readout__unit').getAttribute('aria-hidden')).toBe(null)
+    expect(el.querySelector('.sr-only')).toBe(null)
+  })
+})
+
 describe('Readouts', () => {
   it('renders one card per figure, in the classes the server uses', () => {
     const el = render([gauged, plain])

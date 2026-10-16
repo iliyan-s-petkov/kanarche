@@ -29,7 +29,7 @@ export function positionText({ metres, octant }, t, lang) {
 // features: the hex layer's painted features, so the list agrees with what the map shows.
 // Only a cell that names one sensor and carries a reading can be listed; a bin of
 // several has no single sensor to open. Nearest to the view centre first.
-export function buildNearby(features, { centre, bounds, limit, nameOf, readingOf, positionOf = () => '' }) {
+export function buildNearby(features, { centre, bounds, limit, nameOf, readingOf, readingSpokenOf = () => '', positionOf = () => '' }) {
   const [west, south, east, north] = bounds
   // Longitude degrees shrink with latitude (same equirectangular rule as nearest.js).
   const k = Math.cos((centre[1] * Math.PI) / 180)
@@ -52,7 +52,7 @@ export function buildNearby(features, { centre, bounds, limit, nameOf, readingOf
   const sorted = [...byId.values()].sort((a, b) => a.distance - b.distance || a.id - b.id)
   const items = sorted.slice(0, limit).map((s) => ({
     id: s.id, featureId: s.featureId, lon: s.lon, lat: s.lat,
-    name: nameOf(s.id), place: positionOf(offsetFrom(centre, [s.lon, s.lat])), reading: readingOf(s.value),
+    name: nameOf(s.id), place: positionOf(offsetFrom(centre, [s.lon, s.lat])), reading: readingOf(s.value), readingSpoken: readingSpokenOf(s.value),
   }))
   return { items, total: sorted.length, rest: sorted.length - items.length }
 }

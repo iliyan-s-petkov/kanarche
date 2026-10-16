@@ -30,6 +30,19 @@ function render(props) {
   return target
 }
 
+describe('SensorPanel.svelte spoken units', () => {
+  afterEach(() => { document.head.innerHTML = '' })
+
+  // The symbol stays on screen, the name a screen reader gets says it in words.
+  it('names the gauge with the spoken unit and keeps the symbol visible', () => {
+    document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
+    const target = render()
+    const gauge = target.querySelectorAll('.gauge')[0]
+    expect(gauge.getAttribute('aria-label')).toBe('PM2.5: 12.4 micrograms per cubic metre')
+    expect(gauge.textContent).toContain('µg/m³')
+  })
+})
+
 describe('SensorPanel.svelte', () => {
   it('renders one gauge per row, with its label, value and unit', () => {
     const target = render()

@@ -19,7 +19,8 @@
           >
             <span class="nearby__name">{item.name}</span>
             <span class="nearby__place">{item.place}</span>
-            <span class="nearby__reading">{item.reading}</span>
+            <span class="nearby__reading" aria-hidden={item.readingSpoken && item.readingSpoken !== item.reading ? 'true' : undefined}>{item.reading}</span>
+            {#if item.readingSpoken && item.readingSpoken !== item.reading}<span class="sr-only">{item.readingSpoken}</span>{/if}
           </button>
         </li>
       {/each}
