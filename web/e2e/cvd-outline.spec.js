@@ -173,8 +173,9 @@ test.describe('class outline weight under colour-vision deficiency', () => {
     expect(strictlyRising(weights), `contrast more ${weights}`).toBe(true)
   })
 
-  // Dark ink on the light theme, the light foreground on the dark one, with or without high contrast.
+  // Page frames take the theme foreground. The basemap stays light in both themes, so the map paint keeps the dark ink.
   const INK = { light: 'rgb(22, 22, 22)', dark: 'rgb(244, 244, 244)' }
+  const MAP_INK = INK.light
   const inks = (page) => page.evaluate((layers) => {
     const map = document.querySelector('[data-island="map"]').__map
     const css = (sel) => getComputedStyle(document.querySelector(sel)).stroke
@@ -194,7 +195,7 @@ test.describe('class outline weight under colour-vision deficiency', () => {
 
   for (const theme of ['light', 'dark']) {
     for (const contrast of ['no-preference', 'more']) {
-      test(`${theme} theme, contrast ${contrast}: outlines and halos use the ${theme} ink`, async ({ cvdCtx }) => {
+      test(`${theme} theme, contrast ${contrast}: frames use the ${theme} ink, the map the dark ink`, async ({ cvdCtx }) => {
         const page = await cvdCtx.newPage()
         await page.emulateMedia({ contrast })
         await page.addInitScript((v) => {
@@ -205,7 +206,7 @@ test.describe('class outline weight under colour-vision deficiency', () => {
         await mapSettled(page)
         await expect(page.locator('.scale--onmap .scale__band-swatch .class-outline').first()).toBeAttached()
         const got = await inks(page)
-        expect(got.paint).toEqual([INK[theme], INK[theme], INK[theme], INK[theme]])
+        expect(got.paint).toEqual([MAP_INK, MAP_INK, MAP_INK, MAP_INK])
         expect(got.legend).toBe(INK[theme])
         await page.goto('/en/areas')
         expect(await page.locator('svg.chip__swatch polygon').first().evaluate((e) => getComputedStyle(e).stroke)).toBe(INK[theme])
@@ -213,15 +214,18 @@ test.describe('class outline weight under colour-vision deficiency', () => {
     }
   }
 
-  test('switching the theme repaints the map outlines in the new ink', async ({ cvdCtx }) => {
+  test('switching the theme turns the frames light and leaves the map paint dark', async ({ cvdCtx }) => {
     const page = await cvdCtx.newPage()
-    await page.addInitScript(() => localStorage.setItem('kanarche:theme', 'light'))
+    await page.addInitScript(() => {
+      localStorage.setItem('kanarche:theme', 'light')
+      localStorage.setItem('kanarche:legend-open', 'true')
+    })
     await page.goto('/en/')
     await mapSettled(page)
     await expect(page.locator('.scale--onmap .scale__band-swatch .class-outline').first()).toBeAttached()
-    expect((await inks(page)).paint[0]).toBe(INK.light)
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
-    await expect.poll(async () => (await inks(page)).paint).toEqual([INK.dark, INK.dark, INK.dark, INK.dark])
+    await expect.poll(async () => (await inks(page)).legend).toBe(INK.dark)
+    expect((await inks(page)).paint).toEqual([MAP_INK, MAP_INK, MAP_INK, MAP_INK])
   })
 
   test('the area table chip is outlined and the chip rules step up by class', async ({ cvdCtx }) => {

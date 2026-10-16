@@ -18,14 +18,13 @@ const assigned = [...load.matchAll(/\bsubs\.(\w+)\s*=/g)].map((m) => m[1]).sort(
 const released = [...island.matchAll(/\bsubs\.(\w+)\?\.\(\)/g)].map((m) => m[1]).sort()
 
 describe('the load handler\'s teardown handles', () => {
-  it('assigns the six the island knows about', () => {
-    expect(assigned).toEqual(['unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe', 'untheme'])
+  it('assigns the five the island knows about', () => {
+    expect(assigned).toEqual(['unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe'])
   })
 
-  // A11Y-05: the class outline ink follows the theme, at load and on every switch.
-  it('inks the class outlines from the theme and repaints them on a theme change', () => {
-    expect(load).toMatch(/applyOutlineInk\(map, outlineInk\(document, cfg\.labelColour\)\)/)
-    expect(load).toMatch(/subs\.untheme = watchTheme\(document, window,/)
+  // A11Y-05: the basemap stays light in both themes, so the map outlines keep the dark ink and nothing repaints them.
+  it('does not repaint the class outlines on a theme change', () => {
+    expect(load).not.toMatch(/OutlineInk|watchTheme/)
   })
 
   // Both directions matter. An assignment with no release leaks; a release with

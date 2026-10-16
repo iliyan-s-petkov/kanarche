@@ -29,7 +29,6 @@ import {
   HEX_COLUMN_SOURCE_ID, HEX_EXTRUSION_LAYER_ID,
 } from './mapids.js'
 import { emptyCollection } from './mapfeatures.js'
-import { applyOutlineInk, outlineInk, watchTheme } from './classoutline.js'
 import {
   markerMaxZoom, hexOutlinePaint, hexFillPaint, hexPointPaint,
   hexLabelPaint, layerPaint, NOT_OFFICIAL, officialLayout, officialPaint, labelLayout,
@@ -265,10 +264,6 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       filter: IS_FAULTY,
       paint: faultyPaint(cfg),
     })
-
-    // Class outlines and halos in the theme's ink, repainted when the theme switches (A11Y-05).
-    applyOutlineInk(map, outlineInk(document, cfg.labelColour))
-    subs.untheme = watchTheme(document, window, () => applyOutlineInk(map, outlineInk(document, cfg.labelColour)))
 
     // The reading, printed on the map. Colour alone carried three different
     // facts here — no reading, an unscaled metric, and a real band value — so
