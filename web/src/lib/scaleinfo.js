@@ -8,6 +8,8 @@
 // this file is pure: the band arithmetic below is the part worth testing, and a
 // DOM is not needed to test it.
 
+import { fillSlots } from './sea.js'
+
 // The scale the map is painting from — matched on `metric`, the same rule
 // bandsFor applies in the island, so the dialog can never describe a table the
 // map is not using.
@@ -22,15 +24,18 @@ export function scaleFor(scales, metric) {
 // index rather than a band alone.
 //
 // The first band starts at the bottom of the scale, and for the metrics with a
-// negative floor — a temperature — the bottom is not 0. `below` says what to
-// print there: with no lower bound stated the range opens downwards.
-export function bandRange(bands, i) {
+// negative floor — a temperature — the bottom is not 0, so with no lower bound
+// stated the range opens downwards.
+//
+// `words` are the catalogue's range templates (upTo, between, above). The range
+// is spoken as words, not as "5–10": a dash is read as "minus" by some readers.
+export function bandRange(bands, i, words = {}) {
   const upper = bands[i]?.upper
   const lower = i === 0 ? null : (bands[i - 1]?.upper ?? null)
   if (upper == null && lower == null) return ''
-  if (upper == null) return `> ${lower}`
-  if (lower == null) return `< ${upper}`
-  return `${lower}–${upper}`
+  if (upper == null) return fillSlots(words.above, { from: lower })
+  if (lower == null) return fillSlots(words.upTo, { to: upper })
+  return fillSlots(words.between, { from: lower, to: upper })
 }
 
 // The dialog's contents, in the reader's language: one row per band, plus the
@@ -42,7 +47,7 @@ export function bandRange(bands, i) {
 //
 // A scale with no source — the meteo tables, which are an axis and cite nobody
 // — gets no link rather than a dead one. The caller renders what is present.
-export function scaleInfo(scale, lang) {
+export function scaleInfo(scale, lang, words) {
   if (!scale) return null
   const bands = scale.bands ?? []
   return {
@@ -53,7 +58,7 @@ export function scaleInfo(scale, lang) {
     rows: bands.map((band, i) => ({
       colour: band.colour,
       label: (lang === 'bg' ? band.label_bg : band.label) || '',
-      range: bandRange(bands, i),
+      range: bandRange(bands, i, words),
     })),
   }
 }

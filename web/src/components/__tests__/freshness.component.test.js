@@ -41,11 +41,14 @@ describe('DataFreshness', () => {
     expect(el.querySelector('.data-refresh__status').textContent).toBe('Данни от 14:07')
   })
 
-  it('puts the time beside the name where a hover reaches it', () => {
+  // The accessible name is the static word. A time inside it changes the name
+  // on every refresh and breaks voice control (WCAG 2.5.3, 4.1.2). The time
+  // stays in the title for hover and in the live status node for readers.
+  it('puts the time in the hover title but keeps the accessible name static', () => {
     const el = render({ ...base, status: 'Данни от 14:07' })
     const btn = el.querySelector('.data-refresh__btn--icon')
     expect(btn.title).toBe('Обнови · Данни от 14:07')
-    expect(btn.getAttribute('aria-label')).toBe(btn.title)
+    expect(btn.getAttribute('aria-label')).toBe('Обнови')
   })
 
   // A dangling "·" is the tell that the empty status was interpolated anyway.

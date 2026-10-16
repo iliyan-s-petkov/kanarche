@@ -50,7 +50,7 @@
     aria-controls={id}
     aria-busy={busy}
     title={hint}
-    aria-label={hint}
+    aria-label={labels.trigger}
     onclick={() => { open = !open }}
   >
     <svg class="data-refresh__ico" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">

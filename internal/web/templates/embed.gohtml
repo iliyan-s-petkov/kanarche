@@ -55,6 +55,13 @@
      data-t-legend-no-data="{{.T "map.legend.no_data"}}"
      data-t-legend-wind="{{.T "map.legend.wind"}}"
      data-t-legend-about="{{.T "map.legend.about"}}"
+     data-t-legend-bands="{{.T "map.legend.bands_label"}}"
+     data-t-scale-title="{{.T "scale.dialog.title"}}"
+     data-t-scale-unit="{{.T "scale.dialog.unit"}}"
+     data-t-scale-dismiss="{{.T "scale.dialog.dismiss"}}"
+     data-t-range-up-to="{{.T "scale.range.up_to"}}"
+     data-t-range-between="{{.T "scale.range.between"}}"
+     data-t-range-above="{{.T "scale.range.above"}}"
      data-t-legend-source="{{.T "map.legend.source"}}"
      data-t-disclaimer="{{.T "disclaimer"}}"
      data-t-close="{{.T "panel.close"}}"
@@ -212,7 +219,7 @@
 {{/* Both the no-JavaScript fallback and the text alternative: a frame with no
      bundle is an empty box otherwise. */}}
 <p class="embed__alt" id="map-alt">{{.T "map.text_alternative.areas"}}
-  <a class="link" href="{{.BaseURL}}{{.Path "/areas"}}" target="_blank" rel="noopener">{{.T "nav.areas"}}</a></p>
+  <a class="link" href="{{.BaseURL}}{{.Path "/areas"}}" target="_blank" rel="noopener">{{.T "map.data_table_link"}}</a></p>
 
 {{with .Assets.Script "main"}}<script type="module" src="{{.}}"></script>
 {{end}}</body>

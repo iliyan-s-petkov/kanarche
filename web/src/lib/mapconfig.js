@@ -137,6 +137,14 @@ export function readConfig(el) {
       // button, the name of the outbound link, and the standing indicative-data
       // disclaimer, which belongs anywhere the bands are explained.
       legendAbout: d.tLegendAbout || '',
+      // The key's band list name and the scale dialog's strings, each a template with slots.
+      legendBands: d.tLegendBands || '',
+      scaleTitle: d.tScaleTitle || '',
+      scaleUnit: d.tScaleUnit || '',
+      scaleDismiss: d.tScaleDismiss || '',
+      rangeUpTo: d.tRangeUpTo || '',
+      rangeBetween: d.tRangeBetween || '',
+      rangeAbove: d.tRangeAbove || '',
       legendSource: d.tLegendSource || '',
       disclaimer: d.tDisclaimer || '',
       close: d.tClose || '',
