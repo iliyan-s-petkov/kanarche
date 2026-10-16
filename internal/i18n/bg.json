@@ -450,6 +450,7 @@
   "read.sensor.sensors_only": "{total} сензора в този район",
   "read.sensor.this": "Този сензор",
   "read.sensors": "Сензори в мрежата",
+  "refresh.announce.changed": "{subject}: качеството на въздуха вече е {band}, преди беше {was}.",
   "refresh.auto": "Автоматично обновяване",
   "refresh.button": "Обнови",
   "refresh.failed": "Обновяването не успя. Стойностите по-долу са последните, с които разполагаме.",

@@ -11,6 +11,7 @@
 // destination and hand the reader a Back button that undoes a reload.
 import { AUTO_CHOICES, AUTO_KEY, intervalMs, minutesFromStored } from './freshness.js'
 import { safeStorage } from './storage.js'
+import { categoryChange } from './announce.js'
 
 export function createFreshness({ win = globalThis, doc = globalThis.document, storage = safeStorage(), now = () => Date.now() } = {}) {
   // Auto-refresh defaults to 5 minutes unless the reader chose otherwise. A map
@@ -39,13 +40,21 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
   const providers = new Set()
   let timer = null
 
+  // What the reader is looking at and its band, asked before and after a reload (lib/announce.js).
+  const watchers = new Set()
+  let changed = $state(null)
+  const probe = () => [...watchers].map((fn) => fn()).find(Boolean) ?? null
+
   async function request() {
     if (busy) return
     busy = true
     failed = false
+    changed = null
+    const before = probe()
     try {
       await Promise.all([...providers].map((fn) => fn()))
       at = now()
+      changed = categoryChange(before, probe())
     } catch (err) {
       // Reported, not swallowed: the status line is the only place a reader
       // can find out that the numbers they are looking at did not move.
@@ -94,9 +103,14 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
       }
       schedule()
     },
+    get changed() { return changed },
     provide(fn) {
       providers.add(fn)
       return () => providers.delete(fn)
+    },
+    watch(fn) {
+      watchers.add(fn)
+      return () => watchers.delete(fn)
     },
     request,
     destroy() {
@@ -104,6 +118,7 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
       timer = null
       doc?.removeEventListener('visibilitychange', onVisibility)
       providers.clear()
+      watchers.clear()
     },
   }
 }

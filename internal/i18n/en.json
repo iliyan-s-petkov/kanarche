@@ -450,6 +450,7 @@
   "read.sensor.sensors_only": "{total} sensors in this area",
   "read.sensor.this": "This sensor",
   "read.sensors": "Sensors in the network",
+  "refresh.announce.changed": "{subject}: air quality is now {band}, was {was}.",
   "refresh.auto": "Refresh automatically",
   "refresh.button": "Refresh",
   "refresh.failed": "Could not refresh. The numbers below are the last ones we have.",

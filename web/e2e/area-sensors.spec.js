@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import { test, expect } from './fixtures.js'
+import { test, expect, mapSettled } from './fixtures.js'
 
 // The area page's sensor table: the map's text alternative and the keyboard route to each sensor.
 // internal/e2e/e2e_test.go seeds sensors 101, 102 and 103 inside the sofia area.
@@ -74,6 +74,41 @@ for (const [label, viewport] of Object.entries(VIEWPORTS)) {
     })
   }
 }
+
+test('a refresh that moves the area into another band says so once, then the line says Data from again', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(90000)
+  const context = await browser.newContext({ viewport: VIEWPORTS.desktop })
+  const page = await context.newPage()
+  try {
+    let worse = false
+    // Readings fifty times higher after the switch, so the median lands in another band.
+    await page.route(/\/api\/v1\/area\/[^/]+\/sensors/, async (route) => {
+      const res = await route.fetch()
+      const body = await res.json()
+      if (worse && Array.isArray(body?.sensors?.P2)) body.sensors.P2 = body.sensors.P2.map((v) => (typeof v === 'number' ? v * 50 + 100 : v))
+      await route.fulfill({ response: res, json: body })
+    })
+    await page.goto('/en/area/sofia')
+    await mapSettled(page)
+    await expect(summary(page)).toHaveText(/All sensors in this area \([1-9]\d*\)/, { timeout: 20000 })
+    const status = page.locator('.data-refresh__status')
+    await expect(status).toHaveText(/^Data from /)
+
+    const refreshNow = async () => {
+      await page.locator('.data-refresh__btn--icon').click()
+      await page.getByRole('button', { name: 'Refresh now' }).click()
+    }
+    worse = true
+    await refreshNow()
+    await expect(status).toHaveText(/^.+: air quality is now [a-z ]+, was [a-z ]+\.$/, { timeout: 15000 })
+    expect(((await status.textContent()) ?? '').length).toBeLessThan(80)
+
+    await refreshNow()
+    await expect(status).toHaveText(/^Data from /, { timeout: 15000 })
+  } finally {
+    await context.close()
+  }
+})
 
 test('the home map keeps its canvas as a Tab stop and has no area sensor table', async ({ ctx }) => {
   const page = await ctx.newPage()

@@ -139,6 +139,14 @@ func (p PageData) areaSubject(row AreaRow) string {
 	}
 }
 
+// AnnounceSubject names the area in the refresh change sentence. Empty off an area page.
+func (p PageData) AnnounceSubject() string {
+	if p.Area == nil {
+		return ""
+	}
+	return p.areaSubject(*p.Area)
+}
+
 // sensorsText is the key/key_one plural pattern (§4): "1 сензор" versus
 // "N сензора" — no plural engine, just two catalogue keys picked by count.
 func (p PageData) sensorsText(n int) string {

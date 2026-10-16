@@ -238,7 +238,10 @@
      data-t-updated="{{.T "refresh.updated"}}"
      data-t-loading="{{.T "refresh.loading"}}"
      data-t-failed="{{.T "refresh.failed"}}"
-     data-t-auto="{{.T "refresh.auto"}}"></div>{{end}}
+     data-t-changed="{{.T "refresh.announce.changed"}}"
+     data-t-sensor="{{.T "panel.title"}}"
+     {{with .AnnounceSubject}}data-subject="{{.}}"
+     {{end}}data-t-auto="{{.T "refresh.auto"}}"></div>{{end}}
 
 {{/* The nearby-sensors control's copy, in attribute position on the panel
      island. Defined once because three pages mount that island — home, area and
