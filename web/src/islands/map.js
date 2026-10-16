@@ -38,6 +38,7 @@ import { bandsFor } from '../lib/mappaint.js'
 import { describeReading } from '../lib/nearbylist.js'
 import { createHexTip } from '../lib/hextip.js'
 import { installNearbyList } from '../lib/mapnearby.svelte.js'
+import { installAreaSensors } from '../lib/mapareasensors.js'
 
 // The flat cells and their tilted columns: one feature, two ways of drawing it.
 const HEX_CELL_LAYERS = [HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID]
@@ -349,6 +350,10 @@ export function mount(el) {
   const stopNearby = nearbyEl
     ? installNearbyList({ map, el: nearbyEl, cfg, state, onopen: (item) => openCellSensor(item.id), onpreview: previewCell, onunpreview: clearHexHover })
     : () => {}
+  const sensorsEl = cfg.slug ? document.querySelector('[data-area-sensors]') : null
+  const stopAreaSensors = sensorsEl
+    ? installAreaSensors({ map, el: sensorsEl, cfg, onopen: openCellSensor })
+    : () => {}
 
   // The province outlines answer a click the two handlers above did not.
   //
@@ -383,6 +388,6 @@ export function mount(el) {
   return {
     map,
     chrome,
-    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); tip.destroy() },
+    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); stopAreaSensors(); tip.destroy() },
   }
 }

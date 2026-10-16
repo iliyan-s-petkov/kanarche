@@ -639,6 +639,16 @@ strong, b { font-weight: var(--weight-emphasis); }
 .nearby__name { font-weight: var(--weight-emphasis); }
 .nearby__place, .nearby__reading { color: var(--fg-2); font-size: var(--text-compact); }
 .nearby__more, .nearby__empty { margin: var(--space-2) 0 0; color: var(--muted); font-size: var(--text-compact); }
+/* Every sensor in the area as a table (AreaSensors.svelte). A closed fold, like the nearby list. */
+.area-sensors-host { margin-block-end: var(--space-4); }
+.area-sensors > summary { display: flex; align-items: center; min-block-size: 44px; font-weight: var(--weight-emphasis); cursor: pointer; }
+.area-sensors > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.area-sensors__controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-4); margin-block-end: var(--space-2); }
+.area-sensors__status { margin: 0; }
+.area-sensors__scroll { overflow-x: auto; }
+.area-sensors__table { inline-size: 100%; }
+.area-sensors__table caption { text-align: start; }
+.area-sensors__open { min-block-size: 44px; min-inline-size: 44px; font-variant-numeric: tabular-nums; }
 /* The reading card at a hovered or list-focused hex cell. Positioned by hextip.js. */
 .hex-tip {
   position: absolute; z-index: 3; pointer-events: none; max-inline-size: 90%;

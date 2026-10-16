@@ -89,9 +89,8 @@
      window is 926/560 (see --map-view-h in components.css). */}}
 <div class="map-shell">
 {{/* A map is a region with a name, not an unlabelled box: D4 found it
-     announced only as "Map". The description points at the province list
-     below, which is already the text alternative and the no-JS fallback,
-     so the two are connected rather than merely both present. */}}
+     announced only as "Map". The description points at the sensor table
+     below the map (areaSensors), which carries the same readings as text. */}}
 {{/* .map--wide is the kit's area-page map: full width of the frame, and a
      container-type so anything inside it can size itself against the map
      rather than against the viewport. */}}
@@ -276,6 +275,43 @@
      is reachable without a click, unlike on /. */}}
 {{template "sensorCardHost" .}}
 {{template "nearbyList" .}}
+
+{{/* Every sensor in the area as a table, the map's text alternative and keyboard route to
+     each sensor. Filled by the map island (web/src/lib/mapareasensors.js), hidden until then. */}}
+{{if .Area.Covered}}
+<div class="area-sensors-host" data-area-sensors hidden
+     data-area="{{.Area.Name}}"
+     {{with .AreaSensorDistricts}}data-districts="{{.}}"
+     data-t-col-district="{{$.T "area.sensors.col.district"}}"{{end}}
+     data-t-summary="{{.T "area.sensors.summary"}}"
+     data-t-summary-one="{{.T "area.sensors.summary_one"}}"
+     data-t-caption="{{.T "area.sensors.caption"}}"
+     data-t-col-sensor="{{.T "area.sensors.col.sensor"}}"
+     data-t-col-value="{{.T "area.sensors.col.value"}}"
+     data-t-col-band="{{.T "map.legend.title"}}"
+     data-t-col-updated="{{.T "area.updated"}}"
+     data-t-open="{{.T "area.sensors.open"}}"
+     data-t-filter="{{.T "area.sensors.filter.label"}}"
+     data-t-filter-placeholder="{{.T "area.sensors.filter.placeholder"}}"
+     data-t-filter-hint="{{.T "area.sensors.filter.hint"}}"
+     data-t-status="{{.T "area.sensors.status"}}"
+     data-t-empty="{{.T "area.sensors.empty"}}"
+     data-t-no-value="{{.T "panel.no_value"}}"
+     data-t-page="{{.T "table.page"}}"
+     data-t-page-of="{{.T "table.page.of"}}"
+     data-t-page-first="{{.T "table.page.first"}}"
+     data-t-page-prev="{{.T "table.page.prev"}}"
+     data-t-page-next="{{.T "table.page.next"}}"
+     data-t-page-last="{{.T "table.page.last"}}"
+     data-t-pager-label="{{.T "table.pager.label"}}"
+     data-t-per-page="{{.T "table.perpage"}}"
+     data-t-per-page-all="{{.T "table.perpage.all"}}"
+     data-t-p2="{{.T "metric.P2"}}"
+     data-t-p1="{{.T "metric.P1"}}"
+     data-t-unit-p2="{{.T "unit.P2"}}"
+     data-t-unit-p1="{{.T "unit.P1"}}"
+     {{template "bandLabels" .}}></div>
+{{end}}
 
 {{if .Area.Covered}}
   {{/* The chart island, after the map and the card the map opens, before the
