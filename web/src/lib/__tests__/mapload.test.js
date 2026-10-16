@@ -18,8 +18,14 @@ const assigned = [...load.matchAll(/\bsubs\.(\w+)\s*=/g)].map((m) => m[1]).sort(
 const released = [...island.matchAll(/\bsubs\.(\w+)\?\.\(\)/g)].map((m) => m[1]).sort()
 
 describe('the load handler\'s teardown handles', () => {
-  it('assigns the five the island knows about', () => {
-    expect(assigned).toEqual(['unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe'])
+  it('assigns the six the island knows about', () => {
+    expect(assigned).toEqual(['unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe', 'untheme'])
+  })
+
+  // A11Y-05: the class outline ink follows the theme, at load and on every switch.
+  it('inks the class outlines from the theme and repaints them on a theme change', () => {
+    expect(load).toMatch(/applyOutlineInk\(map, outlineInk\(document, cfg\.labelColour\)\)/)
+    expect(load).toMatch(/subs\.untheme = watchTheme\(document, window,/)
   })
 
   // Both directions matter. An assignment with no release leaks; a release with

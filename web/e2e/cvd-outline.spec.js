@@ -173,6 +173,57 @@ test.describe('class outline weight under colour-vision deficiency', () => {
     expect(strictlyRising(weights), `contrast more ${weights}`).toBe(true)
   })
 
+  // Dark ink on the light theme, the light foreground on the dark one, with or without high contrast.
+  const INK = { light: 'rgb(22, 22, 22)', dark: 'rgb(244, 244, 244)' }
+  const inks = (page) => page.evaluate((layers) => {
+    const map = document.querySelector('[data-island="map"]').__map
+    const css = (sel) => getComputedStyle(document.querySelector(sel)).stroke
+    const rgb = (c) => {
+      const el = document.createElement('i')
+      el.style.color = c
+      document.body.append(el)
+      const v = getComputedStyle(el).color
+      el.remove()
+      return v
+    }
+    return {
+      paint: layers.map(([id, prop]) => rgb(map.getPaintProperty(id, prop))),
+      legend: css('.scale--onmap .scale__band-swatch .class-outline'),
+    }
+  }, [[OUTLINE, 'line-color'], ['kanarche-hex-point', 'circle-stroke-color'], ['kanarche-markers', 'circle-stroke-color'], ['kanarche-markers-official', 'icon-halo-color']])
+
+  for (const theme of ['light', 'dark']) {
+    for (const contrast of ['no-preference', 'more']) {
+      test(`${theme} theme, contrast ${contrast}: outlines and halos use the ${theme} ink`, async ({ cvdCtx }) => {
+        const page = await cvdCtx.newPage()
+        await page.emulateMedia({ contrast })
+        await page.addInitScript((v) => {
+          localStorage.setItem('kanarche:theme', v)
+          localStorage.setItem('kanarche:legend-open', 'true')
+        }, theme)
+        await page.goto('/en/')
+        await mapSettled(page)
+        await expect(page.locator('.scale--onmap .scale__band-swatch .class-outline').first()).toBeAttached()
+        const got = await inks(page)
+        expect(got.paint).toEqual([INK[theme], INK[theme], INK[theme], INK[theme]])
+        expect(got.legend).toBe(INK[theme])
+        await page.goto('/en/areas')
+        expect(await page.locator('svg.chip__swatch polygon').first().evaluate((e) => getComputedStyle(e).stroke)).toBe(INK[theme])
+      })
+    }
+  }
+
+  test('switching the theme repaints the map outlines in the new ink', async ({ cvdCtx }) => {
+    const page = await cvdCtx.newPage()
+    await page.addInitScript(() => localStorage.setItem('kanarche:theme', 'light'))
+    await page.goto('/en/')
+    await mapSettled(page)
+    await expect(page.locator('.scale--onmap .scale__band-swatch .class-outline').first()).toBeAttached()
+    expect((await inks(page)).paint[0]).toBe(INK.light)
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+    await expect.poll(async () => (await inks(page)).paint).toEqual([INK.dark, INK.dark, INK.dark, INK.dark])
+  })
+
   test('the area table chip is outlined and the chip rules step up by class', async ({ cvdCtx }) => {
     const page = await cvdCtx.newPage()
     await page.goto('/en/areas')

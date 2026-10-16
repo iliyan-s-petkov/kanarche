@@ -1,7 +1,12 @@
+// @vitest-environment jsdom
 import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { expression } from '@maplibre/maplibre-gl-style-spec'
-import { CLASS_OUTLINE_PX, bandIndex, classOutlineWidth, classOutlineExpr } from '../classoutline.js'
+import {
+  CLASS_OUTLINE_PX, bandIndex, classOutlineWidth, classOutlineExpr,
+  outlineSwatch, outlineInk, applyOutlineInk, watchTheme,
+} from '../classoutline.js'
+import { HEX_OUTLINE_LAYER_ID, HEX_POINT_LAYER_ID, LAYER_ID, OFFICIAL_LAYER_ID } from '../mapids.js'
 
 // A11Y-05: outline weight is the second channel beside colour. Worse class, heavier outline.
 const BANDS = [
@@ -76,5 +81,59 @@ describe('classOutlineExpr', () => {
 
   it('adds the extra px on top of the class weight', () => {
     expect(evalWidth(classOutlineExpr(1), 2)).toBe(CLASS_OUTLINE_PX[2] + 1)
+  })
+})
+
+// The outline ink follows the theme: #161616 on light, the light foreground on dark.
+describe('outline ink', () => {
+  for (const path of ['../internal/web/static/theme.css', 'src/styles/theme.css']) {
+    it(`is the theme foreground in ${path}`, () => {
+      expect(readFileSync(path, 'utf8')).toMatch(/--class-outline-ink:\s*var\(--fg\);/)
+    })
+  }
+
+  it('strokes every outlined swatch from the token, over its attribute', () => {
+    const css = readFileSync('../internal/web/static/app.css', 'utf8')
+    expect(css).toMatch(/\.class-outline\s*\{[^}]*stroke:\s*var\(--class-outline-ink\)/)
+  })
+
+  it('marks a swatch shape as outlined', () => {
+    const shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    outlineSwatch(shape, 2, '#161616')
+    expect(shape.classList.contains('class-outline')).toBe(true)
+  })
+
+  it('reads the ink from the page, else the fallback', () => {
+    expect(outlineInk(document, '#161616')).toBe('#161616')
+    document.documentElement.style.setProperty('--class-outline-ink', ' #f4f4f4')
+    try {
+      expect(outlineInk(document, '#161616')).toBe('#f4f4f4')
+    } finally {
+      document.documentElement.style.removeProperty('--class-outline-ink')
+    }
+  })
+
+  it('repaints the outline and halo of every marker layer the map has', () => {
+    const set = []
+    const map = { getLayer: (id) => id !== OFFICIAL_LAYER_ID, setPaintProperty: (...a) => set.push(a) }
+    applyOutlineInk(map, '#f4f4f4')
+    expect(set).toEqual([
+      [HEX_OUTLINE_LAYER_ID, 'line-color', '#f4f4f4'],
+      [HEX_POINT_LAYER_ID, 'circle-stroke-color', '#f4f4f4'],
+      [LAYER_ID, 'circle-stroke-color', '#f4f4f4'],
+    ])
+  })
+
+  it('calls back when the theme attribute changes, until stopped', async () => {
+    let calls = 0
+    const stop = watchTheme(document, window, () => { calls++ })
+    document.documentElement.setAttribute('data-theme', 'dark')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(calls).toBe(1)
+    stop()
+    document.documentElement.setAttribute('data-theme', 'light')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(calls).toBe(1)
+    document.documentElement.removeAttribute('data-theme')
   })
 })

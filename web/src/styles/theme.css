@@ -60,6 +60,8 @@
   --class-outline-3: 3px;
   --class-outline-4: 3.75px;
   --class-outline-5: 4.5px;
+  /* Their ink: the theme foreground, dark on light and light on dark. classoutline.js reads it for the map. */
+  --class-outline-ink: var(--fg);
   /* Chart tooltip arrow offset; charttooltip.js sets it per hover. */
   --tip-arrow: 50%;
 

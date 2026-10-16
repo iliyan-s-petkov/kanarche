@@ -117,6 +117,8 @@ svg.chip__swatch[data-class="2"] polygon { stroke-width: calc(2 * var(--class-ou
 svg.chip__swatch[data-class="3"] polygon { stroke-width: calc(2 * var(--class-outline-3)); }
 svg.chip__swatch[data-class="4"] polygon { stroke-width: calc(2 * var(--class-outline-4)); }
 svg.chip__swatch[data-class="5"] polygon { stroke-width: calc(2 * var(--class-outline-5)); }
+/* Chips, legend and scale dialog swatches take the theme ink over their stroke attribute. */
+.class-outline { stroke: var(--class-outline-ink); }
 /* An absence is not a failure (DESIGN.md 2.3). `area.no_coverage` says a
    province has no recent readings — an ordinary state of the world — and it was
    rendered with --warn's yellow bar on --notice-bg, which is the anti-pattern

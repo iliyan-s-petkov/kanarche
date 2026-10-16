@@ -100,7 +100,7 @@ func TestProvinceChipCarriesItsClassForTheOutline(t *testing.T) {
 		if !strings.Contains(row, `data-class="`+class+`"`) {
 			t.Errorf("%s chip: want data-class=%q in %q", name, class, row)
 		}
-		if !strings.Contains(row, `<polygon`) {
+		if !strings.Contains(row, `<polygon class="class-outline"`) {
 			t.Errorf("%s chip: want a hexagon polygon the outline can follow, got %q", name, row)
 		}
 	}
