@@ -255,6 +255,14 @@ describe('hexFeatures', () => {
     expect(cell.properties.colour).not.toBe(byCount(f, 1).properties.colour)
   })
 
+  // A11Y-05: the class index rides on the cell so the outline can be weighted by it.
+  it('carries the band index of its value, -1 when it has none', () => {
+    const f = hexFeatures(body, 'P1', bands, '#ccc', rampColour)
+    expect(byCount(f, 3).properties.band).toBe(0)
+    expect(byCount(f, 1).properties.band).toBe(2)
+    expect(byCount(f, 2).properties.band).toBe(-1)
+  })
+
   // A bin with no reading for this metric is not a bin with no sensors. The
   // count is still true, so the cell stays and only its colour says "no value".
   it('keeps a bin that has no value for the current metric', () => {

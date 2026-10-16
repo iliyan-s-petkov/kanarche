@@ -28,6 +28,13 @@ describe('areaFeatures', () => {
     expect(feature.properties.value).toBeNull()
   })
 
+  it('carries the band index for the class outline, -1 when uncovered', () => {
+    const covered = { areas: [{ slug: 'sofia', lon: 23.3, lat: 42.7, covered: true, values: { P2: 50 }, sensor_count: 12 }] }
+    const uncovered = { areas: [{ slug: 'vidin', lon: 22.9, lat: 44.0, covered: false, values: { P2: 50 }, sensor_count: 1 }] }
+    expect(areaFeatures(covered, 'P2', scales, NO_DATA_COLOUR)[0].properties.band).toBe(1)
+    expect(areaFeatures(uncovered, 'P2', scales, NO_DATA_COLOUR)[0].properties.band).toBe(-1)
+  })
+
   it('returns no features for a missing or empty areas array', () => {
     expect(areaFeatures({}, 'P2', scales, NO_DATA_COLOUR)).toEqual([])
     expect(areaFeatures(null, 'P2', scales, NO_DATA_COLOUR)).toEqual([])
@@ -59,6 +66,12 @@ describe('sensorFeatures', () => {
   it('colours a null metric value as no-data, not as zero', () => {
     const features = sensorFeatures(body, 'P2', scales, NO_DATA_COLOUR)
     expect(features[1].properties.colour).toBe('#9ca3af')
+  })
+
+  it('carries the band index for the class outline, -1 for a null value', () => {
+    const features = sensorFeatures(body, 'P2', scales, NO_DATA_COLOUR)
+    expect(features[0].properties.band).toBe(0)
+    expect(features[1].properties.band).toBe(-1)
   })
 
   it('returns no features for a missing sensors object', () => {

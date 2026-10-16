@@ -335,6 +335,9 @@ type AreaRow struct {
 	// be right with no JavaScript, and it must agree with the dot the map draws
 	// for the same province — see bandColour.
 	Colour string
+	// Class is the band index for Value, -1 when Colour is empty; app.css
+	// weights the chip's outline by it (A11Y-05).
+	Class int
 	// Every metric this area is currently reporting, unformatted. Value above is
 	// one of these — the page's default metric — kept as its own field because
 	// the province list only ever prints that one and reaching into a map per

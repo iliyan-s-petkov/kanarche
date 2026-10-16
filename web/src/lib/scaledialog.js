@@ -1,4 +1,5 @@
 import { scaleInfo } from './scaleinfo.js'
+import { outlineSwatch } from './classoutline.js'
 
 // The (i) beside the key, and the dialog it opens.
 //
@@ -14,7 +15,7 @@ import { scaleInfo } from './scaleinfo.js'
 // createScaleDialog builds the dialog once and returns a handle. `show` repaints
 // it from a scale and opens it; the button's own visibility is the caller's
 // business, because only the caller knows whether a scale has loaded yet.
-export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang }) {
+export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang, ink }) {
   const el = doc.createElement('dialog')
   el.className = 'scaleinfo'
 
@@ -70,10 +71,13 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
     notes.hidden = !info.notes
 
     list.replaceChildren()
-    for (const row of info.rows) {
+    for (const [i, row] of info.rows.entries()) {
       const item = doc.createElement('li')
       item.className = 'scaleinfo__band'
-      item.appendChild(swatch(doc, row.colour))
+      const mark = swatch(doc, row.colour)
+      // Same class outline as the key and the map (A11Y-05).
+      outlineSwatch(mark.firstChild, i, ink)
+      item.appendChild(mark)
 
       const name = doc.createElement('span')
       name.className = 'scaleinfo__band-name'

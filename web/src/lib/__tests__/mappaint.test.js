@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
   bandsFor, hexOutlinePaint, markerMaxZoom, layerPaint, markerPaint, officialLayout, officialPaint,
-  hexLabelPaint, CARRIED_OPACITY, FRESH_OPACITY, SETTLING_OPACITY,
+  hexLabelPaint, hexPointPaint, CARRIED_OPACITY, FRESH_OPACITY, SETTLING_OPACITY,
   setCellValues, applyMarkerZoomRange,
 } from '../mappaint.js'
+import { classOutlineExpr } from '../classoutline.js'
 import { DIAMOND_RADIUS_PX } from '../markericon.js'
 import { GRID_MIN_ZOOM_FRACTIONAL, POINT_TIER_MIN_ZOOM_FRACTIONAL } from '../hexes.js'
 import { HEX_LABEL_LAYER_ID, LABEL_LAYER_ID } from '../mapids.js'
@@ -52,11 +53,24 @@ describe('bandsFor', () => {
 // comment for why one name could not serve both), extracted out of mount()'s
 // map.on('load', ...) callback specifically so it can be tested without a
 // real MapLibre map.
+// A11Y-05 replaced the white ring: the stroke is the class outline now, and white
+// vanishes into a pale street map, so it is drawn in the label ink like the hex border.
 describe('layerPaint', () => {
-  it('reads circle-stroke-color from cfg.markerStrokeColour', () => {
-    const cfg = { markerStrokeColour: '#ffffff', noDataColour: '#9ca3af' }
+  it('strokes each dot in the label ink at its class weight', () => {
+    const cfg = { markerStrokeColour: '#ffffff', labelColour: '#161616', noDataColour: '#9ca3af' }
     const paint = layerPaint(cfg)
-    expect(paint['circle-stroke-color']).toBe('#ffffff')
+    expect(paint['circle-stroke-color']).toBe('#161616')
+    expect(paint['circle-stroke-width']).toEqual(classOutlineExpr())
+  })
+})
+
+describe('hexPointPaint', () => {
+  it('strokes each point in the label ink at its class weight, heavier on hover', () => {
+    const paint = hexPointPaint({ markerStrokeColour: '#ffffff', labelColour: '#161616' })
+    expect(paint['circle-stroke-color']).toBe('#161616')
+    const [, , hovered, normal] = paint['circle-stroke-width']
+    expect(normal).toEqual(classOutlineExpr())
+    expect(hovered).toEqual(classOutlineExpr(1.5))
   })
 })
 
@@ -195,9 +209,12 @@ describe('hexOutlinePaint', () => {
     // islands/map.js) reuses this same paint, boosted through feature-state
     // instead of a colour change. Both branches checked: the normal one
     // (last element) against the old floor, the hovered one against it.
+    // The normal width is the cell's class weight (A11Y-05) and hover adds a pixel on top.
     const [, , hovered, normal] = paint['line-width']
-    expect(normal).toBeGreaterThanOrEqual(1)
-    expect(hovered).toBeGreaterThan(normal)
+    expect(normal).toEqual(classOutlineExpr())
+    expect(hovered).toEqual(classOutlineExpr(1))
+    // Inset by half its own width, so a cell's weight is drawn inside it and a neighbour cannot claim it.
+    expect(paint['line-offset']).toEqual(['/', classOutlineExpr(), 2])
     const [, , hoveredOpacity, normalOpacity] = paint['line-opacity']
     expect(normalOpacity).toBeGreaterThanOrEqual(0.6)
     expect(hoveredOpacity).toBeGreaterThan(normalOpacity)
@@ -217,7 +234,8 @@ describe('officialLayout / officialPaint', () => {
     expect(size[6] * (DIAMOND_RADIUS_PX / 2)).toBeCloseTo(radius[6])
 
     expect(officialPaint(cfg)['icon-color']).toEqual(['get', 'colour'])
-    expect(officialPaint(cfg)['icon-halo-color']).toBe('#ffffff')
+    expect(officialPaint({ ...cfg, labelColour: '#161616' })['icon-halo-color']).toBe('#161616')
+    expect(officialPaint(cfg)['icon-halo-width']).toEqual(classOutlineExpr())
   })
 })
 

@@ -53,6 +53,13 @@
   --masthead-h: 48px;
   /* Horizontal scale ramp; legend.js sets it at runtime from /api/v1/scales. */
   --ramp-h: none;
+  /* Outline weight per air-quality class, best first (A11Y-05). Same ladder as CLASS_OUTLINE_PX in classoutline.js. */
+  --class-outline-0: 0.75px;
+  --class-outline-1: 1.5px;
+  --class-outline-2: 2.25px;
+  --class-outline-3: 3px;
+  --class-outline-4: 3.75px;
+  --class-outline-5: 4.5px;
   /* Chart tooltip arrow offset; charttooltip.js sets it per hover. */
   --tip-arrow: 50%;
 

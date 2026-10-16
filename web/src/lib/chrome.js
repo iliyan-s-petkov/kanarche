@@ -185,6 +185,7 @@ export function mountChrome(el, cfg) {
     sourceLabel: cfg.t.legendSource,
     disclaimer: cfg.t.disclaimer,
     lang: cfg.lang,
+    ink: cfg.labelColour,
   })
   el.appendChild(scaleDialog.el)
   // The pollen and bathing-water sections' (i) share one dialog.
@@ -506,6 +507,8 @@ export function mountChrome(el, cfg) {
       // No scale, no (i): before the tables load, and for a metric none of them
       // claim, the dialog would open on nothing.
       info: scale ? { label: cfg.t.legendAbout, onOpen: () => scaleDialog.show(scale) } : null,
+      // The map's cell-border ink, so the swatch outlines match the cells.
+      ink: cfg.labelColour,
     })
     legend.appendChild(windRow)
     if (seaRows) legend.appendChild(seaRows)
