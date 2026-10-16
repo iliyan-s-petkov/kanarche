@@ -1,5 +1,6 @@
 import { scaleInfo } from './scaleinfo.js'
 import { outlineSwatch } from './classoutline.js'
+import { fillSlots } from './sea.js'
 
 // The (i) beside the key, and the dialog it opens.
 //
@@ -15,7 +16,9 @@ import { outlineSwatch } from './classoutline.js'
 // createScaleDialog builds the dialog once and returns a handle. `show` repaints
 // it from a scale and opens it; the button's own visibility is the caller's
 // business, because only the caller knows whether a scale has loaded yet.
-export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang, ink }) {
+// `t` holds the catalogue strings: title and unit templates, the corner mark's
+// own name, and the range words.
+export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang, t = {}, ink }) {
   const el = doc.createElement('dialog')
   el.className = 'scaleinfo'
 
@@ -25,13 +28,17 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
   const dismiss = doc.createElement('button')
   dismiss.type = 'button'
   dismiss.className = 'scaleinfo__dismiss'
-  dismiss.setAttribute('aria-label', closeLabel || '')
+  dismiss.setAttribute('aria-label', t.dismiss || closeLabel || '')
   dismiss.addEventListener('click', () => el.close())
   el.appendChild(dismiss)
 
   const heading = doc.createElement('h2')
   heading.className = 'scaleinfo__title'
   el.appendChild(heading)
+
+  const units = doc.createElement('p')
+  units.className = 'scaleinfo__units'
+  el.appendChild(units)
 
   const notes = doc.createElement('p')
   notes.className = 'scaleinfo__notes'
@@ -63,10 +70,13 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
   close.addEventListener('click', () => el.close())
   el.appendChild(close)
 
-  function paint(scale) {
-    const info = scaleInfo(scale, lang)
+  // `metric` is the reader-facing metric name; the scale's own id is the fallback.
+  function paint(scale, metric) {
+    const info = scaleInfo(scale, lang, t.range)
     if (!info) return false
-    heading.textContent = info.unit ? `${info.name}, ${info.unit}` : info.name
+    heading.textContent = fillSlots(t.title, { metric: metric || info.name })
+    units.textContent = info.unit ? fillSlots(t.unit, { unit: info.unit }) : ''
+    units.hidden = !info.unit
     notes.textContent = info.notes
     notes.hidden = !info.notes
 
@@ -104,11 +114,11 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
   return {
     el,
     // Paints without opening, so the source link has an href before the (i) is clicked.
-    prime(scale) {
-      paint(scale)
+    prime(scale, metric) {
+      paint(scale, metric)
     },
-    show(scale) {
-      if (!paint(scale)) return
+    show(scale, metric) {
+      if (!paint(scale, metric)) return
       // showModal throws if it is already open — repainting an open dialog is
       // what a metric switch behind it does.
       if (!el.open) el.showModal()

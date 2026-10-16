@@ -441,6 +441,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-tier { margin: var(--space-2) 0 0; padding-inline: var(--gutter); }
 .frame .map-tier { padding-inline: 0; }
 .map-tier[hidden] { display: none; }
+
+/* The visible route to the data table; the link keeps a 24px target. */
+.map-data-link { margin: var(--space-1) 0 0; padding-inline: var(--gutter); }
+.map-data-link .link { display: inline-block; min-block-size: 24px; line-height: 24px; }
 /* Bottom-right, same overlay idiom as .map-legend/.map-hint/.map-note above
    (absolute within #map/#area-map): the left edge is already legend/note
    (top) and hint (bottom), and the top-right corner belongs to the kit's

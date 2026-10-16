@@ -19,7 +19,8 @@ const BANDS = [
   { upper: null, colour: '#c33', label: 'Poor', label_bg: 'Лошо' },
 ]
 
-const OPTS = { noDataColour: '#999', noDataLabel: 'Недостатъчно данни', lang: 'bg' }
+const WORDS = { upTo: 'до {to}', between: 'от {from} до {to}', above: 'над {from}' }
+const OPTS = { noDataColour: '#999', noDataLabel: 'Недостатъчно данни', lang: 'bg', words: WORDS }
 
 describe('legendRows', () => {
   it('separates the bands from the no-data row', () => {
@@ -40,6 +41,11 @@ describe('legendRows', () => {
   it('prints the scale ceiling at the top of the bar when the top band carries one', () => {
     const withCeiling = BANDS.map((b, i) => (i === 2 ? { ...b, ceiling: 500 } : b))
     expect(legendRows(withCeiling, OPTS).bands.map((b) => b.edge)).toEqual(['20', '50', '500'])
+  })
+
+  // The edge numbers are aria-hidden, so the thresholds need their own text.
+  it('gives each band its range as words, lowest band first', () => {
+    expect(legendRows(BANDS, OPTS).bands.map((b) => b.range)).toEqual(['до 20', 'от 20 до 50', 'над 50'])
   })
 
   it('picks the Bulgarian label for bg and the English one otherwise', () => {
@@ -72,6 +78,7 @@ describe('renderLegend', () => {
       toggleLabel: 'Легенда',
       ...legendRows(BANDS, OPTS),
       info: { label: 'Какво означават цветовете', onOpen: () => {} },
+      bandsLabel: 'Нива за ФПЧ2.5, стойности в µg/m³',
       ...over,
     })
     return el
@@ -110,6 +117,21 @@ describe('renderLegend', () => {
       .toEqual(['Лошо', 'Умерено', 'Добро'])
     expect([...el.querySelectorAll('.scale__band-edge')].map((n) => n.textContent))
       .toEqual(['', '50', '20'])
+  })
+
+  // Sighted readers get the thresholds from the edge numbers on the seams.
+  // The numbers are aria-hidden, so each row carries its range as text the
+  // reader hears after the band name.
+  it('speaks each band name with its range, in the same row', () => {
+    const rows = [...draw().querySelectorAll('.scale__band')]
+    expect(rows.map((r) => r.querySelector('.scale__band-name').textContent + r.querySelector('.sr-only').textContent)).toEqual(['Лошо, над 50', 'Умерено, от 20 до 50', 'Добро, до 20'])
+    for (const r of rows) expect(r.querySelector('.sr-only')).not.toBeNull()
+  })
+
+  // The unit is said once on the list, so rows do not repeat it.
+  it('names the band list with the metric and its unit', () => {
+    const list = draw().querySelector('.scale__bands')
+    expect(list.getAttribute('aria-label')).toBe('Нива за ФПЧ2.5, стойности в µg/m³')
   })
 
   // Grey is not a step on the scale, it is the absence of one — so it sits

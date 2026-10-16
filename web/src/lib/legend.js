@@ -2,6 +2,7 @@ import { SEA_CLASSES } from './sea.js'
 import { POLLEN_LEVELS, pollenVar } from './pollen.js'
 import { rampGradient } from './ramp.js'
 import { outlineSwatch } from './classoutline.js'
+import { bandRange } from './scaleinfo.js'
 
 // The map legend: the ramp, and what a dot means at the current zoom.
 //
@@ -60,11 +61,13 @@ export function legendTitle({ label, unit, fallback }) {
 // the key ran 5, 10, 20, 25, 50 and then stopped, which says nothing about what
 // the top of the bar means; a reader seeing a magenta dot could not tell 60 from
 // 400. A scale with no ceiling still draws no top edge rather than inventing one.
-export function legendRows(bands, { noDataColour, noDataLabel, lang }) {
+export function legendRows(bands, { noDataColour, noDataLabel, lang, words }) {
   return {
     bands: (bands ?? []).map((band, i) => {
       const edge = band.upper ?? band.ceiling
       return {
+        // The edge numbers are aria-hidden, so the range is carried as words too.
+        range: bandRange(bands, i, words),
         colour: band.colour,
         // Class index, for the swatch's outline weight (A11Y-05).
         class: i,
@@ -96,7 +99,7 @@ export function legendRows(bands, { noDataColour, noDataLabel, lang }) {
 // `info`, when given, adds the (i) that opens the scale dialog. Optional
 // because the key is drawn once before any scale has loaded, and an (i) that
 // opens an empty dialog is worse than no (i) at all.
-export function renderLegend(el, { title, toggleLabel, bands, noData, info, ink }) {
+export function renderLegend(el, { title, toggleLabel, bands, noData, info, bandsLabel, ink }) {
   // Reuse the toggle across moveend refreshes so focus and in-flight clicks keep their target.
   let toggle = el.querySelector(':scope > .scale__toggle')
   if (toggle) toggle.remove()
@@ -145,6 +148,8 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info, ink 
   // one way and it is the served order reversed.
   const list = document.createElement('ol')
   list.className = 'scale__bands scale__bands--vertical'
+  // States the unit once, so the rows need not repeat it.
+  if (bandsLabel) list.setAttribute('aria-label', bandsLabel)
   if (ramp) {
     // An <li>, because an <ol> may hold nothing else — and the bar is not a
     // band: it is all of them, painted over the rows it spans. aria-hidden for
@@ -167,6 +172,14 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info, ink 
     name.className = 'scale__band-name'
     name.textContent = band.label
     item.appendChild(name)
+
+    // Heard after the band name; the comma keeps the two apart for a reader.
+    if (band.range) {
+      const range = document.createElement('span')
+      range.className = 'sr-only'
+      range.textContent = `, ${band.range}`
+      item.appendChild(range)
+    }
 
     // Always present, even when empty: it is positioned absolutely against its
     // band, and a row that omits it on the open top band would be the only row

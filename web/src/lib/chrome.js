@@ -4,6 +4,7 @@
 // the pure builders it calls stay importable on their own.
 import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows, legendTitle, renderLegend, setPollenLegend, setWindRow } from './legend.js'
 import { createScaleDialog } from './scaledialog.js'
+import { fillSlots } from './sea.js'
 import { createInfoDialog, pollenInfoContent, seaInfoContent } from './infodialog.js'
 import { mountFullscreen, mountZoom, mountLocate, mountOrientation } from './mapcontrols.js'
 import { mountLayers, styleMeta } from './maplayers.js'
@@ -180,11 +181,18 @@ export function mountChrome(el, cfg) {
   //
   // On the frame rather than the shell, because a modal in fullscreen must be
   // inside the fullscreen element or the browser renders it nowhere.
+  const rangeWords = { upTo: cfg.t.rangeUpTo, between: cfg.t.rangeBetween, above: cfg.t.rangeAbove }
   const scaleDialog = createScaleDialog(el.ownerDocument, {
     closeLabel: cfg.t.close,
     sourceLabel: cfg.t.legendSource,
     disclaimer: cfg.t.disclaimer,
     lang: cfg.lang,
+    t: {
+      title: cfg.t.scaleTitle,
+      unit: cfg.t.scaleUnit,
+      dismiss: cfg.t.scaleDismiss,
+      range: rangeWords,
+    },
     ink: cfg.labelColour,
   })
   el.appendChild(scaleDialog.el)
@@ -488,7 +496,8 @@ export function mountChrome(el, cfg) {
     tierLine.hidden = !tierLine.textContent || (pollenRows ? !pollenRows.hidden : false)
   }
   const showLegend = ({ bands, tier, metric, scale }) => {
-    if (scale) scaleDialog.prime(scale)
+    const metricName = cfg.metricLabels[metric]
+    if (scale) scaleDialog.prime(scale, metricName)
     metricTitle = legendTitle({
       label: cfg.metricLabels[metric],
       unit: cfg.metricUnits[metric],
@@ -503,10 +512,12 @@ export function mountChrome(el, cfg) {
         noDataColour: cfg.noDataColour,
         noDataLabel: cfg.t.legendNoData,
         lang: cfg.lang,
+        words: rangeWords,
       }),
+      bandsLabel: fillSlots(cfg.t.legendBands, { metric: metricName || cfg.t.legend, unit: cfg.metricUnits[metric] || '' }),
       // No scale, no (i): before the tables load, and for a metric none of them
       // claim, the dialog would open on nothing.
-      info: scale ? { label: cfg.t.legendAbout, onOpen: () => scaleDialog.show(scale) } : null,
+      info: scale ? { label: cfg.t.legendAbout, onOpen: () => scaleDialog.show(scale, metricName) } : null,
       // The map's cell-border ink, so the swatch outlines match the cells.
       ink: cfg.labelColour,
     })

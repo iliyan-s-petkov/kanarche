@@ -68,6 +68,13 @@
      data-t-legend-no-data="{{.T "map.legend.no_data"}}"
      data-t-legend-wind="{{.T "map.legend.wind"}}"
      data-t-legend-about="{{.T "map.legend.about"}}"
+     data-t-legend-bands="{{.T "map.legend.bands_label"}}"
+     data-t-scale-title="{{.T "scale.dialog.title"}}"
+     data-t-scale-unit="{{.T "scale.dialog.unit"}}"
+     data-t-scale-dismiss="{{.T "scale.dialog.dismiss"}}"
+     data-t-range-up-to="{{.T "scale.range.up_to"}}"
+     data-t-range-between="{{.T "scale.range.between"}}"
+     data-t-range-above="{{.T "scale.range.above"}}"
      data-t-legend-source="{{.T "map.legend.source"}}"
      data-t-disclaimer="{{.T "disclaimer"}}"
      data-t-close="{{.T "panel.close"}}"
@@ -221,6 +228,8 @@
 </div>
 {{/* Server-rendered LCP element; mountChrome adopts it (PageData.InitialTier). */}}
 <p class="legend__tier map-tier">{{.InitialTier}}</p>
+{{/* The route from the map to the numbers for a reader who cannot use it, and what a crawler follows. */}}
+<p class="map-data-link"><a class="link" href="{{.Path "/areas"}}">{{.T "map.data_table_link"}}</a></p>
 {{end}}
 
 {{/* Contained again after the full-bleed map. Outside the tab condition
@@ -257,15 +266,10 @@
      colours mean. Its thresholds are filled from api.Scales(), not typed here. */}}
 <p class="t-body">{{.HomeAboutPM}}</p>
 
-{{/* The map's text alternative, named so aria-describedby can reach it. It is
-     one sentence and a link, not a copy of the list: the list is a whole tab of
-     its own, and duplicating it here is what made the two tabs the same page.
-     A link rather than prose alone because this is the ONLY route a reader who
-     cannot use the map has to the numbers — and it is what a crawler follows.
-     Not painted: a sighted reader has the Areas tab in the nav already, and
-     under the map the sentence only pointed at what was next to it. */}}
-<p id="map-alt" class="visually-hidden">{{.T "map.text_alternative.areas"}}
-  <a class="link" href="{{.Path "/areas"}}">{{.T "nav.areas"}}</a></p>
+{{/* The map's description, named so aria-describedby can reach it. Prose only:
+     a link inside a visually-hidden element still takes focus while clipped
+     away. The visible Data table link sits under the map instead. */}}
+<p id="map-alt" class="visually-hidden">{{.T "map.text_alternative.areas"}}</p>
 {{end}}
 
 {{if not $map}}
@@ -432,7 +436,10 @@
      data-t-placeholder="{{if $map}}{{.T "find.placeholder_address"}}{{else}}{{.T "find.placeholder"}}{{end}}"
      data-t-hint="{{if $map}}{{.T "find.hint_map"}}{{else}}{{.T "find.hint"}}{{end}}"
      data-t-empty="{{.T "find.no_match"}}"
-     {{if $map}}data-t-group-district="{{.T "find.group_district"}}"
+     data-t-status-results="{{.T "find.status.results"}}"
+     data-t-status-results-one="{{.T "find.status.results_one"}}"
+     {{if $map}}data-t-status-centred="{{.T "find.status.centred"}}"
+     {{end}}{{if $map}}data-t-group-district="{{.T "find.group_district"}}"
      data-t-group-place="{{.T "find.group_place"}}"
      data-t-address-row="{{.T "find.address_row"}}"
      data-t-address-loading="{{.T "find.address_loading"}}"

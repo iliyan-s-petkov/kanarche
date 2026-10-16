@@ -43,8 +43,8 @@ func TestMapTabPointsAtTheAreasTabForTheNumbers(t *testing.T) {
 	if i < 0 {
 		t.Fatal(`aria-describedby names #map-alt, which the page does not render`)
 	}
-	if !strings.Contains(body[i:min(i+400, len(body))], `href="/areas"`) {
-		t.Error("the map's description does not link to the list it describes")
+	if !strings.Contains(body, `href="/areas">Таблица с данни</a>`) {
+		t.Error("the map page does not link to the list it describes")
 	}
 }
 

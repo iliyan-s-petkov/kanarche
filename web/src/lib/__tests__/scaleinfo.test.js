@@ -26,6 +26,12 @@ const EAQI = {
 const METEO = { name: 'meteo', metric: 'temperature', unit: '°C', source: '', notes: 'Weather', notes_bg: 'Време', bands: [] }
 const SCALES = [EAQI, METEO]
 
+// The range words the page hands over, with the slots the server catalogue uses.
+const WORDS = { upTo: 'up to {to}', between: '{from} to {to}', above: 'above {from}' }
+const DIALOG_T = {
+  title: '{metric} colour scale', unit: 'Values are in {unit}.', dismiss: 'Close colour scale', range: WORDS,
+}
+
 describe('scaleFor', () => {
   // Matched on metric, never on position: the same rule bandsFor applies, so a
   // reordered response cannot make the dialog describe a table the map is not
@@ -42,11 +48,17 @@ describe('bandRange', () => {
   // that and the band below. Getting this wrong shifts every row by one band —
   // it would still look like a plausible table.
   it('reads each band lower edge off the band below it', () => {
-    expect(EAQI.bands.map((_, i) => bandRange(EAQI.bands, i))).toEqual(['< 5', '5–10', '> 10'])
+    expect(EAQI.bands.map((_, i) => bandRange(EAQI.bands, i, WORDS))).toEqual(['up to 5', '5 to 10', 'above 10'])
+  })
+
+  // An en dash is read as "minus" by some readers and breaks the copy rule.
+  it('writes ranges as words with no dash or symbol', () => {
+    const rows = EAQI.bands.map((_, i) => bandRange(EAQI.bands, i, WORDS))
+    for (const r of rows) expect(r).not.toMatch(/[–—<>-]/)
   })
 
   it('says nothing for a band bounded at neither end', () => {
-    expect(bandRange([{ upper: null }], 0)).toBe('')
+    expect(bandRange([{ upper: null }], 0, WORDS)).toBe('')
   })
 })
 
@@ -71,22 +83,35 @@ describe('createScaleDialog', () => {
   const open = (scale, lang = 'bg') => {
     const d = createScaleDialog(document, {
       closeLabel: 'Затвори', sourceLabel: 'Официалният документ',
-      disclaimer: 'Ориентировъчни данни', lang, ink: '#161616',
+      disclaimer: 'Ориентировъчни данни', lang, t: DIALOG_T, ink: '#161616',
     })
     document.body.appendChild(d.el)
     // jsdom implements <dialog> but not showModal in every version the project
     // pins; stubbing it keeps the test about the contents, which is what this
     // module owns.
     d.el.showModal = vi.fn(() => { d.el.open = true })
-    d.show(scale)
+    d.show(scale, 'PM2.5')
     return d.el
   }
 
   it('names the scale, its unit and every band with its range', () => {
     const el = open(EAQI)
-    expect(el.querySelector('.scaleinfo__title').textContent).toBe('eaqi, µg/m³')
+    expect(el.querySelector('.scaleinfo__units').textContent).toBe('Values are in µg/m³.')
     expect([...el.querySelectorAll('.scaleinfo__band-range')].map((n) => n.textContent))
-      .toEqual(['< 5', '5–10', '> 10'])
+      .toEqual(['up to 5', '5 to 10', 'above 10'])
+  })
+
+  // The heading was the raw scale id and unit ("eaqi, µg/m³"), which named
+  // nothing a reader would recognise. The metric name leads and the unit moves
+  // to its own line.
+  it('titles the dialog with the metric name and keeps the unit out of the heading', () => {
+    const title = open(EAQI).querySelector('.scaleinfo__title').textContent
+    expect(title).toBe('PM2.5 colour scale')
+    expect(title).not.toContain('µg')
+  })
+
+  it('has no unit line for a scale with no unit', () => {
+    expect(open({ ...EAQI, unit: '' }).querySelector('.scaleinfo__units').hidden).toBe(true)
   })
 
   // The same CSP rule legend.js paints under: style-src has no 'unsafe-inline',
@@ -147,10 +172,20 @@ describe('createScaleDialog', () => {
     const dismiss = el.querySelector('.scaleinfo__dismiss')
     expect(el.firstElementChild).toBe(dismiss)
     expect(dismiss.type).toBe('button')
-    expect(dismiss.getAttribute('aria-label')).toBe('Затвори')
+    expect(dismiss.getAttribute('aria-label')).toBe('Close colour scale')
     // The glyph is CSS content: a character in the markup is read out beside
     // the label, which is the same rule the (i) button follows.
     expect(dismiss.textContent).toBe('')
+  })
+
+  // Two buttons both named Close are indistinguishable in a controls list.
+  it('gives the corner mark and the bottom button different names', () => {
+    const el = open(EAQI)
+    const names = ['.scaleinfo__dismiss', '.scaleinfo__close'].map((sel) => {
+      const b = el.querySelector(sel)
+      return b.getAttribute('aria-label') || b.textContent
+    })
+    expect(names).toEqual(['Close colour scale', 'Затвори'])
   })
 
   it('closes from the corner mark as well as from the button', () => {
@@ -166,7 +201,7 @@ describe('createScaleDialog', () => {
   // (i) is ever clicked: prime paints without opening the dialog.
   it('prime paints the link without opening the dialog', () => {
     const d = createScaleDialog(document, {
-      closeLabel: 'x', sourceLabel: 'Официалният документ', disclaimer: '', lang: 'en',
+      closeLabel: 'x', sourceLabel: 'Официалният документ', disclaimer: '', lang: 'en', t: DIALOG_T,
     })
     document.body.appendChild(d.el)
     d.el.showModal = vi.fn(() => { d.el.open = true })
@@ -180,7 +215,7 @@ describe('createScaleDialog', () => {
   // Repainting an already-open dialog is what a metric switch behind it does,
   // and showModal throws on an open dialog.
   it('repaints in place rather than reopening', () => {
-    const d = createScaleDialog(document, { closeLabel: 'x', sourceLabel: 'y', disclaimer: '', lang: 'en' })
+    const d = createScaleDialog(document, { closeLabel: 'x', sourceLabel: 'y', disclaimer: '', lang: 'en', t: DIALOG_T })
     document.body.appendChild(d.el)
     d.el.showModal = vi.fn(() => { d.el.open = true })
     d.show(EAQI)
