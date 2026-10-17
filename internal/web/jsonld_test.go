@@ -23,9 +23,14 @@ type ldNode struct {
 	License             string   `json:"license"`
 	IsAccessibleForFree bool     `json:"isAccessibleForFree"`
 	SameAs              []string `json:"sameAs"`
-	Creator             *struct {
-		Type string `json:"@type"`
-		Name string `json:"name"`
+	Email               string   `json:"email"`
+	Publisher           *struct {
+		ID string `json:"@id"`
+	} `json:"publisher"`
+	Creator *struct {
+		Type  string `json:"@type"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
 	} `json:"creator"`
 	Distribution []struct {
 		Type           string `json:"@type"`
@@ -93,22 +98,27 @@ func jsonLDFixture(t *testing.T) *snapshot.Snapshot {
 	return snap
 }
 
-func TestJSONLDHomeHasWebSiteAndOrganization(t *testing.T) {
+func TestJSONLDHomeHasWebSiteAndPerson(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
 	for path, lang := range map[string]string{"/": "bg", "/en/": "en"} {
-		brand := testBrand(map[string]string{"bg": "", "en": "/en"}[lang])
 		doc := jsonLD(t, path, fetch(t, rr, path).Body.String())
 
 		site := nodeOfType(doc, "WebSite")
 		if site == nil || site.Name == "" || site.InLanguage != lang || !strings.HasPrefix(site.URL, "https://airbg.org/") {
 			t.Errorf("%s: WebSite = %+v", path, site)
 		}
-		org := nodeOfType(doc, "Organization")
-		if org == nil || org.Name != brand || org.URL != "https://airbg.org/" {
-			t.Fatalf("%s: Organization = %+v", path, org)
+		if len(site.SameAs) != 1 || site.SameAs[0] != "https://github.com/iliyan-s-petkov/kanarche" {
+			t.Errorf("%s: WebSite.sameAs = %v", path, site.SameAs)
 		}
-		if len(org.SameAs) != 1 || org.SameAs[0] != "https://github.com/iliyan-s-petkov/kanarche" {
-			t.Errorf("%s: Organization.sameAs = %v", path, org.SameAs)
+		if nodeOfType(doc, "Organization") != nil {
+			t.Errorf("%s: an Organization node implies a legal entity", path)
+		}
+		person := nodeOfType(doc, "Person")
+		if person == nil || person.Name != "Iliyan Petkov" || person.Email != "privacy@kanarche.eu" {
+			t.Fatalf("%s: Person = %+v", path, person)
+		}
+		if site.Publisher == nil || site.Publisher.ID != person.ID || person.ID == "" {
+			t.Errorf("%s: WebSite.publisher = %+v, want @id %q", path, site.Publisher, person.ID)
 		}
 	}
 }
@@ -123,10 +133,10 @@ func TestJSONLDAboutHasDataset(t *testing.T) {
 		if ds.Name == "" || len(ds.Description) < 50 {
 			t.Errorf("%s: Dataset name %q / description %q (Google needs both, description 50+ chars)", path, ds.Name, ds.Description)
 		}
-		if !strings.Contains(ds.License, "opendatacommons.org/licenses/odbl") {
-			t.Errorf("%s: license = %q, want ODbL", path, ds.License)
+		if ds.License != "https://opendatacommons.org/licenses/odbl/1-0/" {
+			t.Errorf("%s: license = %q, want the ODbL URL", path, ds.License)
 		}
-		if ds.Creator == nil || ds.Creator.Type != "Organization" || ds.Creator.Name == "" {
+		if ds.Creator == nil || ds.Creator.Type != "Person" || ds.Creator.Name != "Iliyan Petkov" || ds.Creator.Email != "privacy@kanarche.eu" {
 			t.Errorf("%s: creator = %+v", path, ds.Creator)
 		}
 		if !ds.IsAccessibleForFree {
@@ -210,5 +220,57 @@ func TestJSONLDHostileAreaNameStaysInsideScript(t *testing.T) {
 	list := nodeOfType(jsonLD(t, "/area/evil", body), "BreadcrumbList")
 	if list == nil || list.ItemListElement[len(list.ItemListElement)-1].Name != hostile {
 		t.Errorf("hostile name did not round-trip inside the JSON: %+v", list)
+	}
+}
+
+// collectRefs gathers every object that is only an {"@id": ...} reference.
+func collectRefs(v any, refs *[]string) {
+	switch x := v.(type) {
+	case map[string]any:
+		if id, ok := x["@id"].(string); ok && len(x) == 1 {
+			*refs = append(*refs, id)
+		}
+		for _, c := range x {
+			collectRefs(c, refs)
+		}
+	case []any:
+		for _, c := range x {
+			collectRefs(c, refs)
+		}
+	}
+}
+
+func TestJSONLDIDReferencesResolveInGraph(t *testing.T) {
+	rr := renderer(t, jsonLDFixture(t))
+	for _, path := range []string{"/", "/en/", "/about-the-data", "/en/about-the-data", "/area/plovdiv"} {
+		body := fetch(t, rr, path).Body.String()
+		start := strings.Index(body, ldOpen) + len(ldOpen)
+		end := strings.Index(body[start:], "</script>")
+		var doc struct {
+			Graph []map[string]any `json:"@graph"`
+		}
+		if err := json.Unmarshal([]byte(body[start:start+end]), &doc); err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		ids := map[string]bool{}
+		var refs []string
+		for _, n := range doc.Graph {
+			if id, ok := n["@id"].(string); ok && len(n) > 1 {
+				ids[id] = true
+			}
+			for k, c := range n {
+				if k != "@id" {
+					collectRefs(c, &refs)
+				}
+			}
+		}
+		if path == "/" && len(refs) == 0 {
+			t.Errorf("%s: found no @id references, the check is inert", path)
+		}
+		for _, r := range refs {
+			if !ids[r] {
+				t.Errorf("%s: reference %q has no node in the graph", path, r)
+			}
+		}
 	}
 }
