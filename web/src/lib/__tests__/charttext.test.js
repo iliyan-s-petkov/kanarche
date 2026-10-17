@@ -20,6 +20,20 @@ const series = (start, n, stepMin, f = (i) => i) => {
   return [times, times.map((_, i) => f(i))]
 }
 
+describe('chartText spoken units', () => {
+  const speak = (u) => ({ 'µg/m³': 'micrograms per cubic metre' }[u] ?? u)
+
+  it('says the unit in words in the summary a screen reader gets', () => {
+    const t = chartText({ ...base, speak, lines: [P2], data: [[T0, T0 + 3600], [12.3, 30]] })
+    expect(t.summary).toBe('PM2.5, 24 hours: latest 30 micrograms per cubic metre, lowest 12.3 micrograms per cubic metre, highest 30 micrograms per cubic metre.')
+  })
+
+  it('keeps the symbol in the column head, which is read as text on screen', () => {
+    const t = chartText({ ...base, speak, lines: [P2], data: [[T0, T0 + 3600], [12.3, 30]] })
+    expect(t.head).toEqual(['Time', 'PM2.5 (µg/m³)'])
+  })
+})
+
 describe('chartText summary', () => {
   it('names the metric, period, latest, lowest and highest with units', () => {
     const t = chartText({ ...base, lines: [P2], data: [[T0, T0 + 3600, T0 + 7200], [12.3, 30, 20.5]] })

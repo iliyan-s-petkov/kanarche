@@ -129,6 +129,8 @@ func (p PageData) Breadcrumbs(row AreaRow, chain []AreaRow) []Crumb {
 // for a Sofia district.
 func (p PageData) areaSubject(row AreaRow) string {
 	switch row.Kind {
+	case "country":
+		return p.T("area.subject.country")
 	case "oblast":
 		return p.oblastFormRow(row)
 	case "city":
@@ -201,6 +203,11 @@ func (p PageData) stale() bool { return p.Now.Sub(p.GeneratedAt) > staleAfter }
 // all, then everything else as "few". A covered area with no value for the
 // page's default metric gets area.now_no_metric.
 func (p PageData) areaNowHTML(row AreaRow) template.HTML {
+	return template.HTML(`<p class="area-now">` + p.areaNowText(row) + `</p>`)
+}
+
+// areaNowText is the sentence areaNowHTML wraps, shared with the home summary.
+func (p PageData) areaNowText(row AreaRow) string {
 	subject := htmlEscape(p.areaSubject(row))
 	timeHTML := timeTag(p.GeneratedAt, p.sofiaLayout(p.GeneratedAt))
 
@@ -232,11 +239,11 @@ func (p PageData) areaNowHTML(row AreaRow) template.HTML {
 	text = strings.ReplaceAll(text, "{sensors}", htmlEscape(p.sensorsText(row.SensorCount)))
 	text = strings.ReplaceAll(text, "{metric}", htmlEscape(p.T("metric."+p.DefaultMetric)))
 	if row.HasValue {
-		text = strings.ReplaceAll(text, "{unit}", htmlEscape(p.T("unit."+p.DefaultMetric)))
+		text = strings.ReplaceAll(text, "{unit}", p.unitMarkup(p.DefaultMetric))
 		text = strings.ReplaceAll(text, "{value}", htmlEscape(formatValue(row.Value, p.Lang)))
 		text = strings.ReplaceAll(text, "{band}", htmlEscape(p.T("band."+bandLabel(p.DefaultMetric, row.Value))))
 	}
-	return template.HTML(`<p class="area-now">` + text + `</p>`)
+	return text
 }
 
 // areaDayHTML renders the 24h min/max sentence, or "" when the state does not
@@ -247,7 +254,7 @@ func (p PageData) areaDayHTML(row AreaRow) template.HTML {
 	if p.stale() || !row.Covered || !row.HasValue || row.Day == nil {
 		return ""
 	}
-	unit := htmlEscape(p.T("unit." + p.DefaultMetric))
+	unit := p.unitMarkup(p.DefaultMetric)
 	text := p.T("area.day")
 	text = strings.NewReplacer(
 		"{min}", htmlEscape(formatValue(row.Day.Min, p.Lang)),

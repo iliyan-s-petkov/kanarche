@@ -7,6 +7,7 @@
   import { legibleStroke } from '../lib/axiscolour.js'
   import { chartTooltip } from '../lib/charttooltip.js'
   import { chartText } from '../lib/charttext.js'
+  import { spokenUnit } from '../lib/spokenunit.js'
 
   // Two ways in, one way through. `url`/`lineColour`/`valueLabel` describe a
   // single line — the area chart, which has only ever had one — and `sources`
@@ -57,6 +58,7 @@
       lang: document.documentElement.lang || undefined,
       text,
       timeLabel,
+      speak: (unit) => spokenUnit(unit),
     })
     : null)
   let host

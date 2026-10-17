@@ -262,6 +262,9 @@
      (DESIGN.md §9.1). */}}
 {{template "readouts-island" .}}
 
+{{/* The same figures as the strip, as sentences for a screen reader. */}}
+{{.HomeNowHTML}}
+
 {{/* The PM explainer under the readouts: what the numbers are and what the
      colours mean. Its thresholds are filled from api.Scales(), not typed here. */}}
 <p class="t-body">{{.HomeAboutPM}}</p>
@@ -329,7 +332,7 @@
        the first click. The order is stated by aria-sort on the sorted column,
        by the caret the reader can see, and by the note below for the order the
        page arrives in. */}}
-  <caption>{{.T (printf "metric.%s" .DefaultMetric)}}, {{.T (printf "unit.%s" .DefaultMetric)}}: {{.T "areas.tier"}}</caption>
+  <caption>{{.T (printf "metric.%s" .DefaultMetric)}}, {{.UnitHTML .DefaultMetric}}: {{.T "areas.tier"}}</caption>
   {{/* data-sort-key names the column for the table island; aria-sort states the
        order the server actually rendered, which is true with or without
        JavaScript. The headers are plain text here on purpose — the island turns

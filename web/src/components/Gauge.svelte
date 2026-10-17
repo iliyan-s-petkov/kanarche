@@ -1,10 +1,11 @@
 <script>
   // Draws the model from lib/gauge.js; no arithmetic here.
   import { arcPath, needlePoint } from '../lib/gauge.js'
+  import { spokenUnit } from '../lib/spokenunit.js'
 
   let { label, value, unit, band = '', model = { fraction: null, colour: null, stops: [] }, missing = false, onselect = null, pressed = false } = $props()
 
-  const ariaLabel = $derived(missing ? `${label}: ${value}` : `${label}: ${value} ${unit}${band ? `, ${band}` : ''}`)
+  const ariaLabel = $derived(missing ? `${label}: ${value}` : `${label}: ${value} ${spokenUnit(unit)}${band ? `, ${band}` : ''}`)
 </script>
 
 <svelte:element

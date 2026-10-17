@@ -7,6 +7,10 @@ const fill = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => va
 
 const withUnit = (value, lang, unit) => `${formatReading(value, lang)} ${unit ?? ''}`.trim()
 
+// speak maps a printed unit to its spoken words. It applies to the summary a
+// screen reader gets, not to the column head, which is read as text on screen.
+const noSpeech = (unit) => unit
+
 // Latest, lowest and highest of one column, ignoring gaps. Null when it holds no reading.
 function stats(values) {
   const real = values.filter((v) => v != null && !Number.isNaN(v))
@@ -53,16 +57,16 @@ function bucketRows(data, columns, unit, lang, timeZone) {
 
 // lines: [{ name, unit }]. data: uPlot's [times, ...columns], times in epoch seconds.
 // text: { summary, none, caption } templates. Empty data gives the "none" sentence and no rows.
-export function chartText({ lines, data, periodLabel, lang, text, timeLabel, timeZone }) {
+export function chartText({ lines, data, periodLabel, lang, text, timeLabel, timeZone, speak = noSpeech }) {
   const summary = lines.map((line, i) => {
     const s = stats(data[i + 1] ?? [])
     const values = { metric: line.name, period: periodLabel }
     if (!s) return fill(text.none, values)
     return fill(text.summary, {
       ...values,
-      latest: withUnit(s.latest, lang, line.unit),
-      min: withUnit(s.min, lang, line.unit),
-      max: withUnit(s.max, lang, line.unit),
+      latest: withUnit(s.latest, lang, speak(line.unit)),
+      min: withUnit(s.min, lang, speak(line.unit)),
+      max: withUnit(s.max, lang, speak(line.unit)),
     })
   }).join(' ')
 

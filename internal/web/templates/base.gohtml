@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="spoken-units" content="{{.SpokenUnitsAttr}}">
 <title>{{.Title}}</title>
 <meta name="description" content="{{.MetaDescription}}">
 {{if .NoIndex}}<meta name="robots" content="noindex">
@@ -344,7 +345,7 @@
      this markup is how the two start rendering differently. Each cell keeps its
      tier line: no bare numbers (DESIGN.md §9.1). */}}
 {{define "readouts"}}<div class="readouts">
-{{range .}}  <div class="readout card">
+{{range .}}{{$spoken := .UnitSpoken}}  <div class="readout card">
     <span class="readout__label">{{with readoutMetric .Label}}<span class="readout__metric">{{.}} · </span>{{end}}{{readoutRest .Label}}</span>
 {{if .Gauge}}    {{/* SVG presentation attributes, not an inline style: style-src is
          'self' with no 'unsafe-inline', so a style attribute would be dropped
@@ -359,10 +360,10 @@
       </svg>
       <span class="gauge__figure">
         <span class="readout__value">{{.Value}}</span>
-        <span class="readout__unit">{{.Unit}}</span>
+        <span class="readout__unit"{{if .UnitSpoken}} aria-hidden="true"{{end}}>{{.Unit}}</span>{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}
       </span>
     </span>
-{{else}}    <span class="readout__value">{{.Value}}{{with .Unit}} <span class="readout__unit">{{.}}</span>{{end}}</span>
+{{else}}    <span class="readout__value">{{.Value}}{{with .Unit}} <span class="readout__unit"{{if $spoken}} aria-hidden="true"{{end}}>{{.}}</span>{{end}}{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}</span>
 {{end}}    <span class="readout__tier">{{.Tier}}</span>
   </div>
 {{end}}</div>{{end}}

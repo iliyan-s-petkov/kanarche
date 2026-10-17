@@ -9,7 +9,7 @@ test.describe('chart text alternative', () => {
     await page.goto('/en/area/sofia')
     const plot = page.locator(`${CHART} [role="img"]`)
     await expect(plot).toBeVisible()
-    await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 24 hours: latest [\d.]+ µg\/m³, lowest [\d.]+ µg\/m³, highest [\d.]+ µg\/m³\.$/)
+    await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 24 hours: latest [\d.]+ micrograms per cubic metre, lowest [\d.]+ micrograms per cubic metre, highest [\d.]+ micrograms per cubic metre\.$/)
 
     const table = page.locator(`${CHART} .sr-only table`)
     await expect(table.locator('caption')).toHaveText(/^Hourly averages for PM2\.5, 24 hours$/)
@@ -35,14 +35,14 @@ test.describe('chart text alternative', () => {
   test('the Bulgarian chart is described in Bulgarian', async ({ page }) => {
     await page.goto('/area/sofia')
     const plot = page.locator(`${CHART} [role="img"]`)
-    await expect(plot).toHaveAttribute('aria-label', /^ФПЧ2\.5, 24 часа: последно [\d,]+ µg\/m³, най-ниско [\d,]+ µg\/m³, най-високо [\d,]+ µg\/m³\.$/)
+    await expect(plot).toHaveAttribute('aria-label', /^ФПЧ2\.5, 24 часа: последно [\d,]+ микрограма на кубичен метър, най-ниско [\d,]+ микрограма на кубичен метър, най-високо [\d,]+ микрограма на кубичен метър\.$/)
   })
 
   // The sensor panel is a second island with its own attribute plumbing (sensor 101 has a day of P2).
   test('the sensor panel chart carries the same text alternative', async ({ page }) => {
     await page.goto('/en/#sensor=101')
     const plot = page.locator('.panel-chart [role="img"]')
-    await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 24 hours: latest [\d.]+ µg\/m³, lowest [\d.]+ µg\/m³, highest [\d.]+ µg\/m³\.$/)
+    await expect(plot).toHaveAttribute('aria-label', /^PM2\.5, 24 hours: latest [\d.]+ micrograms per cubic metre, lowest [\d.]+ micrograms per cubic metre, highest [\d.]+ micrograms per cubic metre\.$/)
     await expect(page.locator('.panel-chart .sr-only table caption')).toHaveText('Hourly averages for PM2.5, 24 hours')
   })
 })

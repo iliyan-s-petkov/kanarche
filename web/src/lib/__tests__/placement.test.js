@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   locateVisitor, openDeepLinkedSensor, prefetchPlacement, locateMe, DEEP_LINK_ZOOM,
@@ -510,5 +511,44 @@ describe('locateMe', () => {
     await locateMe(fakeMap(), { areas }, cfg, chrome, { geolocation: null })
 
     expect(chrome.showHint).toHaveBeenCalledWith(cfg.t.locateFailed)
+  })
+})
+
+// The home page's hidden summary gets a near-you sentence once a fix lands.
+describe('locateMe near-you summary', () => {
+  beforeEach(() => { clearCache(); setSensors(null) })
+  afterEach(() => { clearCache(); setSensors(null); document.body.innerHTML = ''; document.head.innerHTML = '' })
+
+  const cfg = {
+    lon: 25.4858, lat: 42.7339, zoom: 7, zoomCity: 9, zoomSensor: 11, metric: 'P2', lang: 'en',
+    metricLabels: { P2: 'PM2.5' }, metricUnits: { P2: 'µg/m³' },
+    bandNames: { Good: 'good', Fair: 'fair' },
+    t: { locateDenied: 'd', locateFailed: 'f', hint: 'h', unavailable: 'u' },
+  }
+  const areas = [{ slug: 'sofia', lon: 23.32, lat: 42.7, zoom: 11 }]
+  const body = {
+    generated_at: '2026-09-07T00:00:00Z',
+    sensors: { id: [11338, 22], lon: [23.30, 23.39], lat: [42.70, 42.70], quality: ['ok', 'ok'], type: ['SDS011', 'SDS011'], P2: [5, 6] },
+  }
+  const scales = [{ metric: 'P2', bands: [{ label: 'Good', upper: 10 }, { label: 'Fair', upper: null }] }]
+
+  it('writes the nearest sensor reading in spoken units', async () => {
+    document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
+    document.body.innerHTML = '<p data-home-summary data-t-near-km="N {metric} {value} {unit}, {band}. {n} km {dir}." data-t-near-m="N {metric} {value} {unit}, {band}. {n} m {dir}." data-t-dir-w="west" data-t-dir-e="east"><span data-home-second>old</span></p>'
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => (String(url).includes('/sensors') ? body : { areas: [] }),
+    })))
+    const map = {
+      jumpTo: vi.fn(), getZoom: () => 12,
+      getBounds: () => ({ getWest: () => 23.2, getSouth: () => 42.6, getEast: () => 23.4, getNorth: () => 42.8 }),
+      getSource: vi.fn(() => ({ setData: vi.fn() })),
+    }
+    const state = { slug: null, tier: null, scales, areas, hexUrl: null, hexBody: null }
+    const chrome = { showHint: vi.fn(), showError: vi.fn(), showNote: vi.fn(), showLegend: vi.fn() }
+    await locateMe(map, state, cfg, chrome, { geolocation: { getCurrentPosition: (ok) => ok({ coords: { longitude: 23.31, latitude: 42.70 } }) } })
+    const text = document.querySelector('[data-home-second]').textContent
+    expect(text).toContain('PM2.5 5 micrograms per cubic metre, good.')
+    expect(text).toContain('820 m west')
   })
 })
