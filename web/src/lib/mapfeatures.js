@@ -1,3 +1,4 @@
+import { bandIndex } from './classoutline.js'
 import { rampColour } from './ramp.js'
 import { stationsOf, readingAt, isFaultyAt } from './stations.js'
 import { bandsFor } from './mappaint.js'
@@ -17,6 +18,7 @@ export function areaFeatures(body, metric, scales, noDataColour) {
       slug: a.slug,
       colour: a.covered ? rampColour(a.values?.[metric], bands, noDataColour) : noDataColour,
       value: a.covered ? a.values?.[metric] ?? null : null,
+      band: a.covered ? bandIndex(a.values?.[metric], bands) : -1,
       sensor_count: a.sensor_count,
     },
   }))
@@ -47,6 +49,7 @@ export function sensorFeatures(body, metric, scales, noDataColour) {
       properties: {
         id: station,
         colour: rampColour(value, bands, noDataColour),
+        band: bandIndex(value, bands),
         value,
         quality: s.quality?.[i] ?? '',
         // Flagged for THIS metric only; drives the toggle and the hollow ring.

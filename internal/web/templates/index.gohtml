@@ -360,8 +360,9 @@
            style, and style-src has no 'unsafe-inline' — the browser drops it
            and the swatch renders empty. Same reason renderLegend draws its
            swatches this way. Omitted entirely for a metric with no band table,
-           because an empty swatch would be a class the scale never claimed. */}}
-      <td class="num"><span class="value-cell"><span class="chip">{{with .Colour}}<svg class="chip__swatch" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"><rect width="1" height="1" fill="{{.}}"></rect></svg>{{end}}{{.ValueText}}</span></span></td>
+           because an empty swatch would be a class the scale never claimed.
+           data-class weights the hexagon's outline (A11Y-05, app.css). */}}
+      <td class="num"><span class="value-cell"><span class="chip">{{if .Colour}}<svg class="chip__swatch" data-class="{{.Class}}" viewBox="0 0 12 14" aria-hidden="true"><polygon class="class-outline" points="6,0 12,3.5 12,10.5 6,14 0,10.5 0,3.5" fill="{{.Colour}}" stroke="{{$.MarkerLabelColour}}"></polygon></svg>{{end}}{{.ValueText}}</span></span></td>
       {{else}}
       {{/* Two different absences, said differently: a province with too few
            reporting sensors to publish an average at all, and one that is

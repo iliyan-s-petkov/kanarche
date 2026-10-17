@@ -429,16 +429,16 @@ func (rr *Renderer) rowFrom(meta snapshot.AreaMeta, lang string) AreaRow {
 	if hasValue {
 		valueText = formatValue(value, lang)
 	}
-	colour := ""
+	colour, class := "", -1
 	if hasValue {
-		colour = bandColour(rr.defaultMetric, value)
+		colour, class = bandColour(rr.defaultMetric, value), bandClass(rr.defaultMetric, value)
 	}
 	return AreaRow{
 		Slug: meta.Slug, Name: name, Kind: meta.Kind,
 		Lon: meta.CentroidLon, Lat: meta.CentroidLat, Zoom: meta.DefaultZoom,
 		Covered: meta.Covered, SensorCount: meta.SensorCount,
 		Value: value, HasValue: hasValue, ValueText: valueText,
-		Colour: colour, Values: meta.Values,
+		Colour: colour, Class: class, Values: meta.Values,
 		Source: meta.Source, BySource: meta.BySource,
 		ParentSlug: meta.ParentSlug, Day: meta.Day,
 	}

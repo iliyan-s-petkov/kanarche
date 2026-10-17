@@ -4,6 +4,7 @@
 // The projection and tier constants below come from contract.json, generated
 // by `go run ./cmd/airbg contract` from internal/snapshot. That is what keeps
 // this file and the Go server from drifting apart the way BBOX_QUANTUM_DEG did.
+import { bandIndex } from './classoutline.js'
 import { OFFICIAL_SOURCE, sourceOf } from './sourcefilter.svelte.js'
 import contract from './contract.json'
 import { columnHeight } from './hexrise.js'
@@ -356,6 +357,8 @@ export function hexFeatures(body, metric, bands, noDataColour, colourOf, pointRe
         : { type: 'Point', coordinates: [h.lon, h.lat] },
       properties: {
         colour: colourOf(value, bands, noDataColour),
+        // The class index the outline is weighted by (classoutline.js).
+        band: bandIndex(value, bands),
         value,
         // Column height in metres when the map is tilted (hexrise.js); 0 for a point.
         height: drawKM > 0 ? columnHeight(value, bands, drawKM) : 0,

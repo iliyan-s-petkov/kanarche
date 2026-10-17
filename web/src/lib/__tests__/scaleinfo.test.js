@@ -122,6 +122,16 @@ describe('createScaleDialog', () => {
     expect(el.querySelectorAll('[style]')).toHaveLength(0)
   })
 
+  // A11Y-05: the dialog's swatches carry the same class outline as the map and the key.
+  it('marks each band swatch with its class outline', () => {
+    const rects = [...open(EAQI).querySelectorAll('rect')]
+    rects.forEach((r, i) => {
+      expect(r.classList.contains('class-outline')).toBe(true)
+      expect(r.getAttribute('data-class')).toBe(String(Math.min(i, 5)))
+      expect(r.getAttribute('vector-effect')).toBe('non-scaling-stroke')
+    })
+  })
+
   // The reason the dialog exists: a reader can check the claim instead of
   // taking the colours on trust.
   it('links the guideline, and opens it without handing over the opener', () => {

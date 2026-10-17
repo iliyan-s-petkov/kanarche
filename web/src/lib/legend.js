@@ -1,6 +1,7 @@
 import { SEA_CLASSES } from './sea.js'
 import { POLLEN_LEVELS, pollenVar } from './pollen.js'
 import { rampGradient } from './ramp.js'
+import { outlineSwatch } from './classoutline.js'
 import { bandRange } from './scaleinfo.js'
 
 // The map legend: the ramp, and what a dot means at the current zoom.
@@ -68,6 +69,8 @@ export function legendRows(bands, { noDataColour, noDataLabel, lang, words }) {
         // The edge numbers are aria-hidden, so the range is carried as words too.
         range: bandRange(bands, i, words),
         colour: band.colour,
+        // Class index, for the swatch's outline weight (A11Y-05).
+        class: i,
         label: lang === 'bg' ? band.label_bg : band.label,
         edge: edge == null ? '' : String(edge),
       }
@@ -160,7 +163,10 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info, band
   for (const band of [...bands].reverse()) {
     const item = document.createElement('li')
     item.className = 'scale__band'
-    item.appendChild(swatch(band.colour, 'scale__band-swatch'))
+    const bandSwatch = swatch(band.colour, 'scale__band-swatch')
+    // The class outline the map draws round a cell of this band, so the key matches by weight too.
+    outlineSwatch(bandSwatch.firstChild, band.class)
+    item.appendChild(bandSwatch)
 
     const name = document.createElement('span')
     name.className = 'scale__band-name'

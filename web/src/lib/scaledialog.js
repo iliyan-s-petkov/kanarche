@@ -1,4 +1,5 @@
 import { scaleInfo } from './scaleinfo.js'
+import { outlineSwatch } from './classoutline.js'
 import { fillSlots } from './sea.js'
 
 // The (i) beside the key, and the dialog it opens.
@@ -86,10 +87,13 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
     notes.hidden = !info.notes
 
     list.replaceChildren()
-    for (const row of info.rows) {
+    for (const [i, row] of info.rows.entries()) {
       const item = doc.createElement('li')
       item.className = 'scaleinfo__band'
-      item.appendChild(swatch(doc, row.colour))
+      const mark = swatch(doc, row.colour)
+      // Same class outline as the key and the map (A11Y-05).
+      outlineSwatch(mark.firstChild, i)
+      item.appendChild(mark)
 
       const name = doc.createElement('span')
       name.className = 'scaleinfo__band-name'

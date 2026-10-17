@@ -86,6 +86,26 @@ func TestSilentProvincePrintsNoReading(t *testing.T) {
 	}
 }
 
+// A11Y-05: the chip swatch carries its class so app.css can outline it at the
+// class weight the map uses; the fill alone is the colour-only cue.
+func TestProvinceChipCarriesItsClassForTheOutline(t *testing.T) {
+	rr := renderer(t, rankingSnapshot())
+	body := fetch(t, rr, "/areas").Body.String()
+	for name, class := range map[string]string{"Low": "0", "Alpha": "1", "High": "3"} {
+		i := strings.Index(body, ">"+name+"<")
+		if i < 0 {
+			t.Fatalf("province %q missing", name)
+		}
+		row := body[i : i+strings.Index(body[i:], "</tr>")]
+		if !strings.Contains(row, `data-class="`+class+`"`) {
+			t.Errorf("%s chip: want data-class=%q in %q", name, class, row)
+		}
+		if !strings.Contains(row, `<polygon class="class-outline"`) {
+			t.Errorf("%s chip: want a hexagon polygon the outline can follow, got %q", name, row)
+		}
+	}
+}
+
 // The caption says what the numbers are, once, above the rows. A ranked column
 // of bare figures would breach DESIGN.md §9.1 — never a value without saying
 // what it aggregates — and the metric named here is the page default, so the
