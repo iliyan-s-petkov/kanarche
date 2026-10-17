@@ -15,12 +15,21 @@ import { RASTER_SOURCE_ID, RASTER_LAYER_ID } from './mapids.js'
 // viewport is disclosed to that host, and the OSM Foundation's tile usage
 // policy asks that busy sites not use tile.openstreetmap.org. Swapping in a
 // keyed provider is this constant plus the CSP origin in airbg.yaml.
+//
+// Zoom cap: the raster is only the ground, so with a vector basemap configured
+// its source stops at RASTER_MAX_ZOOM and MapLibre stretches that last level
+// above it. The vector archive tops out at z14 (planetiler's default) and draws
+// the roads, names and POIs at every zoom beyond. Without a vector basemap the
+// raster is the whole map and keeps RASTER_FULL_MAX_ZOOM.
+export const RASTER_MAX_ZOOM = 14
+export const RASTER_FULL_MAX_ZOOM = 19
+
 export const RASTER_BASEMAP = {
   type: 'raster',
   tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
   tileSize: 256,
   minzoom: 0,
-  maxzoom: 19,
+  maxzoom: RASTER_FULL_MAX_ZOOM,
   attribution: '© OpenStreetMap contributors',
 }
 
@@ -114,7 +123,12 @@ export function mapStyle(cfg) {
   return {
     version: 8,
     ...(glyphs ? { glyphs } : {}),
-    sources: { [RASTER_SOURCE_ID]: RASTER_BASEMAP },
+    sources: {
+      [RASTER_SOURCE_ID]: {
+        ...RASTER_BASEMAP,
+        maxzoom: cfg.basemap ? RASTER_MAX_ZOOM : RASTER_FULL_MAX_ZOOM,
+      },
+    },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': cfg.emptyBasemapColour } },
       { id: RASTER_LAYER_ID, type: 'raster', source: RASTER_SOURCE_ID },

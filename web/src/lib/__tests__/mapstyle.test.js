@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
-  mapStyle, overlayLayers, addBasemapOverlay, registerProtocols, glyphsURL, installErrorHandler,
+  mapStyle, RASTER_MAX_ZOOM, RASTER_FULL_MAX_ZOOM, overlayLayers, addBasemapOverlay, registerProtocols, glyphsURL, installErrorHandler,
 } from '../mapstyle.js'
 
 // The style is now raster-only. The self-hosted vector archive is a BULGARIA
@@ -200,5 +200,22 @@ describe('installErrorHandler', () => {
     installErrorHandler(map, () => {})
 
     expect(() => map.trigger({ error: { message: 'boom' } })).not.toThrow()
+  })
+})
+
+// OSM serves the raster only to keep the world under the Bulgaria extract, so
+// with a vector basemap configured the raster stops at a low zoom and MapLibre
+// stretches that last level. Without one the raster is the whole map.
+describe('raster zoom cap', () => {
+  const rasterMax = (cfg) => Object.values(mapStyle(cfg).sources)[0].maxzoom
+
+  it('caps the raster below the full range when a vector basemap is configured', () => {
+    expect(RASTER_MAX_ZOOM).toBeLessThan(RASTER_FULL_MAX_ZOOM)
+    expect(rasterMax({ basemap: 'https://tiles.kanarche.eu/style.json' })).toBe(RASTER_MAX_ZOOM)
+  })
+
+  it('keeps the raster at full range when no vector basemap is configured', () => {
+    expect(rasterMax({ basemap: '' })).toBe(RASTER_FULL_MAX_ZOOM)
+    expect(rasterMax({})).toBe(RASTER_FULL_MAX_ZOOM)
   })
 })
