@@ -51,7 +51,7 @@ host, and improving as more of them join.
   plus six gases from the official stations; averaging windows from now to a
   week, and hourly playback.
 - **Wind forecast overlay**, marked as a forecast rather than a measurement.
-- **Embeddable** with one `<iframe>`, in light and dark themes, on a
+- **Embeddable** with one `<iframe>`, in light and dark themes, on
   an OpenStreetMap basemap.
 
 ## Data and attribution

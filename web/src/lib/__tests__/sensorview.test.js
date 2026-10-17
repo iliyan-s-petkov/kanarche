@@ -78,16 +78,16 @@ describe('detailRows', () => {
     expect(rows.find((r) => r.key === 'updated').value).toContain('07/09/2026')
   })
 
-  it('prints the position at four decimals, latitude first', () => {
+  it('prints the position at three decimals, latitude first', () => {
     expect(detailRows(station, LABELS, 'en-GB').find((r) => r.key === 'coords').value)
-      .toBe('42.6977, 23.3218')
+      .toBe('42.698, 23.322')
   })
 
   // Zero is a real coordinate off the Gulf of Guinea, not a missing one. It is
   // outside Bulgaria, but the guard must test finiteness, not truthiness.
   it('keeps a zero coordinate', () => {
     const rows = detailRows({ ...station, lat: 0, lon: 0 }, LABELS, 'en-GB')
-    expect(rows.find((r) => r.key === 'coords').value).toBe('0.0000, 0.0000')
+    expect(rows.find((r) => r.key === 'coords').value).toBe('0.000, 0.000')
   })
 
   it('omits a row it has nothing to say about rather than printing it empty', () => {

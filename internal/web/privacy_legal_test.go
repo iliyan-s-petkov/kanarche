@@ -19,7 +19,7 @@ func TestPrivacyPageNamesControllerRightsAndRecipients(t *testing.T) {
 		{"/en/privacy", []string{
 			"Who is responsible",
 			"Iliyan Petkov, a private individual in Bulgaria",
-			"privacy@kanarche.eu",
+			"Contact: privacy@kanarche.eu. The legal basis",
 			"GDPR art. 6(1)(f)",
 			"Your rights",
 			"Commission for Personal Data Protection (cpdp.bg)",
@@ -29,7 +29,7 @@ func TestPrivacyPageNamesControllerRightsAndRecipients(t *testing.T) {
 		{"/privacy", []string{
 			"Кой отговаря",
 			"Илиян Петков, частно лице в България",
-			"privacy@kanarche.eu",
+			"Контакт: privacy@kanarche.eu. Правното основание",
 			"ОРЗД",
 			"Вашите права",
 			"Комисията за защита на личните данни (cpdp.bg)",
@@ -46,14 +46,23 @@ func TestPrivacyPageNamesControllerRightsAndRecipients(t *testing.T) {
 	}
 }
 
-// TestTermsContactNamesOperatorAndMailbox pins the terms contact section: the
-// operator is named and the privacy mailbox is the first channel.
+// TestTermsContactNamesOperatorAndMailbox pins the terms contact section in
+// both languages: the operator is named and the privacy mailbox is the first
+// channel.
 func TestTermsContactNamesOperatorAndMailbox(t *testing.T) {
 	rr := renderer(t, fixture(t))
-	en := strings.Join(strings.Fields(html.UnescapeString(visibleText(fetch(t, rr, "/en/terms").Body.String()))), " ")
-	for _, w := range []string{"run by Iliyan Petkov", "privacy@kanarche.eu"} {
-		if !strings.Contains(en, w) {
-			t.Errorf("/en/terms lacks %q", w)
+	for _, tc := range []struct {
+		path string
+		want []string
+	}{
+		{"/en/terms", []string{"run by Iliyan Petkov", "privacy@kanarche.eu"}},
+		{"/terms", []string{"поддържа от Илиян Петков", "privacy@kanarche.eu"}},
+	} {
+		text := strings.Join(strings.Fields(html.UnescapeString(visibleText(fetch(t, rr, tc.path).Body.String()))), " ")
+		for _, w := range tc.want {
+			if !strings.Contains(text, w) {
+				t.Errorf("%s lacks %q", tc.path, w)
+			}
 		}
 	}
 }
