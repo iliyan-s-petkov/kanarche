@@ -40,8 +40,11 @@ bounding-box, coordinate or list parameter: the embed reads through the same
 tiered public API as the site, under the same rate limits.
 
 ```html
-<iframe src="https://airbg.org/embed?area=plovdiv-oblast&metric=P1" …></iframe>
+<iframe src="https://kanarche.eu/embed?area=plovdiv-oblast&metric=P1" …></iframe>
 ```
+
+The embedded map loads content from kanarche.eu and OpenStreetMap. Link your
+own privacy page to https://kanarche.eu/privacy.
 
 ## Language
 
