@@ -186,6 +186,17 @@ describe('createScaleDialog', () => {
     }
   })
 
+  // A dialog with no name is announced as just "dialog".
+  it('names the dialog by its heading, with an id unique per instance', () => {
+    const a = open(EAQI)
+    const b = open(EAQI)
+    const h = a.querySelector('.scaleinfo__title')
+    expect(h.id).not.toBe('')
+    expect(a.getAttribute('aria-labelledby')).toBe(h.id)
+    expect(b.getAttribute('aria-labelledby')).toBe(b.querySelector('.scaleinfo__title').id)
+    expect(b.getAttribute('aria-labelledby')).not.toBe(a.getAttribute('aria-labelledby'))
+  })
+
   // The link must not sit crawlable-but-hrefless from first paint, before the
   // (i) is ever clicked: prime paints without opening the dialog.
   it('prime paints the link without opening the dialog', () => {

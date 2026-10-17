@@ -46,6 +46,16 @@ describe('createInfoDialog', () => {
     expect(dlg.el.querySelectorAll('a')).toHaveLength(0)
   })
 
+  it('names the dialog by its heading, with an id unique per instance', () => {
+    const a = dialog()
+    const b = dialog()
+    const h = a.el.querySelector('h2')
+    expect(h.id).not.toBe('')
+    expect(a.el.getAttribute('aria-labelledby')).toBe(h.id)
+    expect(b.el.getAttribute('aria-labelledby')).toBe(b.el.querySelector('h2').id)
+    expect(b.el.getAttribute('aria-labelledby')).not.toBe(a.el.getAttribute('aria-labelledby'))
+  })
+
   it('has a labelled close button that closes it', () => {
     const dlg = dialog()
     dlg.show(content)

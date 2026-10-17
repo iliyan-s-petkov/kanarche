@@ -55,6 +55,7 @@ for (const shape of shapes) {
       const dialog = page.locator('dialog.scaleinfo[open]')
       await expect(dialog).toBeVisible()
       await expect(dialog.locator('h2')).toHaveText(c.title)
+      await expect(page.getByRole('dialog', { name: c.title })).toBeVisible()
       await expect(dialog).toContainText(c.body)
       // No percent-encoded copy, and nothing wider than the viewport.
       await expect(dialog).not.toContainText('%')
