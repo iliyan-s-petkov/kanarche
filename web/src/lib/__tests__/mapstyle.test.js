@@ -212,6 +212,7 @@ describe('raster zoom cap', () => {
   it('caps the raster below the full range when a vector basemap is configured', () => {
     expect(RASTER_MAX_ZOOM).toBeLessThan(RASTER_FULL_MAX_ZOOM)
     expect(rasterMax({ basemap: 'https://tiles.kanarche.eu/style.json' })).toBe(RASTER_MAX_ZOOM)
+    expect(RASTER_MAX_ZOOM).toBe(16)
   })
 
   it('keeps the raster at full range when no vector basemap is configured', () => {
