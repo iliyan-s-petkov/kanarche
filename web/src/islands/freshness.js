@@ -5,11 +5,15 @@ import { mount as mountComponent } from 'svelte'
 import DataFreshness from '../components/DataFreshness.svelte'
 import { getFreshness } from '../lib/freshness.svelte.js'
 import { statusText } from '../lib/freshness.js'
+import { announceText } from '../lib/announce.js'
 
 export function mount(el, doc = document) {
   const d = el.dataset
   const fresh = getFreshness()
-  const t = { updated: d.tUpdated || '', loading: d.tLoading || '', failed: d.tFailed || '' }
+  const t = {
+    updated: d.tUpdated || '', loading: d.tLoading || '', failed: d.tFailed || '',
+    changed: d.tChanged || '', sensor: d.tSensor || '', subject: d.subject || '',
+  }
   const lang = doc.documentElement.getAttribute('lang') || 'bg'
   const options = [
     { value: 0, text: d.tOff || '' },
@@ -23,6 +27,7 @@ export function mount(el, doc = document) {
       labels: { trigger: d.tLabel || '', now: d.tNow || '', group: d.tAuto || '' },
       options,
       get status() { return statusText(fresh, t, lang) },
+      get announce() { return announceText(fresh, t) },
       get minutes() { return fresh.minutes },
       get busy() { return fresh.busy },
       onpick: (m) => fresh.setMinutes(m),

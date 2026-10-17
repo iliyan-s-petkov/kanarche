@@ -291,3 +291,54 @@ describe('getFreshness', () => {
     expect(getFreshness({ win, storage: store() })).not.toBe(first)
   })
 })
+
+describe('category change on refresh', () => {
+  const area = (band) => ({ kind: 'area', id: 'sofia', band })
+
+  it('holds the change a refresh caused, and clears it on the next one', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    let band = 'good'
+    f.watch(() => area(band))
+    f.provide(async () => { band = 'fair' })
+    await f.request()
+    expect(f.changed).toEqual({ kind: 'area', id: 'sofia', band: 'fair', was: 'good' })
+    await f.request()
+    expect(f.changed).toBeNull()
+  })
+
+  it('holds nothing when only the values moved', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    f.watch(() => area('good'))
+    f.provide(async () => {})
+    await f.request()
+    expect(f.changed).toBeNull()
+  })
+
+  it('holds nothing when the refresh failed', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    let band = 'good'
+    f.watch(() => area(band))
+    f.provide(async () => { band = 'fair'; throw new Error('down') })
+    await f.request()
+    expect(f.changed).toBeNull()
+  })
+
+  it('stops asking a watcher that unregistered', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    let band = 'good'
+    const stop = f.watch(() => area(band))
+    stop()
+    f.provide(async () => { band = 'fair' })
+    await f.request()
+    expect(f.changed).toBeNull()
+  })
+
+  it('reports what the reader is looking at now', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    expect(f.current()).toBeNull()
+    let band = 'good'
+    f.watch(() => area(band))
+    band = 'poor'
+    expect(f.current()).toEqual(area('poor'))
+  })
+})
