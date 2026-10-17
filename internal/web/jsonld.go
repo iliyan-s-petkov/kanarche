@@ -10,6 +10,7 @@ import (
 const (
 	schemaContext = "https://schema.org"
 	sourceRepoURL = "https://github.com/iliyan-s-petkov/kanarche"
+	odblURL       = "https://opendatacommons.org/licenses/odbl/1-0/"
 	// Controller named in the privacy notice. A natural person: the project has no legal entity.
 	controllerName  = "Iliyan Petkov"
 	controllerEmail = "privacy@kanarche.eu"
@@ -34,13 +35,14 @@ type ldPerson struct {
 }
 
 type ldWebSite struct {
-	Type          string `json:"@type"`
-	ID            string `json:"@id"`
-	Name          string `json:"name"`
-	AlternateName string `json:"alternateName,omitempty"`
-	URL           string `json:"url"`
-	InLanguage    string `json:"inLanguage"`
-	Publisher     ldRef  `json:"publisher"`
+	Type          string   `json:"@type"`
+	ID            string   `json:"@id"`
+	Name          string   `json:"name"`
+	AlternateName string   `json:"alternateName,omitempty"`
+	URL           string   `json:"url"`
+	InLanguage    string   `json:"inLanguage"`
+	Publisher     ldRef    `json:"publisher"`
+	SameAs        []string `json:"sameAs,omitempty"`
 }
 
 type ldGeoShape struct {
@@ -156,6 +158,7 @@ func (p PageData) homeJSONLD() (template.JS, error) {
 		URL:           p.CanonicalURL(),
 		InLanguage:    p.Lang,
 		Publisher:     ldRef{ID: person.ID},
+		SameAs:        []string{sourceRepoURL},
 	}
 	return encodeJSONLD(site, person)
 }
@@ -176,7 +179,7 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 		Description:         p.T("seo.dataset.description"),
 		URL:                 p.CanonicalURL(),
 		InLanguage:          p.Lang,
-		License:             p.BaseURL + p.Path("/licences"),
+		License:             odblURL,
 		IsAccessibleForFree: true,
 		Creator:             p.controller(),
 		SpatialCoverage:     ldPlace{Type: "Place", Name: p.T("seo.dataset.place"), Geo: geo},

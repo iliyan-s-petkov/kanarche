@@ -107,6 +107,9 @@ func TestJSONLDHomeHasWebSiteAndPerson(t *testing.T) {
 		if site == nil || site.Name == "" || site.InLanguage != lang || !strings.HasPrefix(site.URL, "https://airbg.org/") {
 			t.Errorf("%s: WebSite = %+v", path, site)
 		}
+		if len(site.SameAs) != 1 || site.SameAs[0] != "https://github.com/iliyan-s-petkov/kanarche" {
+			t.Errorf("%s: WebSite.sameAs = %v", path, site.SameAs)
+		}
 		if nodeOfType(doc, "Organization") != nil {
 			t.Errorf("%s: an Organization node implies a legal entity", path)
 		}
@@ -130,12 +133,8 @@ func TestJSONLDAboutHasDataset(t *testing.T) {
 		if ds.Name == "" || len(ds.Description) < 50 {
 			t.Errorf("%s: Dataset name %q / description %q (Google needs both, description 50+ chars)", path, ds.Name, ds.Description)
 		}
-		wantLicence := "https://airbg.org/licences"
-		if strings.HasPrefix(path, "/en/") {
-			wantLicence = "https://airbg.org/en/licences"
-		}
-		if ds.License != wantLicence {
-			t.Errorf("%s: license = %q, want %q", path, ds.License, wantLicence)
+		if ds.License != "https://opendatacommons.org/licenses/odbl/1-0/" {
+			t.Errorf("%s: license = %q, want the ODbL URL", path, ds.License)
 		}
 		if ds.Creator == nil || ds.Creator.Type != "Person" || ds.Creator.Name != "Iliyan Petkov" || ds.Creator.Email != "privacy@kanarche.eu" {
 			t.Errorf("%s: creator = %+v", path, ds.Creator)
@@ -221,5 +220,57 @@ func TestJSONLDHostileAreaNameStaysInsideScript(t *testing.T) {
 	list := nodeOfType(jsonLD(t, "/area/evil", body), "BreadcrumbList")
 	if list == nil || list.ItemListElement[len(list.ItemListElement)-1].Name != hostile {
 		t.Errorf("hostile name did not round-trip inside the JSON: %+v", list)
+	}
+}
+
+// collectRefs gathers every object that is only an {"@id": ...} reference.
+func collectRefs(v any, refs *[]string) {
+	switch x := v.(type) {
+	case map[string]any:
+		if id, ok := x["@id"].(string); ok && len(x) == 1 {
+			*refs = append(*refs, id)
+		}
+		for _, c := range x {
+			collectRefs(c, refs)
+		}
+	case []any:
+		for _, c := range x {
+			collectRefs(c, refs)
+		}
+	}
+}
+
+func TestJSONLDIDReferencesResolveInGraph(t *testing.T) {
+	rr := renderer(t, jsonLDFixture(t))
+	for _, path := range []string{"/", "/en/", "/about-the-data", "/en/about-the-data", "/area/plovdiv"} {
+		body := fetch(t, rr, path).Body.String()
+		start := strings.Index(body, ldOpen) + len(ldOpen)
+		end := strings.Index(body[start:], "</script>")
+		var doc struct {
+			Graph []map[string]any `json:"@graph"`
+		}
+		if err := json.Unmarshal([]byte(body[start:start+end]), &doc); err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		ids := map[string]bool{}
+		var refs []string
+		for _, n := range doc.Graph {
+			if id, ok := n["@id"].(string); ok && len(n) > 1 {
+				ids[id] = true
+			}
+			for k, c := range n {
+				if k != "@id" {
+					collectRefs(c, &refs)
+				}
+			}
+		}
+		if path == "/" && len(refs) == 0 {
+			t.Errorf("%s: found no @id references, the check is inert", path)
+		}
+		for _, r := range refs {
+			if !ids[r] {
+				t.Errorf("%s: reference %q has no node in the graph", path, r)
+			}
+		}
 	}
 }
