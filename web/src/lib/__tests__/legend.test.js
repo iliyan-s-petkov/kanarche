@@ -94,6 +94,19 @@ describe('renderLegend', () => {
     expect(el.querySelectorAll('[style]')).toHaveLength(0)
   })
 
+  // A11Y-05: each band swatch carries its class outline, so the key and the map match without hue.
+  // The weight and ink come from app.css, keyed on data-class.
+  it('outlines each band swatch at its class weight, worst heaviest, and the no-data swatch not at all', () => {
+    const el = draw()
+    const bands = [...el.querySelectorAll('.scale__band-swatch rect')]
+    expect(bands.map((r) => r.getAttribute('data-class'))).toEqual(['2', '1', '0'])
+    for (const r of bands) {
+      expect(r.classList.contains('class-outline')).toBe(true)
+      expect(r.getAttribute('vector-effect')).toBe('non-scaling-stroke')
+    }
+    expect(el.querySelector('.scale__none rect').hasAttribute('stroke')).toBe(false)
+  })
+
   // The order IS the meaning: the boundary numbers are positioned on the seam
   // at the top of each band, so a list built in the served (ascending) order
   // puts every number against the wrong pair of colours.

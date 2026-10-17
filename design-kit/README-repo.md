@@ -41,15 +41,15 @@ this serves the **working tree**, so uncommitted work is visible, while the host
 only ever showed what was committed and deployed:
 
     docker compose up -d db
-    export AIRBG_DATABASE_URL='postgres://airbg:airbg@localhost:5432/airbg?sslmode=disable'
-    export AIRBG_CONFIG="$PWD/airbg.yaml"
-    export AIRBG_DESIGN_KIT_DIR="$PWD/design-kit"
+    export KANARCHE_DATABASE_URL='postgres://airbg:airbg@localhost:5432/airbg?sslmode=disable'
+    export KANARCHE_CONFIG="$PWD/airbg.yaml"
+    export KANARCHE_DESIGN_KIT_DIR="$PWD/design-kit"
     go run ./cmd/airbg serve      # http://localhost:8080/design-kit/
 
 No secret store and no certificate: `docker-compose.yml` is development-only and
-every credential in it has a development fallback. `AIRBG_DESIGN_KIT_DIR`
+every credential in it has a development fallback. `KANARCHE_DESIGN_KIT_DIR`
 overrides `design_kit.dir`, whose shipped value is the in-image path — see
-`docs/configuration.md` for the `AIRBG_*` naming rule. `migrate` must have run
+`docs/configuration.md` for the `KANARCHE_*` naming rule. `migrate` must have run
 once against that database; `import-areas` is not needed for the kit route.
 
 `file://` also renders the kit, but the tiles stand down and the SVG basemap

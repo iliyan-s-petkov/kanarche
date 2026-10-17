@@ -39,10 +39,15 @@ export function seaInfoContent(info, supplementURL = '') {
   return { title: info.title, paragraphs: [info.body, info.rzi].filter(Boolean), links }
 }
 
+let nextId = 0
+
 // Built once; `show` repaints it from a content object and opens it.
 export function createInfoDialog(doc, { closeLabel }) {
   const el = doc.createElement('dialog')
   el.className = 'scaleinfo'
+  // The heading names the dialog; the counter keeps ids unique.
+  const titleId = `infodialog-title-${nextId++}`
+  el.setAttribute('aria-labelledby', titleId)
 
   const dismiss = doc.createElement('button')
   dismiss.type = 'button'
@@ -52,6 +57,7 @@ export function createInfoDialog(doc, { closeLabel }) {
 
   const heading = doc.createElement('h2')
   heading.className = 'scaleinfo__title'
+  heading.id = titleId
 
   const body = doc.createElement('div')
 

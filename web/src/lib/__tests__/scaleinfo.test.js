@@ -122,6 +122,16 @@ describe('createScaleDialog', () => {
     expect(el.querySelectorAll('[style]')).toHaveLength(0)
   })
 
+  // A11Y-05: the dialog's swatches carry the same class outline as the map and the key.
+  it('marks each band swatch with its class outline', () => {
+    const rects = [...open(EAQI).querySelectorAll('rect')]
+    rects.forEach((r, i) => {
+      expect(r.classList.contains('class-outline')).toBe(true)
+      expect(r.getAttribute('data-class')).toBe(String(Math.min(i, 5)))
+      expect(r.getAttribute('vector-effect')).toBe('non-scaling-stroke')
+    })
+  })
+
   // The reason the dialog exists: a reader can check the claim instead of
   // taking the colours on trust.
   it('links the guideline, and opens it without handing over the opener', () => {
@@ -184,6 +194,17 @@ describe('createScaleDialog', () => {
       el.querySelector(sel).click()
       expect(el.close, `${sel} did not close the dialog`).toHaveBeenCalled()
     }
+  })
+
+  // A dialog with no name is announced as just "dialog".
+  it('names the dialog by its heading, with an id unique per instance', () => {
+    const a = open(EAQI)
+    const b = open(EAQI)
+    const h = a.querySelector('.scaleinfo__title')
+    expect(h.id).not.toBe('')
+    expect(a.getAttribute('aria-labelledby')).toBe(h.id)
+    expect(b.getAttribute('aria-labelledby')).toBe(b.querySelector('.scaleinfo__title').id)
+    expect(b.getAttribute('aria-labelledby')).not.toBe(a.getAttribute('aria-labelledby'))
   })
 
   // The link must not sit crawlable-but-hrefless from first paint, before the

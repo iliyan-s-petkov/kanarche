@@ -151,6 +151,23 @@ func bandLabel(metric string, value float64) string {
 	return ""
 }
 
+// bandClass is the index of the band value falls in, best first, or -1 when the
+// metric has no scale. The table chip's outline weight is keyed on it (A11Y-05).
+func bandClass(metric string, value float64) int {
+	for _, scale := range api.Scales() {
+		if scale.Metric != metric {
+			continue
+		}
+		for i, band := range scale.Bands {
+			if band.Upper == nil || value <= *band.Upper {
+				return i
+			}
+		}
+		return -1
+	}
+	return -1
+}
+
 func bandColour(metric string, value float64) string {
 	for _, scale := range api.Scales() {
 		if scale.Metric != metric {

@@ -3,6 +3,11 @@ import { applyLocate } from './locate.js'
 import { findSensor, getSensors, setSensors } from './sensors.svelte.js'
 import { nearestArea, nearestSensor } from './nearest.js'
 import { POINT_TIER_MIN_ZOOM } from './hexes.js'
+import { offsetFrom } from './geometry.js'
+import { bandName } from './bandname.js'
+import { bandsFor } from './mappaint.js'
+import { spokenUnit } from './spokenunit.js'
+import { applyNearSummary } from './nearsummary.js'
 import { refresh, refreshHexes, urlFor, loadCityAreas, publishAreas } from './mapdata.js'
 
 // locateVisitor asks the server where the visitor is and, only for a genuine
@@ -176,7 +181,28 @@ export async function showNearestSensor(map, state, cfg, chrome, point) {
   await refresh(map, state, cfg, chrome, true)
 
   const sensor = nearestSensor(point, getSensors())
-  if (sensor) map.jumpTo({ center: [sensor.lon, sensor.lat], zoom: DEEP_LINK_ZOOM })
+  if (sensor) {
+    map.jumpTo({ center: [sensor.lon, sensor.lat], zoom: DEEP_LINK_ZOOM })
+    announceNearYou(state, cfg, point, sensor)
+  }
   await refreshHexes(map, state, cfg)
   return true
+}
+
+// Puts the nearest sensor's reading into the home page's hidden summary, in spoken units.
+// The coordinate stays in the browser: only the sentence is written.
+function announceNearYou(state, cfg, point, sensor) {
+  const cols = getSensors()?.sensors
+  const value = cols?.[cfg.metric]?.[cols.id.indexOf(sensor.id)]
+  if (typeof value !== 'number') return
+  const { metres, octant } = offsetFrom(point, [sensor.lon, sensor.lat])
+  applyNearSummary(document, {
+    metric: cfg.metricLabels?.[cfg.metric] ?? cfg.metric,
+    value,
+    unit: spokenUnit(cfg.metricUnits?.[cfg.metric] ?? ''),
+    band: bandName(value, bandsFor(state.scales, cfg.metric), cfg.bandNames ?? {}),
+    lang: cfg.lang,
+    metres,
+    octant,
+  })
 }

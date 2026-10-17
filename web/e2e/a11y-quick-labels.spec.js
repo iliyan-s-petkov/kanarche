@@ -18,6 +18,7 @@ test('the scale dialog has a metric title, a unit line and two distinct close na
   await legend.locator('> .scale__label .scale__info').click()
   const dialog = page.locator('dialog.scaleinfo[open]')
   await expect(dialog).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'PM2.5 colour scale' })).toBeVisible()
   const title = await dialog.locator('h2').textContent()
   expect(title).toMatch(/colour scale$/)
   expect(title).not.toContain('µg')

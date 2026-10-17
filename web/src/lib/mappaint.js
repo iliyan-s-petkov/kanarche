@@ -8,6 +8,7 @@ import {
   OFFICIAL_IMAGE_ID, HEX_LABEL_LAYER_ID, LAYER_ID, OFFICIAL_LAYER_ID, LABEL_LAYER_ID, FAULTY_LAYER_ID,
 } from './mapids.js'
 import { MAX_ZOOM_CEILING } from './mapconfig.js'
+import { classOutlineExpr } from './classoutline.js'
 
 // How far a held reading is faded. Low enough to read as held, high enough to
 // stay legible over every band.
@@ -95,10 +96,11 @@ const HOVERED = ['boolean', ['feature-state', 'hover'], false]
 // around the cell and through its fill.
 //
 // Hover thickens the line instead of recolouring it: colour here is the reading.
+// The width is the cell's class weight (A11Y-05). No line-offset: hexagon and diamond rings wind opposite ways.
 export function hexOutlinePaint(cfg) {
   return {
     'line-color': cfg.labelColour,
-    'line-width': ['case', HOVERED, 2, 1.2],
+    'line-width': ['case', HOVERED, classOutlineExpr(1), classOutlineExpr()],
     'line-opacity': ['case', HOVERED, 0.95, 0.7],
   }
 }
@@ -114,12 +116,13 @@ export function hexFillPaint(cfg) {
 
 // hexPointPaint: the point tier's circles. Hover thickens the stroke rather
 // than the radius, which would shift the circle against its label.
+// Stroke is the class outline in the cell border's ink (A11Y-05).
 export function hexPointPaint(cfg) {
   return {
     'circle-color': ['get', 'colour'],
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 4, 18, 9],
-    'circle-stroke-width': ['case', HOVERED, 2.5, 1],
-    'circle-stroke-color': cfg.markerStrokeColour,
+    'circle-stroke-width': ['case', HOVERED, classOutlineExpr(1.5), classOutlineExpr()],
+    'circle-stroke-color': cfg.labelColour,
   }
 }
 
@@ -175,12 +178,13 @@ export function hexLabelPaint(cfg) {
 // markerPaint, one returning a full paint object and one returning a single
 // paint VALUE, would have been the same kind of silent ambiguity this file's
 // other comments warn about elsewhere.
+// The stroke is the class outline in the cell border's ink (A11Y-05): white vanished into a pale map.
 export function layerPaint(cfg) {
   return {
     'circle-color': ['get', 'colour'],
     'circle-radius': MARKER_RADIUS,
-    'circle-stroke-width': 1,
-    'circle-stroke-color': cfg.markerStrokeColour,
+    'circle-stroke-width': classOutlineExpr(),
+    'circle-stroke-color': cfg.labelColour,
   }
 }
 
@@ -229,8 +233,8 @@ export function officialLayout() {
 export function officialPaint(cfg) {
   return {
     'icon-color': ['get', 'colour'],
-    'icon-halo-color': cfg.markerStrokeColour,
-    'icon-halo-width': 1,
+    'icon-halo-color': cfg.labelColour,
+    'icon-halo-width': classOutlineExpr(),
   }
 }
 

@@ -1,4 +1,5 @@
 import { scaleInfo } from './scaleinfo.js'
+import { outlineSwatch } from './classoutline.js'
 import { fillSlots } from './sea.js'
 
 // The (i) beside the key, and the dialog it opens.
@@ -12,6 +13,8 @@ import { fillSlots } from './sea.js'
 // are server data, style-src has no 'unsafe-inline', and a presentation
 // attribute is not an inline style.
 
+let nextId = 0
+
 // createScaleDialog builds the dialog once and returns a handle. `show` repaints
 // it from a scale and opens it; the button's own visibility is the caller's
 // business, because only the caller knows whether a scale has loaded yet.
@@ -20,6 +23,9 @@ import { fillSlots } from './sea.js'
 export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, lang, t = {} }) {
   const el = doc.createElement('dialog')
   el.className = 'scaleinfo'
+  // The heading names the dialog; the counter keeps ids unique if two exist.
+  const titleId = `scaleinfo-title-${nextId++}`
+  el.setAttribute('aria-labelledby', titleId)
 
   // The corner mark, so a reader who has scrolled the table need not scroll
   // back to the button to leave. Its glyph is CSS content for the reason the
@@ -33,6 +39,7 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
 
   const heading = doc.createElement('h2')
   heading.className = 'scaleinfo__title'
+  heading.id = titleId
   el.appendChild(heading)
 
   const units = doc.createElement('p')
@@ -80,10 +87,13 @@ export function createScaleDialog(doc, { closeLabel, sourceLabel, disclaimer, la
     notes.hidden = !info.notes
 
     list.replaceChildren()
-    for (const row of info.rows) {
+    for (const [i, row] of info.rows.entries()) {
       const item = doc.createElement('li')
       item.className = 'scaleinfo__band'
-      item.appendChild(swatch(doc, row.colour))
+      const mark = swatch(doc, row.colour)
+      // Same class outline as the key and the map (A11Y-05).
+      outlineSwatch(mark.firstChild, i)
+      item.appendChild(mark)
 
       const name = doc.createElement('span')
       name.className = 'scaleinfo__band-name'

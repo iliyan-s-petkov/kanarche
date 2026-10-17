@@ -22,6 +22,11 @@ describe('the load handler\'s teardown handles', () => {
     expect(assigned).toEqual(['unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe'])
   })
 
+  // A11Y-05: the basemap stays light in both themes, so the map outlines keep the dark ink and nothing repaints them.
+  it('does not repaint the class outlines on a theme change', () => {
+    expect(load).not.toMatch(/OutlineInk|watchTheme/)
+  })
+
   // Both directions matter. An assignment with no release leaks; a release with
   // no assignment is a no-op hiding a teardown that was meant to run.
   it('releases exactly what it assigns', () => {

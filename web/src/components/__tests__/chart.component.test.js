@@ -406,6 +406,17 @@ describe('Chart.svelte', () => {
         .toBe('PM2.5, 24 hours: latest 13.1 µg/m³, lowest 12.3 µg/m³, highest 13.1 µg/m³.')
     })
 
+    it('speaks the unit in the summary when the page publishes spoken units', async () => {
+      document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }))
+      vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+      const target = render({ url: '/api/v1/area/alt-spoken/series', ...alt })
+      await vi.waitFor(() => expect(target.querySelector('[role="img"]')).not.toBeNull())
+      document.head.innerHTML = ''
+      expect(target.querySelector('[role="img"]').getAttribute('aria-label'))
+        .toContain('latest 13.1 micrograms per cubic metre')
+    })
+
     it('holds the readings in a visually hidden table beside the image, not inside it', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }))
       vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })

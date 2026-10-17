@@ -4,12 +4,15 @@
   // with no 'unsafe-inline', so a style attribute would be dropped and the arc
   // would never paint.
   import { splitReadoutLabel } from '../lib/readoutLabel.js'
+  import { spokenUnit } from '../lib/spokenunit.js'
   let { cards } = $props()
 </script>
 
 <div class="readouts">
   {#each cards as card (card.label + '|' + (card.group ?? ''))}
     {@const split = splitReadoutLabel(card.label, card.metric)}
+    {@const spoken = spokenUnit(card.unit)}
+    {@const speak = spoken !== card.unit}
     <div class="readout card">
       {#if card.group}<span class="readout__group">{card.group}</span>{/if}
       <span class="readout__label">{#if split.position === 'prefix'}<span class="readout__metric">{split.metric}{' · '}</span>{split.rest}{:else if split.position === 'suffix'}{split.rest}<span class="readout__metric">{' · '}{split.metric}</span>{:else}{split.rest}{/if}</span>
@@ -23,11 +26,11 @@
           </svg>
           <span class="gauge__figure">
             <span class="readout__value">{card.value}</span>
-            <span class="readout__unit">{card.unit}</span>
+            <span class="readout__unit" aria-hidden={speak ? 'true' : undefined}>{card.unit}</span>{#if speak}<span class="sr-only"> {spoken}</span>{/if}
           </span>
         </span>
       {:else}
-        <span class="readout__value">{card.value}{#if card.unit}{' '}<span class="readout__unit">{card.unit}</span>{/if}</span>
+        <span class="readout__value">{card.value}{#if card.unit}{' '}<span class="readout__unit" aria-hidden={speak ? 'true' : undefined}>{card.unit}</span>{#if speak}<span class="sr-only"> {spoken}</span>{/if}{/if}</span>
       {/if}
       <span class="readout__tier">{card.tier}</span>
     </div>
