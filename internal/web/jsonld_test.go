@@ -23,9 +23,14 @@ type ldNode struct {
 	License             string   `json:"license"`
 	IsAccessibleForFree bool     `json:"isAccessibleForFree"`
 	SameAs              []string `json:"sameAs"`
-	Creator             *struct {
-		Type string `json:"@type"`
-		Name string `json:"name"`
+	Email               string   `json:"email"`
+	Publisher           *struct {
+		ID string `json:"@id"`
+	} `json:"publisher"`
+	Creator *struct {
+		Type  string `json:"@type"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
 	} `json:"creator"`
 	Distribution []struct {
 		Type           string `json:"@type"`
@@ -93,22 +98,24 @@ func jsonLDFixture(t *testing.T) *snapshot.Snapshot {
 	return snap
 }
 
-func TestJSONLDHomeHasWebSiteAndOrganization(t *testing.T) {
+func TestJSONLDHomeHasWebSiteAndPerson(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
 	for path, lang := range map[string]string{"/": "bg", "/en/": "en"} {
-		brand := testBrand(map[string]string{"bg": "", "en": "/en"}[lang])
 		doc := jsonLD(t, path, fetch(t, rr, path).Body.String())
 
 		site := nodeOfType(doc, "WebSite")
 		if site == nil || site.Name == "" || site.InLanguage != lang || !strings.HasPrefix(site.URL, "https://airbg.org/") {
 			t.Errorf("%s: WebSite = %+v", path, site)
 		}
-		org := nodeOfType(doc, "Organization")
-		if org == nil || org.Name != brand || org.URL != "https://airbg.org/" {
-			t.Fatalf("%s: Organization = %+v", path, org)
+		if nodeOfType(doc, "Organization") != nil {
+			t.Errorf("%s: an Organization node implies a legal entity", path)
 		}
-		if len(org.SameAs) != 1 || org.SameAs[0] != "https://github.com/iliyan-s-petkov/kanarche" {
-			t.Errorf("%s: Organization.sameAs = %v", path, org.SameAs)
+		person := nodeOfType(doc, "Person")
+		if person == nil || person.Name != "Iliyan Petkov" || person.Email != "privacy@kanarche.eu" {
+			t.Fatalf("%s: Person = %+v", path, person)
+		}
+		if site.Publisher == nil || site.Publisher.ID != person.ID || person.ID == "" {
+			t.Errorf("%s: WebSite.publisher = %+v, want @id %q", path, site.Publisher, person.ID)
 		}
 	}
 }
@@ -123,10 +130,14 @@ func TestJSONLDAboutHasDataset(t *testing.T) {
 		if ds.Name == "" || len(ds.Description) < 50 {
 			t.Errorf("%s: Dataset name %q / description %q (Google needs both, description 50+ chars)", path, ds.Name, ds.Description)
 		}
-		if !strings.Contains(ds.License, "opendatacommons.org/licenses/odbl") {
-			t.Errorf("%s: license = %q, want ODbL", path, ds.License)
+		wantLicence := "https://airbg.org/licences"
+		if strings.HasPrefix(path, "/en/") {
+			wantLicence = "https://airbg.org/en/licences"
 		}
-		if ds.Creator == nil || ds.Creator.Type != "Organization" || ds.Creator.Name == "" {
+		if ds.License != wantLicence {
+			t.Errorf("%s: license = %q, want %q", path, ds.License, wantLicence)
+		}
+		if ds.Creator == nil || ds.Creator.Type != "Person" || ds.Creator.Name != "Iliyan Petkov" || ds.Creator.Email != "privacy@kanarche.eu" {
 			t.Errorf("%s: creator = %+v", path, ds.Creator)
 		}
 		if !ds.IsAccessibleForFree {
