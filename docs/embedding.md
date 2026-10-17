@@ -5,7 +5,7 @@ same map, the same islands and the same API as the home page — only the site's
 chrome is gone.
 
 ```html
-<iframe src="https://airbg.org/embed"
+<iframe src="https://kanarche.eu/embed"
         title="Качество на въздуха — Канарче"
         width="100%" height="480" loading="lazy"
         style="border:0"></iframe>
