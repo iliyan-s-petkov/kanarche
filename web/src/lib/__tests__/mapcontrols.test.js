@@ -240,6 +240,22 @@ describe('installZoom', () => {
     )
   })
 
+  it('zoom and reset skip animation under reduced motion', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    try {
+      const map = fakeMap()
+      const buttons = wire(map)
+      buttons.in.click()
+      buttons.out.click()
+      buttons.reset.click()
+      expect(map.zoomIn).toHaveBeenCalledWith({ animate: false }, { userInitiated: true })
+      expect(map.zoomOut).toHaveBeenCalledWith({ animate: false }, { userInitiated: true })
+      expect(map.flyTo.mock.calls[0][0].animate).toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('reset flattens a tilted, rotated camera in one flight', () => {
     const map = fakeMap()
     map.pitch = 45

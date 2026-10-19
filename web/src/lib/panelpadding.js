@@ -1,3 +1,4 @@
+import { motion } from './mapmotion.js'
 import { findSensor } from './sensors.svelte.js'
 
 // Clear room kept between the open sensor's point and the panel's top edge.
@@ -15,7 +16,7 @@ export function installPanelPadding(map, dock, vs) {
     const point = map.project([sensor.lon, sensor.lat])
     const height = map.getCanvas().clientHeight
     if (point.y > height - covered - EDGE || point.y < EDGE) {
-      map.easeTo({ center: [sensor.lon, sensor.lat], padding: { bottom: covered, top: 0, left: 0, right: 0 }, duration: 250 })
+      map.easeTo(motion({ center: [sensor.lon, sensor.lat], padding: { bottom: covered, top: 0, left: 0, right: 0 }, duration: 250 }))
     }
   }
 
