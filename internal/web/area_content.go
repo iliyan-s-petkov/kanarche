@@ -32,6 +32,9 @@ type Crumb struct {
 type AreaLinkBlock struct {
 	Label string
 	Items []AreaRow
+	// Heading and Intro replace Label as a heading with a paragraph under it; set on the Sofia city page only.
+	Heading string
+	Intro   string
 }
 
 // ParentChain returns meta's ancestors, immediate parent first and the root
@@ -414,6 +417,11 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 			label = p.T("area.children.districts")
 		}
 		p.AreaChildrenBlock = &AreaLinkBlock{Label: label, Items: children}
+		// The Sofia city page is the districts hub; it is identified by slug and kind, via sofiaHubSlug.
+		if meta.Slug == sofiaHubSlug && meta.Kind == "city" && children[0].Kind == "neighbourhood" {
+			p.AreaChildrenBlock.Heading = p.T("area.districts.heading")
+			p.AreaChildrenBlock.Intro = strings.ReplaceAll(p.T("area.districts.intro"), "{n}", strconv.Itoa(len(children)))
+		}
 	}
 
 	if nearest := rr.nearestSameKind(meta, snap, lang, nearestCount); len(nearest) > 0 {

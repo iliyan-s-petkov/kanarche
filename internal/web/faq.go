@@ -44,14 +44,21 @@ func (p PageData) faqArea(row AreaRow) string {
 
 // faqReplacer fills every FAQ placeholder: the area, the h1's preposition form, the poll interval and the EAQI edges from api.Scales().
 func (p PageData) faqReplacer(row AreaRow) *strings.Replacer {
-	p2, p1 := pm25Edges(), pm10Edges()
-	return strings.NewReplacer(
+	pairs := []string{
 		"{area}", p.faqArea(row),
 		"{area_in}", p.areaIn(),
 		"{minutes}", strconv.Itoa(p.pollMinutes),
+	}
+	return strings.NewReplacer(append(pairs, eaqiEdgePairs()...)...)
+}
+
+// eaqiEdgePairs is the {p2_*} and {p1_*} placeholder pairs, shared by the FAQ and the PM explainer pages.
+func eaqiEdgePairs() []string {
+	p2, p1 := pm25Edges(), pm10Edges()
+	return []string{
 		"{p2_good}", p2[0], "{p2_fair}", p2[1], "{p2_moderate}", p2[2], "{p2_poor}", p2[3], "{p2_verypoor}", p2[4],
 		"{p1_good}", p1[0], "{p1_fair}", p1[1], "{p1_moderate}", p1[2], "{p1_poor}", p1[3], "{p1_verypoor}", p1[4],
-	)
+	}
 }
 
 // faqBlock renders the area FAQ. faq.a5_official joins answer 5 only when the area has EEA data, the same rule as the area description.
