@@ -10,8 +10,10 @@ import (
 const (
 	schemaContext = "https://schema.org"
 	sourceRepoURL = "https://github.com/iliyan-s-petkov/kanarche"
-	// sensor.community's licence, as stated in api.Attributions and the about page.
-	odblURL = "https://opendatacommons.org/licenses/odbl/1-0/"
+	odblURL       = "https://opendatacommons.org/licenses/odbl/1-0/"
+	// Controller named in the privacy notice. A natural person: the project has no legal entity.
+	controllerName  = "Iliyan Petkov"
+	controllerEmail = "privacy@kanarche.eu"
 	// Bulgaria's extent from data/boundaries/bulgaria.geojson, "south west north east".
 	bulgariaBox = "41.2381 22.3450 44.2284 28.6035"
 )
@@ -25,23 +27,22 @@ type ldRef struct {
 	ID string `json:"@id"`
 }
 
-type ldOrganization struct {
-	Type   string   `json:"@type"`
-	ID     string   `json:"@id,omitempty"`
-	Name   string   `json:"name"`
-	URL    string   `json:"url"`
-	Logo   string   `json:"logo,omitempty"`
-	SameAs []string `json:"sameAs,omitempty"`
+type ldPerson struct {
+	Type  string `json:"@type"`
+	ID    string `json:"@id,omitempty"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type ldWebSite struct {
-	Type          string `json:"@type"`
-	ID            string `json:"@id"`
-	Name          string `json:"name"`
-	AlternateName string `json:"alternateName,omitempty"`
-	URL           string `json:"url"`
-	InLanguage    string `json:"inLanguage"`
-	Publisher     ldRef  `json:"publisher"`
+	Type          string   `json:"@type"`
+	ID            string   `json:"@id"`
+	Name          string   `json:"name"`
+	AlternateName string   `json:"alternateName,omitempty"`
+	URL           string   `json:"url"`
+	InLanguage    string   `json:"inLanguage"`
+	Publisher     ldRef    `json:"publisher"`
+	SameAs        []string `json:"sameAs,omitempty"`
 }
 
 type ldGeoShape struct {
@@ -83,7 +84,7 @@ type ldDataset struct {
 	InLanguage          string            `json:"inLanguage"`
 	License             string            `json:"license"`
 	IsAccessibleForFree bool              `json:"isAccessibleForFree"`
-	Creator             ldOrganization    `json:"creator"`
+	Creator             ldPerson          `json:"creator"`
 	SpatialCoverage     ldPlace           `json:"spatialCoverage"`
 	VariableMeasured    []ldPropertyValue `json:"variableMeasured"`
 	Distribution        []ldDataDownload  `json:"distribution"`
@@ -135,28 +136,20 @@ func encodeJSONLD(nodes ...interface{ ldNode() }) (template.JS, error) {
 	return template.JS(out), nil
 }
 
-func (ldOrganization) ldNode()   {}
+func (ldPerson) ldNode()         {}
 func (ldWebSite) ldNode()        {}
 func (ldDataset) ldNode()        {}
 func (ldBreadcrumbList) ldNode() {}
 func (ldPlace) ldNode()          {}
 func (ldFAQPage) ldNode()        {}
 
-// organization is the site itself, named by the localized product name.
-func (p PageData) organization() ldOrganization {
-	name := p.T("seo.title_brand")
-	return ldOrganization{
-		Type:   "Organization",
-		ID:     p.BaseURL + "/#organization",
-		Name:   name,
-		URL:    p.BaseURL + "/",
-		Logo:   p.BaseURL + p.Static("favicon.svg"),
-		SameAs: []string{sourceRepoURL},
-	}
+// controller is the natural person behind the site; no node claims a legal entity.
+func (p PageData) controller() ldPerson {
+	return ldPerson{Type: "Person", ID: p.BaseURL + "/#controller", Name: controllerName, Email: controllerEmail}
 }
 
 func (p PageData) homeJSONLD() (template.JS, error) {
-	org := p.organization()
+	person := p.controller()
 	site := ldWebSite{
 		Type:          "WebSite",
 		ID:            p.BaseURL + "/#website",
@@ -164,9 +157,10 @@ func (p PageData) homeJSONLD() (template.JS, error) {
 		AlternateName: p.T("brand.wordmark"),
 		URL:           p.CanonicalURL(),
 		InLanguage:    p.Lang,
-		Publisher:     ldRef{ID: org.ID},
+		Publisher:     ldRef{ID: person.ID},
+		SameAs:        []string{sourceRepoURL},
 	}
-	return encodeJSONLD(site, org)
+	return encodeJSONLD(site, person)
 }
 
 func (p PageData) datasetJSONLD() (template.JS, error) {
@@ -187,7 +181,7 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 		InLanguage:          p.Lang,
 		License:             odblURL,
 		IsAccessibleForFree: true,
-		Creator:             p.organization(),
+		Creator:             p.controller(),
 		SpatialCoverage:     ldPlace{Type: "Place", Name: p.T("seo.dataset.place"), Geo: geo},
 		VariableMeasured:    vars,
 		Distribution: []ldDataDownload{

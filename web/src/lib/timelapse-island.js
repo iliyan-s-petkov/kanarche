@@ -1,15 +1,16 @@
 // The island seam for the timelapse player: it wires the pure frame layer in
-// ./timelapse.js (cursors, timelapseURL, band and threshold logic) to a live
+// ./timelapseframes.js (cursors, timelapseURL, band and threshold logic) to a live
 // map and the player UI. Kept separate, same as mapwind.js/wind.js, so the
 // pure module stays importable on its own.
 import { getJSON } from './api.js'
 import { rampColour } from './ramp.js'
 import { filterByStatus, getSensorStatus } from './sensorfilter.svelte.js'
 import { readChoice, writeChoice } from './storage.js'
+import { DEFAULT_SPEED, SPEEDS } from './timelapse.js'
 import {
-  DEFAULT_SPEED, SPEEDS, cursor, fillForward, frameBody, frameCount, frameTime, frameDelay,
+  cursor, fillForward, frameBody, frameCount, frameTime, frameDelay,
   hasHistory, seek, step, thinFrames, timelapseURL,
-} from './timelapse.js'
+} from './timelapseframes.js'
 import { hexFeatures, resolutionForZoom } from './hexes.js'
 import { HEX_SOURCE_ID } from './mapids.js'
 import { PLAY_SPEED_KEY } from './mapconfig.js'

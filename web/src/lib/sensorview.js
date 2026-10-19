@@ -67,7 +67,7 @@ export function detailRows(sensor, labels, locale) {
     rows.push({
       key: 'coords',
       label: labels.coords,
-      value: `${sensor.lat.toFixed(4)}, ${sensor.lon.toFixed(4)}`,
+      value: `${sensor.lat.toFixed(3)}, ${sensor.lon.toFixed(3)}`,
     })
   }
 

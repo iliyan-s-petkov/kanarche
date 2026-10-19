@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"html/template"
 	"math"
 	"sort"
@@ -138,6 +139,14 @@ func (p PageData) areaSubject(row AreaRow) string {
 	default:
 		return strings.ReplaceAll(p.T("area.subject.district"), "{name}", row.Name)
 	}
+}
+
+// AnnounceSubject names the area in the refresh change sentence. Empty off an area page.
+func (p PageData) AnnounceSubject() string {
+	if p.Area == nil {
+		return ""
+	}
+	return p.areaSubject(*p.Area)
 }
 
 // sensorsText is the key/key_one plural pattern (§4): "1 сензор" versus
@@ -323,6 +332,44 @@ func (rr *Renderer) childrenOf(meta snapshot.AreaMeta, snap *snapshot.Snapshot, 
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
+}
+
+// areaSensorDistricts maps sensor id to its Sofia district name for the area's sensor table.
+// Empty unless the area holds districts below it. A district page names only itself.
+func (rr *Renderer) areaSensorDistricts(meta snapshot.AreaMeta, snap *snapshot.Snapshot, lang string) string {
+	if meta.Kind == "neighbourhood" {
+		return ""
+	}
+	out := map[string]string{}
+	for id, loc := range snap.SensorLocations {
+		m, ok := snap.KnownSlugs[loc.Slug]
+		if !ok || m.Kind != "neighbourhood" || !descendsFrom(m, meta.Slug, snap) {
+			continue
+		}
+		out[strconv.FormatInt(id, 10)] = rr.rowFrom(m, lang).Name
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	b, err := json.Marshal(out)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+// descendsFrom walks m's parent chain. The bound guards against a cycle in bad data.
+func descendsFrom(m snapshot.AreaMeta, slug string, snap *snapshot.Snapshot) bool {
+	for range 8 {
+		if m.ParentSlug == "" {
+			return false
+		}
+		if m.ParentSlug == slug {
+			return true
+		}
+		m = snap.KnownSlugs[m.ParentSlug]
+	}
+	return false
 }
 
 // nearestLabelKey names the "Nearest" block by kind — a district's nearest

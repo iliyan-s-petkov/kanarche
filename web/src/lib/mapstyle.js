@@ -28,7 +28,7 @@ export const RASTER_BASEMAP = {
   tileSize: 256,
   minzoom: 0,
   maxzoom: RASTER_FULL_MAX_ZOOM,
-  attribution: '© OpenStreetMap contributors',
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
 }
 
 // glyphsURL derives the font endpoint from the configured basemap URL. A

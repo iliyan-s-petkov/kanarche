@@ -16,7 +16,7 @@ import { LAYER_ID, FAULTY_LAYER_ID, HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID, HEX_PO
 import { MIN_ZOOM, readConfig } from '../lib/mapconfig.js'
 import { POINT_TIER_MIN_ZOOM } from '../lib/hexes.js'
 import { registerProtocols, mapStyle, installErrorHandler } from '../lib/mapstyle.js'
-import { paintWind } from '../lib/mapwind.js'
+import { paintWind } from '../lib/mapwind-lazy.js'
 import {
   hit, boundaryChoice, highlightBoundary, cellArea, BOUNDARY_FIT_PADDING,
 } from '../lib/mapboundaries.js'
@@ -38,6 +38,9 @@ import { bandsFor } from '../lib/mappaint.js'
 import { describeReading } from '../lib/nearbylist.js'
 import { createHexTip } from '../lib/hextip.js'
 import { installNearbyList } from '../lib/mapnearby.svelte.js'
+import { installAreaSensors } from '../lib/mapareasensors.js'
+import { watchViewedCategory } from '../lib/announce.js'
+import { getFreshness } from '../lib/freshness.svelte.js'
 
 // The flat cells and their tilted columns: one feature, two ways of drawing it.
 const HEX_CELL_LAYERS = [HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID]
@@ -349,6 +352,11 @@ export function mount(el) {
   const stopNearby = nearbyEl
     ? installNearbyList({ map, el: nearbyEl, cfg, state, onopen: (item) => openCellSensor(item.id), onpreview: previewCell, onunpreview: clearHexHover })
     : () => {}
+  const sensorsEl = cfg.slug ? document.querySelector('[data-area-sensors]') : null
+  const stopAreaSensors = sensorsEl
+    ? installAreaSensors({ map, el: sensorsEl, cfg, onopen: openCellSensor })
+    : () => {}
+  const stopCategoryWatch = watchViewedCategory({ fresh: getFreshness(), vs, cfg })
 
   // The province outlines answer a click the two handlers above did not.
   //
@@ -383,6 +391,6 @@ export function mount(el) {
   return {
     map,
     chrome,
-    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); tip.destroy() },
+    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); stopAreaSensors(); stopCategoryWatch(); tip.destroy() },
   }
 }

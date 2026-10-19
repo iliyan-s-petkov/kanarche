@@ -99,7 +99,7 @@ func TestAboutPageLinksTheRepositoryAndEmbedDocs(t *testing.T) {
 func TestAboutPagePrivacyWording(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	en := strings.Join(strings.Fields(visibleText(fetch(t, rr, "/en/about").Body.String())), " ")
-	const wantEN = "We keep no IP address or identifier: none in logs, none in the database. Your IP is used for a moment in memory to limit abusive traffic, then forgotten. Cloudflare, our network provider, sees it too and gives us only daily totals."
+	const wantEN = "To limit abusive traffic, the server keeps your IP address in memory for up to about an hour, then drops it. It is not written to a database. The application keeps no access log. Cloudflare, our network provider, also sees it and gives us only daily totals."
 	if !strings.Contains(en, wantEN) {
 		t.Errorf("en page lacks the approved privacy wording")
 	}

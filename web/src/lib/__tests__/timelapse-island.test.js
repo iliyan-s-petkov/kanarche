@@ -7,7 +7,8 @@ import { refreshHexes } from '../mapdata.js'
 import { hexLabelPaint, CARRIED_OPACITY, FRESH_OPACITY, SETTLING_OPACITY } from '../mappaint.js'
 import { PLAY_SPEED_KEY } from '../mapconfig.js'
 import { resolutionForZoom, hexesURL } from '../hexes.js'
-import { mountPlayer, FRAME_MS } from '../timelapse.js'
+import { mountPlayer } from '../timelapse.js'
+import { FRAME_MS } from '../timelapseframes.js'
 
 // The animation is the hex layer with a past hour's numbers in it. These fix
 // what that must NOT disturb: the live grid the map goes back to, and the

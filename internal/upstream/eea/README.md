@@ -6,14 +6,13 @@ sensor.community devices the rest of this repo collects.
 
 ## Where the data comes from
 
-The government's own portal is not a usable source. Its map calls
-`GET https://eea.government.bg/kav/ajax/getStationsForMapJson?hours=N`, which
-on 2026-09-09 returned all 32 stations with coordinates, Bulgarian names,
-addresses and station types — and `value: 0`, empty `componentName`, empty
-`dt` for every one of them. The per-station endpoint `getStationDataJson`
-returned a zero-length body. That server also presents an incomplete TLS
-chain (leaf certificate only, no Sectigo intermediate), so any client of it
-needs an explicit CA bundle just to connect, on top of the data being empty.
+On 2026-09-09 the portal's map endpoint returned no measurement values for any
+of the 32 stations, so we use the EEA download service instead. The call was
+`GET https://eea.government.bg/kav/ajax/getStationsForMapJson?hours=N`. It
+returned all 32 stations with coordinates, Bulgarian names, addresses and
+station types, but `value: 0`, empty `componentName` and empty `dt` for every
+one of them. The per-station endpoint `getStationDataJson` returned a
+zero-length body.
 
 The same stations reach us through the EEA Air Quality Download API instead,
 which is live and about one hour behind:
