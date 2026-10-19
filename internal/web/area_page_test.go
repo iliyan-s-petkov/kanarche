@@ -103,7 +103,7 @@ func TestAreaH1CarriesOblastKindPrefix(t *testing.T) {
 	cases := map[string]string{
 		"/area/plovdiv-oblast":    `<h1 class="t-title">Качество на въздуха в област Пловдив</h1>`,
 		"/en/area/plovdiv-oblast": `<h1 class="t-title">Air quality in Plovdiv Province</h1>`,
-		"/area/sofia":            `<h1 class="t-title">Качество на въздуха в София</h1>`,
+		"/area/sofia":             `<h1 class="t-title">Качество на въздуха в София</h1>`,
 	}
 	for path, want := range cases {
 		if body := fetch(t, rr, path).Body.String(); !strings.Contains(body, want) {

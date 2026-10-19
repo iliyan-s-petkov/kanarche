@@ -145,13 +145,9 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	rr.render(w, r, http.StatusOK, "index", data)
 }
 
-// areaAliases maps a retired slug to the one that replaced it. The first
-// transliteration spelled Sofia "sofiya"; those URLs are indexed, so they 301.
-var areaAliases = map[string]string{"sofiya": "sofia", "sofiya-grad-oblast": "sofia-grad-oblast"}
-
 // areaAliasTarget returns the real slug for an alias, only when that slug exists.
 func areaAliasTarget(snap *snapshot.Snapshot, slug string) (string, bool) {
-	target, ok := areaAliases[slug]
+	target, ok := snapshot.RetiredSlugs[slug]
 	if !ok {
 		return "", false
 	}
@@ -385,7 +381,7 @@ func (rr *Renderer) handleEmbed(w http.ResponseWriter, r *http.Request) {
 		data.DefaultMetric = metric
 	}
 	if slug := query.Get("area"); slug != "" && snap != nil {
-		if meta, ok := snap.KnownSlugs[slug]; ok {
+		if meta, ok := snap.KnownSlugs[snapshot.CurrentSlug(slug)]; ok {
 			data.DefaultLon, data.DefaultLat = meta.CentroidLon, meta.CentroidLat
 			data.DefaultZoom = meta.DefaultZoom
 		}

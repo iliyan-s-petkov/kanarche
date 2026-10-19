@@ -3,6 +3,7 @@ package web_test
 import (
 	"encoding/xml"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -97,5 +98,14 @@ func TestSitemapAreaWithoutChangeTimeHasNoLastMod(t *testing.T) {
 	got := lastMods(t, fixture(t))
 	if v, ok := got["https://airbg.org/area/sofia"]; !ok || v != "" {
 		t.Errorf("lastmod = %q (present %v), want present and empty", v, ok)
+	}
+}
+
+// A third-party iframe still carrying the retired slug lands on the same centroid.
+func TestEmbedResolvesRetiredAreaSlug(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	body := framed(t, rr, "/embed?area=sofiya").Body.String()
+	if !strings.Contains(body, `data-lat="42.69"`) || !strings.Contains(body, `data-lon="23.32"`) {
+		t.Error("area=sofiya did not move the map to Sofia's centroid")
 	}
 }
