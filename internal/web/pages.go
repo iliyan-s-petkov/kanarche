@@ -170,6 +170,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	data.AreaPollen = rr.pollenBlock(snap.Pollen(meta.Slug), lang)
 	rr.buildAreaLinks(&data, meta, row, snap, lang)
 	data.AreaFAQ = data.faqBlock(row)
+	data.AreaSensorDistricts = rr.areaSensorDistricts(meta, snap, lang)
 	data.JSONLD = rr.mustJSONLD(rr.areaJSONLD(data, row))
 	rr.render(w, r, http.StatusOK, "area", data)
 }

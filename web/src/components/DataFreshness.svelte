@@ -2,7 +2,7 @@
   // Map chrome: one icon. Tapping it opens a popover with "Refresh now" and
   // the auto-refresh interval, so there is a single refresh control on the page.
   let {
-    status, minutes, options = [], labels, onpick, onrefresh, busy = false,
+    status, announce = '', minutes, options = [], labels, onpick, onrefresh, busy = false,
   } = $props()
 
   let open = $state(false)
@@ -39,8 +39,8 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="data-refresh colmenu" bind:this={root} {onkeydown}>
-  <!-- Clipped, not removed: a live region is the one reader who cannot hover. -->
-  <span class="data-refresh__status sr-only" role="status">{status}</span>
+  <!-- Live only for a band change or a failure (D4). The plain time is in the title. -->
+  <span class="data-refresh__status sr-only" role="status">{announce}</span>
   <!-- Not disabled while in flight: a disabled button drops keyboard focus. -->
   <button
     type="button"

@@ -25,7 +25,7 @@ import { gaugeModel } from '../lib/gauge.js'
 import { bandName, readBandNames } from '../lib/bandname.js'
 import { bandsFor } from '../lib/mappaint.js'
 import { createPanelScroll } from '../lib/panelscroll.js'
-import { watchPanelScroll } from '../lib/panelwatch.svelte.js'
+import { watchPanelScroll, returnFocus } from '../lib/panelwatch.svelte.js'
 
 // Re-exported, not re-implemented: the projection lives in
 // lib/sensors.svelte.js because findSensor (the registry's own lookup) needs
@@ -212,7 +212,7 @@ export function mount(el) {
     shownId: () => (findSensor(vs.sensorId) !== null ? vs.sensorId : null),
     initialId: vs.sensorId,
     scroll,
-    onReturn: () => document.querySelector('.maplibregl-canvas')?.focus({ preventScroll: true }),
+    onReturn: (opener) => returnFocus(opener),
   })
 }
 

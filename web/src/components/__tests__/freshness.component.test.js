@@ -24,7 +24,7 @@ const options = [
   { value: 15, text: 'На всеки 15 мин' },
   { value: 30, text: 'На всеки 30 мин' },
 ]
-const base = { status: '', minutes: 5, labels, options, onpick: () => {}, onrefresh: () => {} }
+const base = { status: '', announce: '', minutes: 5, labels, options, onpick: () => {}, onrefresh: () => {} }
 
 describe('DataFreshness', () => {
   // Clipped, never hidden: display:none would silence the announcement.
@@ -36,14 +36,20 @@ describe('DataFreshness', () => {
     expect(status.textContent).toBe('')
   })
 
-  it('shows whatever the store says', () => {
+  // D4: the plain time is never live. Only a band change or a failure is spoken.
+  it('keeps the plain time out of the live region', () => {
     const el = render({ ...base, status: 'Данни от 14:07' })
-    expect(el.querySelector('.data-refresh__status').textContent).toBe('Данни от 14:07')
+    expect(el.querySelector('[role="status"]').textContent).toBe('')
+  })
+
+  it('speaks the announcement it is given', () => {
+    const el = render({ ...base, status: 'Данни от 14:07', announce: 'София: качеството на въздуха вече е лошо, преди беше добро.' })
+    expect(el.querySelector('[role="status"]').textContent).toBe('София: качеството на въздуха вече е лошо, преди беше добро.')
   })
 
   // The accessible name is the static word. A time inside it changes the name
   // on every refresh and breaks voice control (WCAG 2.5.3, 4.1.2). The time
-  // stays in the title for hover and in the live status node for readers.
+  // stays in the title for hover only.
   it('puts the time in the hover title but keeps the accessible name static', () => {
     const el = render({ ...base, status: 'Данни от 14:07' })
     const btn = el.querySelector('.data-refresh__btn--icon')
