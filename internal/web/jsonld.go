@@ -132,6 +132,16 @@ type ldFAQPage struct {
 	MainEntity []ldQuestion `json:"mainEntity"`
 }
 
+type ldArticle struct {
+	Type             string `json:"@type"`
+	Headline         string `json:"headline"`
+	Description      string `json:"description"`
+	InLanguage       string `json:"inLanguage"`
+	MainEntityOfPage string `json:"mainEntityOfPage"`
+	Author           ldRef  `json:"author"`
+	Publisher        ldRef  `json:"publisher"`
+}
+
 type ldBreadcrumbList struct {
 	Type            string       `json:"@type"`
 	ItemListElement []ldListItem `json:"itemListElement"`
@@ -161,6 +171,7 @@ func (ldDataset) ldNode()        {}
 func (ldBreadcrumbList) ldNode() {}
 func (ldPlace) ldNode()          {}
 func (ldFAQPage) ldNode()        {}
+func (ldArticle) ldNode()        {}
 
 // controller is the natural person behind the site; no node claims a legal entity.
 func (p PageData) controller() ldPerson {

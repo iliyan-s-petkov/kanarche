@@ -433,7 +433,8 @@
 {{end}}
 {{with .AreaChildrenBlock}}
 <div class="area-links__block">
-<h2>{{.Label}}</h2>
+{{if .Heading}}<h2>{{.Heading}}</h2>
+<p>{{.Intro}}</p>{{else}}<h2>{{.Label}}</h2>{{end}}
 <ul>{{range .Items}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{.Name}}</a></li>{{end}}</ul>
 </div>
 {{end}}
