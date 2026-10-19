@@ -26,7 +26,7 @@ func TestSofiaDistrictsBlockOnlyOnSofiaCity(t *testing.T) {
 		if !strings.Contains(body, c.heading) || !strings.Contains(body, c.intro) {
 			t.Errorf("%s Sofia page lacks districts heading or intro", c.prefix)
 		}
-		for _, other := range []string{"plovdiv", "mladost", "plovdiv-oblast", "sofiya-grad-oblast"} {
+		for _, other := range []string{"plovdiv", "mladost", "plovdiv-oblast", "sofia-grad-oblast"} {
 			if strings.Contains(get(c.prefix+"/area/"+other), c.heading) {
 				t.Errorf("%s/area/%s carries the Sofia districts heading", c.prefix, other)
 			}

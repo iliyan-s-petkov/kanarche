@@ -257,7 +257,7 @@ func (r AreaRow) descKey(base string) string {
 }
 
 // oblastForm resolves an oblast's label or inline form: the per-slug override
-// key when the catalogue has one (sofiyska-oblast, sofiya-grad-oblast — the
+// key when the catalogue has one (sofiyska-oblast, sofia-grad-oblast — the
 // two whose surface form isn't "{base key} {name}" — see seo-copy.md §0), the
 // templated default otherwise.
 func (rr *Renderer) oblastForm(slug, lang, name, baseKey string) string {
