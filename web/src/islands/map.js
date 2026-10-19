@@ -16,7 +16,7 @@ import { LAYER_ID, FAULTY_LAYER_ID, HEX_LAYER_ID, HEX_EXTRUSION_LAYER_ID, HEX_PO
 import { MIN_ZOOM, readConfig } from '../lib/mapconfig.js'
 import { POINT_TIER_MIN_ZOOM } from '../lib/hexes.js'
 import { registerProtocols, mapStyle, installErrorHandler } from '../lib/mapstyle.js'
-import { paintWind } from '../lib/mapwind.js'
+import { paintWind } from '../lib/mapwind-lazy.js'
 import {
   hit, boundaryChoice, highlightBoundary, cellArea, BOUNDARY_FIT_PADDING,
 } from '../lib/mapboundaries.js'

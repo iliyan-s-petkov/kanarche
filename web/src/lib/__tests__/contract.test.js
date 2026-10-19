@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest'
 import contract from '../contract.json'
 import { WINDOWS, LIVE_WINDOW, WINDOW_CHOICES } from '../mapwindow.js'
-import { SPANS } from '../timelapse.js'
+import { SPANS } from '../timelapseframes.js'
 import { POINT_RESOLUTION_KM } from '../hexes.js'
 
 describe('the JS consumers say exactly what contract.json says', () => {

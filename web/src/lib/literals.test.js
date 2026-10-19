@@ -31,7 +31,7 @@ describe('no literal colours in web/src', () => {
 // to do with the contract.
 const contractConsumers = [
   'src/lib/hexes.js',
-  'src/lib/timelapse.js',
+  'src/lib/timelapseframes.js',
   'src/lib/mapwindow.js',
   'src/islands/wind.js',
 ]

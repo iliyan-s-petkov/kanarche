@@ -16,7 +16,7 @@ import { GRID_MIN_ZOOM_FRACTIONAL, POINT_TIER_MIN_ZOOM_FRACTIONAL } from './hexe
 import { installLayers } from './maplayers.js'
 import {
   WIND_SOURCE_ID, WIND_LAYER_ID, ARROW_IMAGE_ID, arrowImage, arrowLayout, arrowPaint,
-} from '../islands/wind.js'
+} from '../islands/windarrow.js'
 import {
   BOUNDARY_SOURCE_ID, BOUNDARY_FILL_LAYER_ID, BOUNDARY_LINE_LAYER_ID,
   BOUNDARY_SELECTED_LAYER_ID,
@@ -35,7 +35,7 @@ import {
   hexLabelLayout, hexLabelSize, labelPaint, MARKER_PIXEL_RATIO, NOT_FAULTY, IS_FAULTY, faultyPaint,
 } from './mappaint.js'
 import { addBasemapOverlay } from './mapstyle.js'
-import { setWind, refreshWind } from './mapwind.js'
+import { setWind, refreshWind } from './mapwind-lazy.js'
 import { setBoundaries } from './mapboundaries.js'
 import { seaLayout, seaPaint, setSea } from './mapsea.js'
 import { SEA_IMAGE_ID, SEA_LAYER_ID, SEA_SOURCE_ID } from './sea.js'

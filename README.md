@@ -33,10 +33,10 @@ how it has changed.
 - Stay open: open source, open data in, attributed data out, and a map any
   school, newsroom or municipality can embed.
 
-**Vision.** A shared public picture of Bulgaria's air that is good enough for a
-parent deciding whether to open a window and for a community asking its
-municipality to act — built from sensors that neighbours host, and improving as
-more of them join.
+**Vision.** A shared public picture of Bulgaria's air, quick and indicative, for
+people and communities who want to see how the air around them changes. For
+health decisions, follow official advice. Built from sensors that neighbours
+host, and improving as more of them join.
 
 ## Features
 
@@ -51,8 +51,8 @@ more of them join.
   plus six gases from the official stations; averaging windows from now to a
   week, and hourly playback.
 - **Wind forecast overlay**, marked as a forecast rather than a measurement.
-- **Embeddable** with one `<iframe>`, in light and dark themes, on a
-  self-hosted basemap.
+- **Embeddable** with one `<iframe>`, in light and dark themes, on
+  an OpenStreetMap basemap.
 
 ## Data and attribution
 

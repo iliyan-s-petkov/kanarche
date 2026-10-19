@@ -2,9 +2,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   FRAME_MS, SPANS, knownSpan, spanFor, timelapseURL, frameBody, frameCount, frameTime,
-  cursor, step, seek, mountPlayer, frameCoverage, hasHistory, thinFrames, fillForward,
-  DEFAULT_SPEED, SPEEDS, frameDelay, speedLabel,
-} from '../timelapse.js'
+  cursor, step, seek, frameCoverage, hasHistory, thinFrames, fillForward, frameDelay,
+} from '../timelapseframes.js'
+import { mountPlayer, DEFAULT_SPEED, SPEEDS, speedLabel } from '../timelapse.js'
 
 const BODY = {
   metric: 'P2',
