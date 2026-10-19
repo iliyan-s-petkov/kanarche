@@ -811,7 +811,7 @@ SELECT slug, parent_slug FROM overlap WHERE rn = 1`
 // parentOverride pins a child's parent after the overlap pass. Bankya has 0%
 // overlap with Sofia city and only a sliver of the Pernik municipality, so
 // largest-overlap picks Pernik.
-var parentOverride = map[string]string{"bankya": "sofiya"}
+var parentOverride = map[string]string{"bankya": "sofia"}
 
 // AreaParents returns the parent slug of every area that has one (every
 // 'city' and 'neighbourhood'); an oblast, or a child with no overlapping

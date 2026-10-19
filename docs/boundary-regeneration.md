@@ -44,11 +44,12 @@ Then: lowercase; spaces and hyphens become `-`.
 Two rules on top of the table:
 
 1. **The word-final `ия` → `ia` exception in the transliteration law is not
-   applied.** This is why София is `sofiya`, not `sofia`. `bulgaria.geojson`'s
+   applied**, except София and София-град, which are pinned to `sofia` and
+   `sofia-grad` (the plain `sofiya` was a typo; old URLs 301). `bulgaria.geojson`'s
    `bulgaria` slug looks like the exception but is not produced by this rule at
    all — that file comes from Natural Earth with a hand-set slug.
 2. **Every oblast slug carries a uniform `-oblast` suffix**
-   (`varna-oblast`, `sofiya-grad-oblast`). Cities and Sofia districts keep the
+   (`varna-oblast`, `sofia-grad-oblast`). Cities and Sofia districts keep the
    bare transliteration, because a city is what a reader searches for and the
    slug is what appears in its URL.
 

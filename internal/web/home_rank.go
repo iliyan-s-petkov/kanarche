@@ -15,7 +15,7 @@ const homeRankPerList = 3
 const homeCityCount = 10
 
 // sofiaHubSlug is the Sofia city page, the hub its districts hang off.
-const sofiaHubSlug = "sofiya"
+const sofiaHubSlug = "sofia"
 
 // citiesBySensors returns up to limit cities, busiest first, ties by slug.
 func (rr *Renderer) citiesBySensors(lang string, limit int) []FooterArea {

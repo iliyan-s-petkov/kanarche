@@ -40,8 +40,8 @@ func visibleCrumbs(t *testing.T, path, body string) []crumb {
 func TestAreaBreadcrumbMatchesJSONLD(t *testing.T) {
 	rr := renderer(t, areaPageFixture(t))
 	paths := []string{
-		"/area/mladost", "/area/sofiya", "/area/plovdiv-oblast",
-		"/en/area/mladost", "/en/area/sofiya", "/en/area/plovdiv-oblast",
+		"/area/mladost", "/area/sofia", "/area/plovdiv-oblast",
+		"/en/area/mladost", "/en/area/sofia", "/en/area/plovdiv-oblast",
 	}
 	for _, path := range paths {
 		body := fetch(t, rr, path).Body.String()

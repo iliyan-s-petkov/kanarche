@@ -22,8 +22,8 @@ func TestFooterCarriesDisclaimerAndTermsLink(t *testing.T) {
 		{"/", termsLineBG, `href="/terms"`},
 		{"/en/", termsLineEN, `href="/en/terms"`},
 		{"/areas", termsLineBG, `href="/terms"`},
-		{"/area/sofiya", termsLineBG, `href="/terms"`},
-		{"/en/area/sofiya", termsLineEN, `href="/en/terms"`},
+		{"/area/sofia", termsLineBG, `href="/terms"`},
+		{"/en/area/sofia", termsLineEN, `href="/en/terms"`},
 		{"/about", termsLineBG, `href="/terms"`},
 		{"/about-the-data", termsLineBG, `href="/terms"`},
 		{"/privacy", termsLineBG, `href="/terms"`},
@@ -103,7 +103,7 @@ func TestSitemapListsTerms(t *testing.T) {
 
 func TestAreaSummaryShowsIndicativeHint(t *testing.T) {
 	rr := renderer(t, areaPageFixture(t))
-	for path, want := range map[string]string{"/area/sofiya": areaHintBG, "/en/area/sofiya": areaHintEN} {
+	for path, want := range map[string]string{"/area/sofia": areaHintBG, "/en/area/sofia": areaHintEN} {
 		body := fetch(t, rr, path).Body.String()
 		start := strings.Index(body, `class="area-summary"`)
 		if start < 0 {

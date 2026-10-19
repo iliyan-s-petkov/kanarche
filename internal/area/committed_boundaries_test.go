@@ -251,7 +251,7 @@ func TestBoundaryPartsAssembleIntoAPlausibleArea(t *testing.T) {
 		lon, lat float64
 	}{
 		{"plovdiv", 24.7490, 42.1420},
-		{"sofiya", 23.3219, 42.6977},
+		{"sofia", 23.3219, 42.6977},
 		{"varna", 27.9147, 43.2141},
 		{"burgas", 27.4626, 42.5048},
 		{"ruse", 25.9657, 43.8356},

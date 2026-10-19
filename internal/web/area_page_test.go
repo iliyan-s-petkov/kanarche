@@ -21,16 +21,16 @@ func areaPageFixture(t *testing.T) *snapshot.Snapshot {
 			"plovdiv": {Slug: "plovdiv", Kind: "city", NameBG: "Пловдив", NameEN: "Plovdiv",
 				ParentSlug: "plovdiv-oblast", CentroidLon: 24.75, CentroidLat: 42.14, DefaultZoom: 11,
 				Covered: true, SensorCount: 5, Values: map[string]float64{"P2": 12.3}},
-			"sofiya-grad-oblast": {Slug: "sofiya-grad-oblast", Kind: "oblast", NameBG: "София-град", NameEN: "Sofia-City",
+			"sofia-grad-oblast": {Slug: "sofia-grad-oblast", Kind: "oblast", NameBG: "София-град", NameEN: "Sofia-City",
 				CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 9, Covered: true, SensorCount: 412},
-			"sofiya": {Slug: "sofiya", Kind: "city", NameBG: "София", NameEN: "Sofia",
-				ParentSlug: "sofiya-grad-oblast", CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 11,
+			"sofia": {Slug: "sofia", Kind: "city", NameBG: "София", NameEN: "Sofia",
+				ParentSlug: "sofia-grad-oblast", CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 11,
 				Covered: true, SensorCount: 30, Values: map[string]float64{"P2": 8.0}},
 			"mladost": {Slug: "mladost", Kind: "neighbourhood", NameBG: "Младост", NameEN: "Mladost",
-				ParentSlug: "sofiya", CentroidLon: 23.37, CentroidLat: 42.65, DefaultZoom: 13,
+				ParentSlug: "sofia", CentroidLon: 23.37, CentroidLat: 42.65, DefaultZoom: 13,
 				Covered: true, SensorCount: 4, Values: map[string]float64{"P2": 6.0}},
 			"lozenets": {Slug: "lozenets", Kind: "neighbourhood", NameBG: "Лозенец", NameEN: "Lozenets",
-				ParentSlug: "sofiya", CentroidLon: 23.32, CentroidLat: 42.68, DefaultZoom: 13,
+				ParentSlug: "sofia", CentroidLon: 23.32, CentroidLat: 42.68, DefaultZoom: 13,
 				Covered: true, SensorCount: 6, Values: map[string]float64{"P2": 9.5}},
 			"sofiyska-oblast": {Slug: "sofiyska-oblast", Kind: "oblast", NameBG: "Софийска", NameEN: "Sofia",
 				CentroidLon: 23.7, CentroidLat: 42.5, DefaultZoom: 9, Covered: true, SensorCount: 40},
@@ -62,7 +62,7 @@ func TestAreaSentenceNoJS(t *testing.T) {
 	if !strings.Contains(body, `<nav class="area-links"`) {
 		t.Error("the area-links block (parent/children/nearest) is missing")
 	}
-	if !strings.Contains(body, `href="/area/sofiya"`) {
+	if !strings.Contains(body, `href="/area/sofia"`) {
 		t.Error("the parent link to the city is missing")
 	}
 }
@@ -103,7 +103,7 @@ func TestAreaH1CarriesOblastKindPrefix(t *testing.T) {
 	cases := map[string]string{
 		"/area/plovdiv-oblast":    `<h1 class="t-title">Качество на въздуха в област Пловдив</h1>`,
 		"/en/area/plovdiv-oblast": `<h1 class="t-title">Air quality in Plovdiv Province</h1>`,
-		"/area/sofiya":            `<h1 class="t-title">Качество на въздуха в София</h1>`,
+		"/area/sofia":            `<h1 class="t-title">Качество на въздуха в София</h1>`,
 	}
 	for path, want := range cases {
 		if body := fetch(t, rr, path).Body.String(); !strings.Contains(body, want) {

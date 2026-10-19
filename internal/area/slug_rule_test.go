@@ -28,8 +28,8 @@ import (
 // transliteration), one entry per Cyrillic letter.
 //
 // The word-final "ия" → "ia" exception in the transliteration law is
-// deliberately NOT implemented: the committed slugs do not apply it, which is
-// why София is `sofiya` and not `sofia`. bulgaria.geojson's `bulgaria` slug
+// deliberately NOT implemented in general. София and София-град are the two
+// named exceptions, see slugStemOverrides. bulgaria.geojson's `bulgaria` slug
 // looks like the exception but is not produced by this rule at all — that file
 // comes from Natural Earth with a hand-set slug, and is excluded below.
 var streamlined = map[rune]string{
@@ -40,10 +40,20 @@ var streamlined = map[rune]string{
 	'ь': "y", 'ю': "yu", 'я': "ya",
 }
 
+// slugStemOverrides pins the stem of the two names whose plain transliteration
+// (sofiya) is a typo of the conventional spelling. Every other я stays `ya`.
+var slugStemOverrides = map[string]string{
+	"софия":      "sofia",
+	"софия-град": "sofia-grad",
+}
+
 // slugify transliterates name_bg and hyphenates word breaks. Anything outside
 // the table passes through unchanged, so an unmapped character shows up as a
 // mismatch naming the exact name rather than being silently dropped.
 func slugify(nameBG string) string {
+	if stem, ok := slugStemOverrides[strings.ToLower(nameBG)]; ok {
+		return stem
+	}
 	var b strings.Builder
 	for _, r := range strings.ToLower(nameBG) {
 		switch {

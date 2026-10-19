@@ -25,7 +25,7 @@ func cityFixture(t *testing.T) *snapshot.Snapshot {
 		snap.KnownSlugs[slug] = snapshot.AreaMeta{Slug: slug, Kind: kind, NameBG: bg, NameEN: en,
 			CentroidLon: 24, CentroidLat: 42, DefaultZoom: 11, Covered: true, SensorCount: sensors}
 	}
-	add("sofiya", "city", "София", "Sofia", 90)
+	add("sofia", "city", "София", "Sofia", 90)
 	add("plovdiv", "city", "Пловдив", "Plovdiv", 40)
 	add("varna", "city", "Варна", "Varna", 30)
 	add("burgas", "city", "Бургас", "Burgas", 20)
@@ -97,7 +97,7 @@ func TestFooterExploreColumnUsesTheSnapshotsCitySlugs(t *testing.T) {
 	rr := renderer(t, cityFixture(t))
 	for _, tc := range []struct{ path, prefix string }{{"/", ""}, {"/en/", "/en"}} {
 		foot := footerOf(t, fetch(t, rr, tc.path).Body.String())
-		for _, slug := range []string{"sofiya", "plovdiv", "varna", "burgas"} {
+		for _, slug := range []string{"sofia", "plovdiv", "varna", "burgas"} {
 			if want := `href="` + tc.prefix + `/area/` + slug + `"`; !strings.Contains(foot, want) {
 				t.Errorf("%s: footer lacks %s", tc.path, want)
 			}
@@ -132,7 +132,7 @@ func TestFooterWithoutASnapshotStillRenders(t *testing.T) {
 
 func TestFooterCarriesTheRequiredAttributions(t *testing.T) {
 	rr := renderer(t, cityFixture(t))
-	for _, path := range []string{"/", "/en/", "/areas", "/area/sofiya", "/about", "/privacy", "/licences", "/en/licences"} {
+	for _, path := range []string{"/", "/en/", "/areas", "/area/sofia", "/about", "/privacy", "/licences", "/en/licences"} {
 		foot := footerOf(t, fetch(t, rr, path).Body.String())
 		for _, want := range []string{
 			"© OpenStreetMap contributors",

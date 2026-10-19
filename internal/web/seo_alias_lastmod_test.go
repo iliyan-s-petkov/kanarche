@@ -9,22 +9,24 @@ import (
 	"kanarche.eu/internal/snapshot"
 )
 
-// The audit names /area/sofia as the common English spelling that 404s. The
-// real slug is sofiya, so the alias 301s there with the query string kept.
-func aliasFixture(t *testing.T) *snapshot.Snapshot {
+// The owner decision: sofiya was a typo, sofia is canonical. The old indexed
+// slugs 301 to the new ones, both languages, query kept.
+func oldSlugFixture(t *testing.T) *snapshot.Snapshot {
 	t.Helper()
 	snap := fixture(t)
-	snap.KnownSlugs["sofiya"] = snap.KnownSlugs["sofia"]
-	delete(snap.KnownSlugs, "sofia")
+	snap.KnownSlugs["sofia-grad-oblast"] = snapshot.AreaMeta{Slug: "sofia-grad-oblast", Kind: "oblast",
+		NameBG: "София-град", NameEN: "Sofia City", Covered: true, SensorCount: 3}
 	return snap
 }
 
-func TestSofiaAliasRedirectsToSofiya(t *testing.T) {
-	rr := renderer(t, aliasFixture(t))
+func TestOldSofiyaSlugsRedirectToSofia(t *testing.T) {
+	rr := renderer(t, oldSlugFixture(t))
 	for from, to := range map[string]string{
-		"/area/sofia":          "/area/sofiya",
-		"/en/area/sofia":       "/en/area/sofiya",
-		"/area/sofia?metric=a": "/area/sofiya?metric=a",
+		"/area/sofiya":                      "/area/sofia",
+		"/en/area/sofiya":                   "/en/area/sofia",
+		"/area/sofiya?metric=a":             "/area/sofia?metric=a",
+		"/area/sofiya-grad-oblast":          "/area/sofia-grad-oblast",
+		"/en/area/sofiya-grad-oblast?x=1&y": "/en/area/sofia-grad-oblast?x=1&y",
 	} {
 		rec := fetch(t, rr, from)
 		if rec.Code != http.StatusMovedPermanently {
@@ -36,16 +38,18 @@ func TestSofiaAliasRedirectsToSofiya(t *testing.T) {
 	}
 }
 
-func TestSofiaAliasDoesNotShadowARealSlug(t *testing.T) {
-	rr := renderer(t, fixture(t))
-	if rec := fetch(t, rr, "/area/sofia"); rec.Code != http.StatusOK {
-		t.Errorf("GET /area/sofia with a real sofia slug = %d, want 200", rec.Code)
+func TestNewSofiaSlugServesDirectly(t *testing.T) {
+	rr := renderer(t, oldSlugFixture(t))
+	for _, p := range []string{"/area/sofia", "/en/area/sofia-grad-oblast"} {
+		if rec := fetch(t, rr, p); rec.Code != http.StatusOK {
+			t.Errorf("GET %s = %d, want 200", p, rec.Code)
+		}
 	}
 }
 
 func TestOtherUnknownSlugsStill404(t *testing.T) {
-	rr := renderer(t, aliasFixture(t))
-	for _, p := range []string{"/area/sofiaa", "/area/sofia-city", "/area/plovdiv"} {
+	rr := renderer(t, oldSlugFixture(t))
+	for _, p := range []string{"/area/sofiaa", "/area/sofia-city", "/area/plovdiv", "/area/sofiya-x"} {
 		if rec := fetch(t, rr, p); rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", p, rec.Code)
 		}

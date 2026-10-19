@@ -106,11 +106,11 @@ func nodeOfType(doc ldDoc, typ string) *ldNode {
 func jsonLDFixture(t *testing.T) *snapshot.Snapshot {
 	t.Helper()
 	snap := seoFixture(t)
-	snap.KnownSlugs["sofiya"] = snapshot.AreaMeta{Slug: "sofiya", Kind: "city", NameBG: "София", NameEN: "Sofia",
+	snap.KnownSlugs["sofia"] = snapshot.AreaMeta{Slug: "sofia", Kind: "city", NameBG: "София", NameEN: "Sofia",
 		CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 11, Covered: true, SensorCount: 300}
 	snap.KnownSlugs["plovdiv-oblast"] = snapshot.AreaMeta{Slug: "plovdiv-oblast", Kind: "oblast", NameBG: "Пловдив", NameEN: "Plovdiv",
 		DefaultZoom: 9, Covered: true, SensorCount: 150}
-	for slug, parent := range map[string]string{"plovdiv": "plovdiv-oblast", "mladost": "sofiya", "sofiya": "sofiya-grad-oblast"} {
+	for slug, parent := range map[string]string{"plovdiv": "plovdiv-oblast", "mladost": "sofia", "sofia": "sofia-grad-oblast"} {
 		m := snap.KnownSlugs[slug]
 		m.ParentSlug = parent
 		m.CentroidLon, m.CentroidLat = 24.75, 42.15
@@ -177,7 +177,7 @@ func TestJSONLDAreaContainedInPlace(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
 	cases := map[string][]string{
 		"/area/plovdiv":    {"/area/plovdiv-oblast"},
-		"/area/mladost":    {"/area/sofiya", "/area/sofiya-grad-oblast"},
+		"/area/mladost":    {"/area/sofia", "/area/sofia-grad-oblast"},
 		"/en/area/plovdiv": {"/en/area/plovdiv-oblast"},
 	}
 	for path, want := range cases {
@@ -253,7 +253,7 @@ func TestJSONLDAreaBreadcrumbs(t *testing.T) {
 	cases := map[string][]string{
 		"/area/plovdiv-oblast":    {"/", "/areas", "/area/plovdiv-oblast"},
 		"/area/plovdiv":           {"/", "/areas", "/area/plovdiv-oblast", "/area/plovdiv"},
-		"/area/mladost":           {"/", "/areas", "/area/sofiya-grad-oblast", "/area/sofiya", "/area/mladost"},
+		"/area/mladost":           {"/", "/areas", "/area/sofia-grad-oblast", "/area/sofia", "/area/mladost"},
 		"/en/area/veliko-tarnovo": {"/en/", "/en/areas", "/en/area/veliko-tarnovo"},
 	}
 	for path, want := range cases {

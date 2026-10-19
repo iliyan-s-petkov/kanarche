@@ -17,7 +17,7 @@ func sensorsFixture(t *testing.T) *snapshot.Snapshot {
 	snap.SensorLocations = map[int64]snapshot.SensorLocation{
 		101: {SensorID: 101, Slug: "mladost"},
 		102: {SensorID: 102, Slug: "lozenets"},
-		103: {SensorID: 103, Slug: "sofiya"},
+		103: {SensorID: 103, Slug: "sofia"},
 		201: {SensorID: 201, Slug: "plovdiv"},
 	}
 	return snap
@@ -40,7 +40,7 @@ func attr(tag, name string) (string, bool) {
 
 // A11Y-12: the area map's description names content that is really on the page.
 func TestAreaMapTextAlternativeNamesTheSensorTable(t *testing.T) {
-	body := fetch(t, renderer(t, sensorsFixture(t)), "/en/area/sofiya-grad-oblast").Body.String()
+	body := fetch(t, renderer(t, sensorsFixture(t)), "/en/area/sofia-grad-oblast").Body.String()
 	i := strings.Index(body, `id="area-map-alt"`)
 	if i < 0 {
 		t.Fatal("the area map lost its description")
@@ -62,7 +62,7 @@ func TestAreaMapTextAlternativeNamesTheSensorTable(t *testing.T) {
 
 // D3: the shell carries every label the table needs, in the page language.
 func TestAreaSensorTableShellCarriesItsCopy(t *testing.T) {
-	host := sensorsHost(t, fetch(t, renderer(t, sensorsFixture(t)), "/en/area/sofiya-grad-oblast").Body.String())
+	host := sensorsHost(t, fetch(t, renderer(t, sensorsFixture(t)), "/en/area/sofia-grad-oblast").Body.String())
 	if host == "" {
 		t.Fatal("no sensor table host on a covered area page")
 	}
@@ -100,7 +100,7 @@ func TestAreaSensorTableShellCarriesItsCopy(t *testing.T) {
 // District names are server data: the sensors body carries no area column.
 func TestAreaSensorTableNamesSofiaDistricts(t *testing.T) {
 	rr := renderer(t, sensorsFixture(t))
-	host := sensorsHost(t, fetch(t, rr, "/en/area/sofiya-grad-oblast").Body.String())
+	host := sensorsHost(t, fetch(t, rr, "/en/area/sofia-grad-oblast").Body.String())
 	raw, ok := attr(host, "data-districts")
 	if !ok {
 		t.Fatal("no district map on a Sofia page")
@@ -128,7 +128,7 @@ func TestAreaSensorTableNamesSofiaDistricts(t *testing.T) {
 }
 
 func TestAreaSensorTableBulgarianCopy(t *testing.T) {
-	host := sensorsHost(t, fetch(t, renderer(t, sensorsFixture(t)), "/area/sofiya-grad-oblast").Body.String())
+	host := sensorsHost(t, fetch(t, renderer(t, sensorsFixture(t)), "/area/sofia-grad-oblast").Body.String())
 	if v, _ := attr(host, "data-t-summary"); v != "Всички сензори в района ({n})" {
 		t.Errorf("bg summary = %q", v)
 	}

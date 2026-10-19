@@ -145,9 +145,9 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	rr.render(w, r, http.StatusOK, "index", data)
 }
 
-// areaAliases maps a common spelling that is not a slug to the slug it means.
-// The SEO audit names only "sofia" (the English spelling of sofiya).
-var areaAliases = map[string]string{"sofia": "sofiya"}
+// areaAliases maps a retired slug to the one that replaced it. The first
+// transliteration spelled Sofia "sofiya"; those URLs are indexed, so they 301.
+var areaAliases = map[string]string{"sofiya": "sofia", "sofiya-grad-oblast": "sofia-grad-oblast"}
 
 // areaAliasTarget returns the real slug for an alias, only when that slug exists.
 func areaAliasTarget(snap *snapshot.Snapshot, slug string) (string, bool) {
