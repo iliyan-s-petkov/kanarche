@@ -57,9 +57,9 @@ func rateLimitSplit(next http.Handler, api, pages *ratelimit.Limiter) http.Handl
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		probe("rateLimit")
 		key := BucketKeyFrom(r.Context())
-		l := api
+		l, group := api, "api"
 		if pages != nil && !strings.HasPrefix(r.URL.Path, "/api/") {
-			l = pages
+			l, group = pages, "pages"
 		}
 		ok, retryAfter := l.Allow(key)
 		if !ok {
@@ -73,6 +73,7 @@ func rateLimitSplit(next http.Handler, api, pages *ratelimit.Limiter) http.Handl
 			if secs < 1 {
 				secs = 1
 			}
+			logRateLimited(r, group, secs)
 			w.Header().Set("Retry-After", strconv.Itoa(secs))
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusTooManyRequests)
