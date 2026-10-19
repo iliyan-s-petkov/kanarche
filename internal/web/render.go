@@ -300,6 +300,9 @@ type PageData struct {
 	// FooterAreas are the footer's Explore links: the busiest cities in the
 	// snapshot, named in the page language. Empty without a snapshot.
 	FooterAreas []FooterArea
+	// HomeCities and HomeSofia feed the home page's city links.
+	HomeCities []FooterArea
+	HomeSofia  bool
 	// FacebookURL and LinkedInURL are the optional footer profiles; empty hides the icon.
 	FacebookURL, LinkedInURL string
 
@@ -932,30 +935,7 @@ const footerCityCount = 4
 // footerAreas picks the cities with the most sensors from the snapshot, so the
 // slugs are the ones the area pages route on. Ties break by slug for a stable page.
 func (rr *Renderer) footerAreas(lang string) []FooterArea {
-	snap := rr.holder.Load()
-	if snap == nil {
-		return nil
-	}
-	cities := make([]snapshot.AreaMeta, 0, len(snap.KnownSlugs))
-	for _, meta := range snap.KnownSlugs {
-		if meta.Kind == "city" {
-			cities = append(cities, meta)
-		}
-	}
-	sort.Slice(cities, func(i, j int) bool {
-		if cities[i].SensorCount != cities[j].SensorCount {
-			return cities[i].SensorCount > cities[j].SensorCount
-		}
-		return cities[i].Slug < cities[j].Slug
-	})
-	if len(cities) > footerCityCount {
-		cities = cities[:footerCityCount]
-	}
-	out := make([]FooterArea, len(cities))
-	for i, meta := range cities {
-		out[i] = FooterArea{Slug: meta.Slug, Name: rr.rowFrom(meta, lang).Name}
-	}
-	return out
+	return rr.citiesBySensors(lang, footerCityCount)
 }
 
 // Year is the current year for the footer's copyright line.
