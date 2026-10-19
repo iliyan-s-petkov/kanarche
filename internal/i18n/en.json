@@ -731,7 +731,7 @@
   "privacy.locate.heading": "Where the map starts",
   "privacy.locate.body": "The approximate starting view comes from Cloudflare's location headers and is used for one lookup, never stored. The button that finds your position asks your browser. The position stays in the browser.",
   "privacy.third.heading": "Third-party requests",
-  "privacy.third.body": "The map background is loaded straight from tile.openstreetmap.org at every zoom level, including over Bulgaria. OpenStreetMap's servers therefore receive your IP address, your browser details and the part of the map you are viewing, under their own privacy policy. The site loads no ads, tracking scripts or external fonts.",
+  "privacy.third.body": "The map background is loaded from tile.openstreetmap.org up to zoom level 16. Closer in, the same images are enlarged and our own tiles add roads and names. OpenStreetMap's servers therefore receive your IP address, your browser details and the part of the map you are viewing, under their own privacy policy. The site loads no ads, tracking scripts or external fonts.",
   "privacy.third.link": "OpenStreetMap privacy policy",
   "privacy.storage.heading": "Cookies and browser storage",
   "licences.title": "Licences",
