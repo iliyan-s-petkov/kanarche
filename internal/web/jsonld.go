@@ -57,10 +57,27 @@ type ldGeoCoordinates struct {
 }
 
 type ldPlace struct {
-	Type string          `json:"@type"`
-	Name string          `json:"name"`
-	URL  string          `json:"url,omitempty"`
-	Geo  json.RawMessage `json:"geo,omitempty"`
+	Type             string          `json:"@type"`
+	Name             string          `json:"name"`
+	URL              string          `json:"url,omitempty"`
+	Geo              json.RawMessage `json:"geo,omitempty"`
+	ContainedInPlace *ldPlace        `json:"containedInPlace,omitempty"`
+}
+
+type ldWebApplication struct {
+	Type                string `json:"@type"`
+	ID                  string `json:"@id"`
+	Name                string `json:"name"`
+	Description         string `json:"description"`
+	URL                 string `json:"url"`
+	InLanguage          string `json:"inLanguage"`
+	ApplicationCategory string `json:"applicationCategory"`
+	OperatingSystem     string `json:"operatingSystem"`
+	IsAccessibleForFree bool   `json:"isAccessibleForFree"`
+	License             string `json:"license"`
+	IsPartOf            ldRef  `json:"isPartOf"`
+	Author              ldRef  `json:"author"`
+	IsBasedOn           ldRef  `json:"isBasedOn"`
 }
 
 type ldPropertyValue struct {
@@ -78,6 +95,7 @@ type ldDataDownload struct {
 
 type ldDataset struct {
 	Type                string            `json:"@type"`
+	ID                  string            `json:"@id"`
 	Name                string            `json:"name"`
 	Description         string            `json:"description"`
 	URL                 string            `json:"url"`
@@ -138,6 +156,7 @@ func encodeJSONLD(nodes ...interface{ ldNode() }) (template.JS, error) {
 
 func (ldPerson) ldNode()         {}
 func (ldWebSite) ldNode()        {}
+func (ldWebApplication) ldNode() {}
 func (ldDataset) ldNode()        {}
 func (ldBreadcrumbList) ldNode() {}
 func (ldPlace) ldNode()          {}
@@ -147,6 +166,9 @@ func (ldFAQPage) ldNode()        {}
 func (p PageData) controller() ldPerson {
 	return ldPerson{Type: "Person", ID: p.BaseURL + "/#controller", Name: controllerName, Email: controllerEmail}
 }
+
+// datasetID is language-independent: the Dataset lives on about-the-data and the home WebApplication references it.
+func (p PageData) datasetID() string { return p.BaseURL + "/about-the-data#dataset" }
 
 func (p PageData) homeJSONLD() (template.JS, error) {
 	person := p.controller()
@@ -160,7 +182,22 @@ func (p PageData) homeJSONLD() (template.JS, error) {
 		Publisher:     ldRef{ID: person.ID},
 		SameAs:        []string{sourceRepoURL},
 	}
-	return encodeJSONLD(site, person)
+	app := ldWebApplication{
+		Type:                "WebApplication",
+		ID:                  p.BaseURL + "/#webapp",
+		Name:                p.T("seo.title_brand"),
+		Description:         p.T("seo.home.description"),
+		URL:                 p.CanonicalURL(),
+		InLanguage:          p.Lang,
+		ApplicationCategory: "UtilitiesApplication",
+		OperatingSystem:     "Any",
+		IsAccessibleForFree: true,
+		License:             odblURL,
+		IsPartOf:            ldRef{ID: site.ID},
+		Author:              ldRef{ID: person.ID},
+		IsBasedOn:           ldRef{ID: p.datasetID()},
+	}
+	return encodeJSONLD(site, app, person)
 }
 
 func (p PageData) datasetJSONLD() (template.JS, error) {
@@ -175,6 +212,7 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 	api := p.BaseURL + "/api/v1/"
 	ds := ldDataset{
 		Type:                "Dataset",
+		ID:                  p.datasetID(),
 		Name:                p.T("seo.dataset.name"),
 		Description:         p.T("seo.dataset.description"),
 		URL:                 p.CanonicalURL(),
@@ -232,7 +270,19 @@ func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
 		return "", err
 	}
 	place := ldPlace{Type: "Place", Name: rr.areaCrumbName(row, p.Lang), URL: p.CanonicalURL(), Geo: geo}
+	if p.AreaParentBlock != nil {
+		place.ContainedInPlace = rr.containedIn(p, p.AreaParentBlock.Items)
+	}
 	return encodeJSONLD(crumbs, place, faq)
+}
+
+// containedIn nests the ancestor chain (immediate parent first) into containedInPlace Places.
+func (rr *Renderer) containedIn(p PageData, chain []AreaRow) *ldPlace {
+	if len(chain) == 0 {
+		return nil
+	}
+	a := chain[0]
+	return &ldPlace{Type: "Place", Name: rr.areaCrumbName(a, p.Lang), URL: p.BaseURL + p.Path("/area/"+a.Slug), ContainedInPlace: rr.containedIn(p, chain[1:])}
 }
 
 // areaCrumbName labels an oblast as a province so it does not read as its capital city.

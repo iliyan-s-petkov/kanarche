@@ -43,12 +43,32 @@ type ldNode struct {
 	SpatialCoverage *struct {
 		Name string `json:"name"`
 	} `json:"spatialCoverage"`
-	ItemListElement []struct {
+	ApplicationCategory string `json:"applicationCategory"`
+	OperatingSystem     string `json:"operatingSystem"`
+	IsPartOf            *struct {
+		ID string `json:"@id"`
+	} `json:"isPartOf"`
+	Author *struct {
+		ID string `json:"@id"`
+	} `json:"author"`
+	IsBasedOn *struct {
+		ID string `json:"@id"`
+	} `json:"isBasedOn"`
+	ContainedInPlace *ldPlaceNode `json:"containedInPlace"`
+	ItemListElement  []struct {
 		Type     string `json:"@type"`
 		Position int    `json:"position"`
 		Name     string `json:"name"`
 		Item     string `json:"item"`
 	} `json:"itemListElement"`
+}
+
+// ldPlaceNode is a Place as nested under containedInPlace.
+type ldPlaceNode struct {
+	Type             string       `json:"@type"`
+	Name             string       `json:"name"`
+	URL              string       `json:"url"`
+	ContainedInPlace *ldPlaceNode `json:"containedInPlace"`
 }
 
 type ldDoc struct {
@@ -90,9 +110,10 @@ func jsonLDFixture(t *testing.T) *snapshot.Snapshot {
 		CentroidLon: 23.32, CentroidLat: 42.69, DefaultZoom: 11, Covered: true, SensorCount: 300}
 	snap.KnownSlugs["plovdiv-oblast"] = snapshot.AreaMeta{Slug: "plovdiv-oblast", Kind: "oblast", NameBG: "Пловдив", NameEN: "Plovdiv",
 		DefaultZoom: 9, Covered: true, SensorCount: 150}
-	for slug, parent := range map[string]string{"plovdiv": "plovdiv-oblast", "mladost": "sofiya"} {
+	for slug, parent := range map[string]string{"plovdiv": "plovdiv-oblast", "mladost": "sofiya", "sofiya": "sofiya-grad-oblast"} {
 		m := snap.KnownSlugs[slug]
 		m.ParentSlug = parent
+		m.CentroidLon, m.CentroidLat = 24.75, 42.15
 		snap.KnownSlugs[slug] = m
 	}
 	return snap
@@ -123,12 +144,72 @@ func TestJSONLDHomeHasWebSiteAndPerson(t *testing.T) {
 	}
 }
 
+func TestJSONLDHomeHasWebApplication(t *testing.T) {
+	rr := renderer(t, jsonLDFixture(t))
+	for path, lang := range map[string]string{"/": "bg", "/en/": "en"} {
+		doc := jsonLD(t, path, fetch(t, rr, path).Body.String())
+		site, person, app := nodeOfType(doc, "WebSite"), nodeOfType(doc, "Person"), nodeOfType(doc, "WebApplication")
+		if app == nil {
+			t.Fatalf("%s: no WebApplication node", path)
+		}
+		if app.ID != "https://airbg.org/#webapp" || app.Name == "" || len(app.Description) < 50 || app.InLanguage != lang {
+			t.Errorf("%s: WebApplication = %+v", path, app)
+		}
+		if app.ApplicationCategory == "" || app.OperatingSystem == "" || !app.IsAccessibleForFree {
+			t.Errorf("%s: WebApplication category/os/free = %q/%q/%v", path, app.ApplicationCategory, app.OperatingSystem, app.IsAccessibleForFree)
+		}
+		if app.IsPartOf == nil || app.IsPartOf.ID != site.ID {
+			t.Errorf("%s: isPartOf = %+v, want %q", path, app.IsPartOf, site.ID)
+		}
+		if app.Author == nil || app.Author.ID != person.ID {
+			t.Errorf("%s: author = %+v, want %q", path, app.Author, person.ID)
+		}
+		if app.License != "https://opendatacommons.org/licenses/odbl/1-0/" {
+			t.Errorf("%s: license = %q", path, app.License)
+		}
+		if app.IsBasedOn == nil || app.IsBasedOn.ID != "https://airbg.org/about-the-data#dataset" {
+			t.Errorf("%s: isBasedOn = %+v, want the about-the-data Dataset @id", path, app.IsBasedOn)
+		}
+	}
+}
+
+func TestJSONLDAreaContainedInPlace(t *testing.T) {
+	rr := renderer(t, jsonLDFixture(t))
+	cases := map[string][]string{
+		"/area/plovdiv":    {"/area/plovdiv-oblast"},
+		"/area/mladost":    {"/area/sofiya", "/area/sofiya-grad-oblast"},
+		"/en/area/plovdiv": {"/en/area/plovdiv-oblast"},
+	}
+	for path, want := range cases {
+		place := nodeOfType(jsonLD(t, path, fetch(t, rr, path).Body.String()), "Place")
+		if place == nil {
+			t.Fatalf("%s: no Place", path)
+		}
+		got := place.ContainedInPlace
+		for i, u := range want {
+			if got == nil || got.Type != "Place" || got.Name == "" || got.URL != "https://airbg.org"+u {
+				t.Fatalf("%s: containedInPlace[%d] = %+v, want url %s", path, i, got, u)
+			}
+			got = got.ContainedInPlace
+		}
+		if got != nil {
+			t.Errorf("%s: containedInPlace chain longer than %d", path, len(want))
+		}
+	}
+	if place := nodeOfType(jsonLD(t, "/area/plovdiv-oblast", fetch(t, rr, "/area/plovdiv-oblast").Body.String()), "Place"); place != nil && place.ContainedInPlace != nil {
+		t.Errorf("oblast has containedInPlace %+v", place.ContainedInPlace)
+	}
+}
+
 func TestJSONLDAboutHasDataset(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
 	for _, path := range []string{"/about-the-data", "/en/about-the-data"} {
 		ds := nodeOfType(jsonLD(t, path, fetch(t, rr, path).Body.String()), "Dataset")
 		if ds == nil {
 			t.Fatalf("%s: no Dataset node", path)
+		}
+		if ds.ID != "https://airbg.org/about-the-data#dataset" {
+			t.Errorf("%s: Dataset @id = %q", path, ds.ID)
 		}
 		if ds.Name == "" || len(ds.Description) < 50 {
 			t.Errorf("%s: Dataset name %q / description %q (Google needs both, description 50+ chars)", path, ds.Name, ds.Description)
@@ -172,7 +253,7 @@ func TestJSONLDAreaBreadcrumbs(t *testing.T) {
 	cases := map[string][]string{
 		"/area/plovdiv-oblast":    {"/", "/areas", "/area/plovdiv-oblast"},
 		"/area/plovdiv":           {"/", "/areas", "/area/plovdiv-oblast", "/area/plovdiv"},
-		"/area/mladost":           {"/", "/areas", "/area/sofiya", "/area/mladost"},
+		"/area/mladost":           {"/", "/areas", "/area/sofiya-grad-oblast", "/area/sofiya", "/area/mladost"},
 		"/en/area/veliko-tarnovo": {"/en/", "/en/areas", "/en/area/veliko-tarnovo"},
 	}
 	for path, want := range cases {
@@ -266,6 +347,10 @@ func TestJSONLDIDReferencesResolveInGraph(t *testing.T) {
 		}
 		if path == "/" && len(refs) == 0 {
 			t.Errorf("%s: found no @id references, the check is inert", path)
+		}
+		// The home WebApplication points at the Dataset that lives on about-the-data.
+		if path == "/" || path == "/en/" {
+			ids["https://airbg.org/about-the-data#dataset"] = true
 		}
 		for _, r := range refs {
 			if !ids[r] {
