@@ -145,6 +145,22 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	rr.render(w, r, http.StatusOK, "index", data)
 }
 
+// areaAliases maps a common spelling that is not a slug to the slug it means.
+// The SEO audit names only "sofia" (the English spelling of sofiya).
+var areaAliases = map[string]string{"sofia": "sofiya"}
+
+// areaAliasTarget returns the real slug for an alias, only when that slug exists.
+func areaAliasTarget(snap *snapshot.Snapshot, slug string) (string, bool) {
+	target, ok := areaAliases[slug]
+	if !ok {
+		return "", false
+	}
+	if _, known := snap.KnownSlugs[target]; !known {
+		return "", false
+	}
+	return target, true
+}
+
 func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	snap := rr.holder.Load()
 	if snap == nil {
@@ -156,6 +172,18 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	// for anything but a map lookup.
 	meta, ok := snap.KnownSlugs[r.PathValue("slug")]
 	if !ok {
+		if target, found := areaAliasTarget(snap, r.PathValue("slug")); found {
+			lang, _ := rr.cat.LangFromPath(r.URL.Path)
+			dest := "/area/" + target
+			if lang != i18n.DefaultLang {
+				dest = "/" + lang + dest
+			}
+			if r.URL.RawQuery != "" {
+				dest += "?" + r.URL.RawQuery
+			}
+			http.Redirect(w, r, dest, http.StatusMovedPermanently)
+			return
+		}
 		rr.RenderError(w, r, http.StatusNotFound, "not_found")
 		return
 	}

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"time"
 
 	"kanarche.eu/internal/store"
@@ -279,13 +280,15 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 
 	for _, a := range all {
 		metaSource, metaBySource := collapseSources(a.BySource)
-		snap.KnownSlugs[a.Slug] = AreaMeta{
+		meta := AreaMeta{
 			Slug: a.Slug, Kind: a.Kind, NameBG: a.NameBG, NameEN: a.NameEN,
 			CentroidLon: a.CentroidLon, CentroidLat: a.CentroidLat,
 			DefaultZoom: a.DefaultZoom, Covered: a.Covered, SensorCount: a.SensorCount,
 			Values: a.Values, Source: metaSource, BySource: metaBySource,
 			ParentSlug: parents[a.Slug],
 		}
+		meta.ChangedAt = carryChangedAt(h.Load(), meta, now)
+		snap.KnownSlugs[a.Slug] = meta
 	}
 
 	if snap.Overview, err = encode(areaPayloadFrom(now, countryAggs)); err != nil {
@@ -668,4 +671,22 @@ type canonicalisable interface {
 // for hashing only.
 func zeroGeneratedAt(payload canonicalisable) any {
 	return payload.withoutGeneratedAt()
+}
+
+// carryChangedAt keeps the previous snapshot's change time while the area's
+// figures are identical, and stamps now once they differ. With no previous
+// snapshot, or none for this area, nothing is known and the time stays zero.
+func carryChangedAt(prev *Snapshot, meta AreaMeta, now time.Time) time.Time {
+	if prev == nil {
+		return time.Time{}
+	}
+	old, ok := prev.KnownSlugs[meta.Slug]
+	if !ok {
+		return time.Time{}
+	}
+	if old.SensorCount == meta.SensorCount && old.Covered == meta.Covered && old.Source == meta.Source &&
+		reflect.DeepEqual(old.Values, meta.Values) && reflect.DeepEqual(old.BySource, meta.BySource) {
+		return old.ChangedAt
+	}
+	return now
 }
