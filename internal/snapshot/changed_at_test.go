@@ -29,6 +29,20 @@ func TestCarryChangedAt(t *testing.T) {
 		t.Errorf("changed sensor count: got %v, want now %v", got, t1)
 	}
 
+	for name, mut := range map[string]func(*AreaMeta){
+		"name_bg": func(m *AreaMeta) { m.NameBG = "x" },
+		"name_en": func(m *AreaMeta) { m.NameEN = "x" },
+		"parent":  func(m *AreaMeta) { m.ParentSlug = "p" },
+		"kind":    func(m *AreaMeta) { m.Kind = "city" },
+		"day":     func(m *AreaMeta) { m.Day = &DayRange{Min: 1, Max: 2, Buckets: 80} },
+	} {
+		m := meta
+		mut(&m)
+		if got := carryChangedAt(prev, m, t1); !got.Equal(t1) {
+			t.Errorf("changed %s: got %v, want now %v", name, got, t1)
+		}
+	}
+
 	if got := carryChangedAt(nil, meta, t1); !got.IsZero() {
 		t.Errorf("no previous snapshot: got %v, want zero (unknown)", got)
 	}

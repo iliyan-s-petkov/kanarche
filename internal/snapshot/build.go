@@ -287,7 +287,6 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 			Values: a.Values, Source: metaSource, BySource: metaBySource,
 			ParentSlug: parents[a.Slug],
 		}
-		meta.ChangedAt = carryChangedAt(h.Load(), meta, now)
 		snap.KnownSlugs[a.Slug] = meta
 	}
 
@@ -392,9 +391,11 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 		if meta.Covered {
 			if day := buildDayRange(points, counts[slug], coverageThreshold, floor); day != nil {
 				meta.Day = day
-				snap.KnownSlugs[slug] = meta
 			}
 		}
+		// After Day is set, so the 24h range counts as part of what the page shows.
+		meta.ChangedAt = carryChangedAt(h.Load(), meta, now)
+		snap.KnownSlugs[slug] = meta
 	}
 	snap.SensorLocations = sensorLocationsFrom(sensors, snap.KnownSlugs)
 	return nil
@@ -684,9 +685,12 @@ func carryChangedAt(prev *Snapshot, meta AreaMeta, now time.Time) time.Time {
 	if !ok {
 		return time.Time{}
 	}
-	if old.SensorCount == meta.SensorCount && old.Covered == meta.Covered && old.Source == meta.Source &&
-		reflect.DeepEqual(old.Values, meta.Values) && reflect.DeepEqual(old.BySource, meta.BySource) {
-		return old.ChangedAt
+	// Everything AreaMeta carries is page content (Values are the medians, Day
+	// the 24h range, the rest names and links), so any difference is a change.
+	// ChangedAt itself is excluded from the comparison.
+	old.ChangedAt, meta.ChangedAt = time.Time{}, time.Time{}
+	if reflect.DeepEqual(old, meta) {
+		return prev.KnownSlugs[meta.Slug].ChangedAt
 	}
 	return now
 }

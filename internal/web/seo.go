@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
 )
 
 // /embed is not disallowed: a crawl block would hide its X-Robots-Tag noindex.
@@ -43,12 +44,9 @@ type sitemapLink struct {
 
 // handleSitemap lists the static pages and every area in every language; cached per snapshot.
 func (rr *Renderer) handleSitemap(w http.ResponseWriter, r *http.Request) {
-	var generatedAt time.Time
-	if snap := rr.holder.Load(); snap != nil {
-		generatedAt = snap.GeneratedAt
-	}
+	snap := rr.holder.Load()
 
-	body, err := rr.sitemapBytes(generatedAt)
+	body, err := rr.sitemapBytes(snap)
 	if err != nil {
 		http.Error(w, "sitemap unavailable", http.StatusInternalServerError)
 		return
@@ -58,7 +56,13 @@ func (rr *Renderer) handleSitemap(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
-func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
+// sitemapBytes builds from one snapshot throughout, so the slugs, the lastmods
+// and the cache key cannot come from different loads.
+func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
+	var generatedAt time.Time
+	if snap != nil {
+		generatedAt = snap.GeneratedAt
+	}
 	rr.sitemapMu.Lock()
 	defer rr.sitemapMu.Unlock()
 
@@ -68,7 +72,7 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 
 	// Only covered areas: an uncovered page is noindex, so it stays out of the sitemap too.
 	var slugs []string
-	if snap := rr.holder.Load(); snap != nil {
+	if snap != nil {
 		for slug, meta := range snap.KnownSlugs {
 			if meta.Covered {
 				slugs = append(slugs, slug)
@@ -90,7 +94,7 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""})
 	for _, slug := range slugs {
 		var changed string
-		if at := rr.holder.Load().KnownSlugs[slug].ChangedAt; !at.IsZero() {
+		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {
 			changed = at.UTC().Format("2006-01-02")
 		}
 		entries = append(entries, entry{"/area/" + slug, changed})
