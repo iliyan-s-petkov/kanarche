@@ -1496,7 +1496,7 @@ func TestAreaParentBankyaUnderSofia(t *testing.T) {
 
 	// Sofia city sits well east of Bankya and overlaps it not at all; the
 	// Pernik municipality (kind city) covers Bankya and wins by overlap.
-	seedAreaBuffer(t, ctx, pool, "sofiya", "city", 23.60, 42.70, 8000)
+	seedAreaBuffer(t, ctx, pool, "sofia", "city", 23.60, 42.70, 8000)
 	seedAreaBuffer(t, ctx, pool, "pernik", "city", 23.00, 42.60, 30000)
 	seedAreaBuffer(t, ctx, pool, "bankya", "neighbourhood", 23.00, 42.60, 1000)
 
@@ -1504,7 +1504,7 @@ func TestAreaParentBankyaUnderSofia(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AreaParents: %v", err)
 	}
-	if got, want := parents["bankya"], "sofiya"; got != want {
+	if got, want := parents["bankya"], "sofia"; got != want {
 		t.Errorf(`parents["bankya"] = %q, want %q`, got, want)
 	}
 	for child, parent := range parents {

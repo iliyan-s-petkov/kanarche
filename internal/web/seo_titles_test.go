@@ -27,7 +27,7 @@ func seoFixture(t *testing.T) *snapshot.Snapshot {
 				DefaultZoom: 11, Covered: true, SensorCount: 6},
 			"sofiyska-oblast": {Slug: "sofiyska-oblast", Kind: "oblast", NameBG: "Софийска", NameEN: "Sofia",
 				DefaultZoom: 9, Covered: true, SensorCount: 40},
-			"sofiya-grad-oblast": {Slug: "sofiya-grad-oblast", Kind: "oblast", NameBG: "София-град", NameEN: "Sofia-City",
+			"sofia-grad-oblast": {Slug: "sofia-grad-oblast", Kind: "oblast", NameBG: "София-град", NameEN: "Sofia-City",
 				DefaultZoom: 9, Covered: true, SensorCount: 412},
 			"veliko-tarnovo-oblast": {Slug: "veliko-tarnovo-oblast", Kind: "oblast", NameBG: "Велико Търново", NameEN: "Veliko Tarnovo",
 				DefaultZoom: 9, Covered: true, SensorCount: 1024},
@@ -202,7 +202,7 @@ func TestRenderedTitlesAndDescriptionsMatchApprovedCopy(t *testing.T) {
 			enDescription: "Air quality in Sofia Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the province median and 24-hour history.",
 		},
 		{
-			path:          "/area/sofiya-grad-oblast",
+			path:          "/area/sofia-grad-oblast",
 			bgTitle:       "Област София-град: качество на въздуха и ФПЧ | Канарче",
 			bgDescription: "Качество на въздуха в област София-град: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, медиана за областта и графика за 24 часа.",
 			enTitle:       "Sofia City Province: air quality, PM2.5 and PM10 | Kanarche",

@@ -147,6 +147,18 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	rr.render(w, r, http.StatusOK, "index", data)
 }
 
+// areaAliasTarget returns the real slug for an alias, only when that slug exists.
+func areaAliasTarget(snap *snapshot.Snapshot, slug string) (string, bool) {
+	target, ok := snapshot.RetiredSlugs[slug]
+	if !ok {
+		return "", false
+	}
+	if _, known := snap.KnownSlugs[target]; !known {
+		return "", false
+	}
+	return target, true
+}
+
 func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	snap := rr.holder.Load()
 	if snap == nil {
@@ -158,6 +170,18 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	// for anything but a map lookup.
 	meta, ok := snap.KnownSlugs[r.PathValue("slug")]
 	if !ok {
+		if target, found := areaAliasTarget(snap, r.PathValue("slug")); found {
+			lang, _ := rr.cat.LangFromPath(r.URL.Path)
+			dest := "/area/" + target
+			if lang != i18n.DefaultLang {
+				dest = "/" + lang + dest
+			}
+			if r.URL.RawQuery != "" {
+				dest += "?" + r.URL.RawQuery
+			}
+			http.Redirect(w, r, dest, http.StatusMovedPermanently)
+			return
+		}
 		rr.RenderError(w, r, http.StatusNotFound, "not_found")
 		return
 	}
@@ -233,7 +257,7 @@ func (r AreaRow) descKey(base string) string {
 }
 
 // oblastForm resolves an oblast's label or inline form: the per-slug override
-// key when the catalogue has one (sofiyska-oblast, sofiya-grad-oblast — the
+// key when the catalogue has one (sofiyska-oblast, sofia-grad-oblast — the
 // two whose surface form isn't "{base key} {name}" — see seo-copy.md §0), the
 // templated default otherwise.
 func (rr *Renderer) oblastForm(slug, lang, name, baseKey string) string {
@@ -359,7 +383,7 @@ func (rr *Renderer) handleEmbed(w http.ResponseWriter, r *http.Request) {
 		data.DefaultMetric = metric
 	}
 	if slug := query.Get("area"); slug != "" && snap != nil {
-		if meta, ok := snap.KnownSlugs[slug]; ok {
+		if meta, ok := snap.KnownSlugs[snapshot.CurrentSlug(slug)]; ok {
 			data.DefaultLon, data.DefaultLat = meta.CentroidLon, meta.CentroidLat
 			data.DefaultZoom = meta.DefaultZoom
 		}

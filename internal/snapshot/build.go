@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"time"
 
 	"kanarche.eu/internal/store"
@@ -279,13 +280,14 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 
 	for _, a := range all {
 		metaSource, metaBySource := collapseSources(a.BySource)
-		snap.KnownSlugs[a.Slug] = AreaMeta{
+		meta := AreaMeta{
 			Slug: a.Slug, Kind: a.Kind, NameBG: a.NameBG, NameEN: a.NameEN,
 			CentroidLon: a.CentroidLon, CentroidLat: a.CentroidLat,
 			DefaultZoom: a.DefaultZoom, Covered: a.Covered, SensorCount: a.SensorCount,
 			Values: a.Values, Source: metaSource, BySource: metaBySource,
 			ParentSlug: parents[a.Slug],
 		}
+		snap.KnownSlugs[a.Slug] = meta
 	}
 
 	if snap.Overview, err = encode(areaPayloadFrom(now, countryAggs)); err != nil {
@@ -389,9 +391,11 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 		if meta.Covered {
 			if day := buildDayRange(points, counts[slug], coverageThreshold, floor); day != nil {
 				meta.Day = day
-				snap.KnownSlugs[slug] = meta
 			}
 		}
+		// After Day is set, so the 24h range counts as part of what the page shows.
+		meta.ChangedAt = carryChangedAt(h.Load(), meta, now)
+		snap.KnownSlugs[slug] = meta
 	}
 	snap.SensorLocations = sensorLocationsFrom(sensors, snap.KnownSlugs)
 	return nil
@@ -668,4 +672,25 @@ type canonicalisable interface {
 // for hashing only.
 func zeroGeneratedAt(payload canonicalisable) any {
 	return payload.withoutGeneratedAt()
+}
+
+// carryChangedAt keeps the previous snapshot's change time while the area's
+// figures are identical, and stamps now once they differ. With no previous
+// snapshot, or none for this area, nothing is known and the time stays zero.
+func carryChangedAt(prev *Snapshot, meta AreaMeta, now time.Time) time.Time {
+	if prev == nil {
+		return time.Time{}
+	}
+	old, ok := prev.KnownSlugs[meta.Slug]
+	if !ok {
+		return time.Time{}
+	}
+	// Everything AreaMeta carries is page content (Values are the medians, Day
+	// the 24h range, the rest names and links), so any difference is a change.
+	// ChangedAt itself is excluded from the comparison.
+	old.ChangedAt, meta.ChangedAt = time.Time{}, time.Time{}
+	if reflect.DeepEqual(old, meta) {
+		return prev.KnownSlugs[meta.Slug].ChangedAt
+	}
+	return now
 }

@@ -139,7 +139,7 @@ describe('boundaryChoice', () => {
   // A map already scoped to one area has nothing to drill into, which is the
   // rule cellArea applies to the cells.
   it('selects nothing on a map already scoped to an area', () => {
-    expect(boundaryChoice({ slug: 'sofiya-grad-oblast' }, feature)).toBe(null)
+    expect(boundaryChoice({ slug: 'sofia-grad-oblast' }, feature)).toBe(null)
   })
 
   it('selects nothing when the click hit no province', () => {

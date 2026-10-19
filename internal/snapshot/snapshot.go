@@ -118,6 +118,10 @@ type AreaMeta struct {
 	// the SEO5 JSON-LD BreadcrumbList can reuse it once both land — see
 	// web.ParentChain.
 	ParentSlug string
+	// ChangedAt is when this area's published figures last differed from the
+	// previous snapshot's. Zero when unknown (first build after a restart), so
+	// a consumer such as the sitemap omits it rather than guess.
+	ChangedAt time.Time
 	// Day is the last 24h's median range, or nil when the area is not
 	// Covered or the series has too few coverage-gated buckets — see
 	// buildDayRange.

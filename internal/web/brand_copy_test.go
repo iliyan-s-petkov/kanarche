@@ -56,7 +56,7 @@ func TestPagesCarryNoAirbgBrandCopy(t *testing.T) {
 		t.Fatalf("NewRenderer: %v", err)
 	}
 
-	paths := []string{"/", "/areas", "/area/sofiya", "/area/plovdiv-oblast", "/about", "/about-the-data", "/privacy", "/licences", "/embed", "/no-such-page"}
+	paths := []string{"/", "/areas", "/area/sofia", "/area/plovdiv-oblast", "/about", "/about-the-data", "/privacy", "/licences", "/embed", "/no-such-page"}
 	for _, lang := range []string{"", "/en"} {
 		for _, p := range paths {
 			path := lang + p

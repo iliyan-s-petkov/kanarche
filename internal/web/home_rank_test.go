@@ -28,7 +28,7 @@ func rankFixture(n int, silent bool, generated time.Time) *snapshot.Snapshot {
 		known["silent-oblast"] = snapshot.AreaMeta{Slug: "silent-oblast", Kind: "oblast",
 			NameBG: "Тих", NameEN: "Silent", Covered: false, SensorCount: 1}
 	}
-	known["sofiya"] = snapshot.AreaMeta{Slug: "sofiya", Kind: "city", NameBG: "София", NameEN: "Sofia",
+	known["sofia"] = snapshot.AreaMeta{Slug: "sofia", Kind: "city", NameBG: "София", NameEN: "Sofia",
 		Covered: true, SensorCount: 100, Values: map[string]float64{"P2": 20}}
 	for i := 1; i <= 12; i++ {
 		slug := fmt.Sprintf("city%02d", i)
@@ -169,10 +169,10 @@ func TestHomeCitiesLinkToLiveRoutes(t *testing.T) {
 		if len(hrefs) != 12 {
 			t.Fatalf("%q: %d links, want 12: %v", pre, len(hrefs), hrefs)
 		}
-		if hrefs[0] != pre+"/area/sofiya" || hrefs[1] != pre+"/area/city01" || hrefs[9] != pre+"/area/city09" {
+		if hrefs[0] != pre+"/area/sofia" || hrefs[1] != pre+"/area/city01" || hrefs[9] != pre+"/area/city09" {
 			t.Errorf("%q: city order wrong: %v", pre, hrefs)
 		}
-		if hrefs[10] != pre+"/area/sofiya" || hrefs[11] != pre+"/areas" {
+		if hrefs[10] != pre+"/area/sofia" || hrefs[11] != pre+"/areas" {
 			t.Errorf("%q: tail links wrong: %v", pre, hrefs[10:])
 		}
 		for _, h := range hrefs {

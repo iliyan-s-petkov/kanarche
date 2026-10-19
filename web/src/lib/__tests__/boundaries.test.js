@@ -57,7 +57,7 @@ describe('findBoundary', () => {
 
 describe('selectedFilter', () => {
   it('matches the selected slug', () => {
-    expect(selectedFilter('sofiya-grad-oblast')).toEqual(['==', ['get', 'slug'], 'sofiya-grad-oblast'])
+    expect(selectedFilter('sofia-grad-oblast')).toEqual(['==', ['get', 'slug'], 'sofia-grad-oblast'])
   })
 
   // No selection has to match nothing. A filter comparing against null matches

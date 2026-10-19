@@ -163,9 +163,9 @@ func (d Deps) handlers() map[string]http.HandlerFunc {
 		"GET /api/v1/visitors":            d.handleVisitors,
 		"GET /api/v1/sea/sites":           d.handleSeaSites,
 		"GET /api/v1/sea/sites/{id}":      d.handleSeaSite,
-		"GET /api/v1/area/{slug}/sensors": d.handleAreaSensors,
-		"GET /api/v1/area/{slug}/series":  d.handleAreaSeries,
-		"GET /api/v1/area/{slug}/pollen":  d.handleAreaPollen,
+		"GET /api/v1/area/{slug}/sensors": redirectRetiredSlug(d.handleAreaSensors),
+		"GET /api/v1/area/{slug}/series":  redirectRetiredSlug(d.handleAreaSeries),
+		"GET /api/v1/area/{slug}/pollen":  redirectRetiredSlug(d.handleAreaPollen),
 		"GET /api/v1/pollen":              d.handlePollenMap,
 		"GET /api/v1/sensor/{id}/series":  d.handleSensorSeries,
 		"GET /api/v1/sensor/{id}/locate":  d.handleSensorLocate,
@@ -302,4 +302,21 @@ func acceptsGzip(header string) bool {
 		return true
 	}
 	return false
+}
+
+// redirectRetiredSlug 301s a request for a renamed area slug to the same path
+// under the current slug, query kept, so old API callers keep working.
+func redirectRetiredSlug(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		slug := r.PathValue("slug")
+		if cur := snapshot.CurrentSlug(slug); cur != slug {
+			target := strings.Replace(r.URL.Path, "/area/"+slug+"/", "/area/"+cur+"/", 1)
+			if r.URL.RawQuery != "" {
+				target += "?" + r.URL.RawQuery
+			}
+			http.Redirect(w, r, target, http.StatusMovedPermanently)
+			return
+		}
+		next(w, r)
+	}
 }

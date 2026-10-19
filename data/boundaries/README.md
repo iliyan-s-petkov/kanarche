@@ -195,7 +195,7 @@ file's parsed feature count, which stays correct regardless of what happens
 in the table.
 
 **Fix:** every oblast slug carries a uniform `-oblast` suffix
-(`varna-oblast`, `plovdiv-oblast`, `sofiya-grad-oblast`, `sofiyska-oblast`, all
+(`varna-oblast`, `plovdiv-oblast`, `sofia-grad-oblast`, `sofiyska-oblast`, all
 28, including the two Sofia oblasti whose slugs never collided with a city in
 the first place). The suffix is uniform rather than applied only where a
 collision exists today, because a collision-driven rule breaks again the

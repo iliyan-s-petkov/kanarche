@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/snapshot"
 )
 
 // /embed is not disallowed: a crawl block would hide its X-Robots-Tag noindex.
@@ -43,12 +44,9 @@ type sitemapLink struct {
 
 // handleSitemap lists the static pages and every area in every language; cached per snapshot.
 func (rr *Renderer) handleSitemap(w http.ResponseWriter, r *http.Request) {
-	var generatedAt time.Time
-	if snap := rr.holder.Load(); snap != nil {
-		generatedAt = snap.GeneratedAt
-	}
+	snap := rr.holder.Load()
 
-	body, err := rr.sitemapBytes(generatedAt)
+	body, err := rr.sitemapBytes(snap)
 	if err != nil {
 		http.Error(w, "sitemap unavailable", http.StatusInternalServerError)
 		return
@@ -58,7 +56,13 @@ func (rr *Renderer) handleSitemap(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
-func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
+// sitemapBytes builds from one snapshot throughout, so the slugs, the lastmods
+// and the cache key cannot come from different loads.
+func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
+	var generatedAt time.Time
+	if snap != nil {
+		generatedAt = snap.GeneratedAt
+	}
 	rr.sitemapMu.Lock()
 	defer rr.sitemapMu.Unlock()
 
@@ -68,7 +72,7 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 
 	// Only covered areas: an uncovered page is noindex, so it stays out of the sitemap too.
 	var slugs []string
-	if snap := rr.holder.Load(); snap != nil {
+	if snap != nil {
 		for slug, meta := range snap.KnownSlugs {
 			if meta.Covered {
 				slugs = append(slugs, slug)
@@ -81,14 +85,19 @@ func (rr *Renderer) sitemapBytes(generatedAt time.Time) ([]byte, error) {
 	if !generatedAt.IsZero() {
 		day = generatedAt.UTC().Format("2006-01-02")
 	}
-	// lastmod only where the page body follows the data: the home, the
-	// directory and the covered areas. Static pages get none rather than a
-	// date nothing supports.
+	// lastmod only where the page body follows the data. The home and the
+	// directory follow every snapshot. An area carries the day its own figures
+	// last changed, and none when that is unknown. Static pages get none
+	// rather than a date nothing supports.
 	type entry struct{ path, lastMod string }
 	entries := make([]entry, 0, len(slugs)+6)
 	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""})
 	for _, slug := range slugs {
-		entries = append(entries, entry{"/area/" + slug, day})
+		var changed string
+		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {
+			changed = at.UTC().Format("2006-01-02")
+		}
+		entries = append(entries, entry{"/area/" + slug, changed})
 	}
 
 	urls := make([]sitemapURL, 0, len(entries)*len(rr.cat.Languages()))

@@ -276,7 +276,7 @@
 <h2 id="home-cities-h">{{.T "home.cities.heading"}}</h2>
 <ul class="home-cities__list">
 {{range .HomeCities}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{$.CityLinkText .Name}}</a></li>
-{{end}}{{if .HomeSofia}}<li><a class="link" href="{{.Path "/area/sofiya"}}">{{.T "home.cities.sofia"}}</a></li>
+{{end}}{{if .HomeSofia}}<li><a class="link" href="{{.Path "/area/sofia"}}">{{.T "home.cities.sofia"}}</a></li>
 {{end}}<li><a class="link" href="{{.Path "/areas"}}">{{.T "home.cities.all"}}</a></li>
 </ul>
 </section>

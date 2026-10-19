@@ -13,8 +13,8 @@ func TestEveryPageOpensWithASkipLink(t *testing.T) {
 	for _, tc := range []struct{ path, link string }{
 		{"/", bg},
 		{"/en/", en},
-		{"/area/sofiya", bg},
-		{"/en/area/sofiya", en},
+		{"/area/sofia", bg},
+		{"/en/area/sofia", en},
 		{"/areas", bg},
 		{"/about", bg},
 		{"/en/about", en},

@@ -10,7 +10,7 @@ var freshnessHostRe = regexp.MustCompile(`(?s)<div data-island="freshness"[^>]*>
 
 // 3.4: the refresh status names what changed, so the pill carries the sentence and its subject.
 func TestAreaFreshnessCarriesTheChangeSentence(t *testing.T) {
-	body := fetch(t, renderer(t, sensorsFixture(t)), "/en/area/sofiya-grad-oblast").Body.String()
+	body := fetch(t, renderer(t, sensorsFixture(t)), "/en/area/sofia-grad-oblast").Body.String()
 	host := freshnessHostRe.FindString(body)
 	if host == "" {
 		t.Fatal("no freshness island on the area page")
@@ -44,7 +44,7 @@ func TestHomeFreshnessHasNoAreaSubject(t *testing.T) {
 }
 
 func TestBulgarianChangeSentence(t *testing.T) {
-	host := freshnessHostRe.FindString(fetch(t, renderer(t, sensorsFixture(t)), "/area/sofiya-grad-oblast").Body.String())
+	host := freshnessHostRe.FindString(fetch(t, renderer(t, sensorsFixture(t)), "/area/sofia-grad-oblast").Body.String())
 	if v, _ := attr(host, "data-t-changed"); v != "{subject}: качеството на въздуха вече е {band}, преди беше {was}." {
 		t.Errorf("bg data-t-changed = %q", v)
 	}

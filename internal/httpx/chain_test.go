@@ -349,11 +349,11 @@ func TestChainPagesUseTheirOwnLimiter(t *testing.T) {
 	}
 
 	for i := 0; i < 20; i++ {
-		if rec := get("/area/sofiya"); rec.Code != http.StatusOK {
+		if rec := get("/area/sofia"); rec.Code != http.StatusOK {
 			t.Fatalf("page request %d = %d, want 200 within the page burst", i, rec.Code)
 		}
 	}
-	rec := get("/area/sofiya")
+	rec := get("/area/sofia")
 	if rec.Code != http.StatusTooManyRequests {
 		t.Fatalf("page request over the burst = %d, want 429", rec.Code)
 	}
