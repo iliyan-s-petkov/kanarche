@@ -1188,6 +1188,8 @@ strong, b { font-weight: var(--weight-emphasis); }
 .gauge__arc { stroke-width: 3; stroke-linecap: round; }
 .gauge__figure { position: absolute; display: grid; justify-items: center; gap: 0; }
 .gauge__figure .readout__value { line-height: 1; }
+/* Halo in the card colour: a wide value (47.6 on a phone) runs over the arc. */
+.gauge__figure .readout__value { paint-order: stroke fill; -webkit-text-stroke: 4px var(--bg); }
 
 /* Available to a screen reader, absent from the screen. Used for the map's
    text alternative, which aria-describedby points at: the sighted reader
