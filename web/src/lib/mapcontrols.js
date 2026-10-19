@@ -1,3 +1,4 @@
+import { motion } from './mapmotion.js'
 import { USER_MOVE } from './lastview.js'
 
 // The map's own controls: full screen, and the three-button zoom stack.
@@ -202,13 +203,13 @@ export function installZoom(map, buttons, home) {
   }
 
   // USER_MOVE marks these as the visitor's own: MapLibre sets originalEvent only for input it handles.
-  buttons.in.addEventListener('click', () => map.zoomIn({}, USER_MOVE))
-  buttons.out.addEventListener('click', () => map.zoomOut({}, USER_MOVE))
+  buttons.in.addEventListener('click', () => map.zoomIn(motion({}), USER_MOVE))
+  buttons.out.addEventListener('click', () => map.zoomOut(motion({}), USER_MOVE))
   // flyTo, not jumpTo: this one IS a deliberate click, so the flight explains
   // where the reader was taken. locateVisitor's jump is the opposite case — a
   // move nobody asked for. Pitch and bearing return too: north-up and flat.
   buttons.reset.addEventListener('click', () =>
-    map.flyTo({ center: home.centre, zoom: home.zoom, pitch: 0, bearing: 0 }, USER_MOVE))
+    map.flyTo(motion({ center: home.centre, zoom: home.zoom, pitch: 0, bearing: 0 }), USER_MOVE))
 
   // 'zoom', not 'zoomend': the buttons must go dead at the limit during the
   // animation, not a beat after it, or a held click keeps firing past the stop.
@@ -324,7 +325,7 @@ export function installOrientation(map, parts, doc = document) {
   tilt.input.addEventListener('input', () => map.setPitch(Number(tilt.input.value), USER_MOVE))
   heading.input.addEventListener('input', () => map.setBearing(Number(heading.input.value), USER_MOVE))
   // easeTo names no centre or zoom, so both stay where they are.
-  north.addEventListener('click', () => map.easeTo({ pitch: 0, bearing: 0 }, USER_MOVE))
+  north.addEventListener('click', () => map.easeTo(motion({ pitch: 0, bearing: 0 }), USER_MOVE))
 
   const onKey = (e) => { if (e.key === 'Escape') shut(true) }
   const onOutside = (e) => {

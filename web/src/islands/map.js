@@ -27,6 +27,7 @@ import { openDeepLinkedSensor, locateMe } from '../lib/placement.js'
 import { trackLastView } from '../lib/lastview.js'
 import { installLocateHint } from '../lib/locatehint.js'
 import { mountChrome } from '../lib/chrome.js'
+import { motion } from '../lib/mapmotion.js'
 import { installPanelPadding } from '../lib/panelpadding.js'
 import { installMapLoad } from '../lib/mapload.js'
 import { findSensor } from '../lib/sensors.svelte.js'
@@ -264,7 +265,7 @@ export function mount(el) {
     if (target > map.getZoom()) {
       // moveend (already wired above) repaints markers and hexes once the
       // camera settles — a refresh here would just be repainted over.
-      map.easeTo({ center, zoom: target })
+      map.easeTo(motion({ center, zoom: target }))
       return
     }
     if (slug) refresh(map, state, cfg, chrome)
@@ -375,7 +376,7 @@ export function mount(el) {
     highlightBoundary(map, slug)
     refresh(map, state, cfg, chrome)
     const bounds = boundsOf(findBoundary(boundaryState.body, slug))
-    if (bounds) map.fitBounds(bounds, { padding: BOUNDARY_FIT_PADDING })
+    if (bounds) map.fitBounds(bounds, motion({ padding: BOUNDARY_FIT_PADDING }))
   })
 
   // With pollen on, a province opens its area page; a marker or bathing site still claims its own click.

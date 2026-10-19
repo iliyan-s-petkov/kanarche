@@ -1,3 +1,4 @@
+import { motion } from './mapmotion.js'
 import { tierFor } from './tier.js'
 import { scaleFor } from './scaleinfo.js'
 import { getJSON } from './api.js'
@@ -310,7 +311,7 @@ async function loadAreaSensors(state, cfg, force) {
 export async function showArea(map, state, cfg, chrome, area) {
   if (!area || area.slug === undefined) return false
   state.slug = area.slug
-  map.flyTo({ center: [area.lon, area.lat], zoom: area.zoom })
+  map.flyTo(motion({ center: [area.lon, area.lat], zoom: area.zoom }))
   await refresh(map, state, cfg, chrome, true)
   return true
 }

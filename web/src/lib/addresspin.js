@@ -1,5 +1,6 @@
 // The searched-address pin and the camera move that goes with it.
 import { Marker } from 'maplibre-gl'
+import { motion } from './mapmotion.js'
 import { BOUNDARY_FIT_PADDING } from './mapboundaries.js'
 
 const POINT_ZOOM = 16
@@ -29,8 +30,8 @@ export function createAddressPin(map, label) {
     el.setAttribute('aria-label', label || row.label)
     marker = new Marker({ element: el }).setLngLat([row.lon, row.lat]).addTo(map)
     const cam = cameraFor(row)
-    if (cam.bounds) map.fitBounds(cam.bounds, cam.options)
-    else map.easeTo({ center: cam.center, zoom: cam.zoom })
+    if (cam.bounds) map.fitBounds(cam.bounds, motion(cam.options))
+    else map.easeTo(motion({ center: cam.center, zoom: cam.zoom }))
   }
   return { show, clear }
 }
