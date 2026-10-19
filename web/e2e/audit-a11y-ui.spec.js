@@ -279,3 +279,32 @@ test.describe('U06: the area breadcrumb is not flush under the masthead', () => 
     await page.close()
   })
 })
+
+// A11Y-19: on a phone the ring is 80px but the figure keeps its 32px size, so
+// a wide value such as 47.6 runs over the arc. A halo in the card colour keeps
+// the glyphs readable wherever the arc passes behind them.
+test.describe('A11Y-19: the gauge figure has a halo against the arc', () => {
+  for (const theme of ['light', 'dark']) {
+    test(`${theme}: the ring figure strokes its glyphs in the card colour`, async ({ phoneCtx }) => {
+      const page = await phoneCtx.newPage()
+      await withTheme(page, theme)
+      await page.setViewportSize({ width: 390, height: 844 })
+      await page.goto('/en/')
+      const figure = page.locator('.gauge__figure .readout__value').first()
+      await expect(figure).toBeVisible()
+      const style = await figure.evaluate((el) => {
+        const probe = document.createElement('i')
+        probe.style.color = 'var(--bg)'
+        document.body.appendChild(probe)
+        const bg = getComputedStyle(probe).color
+        probe.remove()
+        const cs = getComputedStyle(el)
+        return { bg, paintOrder: cs.paintOrder, strokeColour: cs.webkitTextStrokeColor, strokeWidth: parseFloat(cs.webkitTextStrokeWidth) }
+      })
+      expect(style.strokeColour).toBe(style.bg)
+      expect(style.strokeWidth).toBeGreaterThanOrEqual(3)
+      expect(style.paintOrder).toMatch(/^stroke/)
+      await page.close()
+    })
+  }
+})
