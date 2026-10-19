@@ -74,3 +74,36 @@ func TestCommittedProxiedNamesRequireClientAuth(t *testing.T) {
 		}
 	}
 }
+
+// The privacy page promises no stored IPs. Caddy's default logger writes error
+// lines carrying them, so the global default log must delete these fields.
+func TestCaddyfileDefaultLogStripsClientData(t *testing.T) {
+	data, err := os.ReadFile("Caddyfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := string(data)
+	start := strings.Index(src, "\n{\n")
+	end := strings.Index(src, "\n}\n")
+	if start < 0 || end < start {
+		t.Fatal("no global options block in Caddyfile")
+	}
+	global := src[start:end]
+	if !strings.Contains(global, "log default") {
+		t.Fatal("global block has no `log default`")
+	}
+	if !strings.Contains(global, "format filter") || !strings.Contains(global, "wrap json") {
+		t.Error("default log must use `format filter` wrapping json")
+	}
+	for _, f := range []string{"request>remote_ip", "request>client_ip", "request>headers", "remote_ip", "client_ip"} {
+		found := false
+		for _, line := range strings.Split(global, "\n") {
+			if fs := strings.Fields(line); len(fs) == 2 && fs[0] == f && fs[1] == "delete" {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("default log does not delete %s", f)
+		}
+	}
+}
