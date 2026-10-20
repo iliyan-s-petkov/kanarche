@@ -32,10 +32,10 @@ func TestFreshnessCopyMatchesUpstreamPollInterval(t *testing.T) {
 	bg := pageDescription(t, fetch(t, rr, "/").Body.String())
 	en := pageDescription(t, fetch(t, rr, "/en/").Body.String())
 
-	if want := fmt.Sprintf("обновявана на всеки %d минути", minutes); !strings.Contains(bg, want) {
+	if want := fmt.Sprintf("обновявана на около %d минути", minutes); !strings.Contains(bg, want) {
 		t.Errorf("bg home description %q does not contain %q (upstream.poll_interval = %v)", bg, want, interval)
 	}
-	if want := fmt.Sprintf("updated every %d minutes", minutes); !strings.Contains(en, want) {
+	if want := fmt.Sprintf("updated about every %d minutes", minutes); !strings.Contains(en, want) {
 		t.Errorf("en home description %q does not contain %q (upstream.poll_interval = %v)", en, want, interval)
 	}
 }

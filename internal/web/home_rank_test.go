@@ -74,8 +74,8 @@ func rankHrefs(t *testing.T, body string) (worst, best []string) {
 func TestHomeRankListsThreeAndThreeInOrder(t *testing.T) {
 	rr := renderer(t, rankFixture(8, true, time.Now()))
 	for _, c := range []struct{ path, pre, h2, worst, best string }{
-		{"/", "", "Най-чисти и най-замърсени области сега", "Най-замърсени", "Най-чисти"},
-		{"/en/", "/en", "Cleanest and most polluted provinces now", "Most polluted", "Cleanest"},
+		{"/", "", "Области с най-ниски и най-високи стойности сега", "С най-високи стойности", "С най-ниски стойности"},
+		{"/en/", "/en", "Provinces with the lowest and highest readings now", "Highest readings", "Lowest readings"},
 	} {
 		body := fetch(t, rr, c.path).Body.String()
 		for _, want := range []string{"<h2", c.h2, "<h3", c.worst, c.best} {
