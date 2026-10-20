@@ -148,16 +148,16 @@ func TestRenderedTitlesAndDescriptionsMatchApprovedCopy(t *testing.T) {
 		{
 			path:          "/",
 			bgTitle:       "Качество на въздуха в България: карта на живо | Канарче",
-			bgDescription: "Карта на живо на замърсяването на въздуха в България: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, обновявана на всеки 5 минути.",
+			bgDescription: "Карта на живо на замърсяването на въздуха в България: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, обновявана на около 5 минути.",
 			enTitle:       "Bulgaria air quality map: PM2.5 and PM10 now | Kanarche",
-			enDescription: "Live map of air pollution in Bulgaria: PM2.5 and PM10 from sensor.community citizen sensors, updated every 5 minutes.",
+			enDescription: "Live map of air pollution in Bulgaria: PM2.5 and PM10 from sensor.community citizen sensors, updated about every 5 minutes.",
 		},
 		{
 			path:          "/areas",
 			bgTitle:       "Замърсяване на въздуха по области и градове | Канарче",
-			bgDescription: "Областите в България, подредени по ФПЧ2.5 сега, от най-замърсената. С връзки към 27-те областни града и 24-те района на София.",
+			bgDescription: "Областите в България, подредени по ориентировъчната медиана на ФПЧ2.5. С връзки към 27-те областни града и 24-те района на София.",
 			enTitle:       "Air pollution in Bulgaria by province and city | Kanarche",
-			enDescription: "Bulgaria's provinces ranked by current PM2.5, most polluted first, with links to all 27 provincial capitals and 24 Sofia districts.",
+			enDescription: "Bulgaria's provinces ordered by indicative PM2.5 median, with links to all 27 provincial capitals and 24 Sofia districts.",
 		},
 		{
 			path:          "/about-the-data",

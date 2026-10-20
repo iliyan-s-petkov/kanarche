@@ -37,7 +37,7 @@
 <h2>{{.T "terms.privacy.heading"}}</h2>
 <p>{{range .TermsPrivacyParts}}{{if .Href}}<a href="{{.Href}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
 
-<h2>{{.T "terms.contact.heading"}}</h2>
+<h2 id="contact">{{.T "terms.contact.heading"}}</h2>
 <p>{{range .TermsContactParts}}{{if .Href}}<a href="{{.Href}}" rel="noopener noreferrer">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
 
 <p>{{.T "terms.changes.body"}}</p>

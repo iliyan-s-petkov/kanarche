@@ -174,7 +174,7 @@ func TestFooterProjectColumnLinks(t *testing.T) {
 	for _, want := range []string{
 		`href="/en/about"`, `href="/en/about-the-data"`, `href="/en/privacy"`, `href="/en/licences"`,
 		`href="https://github.com/iliyan-s-petkov/kanarche"`,
-		`href="https://github.com/iliyan-s-petkov/kanarche/issues"`,
+		`href="/en/terms#contact"`,
 	} {
 		if !strings.Contains(foot, want) {
 			t.Errorf("footer lacks %s", want)
@@ -220,7 +220,7 @@ func TestFooterSocialIconsFollowTheConfig(t *testing.T) {
 func TestFooterBottomBar(t *testing.T) {
 	foot := footerOf(t, fetch(t, renderer(t, cityFixture(t)), "/en/").Body.String())
 	year := fmt.Sprint(time.Now().Year())
-	for _, want := range []string{"© " + year + " Kanarche", `href="/en/privacy"`, `href="/en/licences"`, "Hostellation"} {
+	for _, want := range []string{"© " + year + " Iliyan Petkov (code under the MIT licence)", `href="/en/privacy"`, `href="/en/licences"`, "Hostellation"} {
 		if !strings.Contains(foot, want) {
 			t.Errorf("bottom bar lacks %q", want)
 		}
@@ -232,7 +232,7 @@ func TestFooterBottomBar(t *testing.T) {
 
 func TestFooterStatesTheShortDisclaimerAndTagline(t *testing.T) {
 	foot := footerOf(t, fetch(t, renderer(t, cityFixture(t)), "/en/").Body.String())
-	for _, want := range []string{"footer__brand", "Air quality in Bulgaria, live.", "not reference-method"} {
+	for _, want := range []string{"footer__brand", "Air quality in Bulgaria, near real-time.", "not reference-method"} {
 		if !strings.Contains(foot, want) {
 			t.Errorf("brand column lacks %q", want)
 		}

@@ -114,7 +114,7 @@
       {{/* Same tab, opener severed. The licence tag beside each source is the
            minimal attribution; the full terms are on the Licences page. */}}
       <ul>
-        <li><a href="{{.AttributionURL "sensor.community"}}" rel="noopener noreferrer">sensor.community<span aria-hidden="true"> ↗</span></a> <span class="footer__lic">ODbL</span></li>
+        <li><a href="{{.AttributionURL "sensor.community"}}" rel="noopener noreferrer">sensor.community<span aria-hidden="true"> ↗</span></a> <span class="footer__lic">ODbL, DbCL</span></li>
         <li><a href="{{.AttributionURL "eea"}}" rel="noopener noreferrer">ИАОС / EEA<span aria-hidden="true"> ↗</span></a></li>
         <li><a href="{{.AttributionURL "open-meteo"}}" rel="noopener noreferrer">{{.T "footer.src.wind"}}<span aria-hidden="true"> ↗</span></a> <span class="footer__lic">CC BY 4.0</span></li>
         <li><a href="{{.AttributionURL "cams-pollen"}}" rel="noopener noreferrer">{{.T "footer.src.pollen"}}<span aria-hidden="true"> ↗</span></a> <span class="footer__lic">CC BY 4.0</span></li>
@@ -130,7 +130,7 @@
         <li><a href="{{.Path "/pm25"}}">{{.T "guide.links.pm25"}}</a></li>
         <li><a href="{{.Path "/pm10"}}">{{.T "guide.links.pm10"}}</a></li>
         <li><a href="{{.SourceRepoURL}}" rel="noopener noreferrer">{{.T "footer.source"}}<span aria-hidden="true"> ↗</span></a></li>
-        <li><a href="{{.SourceIssuesURL}}" rel="noopener noreferrer">{{.T "footer.contact"}}<span aria-hidden="true"> ↗</span></a></li>
+        <li><a href="{{.Path "/terms"}}#contact">{{.T "footer.contact"}}</a></li>
         <li><a href="https://airbg.info/" rel="noopener noreferrer">{{.T "footer.station"}}<span aria-hidden="true"> ↗</span></a></li>
       </ul>
     </nav>
@@ -145,7 +145,7 @@
   </div>
   <div class="frame footer__bar">
     <p class="footer__reference">{{.T "footer.reference"}} <a href="{{.Path "/terms"}}">{{.T "footer.terms"}}</a></p>
-    <p>© {{.Year}} {{.T "seo.title_brand"}} <span aria-hidden="true">·</span> <a href="{{.Path "/privacy"}}">{{.T "footer.privacy"}}</a> <span aria-hidden="true">·</span> <a href="{{.Path "/licences"}}">{{.T "footer.licences"}}</a></p>
+    <p>© {{.Year}} {{.T "footer.copyright"}} <span aria-hidden="true">·</span> <a href="{{.Path "/privacy"}}">{{.T "footer.privacy"}}</a> <span aria-hidden="true">·</span> <a href="{{.Path "/licences"}}">{{.T "footer.licences"}}</a></p>
     {{/* Donated, so the credit is owed on every page and at a size that can be
          read — the rest of the footer is 12px caption. */}}
     <p class="footer__sponsor">{{.T "footer.hosting_short"}}
