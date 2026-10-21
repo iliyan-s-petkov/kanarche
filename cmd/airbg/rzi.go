@@ -40,19 +40,12 @@ func rziFetchOptions(sink rzi.Sink) rzi.Options {
 
 // approver is the part of the ingester the approve command needs.
 type approver interface {
-	Review(sha string) (rzi.File, error)
 	Approve(ctx context.Context, sha string) (rzi.Approval, error)
 }
 
 // writeRZIRemarks prints one line per sample remark: date, site, text.
 // Remarks are untrusted, so control characters are replaced with spaces.
 func writeRZIRemarks(w io.Writer, rec rzi.File) {
-	clean := func(r rune) rune {
-		if unicode.IsControl(r) {
-			return ' '
-		}
-		return r
-	}
 	n := 0
 	for _, b := range rec.Blocks {
 		site := b.Name
@@ -64,8 +57,7 @@ func writeRZIRemarks(w io.Writer, rec rzi.File) {
 				continue
 			}
 			n++
-			fmt.Fprintf(w, "remark %s %s: %s\n", r.Date,
-				strings.Map(clean, site), strings.Map(clean, r.Remarks))
+			fmt.Fprintf(w, "remark %s %s: %s\n", clean(r.Date), clean(site), clean(r.Remarks))
 		}
 	}
 	if n == 0 {
@@ -73,17 +65,52 @@ func writeRZIRemarks(w io.Writer, rec rzi.File) {
 	}
 }
 
-// runRZIApprove publishes the passed rows of one needs_review file. It lists
-// the sample remarks first, then prints counts, the hash and the source, and
-// reports only the fixed sentinel messages.
-func runRZIApprove(ctx context.Context, args []string, a approver, stdout, stderr io.Writer) int {
+// reviewer is the read-only part of the ingester.
+type reviewer interface {
+	Review(sha string) (rzi.File, error)
+}
+
+// runRZIReview prints the pending review record for one hash: source, row
+// count and every sample remark. It writes nothing.
+func runRZIReview(args []string, r reviewer, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
-		fmt.Fprintln(stderr, "usage: airbg rzi-approve <sha256>")
+		fmt.Fprintln(stderr, "usage: airbg rzi-review <sha256>")
 		return 2
 	}
-	// A missing record is left to Approve to refuse or to report as done.
-	if rec, err := a.Review(args[0]); err == nil {
-		writeRZIRemarks(stdout, rec)
+	rec, err := r.Review(args[0])
+	if err != nil {
+		fmt.Fprintln(stderr, "rzi-review refused:", approveMessage(err))
+		if errors.Is(err, rzi.ErrBadSHA) {
+			return 2
+		}
+		return 1
+	}
+	n := 0
+	for _, b := range rec.Blocks {
+		n += len(b.Rows)
+	}
+	fmt.Fprintf(stdout, "review source=%s sha256=%s rows=%d\n", clean(rec.Source), clean(rec.SHA256), n)
+	writeRZIRemarks(stdout, rec)
+	return 0
+}
+
+// clean replaces control characters with spaces. Record text is untrusted.
+func clean(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}, s)
+}
+
+// runRZIApprove publishes the passed rows of one needs_review file. It prints
+// counts, the hash and the source only, never document text, and reports
+// only the fixed sentinel messages. Read the remarks first with rzi-review.
+func runRZIApprove(ctx context.Context, args []string, a approver, stdout, stderr io.Writer) int {
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "usage: airbg rzi-approve <sha256>  (read the remarks first: airbg rzi-review <sha256>)")
+		return 2
 	}
 	res, err := a.Approve(ctx, args[0])
 	if err != nil {
