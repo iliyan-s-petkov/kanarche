@@ -41,7 +41,13 @@ func (g *Ingester) Review(sha string) (File, error) {
 	if errors.Is(err, os.ErrNotExist) {
 		return File{}, ErrNoReviewRecord
 	}
-	return rec, err
+	if err != nil {
+		return File{}, fmt.Errorf("rzi review record: %s", refusal(err))
+	}
+	if rec.SHA256 != sha {
+		return File{}, ErrSHAMismatch
+	}
+	return rec, nil
 }
 
 // Approve publishes the rows of a needs_review file that passed validation.
