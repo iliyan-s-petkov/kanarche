@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"reflect"
 	"time"
 
@@ -174,6 +175,7 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 	if err != nil {
 		return nil, fmt.Errorf("snapshot: sensors: %w", err)
 	}
+	roundSensorPositions(sensors)
 
 	snap := &Snapshot{
 		GeneratedAt: now,
@@ -693,4 +695,13 @@ func carryChangedAt(prev *Snapshot, meta AreaMeta, now time.Time) time.Time {
 		return prev.KnownSlugs[meta.Slug].ChangedAt
 	}
 	return now
+}
+
+// roundSensorPositions is the one place served sensor positions are rounded,
+// to three decimals (about 100 m). Everything built from sensors reads these.
+func roundSensorPositions(sensors []store.SensorReading) {
+	for i := range sensors {
+		sensors[i].Lon = math.Round(sensors[i].Lon*1000) / 1000
+		sensors[i].Lat = math.Round(sensors[i].Lat*1000) / 1000
+	}
 }

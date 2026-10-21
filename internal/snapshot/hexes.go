@@ -491,9 +491,8 @@ var CellStatChangedAt = time.Date(2026, 9, 5, 0, 0, 0, 0, time.UTC)
 // the data secret — a determined caller can walk boxes — it makes the walk
 // visible to the rate limiter instead of free in one request.
 //
-// Coordinates are passed through exactly as sensor.community served them. That
-// upstream already applies its own fuzzing (exact_location: 0); republishing
-// what is public is the decision that was taken, sharpening it is not.
+// Coordinates are rounded to three decimals by roundSensorPositions before
+// they get here.
 func (s *Snapshot) PointBody(bb BBox) (Body, error) {
 	k := bodyKey{resKM: PointResolutionKM, w: bb.W, s: bb.S, e: bb.E, n: bb.N, point: true}
 	if b, ok := s.bodies.get(k); ok {

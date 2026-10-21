@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -548,5 +549,72 @@ func TestAreasPayloadGrowthFromBySourceIsWithinBudget(t *testing.T) {
 	if growth := areasBodyGrowth(t, snap.Areas.JSON); growth > 0.30 {
 		t.Errorf("areas body grew %.1f%%, budget is 30%% — restrict by_source to oblast and city",
 			growth*100)
+	}
+}
+
+// Every served sensor position carries 3 decimals: the area columns, the
+// point tier and the deep-link locations all read the one rounded input.
+func TestBuildRoundsServedCoordinatesToThreeDecimals(t *testing.T) {
+	ctx, pool := migrated(t)
+	seed(t, ctx, pool)
+	if _, err := pool.Exec(ctx,
+		`UPDATE sensor SET location = ST_SetSRID(ST_MakePoint(23.321867, 42.697712), 4326)::geography
+		 WHERE sensor_id = 100`); err != nil {
+		t.Fatalf("move sensor: %v", err)
+	}
+
+	snap, err := snapshot.Build(ctx, testStore(t, pool), testHolder(t), time.Unix(1_800_000_000, 0).UTC())
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	loc, ok := snap.SensorLocations[100]
+	if !ok || loc.Lat != 42.698 || loc.Lon != 23.322 {
+		t.Errorf("SensorLocations[100] = %+v, want lat 42.698 lon 23.322", loc)
+	}
+
+	var cols struct {
+		Sensors struct {
+			ID  []int64   `json:"id"`
+			Lon []float64 `json:"lon"`
+			Lat []float64 `json:"lat"`
+		} `json:"sensors"`
+	}
+	if err := json.Unmarshal(snap.AreaSensors["sofia"].JSON, &cols); err != nil {
+		t.Fatalf("unmarshal columns: %v", err)
+	}
+	found := false
+	for i, id := range cols.Sensors.ID {
+		if id == 100 {
+			found = true
+			if cols.Sensors.Lat[i] != 42.698 || cols.Sensors.Lon[i] != 23.322 {
+				t.Errorf("columns = %v,%v, want 42.698,23.322", cols.Sensors.Lat[i], cols.Sensors.Lon[i])
+			}
+		}
+	}
+	if !found {
+		t.Fatal("sensor 100 missing from the sofia columns")
+	}
+
+	pts, err := snap.PointBody(snapshot.BBox{W: 22, S: 41, E: 26, N: 44})
+	if err != nil {
+		t.Fatalf("PointBody: %v", err)
+	}
+	var pb struct {
+		Hexes []struct {
+			Lon float64 `json:"lon"`
+			Lat float64 `json:"lat"`
+		} `json:"hexes"`
+	}
+	if err := json.Unmarshal(pts.JSON, &pb); err != nil {
+		t.Fatalf("unmarshal points: %v", err)
+	}
+	if len(pb.Hexes) == 0 {
+		t.Fatal("no points served")
+	}
+	for _, p := range pb.Hexes {
+		if math.Round(p.Lat*1000)/1000 != p.Lat || math.Round(p.Lon*1000)/1000 != p.Lon {
+			t.Errorf("point %v,%v has more than 3 decimals", p.Lat, p.Lon)
+		}
 	}
 }

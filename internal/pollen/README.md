@@ -15,7 +15,7 @@ The map layer and the area page show three levels per species: low, moderate, hi
 
 ## Source
 
-The CAMS/SILAM classification, which rests on clinically relevant thresholds from the European Academy of Allergy and Clinical Immunology (EAACI). EEA Climate-ADAPT states it for the CAMS ground-level pollen forecast:
+The CAMS/SILAM classification, which uses season and peak thresholds from the European Academy of Allergy and Clinical Immunology (EAACI). EEA Climate-ADAPT states it for the CAMS ground-level pollen forecast:
 
 > For alder, birch, olive and mugwort, concentrations >= 10 pollen/m3 demarcate the pollen season and concentrations >= 100 pollen/m3 demarcate the peak pollen period (Pfaar et al., 2017). For grass and ragweed, concentrations >= 3 pollen/m3 demarcate the pollen season and concentrations >= 50 pollen/m3 demarcate the peak pollen period (Pfaar et al., 2017; 2020).
 
