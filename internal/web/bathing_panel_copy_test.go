@@ -36,6 +36,8 @@ var panelCopyKeys = map[string]string{
 	"sea.chart.band_above":   "data-t-sea-chart-band-above=",
 	"sea.chart.hollow":       "data-t-sea-chart-hollow=",
 	"sea.credit.source":      "data-t-sea-credit-source=",
+	"sea.rzi.remark.label":   "data-t-sea-remark-label=",
+	"sea.rzi.remark.credit":  "data-t-sea-remark-credit=",
 	"sea.sources.eea":        "data-t-sea-sources-eea=",
 	"sea.sources.info_label": "data-t-sea-sources-info-label=",
 }

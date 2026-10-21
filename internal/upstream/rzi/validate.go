@@ -37,8 +37,8 @@ const (
 // Units accepted on a row. Extractors normalise "MPN/100 cm3" to MPN/100ml.
 var units = map[string]bool{"MPN/100ml": true, "cfu/100ml": true}
 
-// Sample is one accepted RZI row mapped to an EEA site. Remarks is for
-// review only and never serialised (decision D5).
+// Sample is one accepted RZI row mapped to an EEA site. Remarks is stored and
+// served by the API from the store row, not by marshalling a Sample (D5 reversed 2026-10-21).
 type Sample struct {
 	SiteID  string
 	Date    time.Time

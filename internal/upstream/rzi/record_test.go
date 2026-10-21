@@ -104,8 +104,8 @@ func TestDecodeAcceptsExactCap(t *testing.T) {
 	}
 }
 
-// TestSampleJSONOmitsRemarks keeps inspector remarks out of any JSON the
-// API could build from a Sample (decision D5).
+// TestSampleJSONOmitsRemarks keeps a marshalled Sample free of remarks. The API
+// sends them from the store row.
 func TestSampleJSONOmitsRemarks(t *testing.T) {
 	b, err := json.Marshal(Sample{SiteID: "x", Remarks: "след пороен дъжд"})
 	if err != nil {

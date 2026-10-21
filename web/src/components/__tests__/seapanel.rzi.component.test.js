@@ -112,12 +112,51 @@ describe('SeaPanel RZI samples', () => {
     expect(seen[1].paragraphs).not.toContain('Not an official source.')
   })
 
-  // I15: remarks are not in the view, and text that looks like markup stays text.
-  it('renders markup-like text as text and never shows remarks', () => {
+  // I15: markup-like text stays text, in the source name and in a remark.
+  it('renders markup-like text as text', () => {
     const hostile = '<img src=x onerror=alert(1)>'
     const root = render(withRZI(), textsWith({ tSeaSourceRziVarna: hostile }))
     expect(root.querySelector('img')).toBeNull()
     expect(root.querySelector('.sea-panel__sources span').textContent).toBe(`EEA, ${hostile}`)
-    expect(render(withRZI()).innerHTML).not.toContain('onerror')
+  })
+})
+
+describe('SeaPanel RZI remarks', () => {
+  const remark = 'Sample taken after heavy rain'
+  const withRemark = (text = remark, source = 'rzi_varna') => withRZI({ samples: [{ ...rziRow, source, remarks: text }, { ...detail.samples[0], source: 'eea' }] })
+
+  it('shows the remark under its sample with a label, the date and the credit', () => {
+    const root = render(withRemark())
+    const item = root.querySelector('.sea-remark')
+    expect(item.querySelector('.sea-remark__label').textContent).toBe('RHI remark, Aug 12, 2026')
+    expect(item.querySelector('.sea-remark__text').textContent).toBe(remark)
+    expect(item.querySelector('.sea-remark__credit').textContent).toBe('Source: RHI Varna')
+  })
+
+  it('names the inspectorate of the sample in the credit', () => {
+    expect(render(withRemark(remark, 'rzi_burgas'), textsWith({ tSeaSourceRziBurgas: 'RHI Burgas' })).querySelector('.sea-remark__credit').textContent).toBe('Source: RHI Burgas')
+  })
+
+  it('ties the label to the text for assistive tech', () => {
+    const group = render(withRemark()).querySelector('.sea-remark [role="group"]')
+    expect(document.getElementById(group.getAttribute('aria-labelledby')).className).toBe('sea-remark__label')
+  })
+
+  it('renders nothing for a sample with no remark', () => {
+    const root = render(withRemark(''))
+    expect(root.querySelector('.sea-remark')).toBeNull()
+    expect(root.textContent).not.toContain('RHI remark')
+  })
+
+  it('renders nothing when the label template is missing', () => {
+    expect(render(withRemark(), textsWith({ tSeaRemarkLabel: '' })).querySelector('.sea-remark')).toBeNull()
+  })
+
+  it('shows HTML in a remark as text', () => {
+    const hostile = '<img src=x onerror=alert(1)><b>bold</b>'
+    const root = render(withRemark(hostile))
+    expect(root.querySelector('img')).toBeNull()
+    expect(root.querySelector('.sea-remark b')).toBeNull()
+    expect(root.querySelector('.sea-remark__text').textContent).toBe(hostile)
   })
 })

@@ -256,6 +256,8 @@ func seedFixtures(t *testing.T, st *store.Store) {
 			{ID: "BG0000000000000001", NameBG: "ПЛАЖ ТЕСТ", NameEN: "PLAZH TEST", Zone: "coastal", Lat: 42.75, Lon: 23.45, ProfileURL: "https://example.org/profile.pdf"},
 			// A long-history site with a stale RZI sample: its card is the tallest one the phone sheet must hold.
 			{ID: "BG0000000000000002", NameBG: "ДЪЛГА ИСТОРИЯ", NameEN: "LONG HISTORY", Zone: "coastal", Lat: 42.75, Lon: 23.53, ProfileURL: "https://example.org/profile2.pdf"},
+			// A site whose in-season RZI sample carries an inspectorate remark.
+			{ID: "BG0000000000000003", NameBG: "БЕЛЕЖКА", NameEN: "REMARK SITE", Zone: "coastal", Lat: 42.75, Lon: 23.37, ProfileURL: "https://example.org/profile3.pdf"},
 		},
 		Classes: func() []store.BathingClass {
 			cs := []store.BathingClass{}
@@ -283,9 +285,11 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	// An RZI sample thirty days old is past the 21-day freshness window, so the card shows the stale note.
 	// In season only: outside it the card shows the closed-season note instead, also a line of text.
 	staleDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -30)
-	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 1}
+	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 2}
 	rziSample := store.RZISample{SiteID: "BG0000000000000002", Date: staleDay, Season: staleDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml"}
-	if err := st.ReplaceRZISource(ctx, "rzi_varna", rziFile, []store.RZISample{rziSample}); err != nil {
+	remarkDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -3)
+	remarkSample := store.RZISample{SiteID: "BG0000000000000003", Date: remarkDay, Season: remarkDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml", Remarks: "Пробата е взета след пороен дъжд."}
+	if err := st.ReplaceRZISource(ctx, "rzi_varna", rziFile, []store.RZISample{rziSample, remarkSample}); err != nil {
 		t.Fatalf("ReplaceRZISource: %v", err)
 	}
 

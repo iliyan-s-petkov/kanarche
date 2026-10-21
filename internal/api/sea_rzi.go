@@ -133,7 +133,7 @@ func (in seaRZIInput) merge(eea []seaSample, rs []store.RZIRow) []seaSample {
 			Date: r.Date.UTC().Format(time.DateOnly), Season: r.Season,
 			EColi: r.EC, EColiBelow: r.ECBelow,
 			Enterococci: r.IE, EnterococciBelow: r.IEBelow,
-			Source: r.File.Source,
+			Source: r.File.Source, Remarks: r.Remarks,
 		})
 	}
 	// ISO dates sort as text. Stable, so EEA rows keep their order.

@@ -57,6 +57,18 @@ export function creditDate(iso) {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : String(iso ?? '')
 }
 
+// The inspectorate's place name, without the "RHI" / "РЗИ" prefix its source name carries.
+export function rhiName(t, source) {
+  return String(t.sources?.[source] || '').replace(/^(RHI|РЗИ)\s+/i, '')
+}
+
+// Samples that carry an inspectorate remark, with the label and credit templates present.
+// A remark is shown only with both, as a sample is shown only with its credit.
+export function remarkedSamples(samples, t) {
+  if (!t.remark?.label || !t.remark?.credit) return []
+  return (samples ?? []).filter((s) => isRZISource(s.source) && typeof s.remarks === 'string' && s.remarks.trim() !== '')
+}
+
 export const isRZISource = (source) => typeof source === 'string' && source.startsWith('rzi_')
 
 // Only an absolute http(s) results page is linked. A path that names a file is not a page.
@@ -269,6 +281,7 @@ export function readSeaTexts(d) {
       offSeason: s('tSeaLatestOffSeason'),
     },
     creditRzi: s('tSeaCreditRzi'),
+    remark: { label: s('tSeaRemarkLabel'), credit: s('tSeaRemarkCredit') },
     noticeUnofficial: s('tSeaNoticeUnofficial'),
     sources: { rzi_varna: s('tSeaSourceRziVarna'), rzi_burgas: s('tSeaSourceRziBurgas'), rzi_dobrich: s('tSeaSourceRziDobrich') },
     sourceLink: s('tSeaSourceLink'),

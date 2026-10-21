@@ -17,6 +17,8 @@ async function axeViolations(page, selector) {
 const SITE = [23.45, 42.75]
 // The long-history site: nineteen seasons and a stale RZI sample.
 const LONG_SITE = [23.53, 42.75]
+// A site with an RZI sample that carries a remark.
+const REMARK_SITE = [23.37, 42.75]
 
 async function prepareMap(page, path) {
   await page.goto(path)
@@ -223,5 +225,22 @@ test('axe finds no violations in the card or the details dialog', async ({ brows
     await dialog.locator(`#sea-tab-${id}`).click()
     expect(await axeViolations(page, '.sea-details'), `tab ${id}`).toEqual([])
   }
+  await context.close()
+})
+
+test('an RZI remark shows under the samples with its label and credit', async ({ browser }, testInfo) => {
+  testInfo.setTimeout(60000)
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  const page = await context.newPage()
+  await prepareMap(page, '/en/')
+  await toggleSea(page, 'Bathing water', true)
+  let pt = null
+  await expect.poll(async () => { pt = await sitePoint(page, REMARK_SITE); return pt }, { timeout: 20000 }).not.toBeNull()
+  await page.mouse.click(pt.x, pt.y)
+  const sheet = page.locator('.map-sea')
+  await expect(sheet.locator('.sea-panel__title')).toHaveText('Remark Site')
+  await expect(sheet.locator('.sea-remark__label')).toContainText('RHI remark')
+  await expect(sheet.locator('.sea-remark__text')).toHaveText('Пробата е взета след пороен дъжд.')
+  await expect(sheet.locator('.sea-remark__credit')).toHaveText('Source: RHI Varna')
   await context.close()
 })

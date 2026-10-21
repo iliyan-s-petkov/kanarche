@@ -2,7 +2,7 @@
   // One bathing site as a compact card: the official class first, then the last lab samples
   // against the zone's limits, then the season strip. History and charts live in SeaDetails.
   import {
-    seaName, creditedSamples, sourceCredit, fillSeason, fillSlots, creditDate, isRZISource, stripCells, classLabel, chipLevel, latestSamples, sampleSources,
+    seaName, creditedSamples, sourceCredit, fillSeason, fillSlots, creditDate, isRZISource, remarkedSamples, rhiName, stripCells, classLabel, chipLevel, latestSamples, sampleSources,
     formatDay, LEVEL_MARKS, levelText, offSeasonText,
   } from '../lib/sea.js'
   import { seaInfoContent } from '../lib/infodialog.js'
@@ -28,6 +28,7 @@
   const chips = $derived(latestSamples(credited.filter((s) => s.season === newestSeason), t, 3))
   // The class is the EEA's, so the EEA is named first whenever there is one.
   const shownSources = $derived(sampleSources([...(d?.classes?.length ? [{ source: '' }] : []), ...chips], t))
+  const remarked = $derived(remarkedSamples(chips, t))
   const hasRZI = $derived(chips.some((s) => isRZISource(s.source)))
 
   // Freshness is the API's flag on the newest RZI sample. Off season is the API's season_open flag,
@@ -102,6 +103,19 @@
           </li>
         {/each}
       </ul>
+      {#if remarked.length}
+        <ul class="sea-remarks">
+          {#each remarked as s, i (`${s.date}-${s.source}-${i}`)}
+            <li class="sea-remark">
+              <div role="group" aria-labelledby={`sea-remark-${i}`}>
+                <p class="sea-remark__label" id={`sea-remark-${i}`}>{t.remark.label}, {formatDay(s.date, lang)}</p>
+                <p class="sea-remark__text">{s.remarks}</p>
+                <p class="sea-remark__credit">{fillSlots(t.remark.credit, { rhi: rhiName(t, s.source) })}</p>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
       <p class="sea-panel__key"><span aria-hidden="true">{LEVEL_MARKS[0]}</span> {t.chips.keyWithin} · <span aria-hidden="true">{LEVEL_MARKS[1]}</span> {t.overExcellent} · <span aria-hidden="true">{LEVEL_MARKS[2]}</span> {t.overGood}</p>
     {:else}
       <p class="sea-panel__msg">{t.chips.none}</p>

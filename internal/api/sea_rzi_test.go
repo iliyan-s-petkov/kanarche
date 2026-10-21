@@ -20,7 +20,7 @@ import (
 const (
 	seaCoastal = "BG3310610135003001"
 	seaLake    = "BG3242661710017001"
-	// The remark is hostile on purpose. No API byte may carry it.
+	// The remark is hostile on purpose. The panel must show it as text.
 	seaRemark      = "SECRET-REMARK <img src=x onerror=alert(1)>"
 	seaRZIFileURL  = "https://rzi-varna.com/wp-content/uploads/2026/rezultati.pdf"
 	seaVarnaPage   = "https://rzi-varna.com/?page_id=2635"
@@ -390,22 +390,48 @@ func TestSeaOffSeasonDetailKeepsRZISamples(t *testing.T) {
 	}
 }
 
-// remarks is stored for review only. Neither endpoint may carry it, in any form.
-func TestSeaRemarksNeverInTheAPI(t *testing.T) {
+// The list carries no samples, so no remark rides on it.
+func TestSeaListCarriesNoRemarks(t *testing.T) {
 	d := rziDeps(t, rziSource(
 		rziRow(seaCoastal, day(2026, 7, 14), 2026, 120, 30),
-		rziRow(seaCoastal, day(2026, 6, 14), 2026, 120, 30),
 	), sofiaAt(2026, 7, 20, 12, 0))
-	for _, p := range []string{"/api/v1/sea/sites", "/api/v1/sea/sites/" + seaCoastal} {
-		rec := serve(t, d, get(p, "203.0.113.7"))
-		raw := rec.Body.Bytes()
-		if !bytes.Contains(raw, []byte("rzi_varna")) {
-			t.Fatalf("%s: the RZI data is absent, the check proves nothing: %s", p, raw)
+	raw := serve(t, d, get("/api/v1/sea/sites", "203.0.113.7")).Body.Bytes()
+	if !bytes.Contains(raw, []byte("rzi_varna")) {
+		t.Fatalf("the RZI data is absent, the check proves nothing: %s", raw)
+	}
+	for _, bad := range []string{"remarks", "SECRET-REMARK"} {
+		if bytes.Contains(raw, []byte(bad)) {
+			t.Errorf("list contains %q: %s", bad, raw)
 		}
-		for _, bad := range []string{"remarks", "Remarks", "SECRET-REMARK", "onerror", "<img"} {
-			if bytes.Contains(raw, []byte(bad)) {
-				t.Errorf("%s: body contains %q: %s", p, bad, raw)
+	}
+}
+
+// A stored remark reaches the detail on its RZI sample. An empty one is omitted.
+func TestSeaDetailCarriesRemarks(t *testing.T) {
+	plain := rziRow(seaCoastal, day(2026, 6, 14), 2026, 120, 30)
+	plain.Remarks = ""
+	d := rziDeps(t, rziSource(
+		rziRow(seaCoastal, day(2026, 7, 14), 2026, 120, 30),
+		plain,
+	), sofiaAt(2026, 7, 20, 12, 0))
+	rec := serve(t, d, get("/api/v1/sea/sites/"+seaCoastal, "203.0.113.7"))
+	var b struct {
+		Samples []map[string]any `json:"samples"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	if len(b.Samples) != 4 {
+		t.Fatalf("samples = %d, want 4 (2 RZI, 2 EEA)", len(b.Samples))
+	}
+	for _, s := range b.Samples {
+		r, has := s["remarks"]
+		if s["date"] == "2026-07-14" {
+			if r != seaRemark {
+				t.Errorf("remarks = %v, want %q", r, seaRemark)
 			}
+		} else if has {
+			t.Errorf("unexpected remarks key on %v", s)
 		}
 	}
 }
@@ -709,19 +735,16 @@ func TestSeaDetailRZISeasonOpen(t *testing.T) {
 	}
 }
 
-// No remarks key in the detail, and the stale flag reaches the detail latest.
-func TestSeaDetailStaleAndNoRemarks(t *testing.T) {
+// The stale flag reaches the detail latest.
+func TestSeaDetailStale(t *testing.T) {
 	row := rziRow(seaCoastal, day(2026, 6, 1), 2026, 15, 40)
-	_, b, raw := detailRZI(t, rziDeps(t, rziSource(row), sofiaAt(2026, 7, 20, 12, 0)))
+	_, b, _ := detailRZI(t, rziDeps(t, rziSource(row), sofiaAt(2026, 7, 20, 12, 0)))
 	var l seaLatestBody
 	if err := json.Unmarshal(b["latest"], &l); err != nil {
 		t.Fatal(err)
 	}
 	if !l.Stale {
 		t.Errorf("latest = %+v, want stale", l)
-	}
-	if strings.Contains(raw, "remarks") || strings.Contains(raw, "SECRET-REMARK") {
-		t.Errorf("detail carries remarks: %s", raw)
 	}
 }
 
