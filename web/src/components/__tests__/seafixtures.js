@@ -61,3 +61,10 @@ export const detail = {
     sample({ date: '2023-07-03', season: 2023, e_coli: 600, enterococci: 40 }),
   ],
 }
+
+// Three RZI samples of one season, newest first, each with its own remark.
+export const remarkedSamples3 = [
+  sample({ date: '2026-08-12', season: 2026, source: 'rzi_varna', remarks: 'Newest remark' }),
+  sample({ date: '2026-08-05', season: 2026, source: 'rzi_varna', remarks: 'Middle remark' }),
+  sample({ date: '2026-07-29', season: 2026, source: 'rzi_varna', remarks: 'Oldest remark' }),
+]
