@@ -287,12 +287,12 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	staleDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -30)
 	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 4}
 	rziSample := store.RZISample{SiteID: "BG0000000000000002", Date: staleDay, Season: staleDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml"}
-	remarkDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -3)
+	remarkDay := remarkDates(now)[0]
 	remarkSample := store.RZISample{SiteID: "BG0000000000000003", Date: remarkDay, Season: remarkDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml", Remarks: "Пробата е взета след пороен дъжд."}
 	// Two older samples with their own remarks: the card shows the newest remark only, Details lists all three.
 	olderRemarks := []store.RZISample{
-		{SiteID: "BG0000000000000003", Date: remarkDay.AddDate(0, 0, -7), Season: remarkDay.Year(), EC: 30, IE: 15, Unit: "cfu/100ml", Remarks: "Втора бележка: водата е мътна след вълнение."},
-		{SiteID: "BG0000000000000003", Date: remarkDay.AddDate(0, 0, -14), Season: remarkDay.Year(), EC: 40, IE: 20, Unit: "cfu/100ml", Remarks: "Трета бележка: пробата е взета при силен вятър."},
+		{SiteID: "BG0000000000000003", Date: remarkDates(now)[1], Season: remarkDay.Year(), EC: 30, IE: 15, Unit: "cfu/100ml", Remarks: "Втора бележка: водата е мътна след вълнение."},
+		{SiteID: "BG0000000000000003", Date: remarkDates(now)[2], Season: remarkDay.Year(), EC: 40, IE: 20, Unit: "cfu/100ml", Remarks: "Трета бележка: пробата е взета при силен вятър."},
 	}
 	rziSamples := append([]store.RZISample{rziSample, remarkSample}, olderRemarks...)
 	if err := st.ReplaceRZISource(ctx, "rzi_varna", rziFile, rziSamples); err != nil {
@@ -410,4 +410,15 @@ func startGeocoderStub(t *testing.T) *httptest.Server {
 	}))
 	t.Cleanup(srv.Close)
 	return srv
+}
+
+// remarkDates returns the three remarked samples' days, newest first. They are 3, 10 and 17 days
+// before now, and all in one calendar year so they share a season. Early in January the newest
+// would sit within 14 days of New Year, so the trio moves to the end of the previous year instead.
+func remarkDates(now time.Time) [3]time.Time {
+	newest := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -3)
+	if newest.YearDay() <= 14 {
+		newest = time.Date(newest.Year()-1, time.December, 31, 0, 0, 0, 0, time.UTC)
+	}
+	return [3]time.Time{newest, newest.AddDate(0, 0, -7), newest.AddDate(0, 0, -14)}
 }
