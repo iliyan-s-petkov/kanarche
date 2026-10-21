@@ -119,6 +119,18 @@ func TestApproveRefusesRecordUnderAnotherSHA(t *testing.T) {
 	}
 }
 
+func TestReviewRefusesRecordUnderAnotherSHA(t *testing.T) {
+	r := newRig(t)
+	r.reviewFile(shaOf("a"))
+	drop(t, filepath.Dir(r.review(shaOf("a"))), withBadUnit(varna(t, shaOf("b"))))
+	if err := os.Rename(r.review(shaOf("b")), r.review(shaOf("a"))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.ing.Review(shaOf("a")); !errors.Is(err, rzi.ErrSHAMismatch) {
+		t.Fatalf("err = %v, want ErrSHAMismatch", err)
+	}
+}
+
 func TestApproveOnlyNeedsReview(t *testing.T) {
 	r := newRig(t)
 	drop(t, r.outbox, varna(t, shaOf("a")))

@@ -38,7 +38,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|import-rzi|rzi-approve|extract-bathing-datahub|validate-config|contract|healthz>")
+		fmt.Fprintln(os.Stderr, "usage: airbg <migrate|collect|serve|backfill|rollup|import-areas|purge-outside-boundary|seed-visitor-daily|import-sea|import-rzi|rzi-review|rzi-approve|extract-bathing-datahub|validate-config|contract|healthz>")
 		os.Exit(2)
 	}
 
@@ -279,6 +279,13 @@ func main() {
 		}
 		slog.Info("import rzi complete", "ok", st.OK, "needs_review", st.NeedsReview,
 			"rejected", st.Rejected, "duplicate", st.Duplicate, "refused", st.Refused)
+
+	// Print one pending RZI review record and its remarks. Writes nothing.
+	case "rzi-review":
+		ing := rzi.NewIngester(cfg.Sea.RZI, store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Operator), time.Now)
+		if code := runRZIReview(os.Args[2:], ing, os.Stdout, os.Stderr); code != 0 {
+			os.Exit(code)
+		}
 
 	// Publish the passed rows of one needs_review RZI file, by hash.
 	case "rzi-approve":

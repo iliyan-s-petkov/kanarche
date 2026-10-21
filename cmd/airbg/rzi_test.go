@@ -61,6 +61,100 @@ type fakeApprover struct {
 	args []string
 }
 
+// fakeReviewer also has an Approve that fails the test if it is called.
+type fakeReviewer struct {
+	t   *testing.T
+	rec rzi.File
+	err error
+}
+
+func (f fakeReviewer) Review(string) (rzi.File, error) { return f.rec, f.err }
+
+func (f fakeReviewer) Approve(context.Context, string) (rzi.Approval, error) {
+	f.t.Error("rzi-review called Approve")
+	return rzi.Approval{}, nil
+}
+
+func TestRZIReviewNeverApproves(t *testing.T) {
+	var out, errb bytes.Buffer
+	f := fakeReviewer{t: t, rec: rzi.File{Source: "s", SHA256: "x"}}
+	runRZIReview([]string{strings.Repeat("ab", 32)}, f, &out, &errb)
+}
+
+func TestWriteRZIRemarksListsEveryRemark(t *testing.T) {
+	rec := rzi.File{Blocks: []rzi.Block{
+		{Point: "P1", Name: "Sunny Beach", Rows: []rzi.Row{
+			{Date: "2026-07-01", Remarks: "rain"},
+			{Date: "2026-07-02"},
+		}},
+		{Point: "P2", Rows: []rzi.Row{{Date: "2026-07-03", Remarks: "bad\x1b[31m\ncolour"}}},
+	}}
+	var out bytes.Buffer
+	writeRZIRemarks(&out, rec)
+	want := "remark 2026-07-01 Sunny Beach: rain\n" +
+		"remark 2026-07-03 P2: bad [31m colour\n"
+	if out.String() != want {
+		t.Errorf("got %q want %q", out.String(), want)
+	}
+}
+
+func TestWriteRZIRemarksSaysNone(t *testing.T) {
+	rec := rzi.File{Blocks: []rzi.Block{{Name: "A", Rows: []rzi.Row{{Date: "2026-07-01"}}}}}
+	var out bytes.Buffer
+	writeRZIRemarks(&out, rec)
+	if out.String() != "remarks: none\n" {
+		t.Errorf("got %q", out.String())
+	}
+}
+
+func TestRZIReviewPrintsRemarks(t *testing.T) {
+	sha := strings.Repeat("ab", 32)
+	f := fakeReviewer{t: t, rec: rzi.File{Source: "rzi_varna", SHA256: sha,
+		Blocks: []rzi.Block{{Name: "A", Rows: []rzi.Row{{Date: "2026-07-01", Remarks: "rain"}, {Date: "2026-07-02"}}}}}}
+	var out, errb bytes.Buffer
+	if code := runRZIReview([]string{sha}, f, &out, &errb); code != 0 {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	want := fmt.Sprintf("review source=rzi_varna sha256=%s rows=2\nremark 2026-07-01 A: rain\n", sha)
+	if out.String() != want || errb.Len() != 0 {
+		t.Errorf("stdout %q stderr %q", out.String(), errb.String())
+	}
+}
+
+func TestRZIReviewSaysNone(t *testing.T) {
+	var out, errb bytes.Buffer
+	f := fakeReviewer{t: t, rec: rzi.File{Source: "s", SHA256: "x", Blocks: []rzi.Block{{Rows: []rzi.Row{{Date: "2026-07-01"}}}}}}
+	if code := runRZIReview([]string{strings.Repeat("ab", 32)}, f, &out, &errb); code != 0 {
+		t.Fatalf("exit %d", code)
+	}
+	if !strings.HasSuffix(out.String(), "\nremarks: none\n") {
+		t.Errorf("stdout %q", out.String())
+	}
+}
+
+func TestRZIReviewExitCodesAndFixedMessages(t *testing.T) {
+	sha := strings.Repeat("ab", 32)
+	cases := []struct {
+		name string
+		args []string
+		err  error
+		code int
+		msg  string
+	}{
+		{"no args", nil, nil, 2, "usage"},
+		{"bad sha", []string{"zz"}, rzi.ErrBadSHA, 2, rzi.ErrBadSHA.Error()},
+		{"no record", []string{sha}, rzi.ErrNoReviewRecord, 1, rzi.ErrNoReviewRecord.Error()},
+		{"unknown", []string{sha}, errors.New("secret /path"), 1, "internal error"},
+	}
+	for _, c := range cases {
+		var out, errb bytes.Buffer
+		code := runRZIReview(c.args, fakeReviewer{t: t, err: c.err}, &out, &errb)
+		if code != c.code || !strings.Contains(errb.String(), c.msg) || strings.Contains(errb.String(), "secret") || out.Len() != 0 {
+			t.Errorf("%s: code %d stderr %q stdout %q", c.name, code, errb.String(), out.String())
+		}
+	}
+}
+
 func (f *fakeApprover) Approve(_ context.Context, sha string) (rzi.Approval, error) {
 	f.args = append(f.args, sha)
 	return f.res, f.err

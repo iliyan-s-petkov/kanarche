@@ -31,6 +31,25 @@ type Approval struct {
 	AlreadyApproved bool
 }
 
+// Review returns the pending review record for sha, so the operator can read
+// it before approving. It reads the same file Approve binds to.
+func (g *Ingester) Review(sha string) (File, error) {
+	if !validSHA256(sha) {
+		return File{}, ErrBadSHA
+	}
+	rec, _, err := g.readRecord(filepath.Join(g.cfg.OutboxDir, dirReview, sha+".json"))
+	if errors.Is(err, os.ErrNotExist) {
+		return File{}, ErrNoReviewRecord
+	}
+	if err != nil {
+		return File{}, fmt.Errorf("rzi review record: %s", refusal(err))
+	}
+	if rec.SHA256 != sha {
+		return File{}, ErrSHAMismatch
+	}
+	return rec, nil
+}
+
 // Approve publishes the rows of a needs_review file that passed validation.
 // It binds to this one hash: the record is read from review/<sha>.json and
 // must carry that hash, and the stored row for that hash must be needs_review.

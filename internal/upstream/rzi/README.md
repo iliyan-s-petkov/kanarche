@@ -11,7 +11,7 @@ The extractor is a separate binary, see [cmd/rzi-extract](../../../cmd/rzi-extra
 3. Extract. `cmd/rzi-extract` runs in the no-network sandbox over the inbox. It writes one record per document to `outbox/<sha256>.json`.
 4. Ingest (`ingest.go`). The Ingester decodes each record and validates it (`validate.go`). Sites are matched to EEA bathing sites in the store (`sitemap.go`). Each row is also compared with the last ok file of the same source.
 5. Store and move. The verdict is stored on a file row. The record moves to `done/`, `review/` or `bad/` under the outbox. The inbox copy is removed only when the document is accepted.
-6. Approve (`approve.go`). A `needs_review` file stores no samples until an operator runs `airbg rzi-approve <sha256>`. Only the rows that passed validation are published. Flagged rows stay out.
+6. Approve (`approve.go`). A `needs_review` file stores no samples until an operator reads the record with `airbg rzi-review <sha256>` (read-only, prints every sample remark) and then runs `airbg rzi-approve <sha256>`. Only the rows that passed validation are published. Flagged rows stay out.
 
 ## Sources
 
