@@ -164,7 +164,7 @@ func TestJSONLDHomeHasWebApplication(t *testing.T) {
 		if app.Author == nil || app.Author.ID != person.ID {
 			t.Errorf("%s: author = %+v, want %q", path, app.Author, person.ID)
 		}
-		if app.License != "https://opendatacommons.org/licenses/odbl/1-0/" {
+		if app.License != "https://opensource.org/license/mit" {
 			t.Errorf("%s: license = %q", path, app.License)
 		}
 		if app.IsBasedOn == nil || app.IsBasedOn.ID != "https://airbg.org/about-the-data#dataset" {

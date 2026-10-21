@@ -57,8 +57,8 @@ That table was built once against the government portal's own JSON (the same
 `getStationsForMapJson` endpoint above, which does carry names even though
 its `value` fields are broken) and verified: all 32 live EoI codes resolve,
 every one matches within 0 metres of the download API's own coordinates, and
-the join is one-to-one both ways. It has no runtime dependency on
-`eea.government.bg` — the broken-TLS host never needs to be a production
+the join is one-to-one both ways. It has no runtime dependency on the portal.
+The eea.government.bg host never needs to be a production
 dependency. `applyBGStationName` in names.go overwrites `Station.Name` at
 upsert time; a station absent from the table (anything added since the table
 was built) keeps its national code instead of going blank.

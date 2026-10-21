@@ -162,12 +162,12 @@ func TestACompleteNewLanguageIsServed(t *testing.T) {
 		t.Errorf(`LangFromPath("/de/area/sofia") = (%q, %q), want ("de", "/area/sofia")`, lang, rest)
 	}
 	// And it actually serves its own text rather than falling back.
-	if got, want := c.T("de", "site.title"), "de:site.title"; got != want {
-		t.Errorf("T(de, site.title) = %q, want %q", got, want)
+	if got, want := c.T("de", "site.tagline"), "de:site.tagline"; got != want {
+		t.Errorf("T(de, site.tagline) = %q, want %q", got, want)
 	}
 	// The languages that were already there are untouched.
-	if got, want := c.T("bg", "site.title"), loaded(t).T("bg", "site.title"); got != want {
-		t.Errorf("T(bg, site.title) = %q, want the embedded %q", got, want)
+	if got, want := c.T("bg", "site.tagline"), loaded(t).T("bg", "site.tagline"); got != want {
+		t.Errorf("T(bg, site.tagline) = %q, want the embedded %q", got, want)
 	}
 }
 

@@ -1,6 +1,10 @@
 package snapshot
 
-import "kanarche.eu/internal/store"
+import (
+	"math"
+
+	"kanarche.eu/internal/store"
+)
 
 // SensorLocation is where one sensor is and which area page owns it.
 //
@@ -25,7 +29,7 @@ var areaKindRank = map[string]int{"oblast": 1, "city": 2, "neighbourhood": 3}
 func sensorLocationsFrom(sensors []store.SensorReading, known map[string]AreaMeta) map[int64]SensorLocation {
 	out := make(map[int64]SensorLocation, len(sensors))
 	for _, sr := range sensors {
-		loc := SensorLocation{SensorID: sr.SensorID, Lon: sr.Lon, Lat: sr.Lat}
+		loc := SensorLocation{SensorID: sr.SensorID, Lon: round3(sr.Lon), Lat: round3(sr.Lat)}
 		best := 0
 		for _, slug := range sr.AreaSlugs {
 			meta, ok := known[slug]
@@ -40,3 +44,6 @@ func sensorLocationsFrom(sensors []store.SensorReading, known map[string]AreaMet
 	}
 	return out
 }
+
+// round3 keeps three decimals, about 100 m, so served positions are not exact.
+func round3(v float64) float64 { return math.Round(v*1000) / 1000 }

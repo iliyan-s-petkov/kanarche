@@ -20,11 +20,11 @@ func loaded(t *testing.T) *i18n.Catalogue {
 func TestTranslatesBothLanguages(t *testing.T) {
 	c := loaded(t)
 
-	bg := c.T("bg", "site.title")
-	en := c.T("en", "site.title")
+	bg := c.T("bg", "site.tagline")
+	en := c.T("en", "site.tagline")
 
 	if bg == "" || en == "" {
-		t.Fatalf("site.title is empty (bg=%q en=%q)", bg, en)
+		t.Fatalf("site.tagline is empty (bg=%q en=%q)", bg, en)
 	}
 	if bg == en {
 		t.Errorf("bg and en are identical (%q); one of the catalogues is untranslated", bg)
@@ -32,7 +32,7 @@ func TestTranslatesBothLanguages(t *testing.T) {
 	// Bulgarian must actually be Cyrillic — a catalogue accidentally filled with
 	// the English strings would pass every other assertion here.
 	if !strings.ContainsAny(bg, "абвгдежзийклмнопрстуфхцчшщъьюяАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЮЯ") {
-		t.Errorf("bg site.title = %q contains no Cyrillic", bg)
+		t.Errorf("bg site.tagline = %q contains no Cyrillic", bg)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestMissingKeyFallsBackVisibly(t *testing.T) {
 func TestUnknownLanguageFallsBackToBulgarian(t *testing.T) {
 	c := loaded(t)
 
-	if got, want := c.T("de", "site.title"), c.T("bg", "site.title"); got != want {
+	if got, want := c.T("de", "site.tagline"), c.T("bg", "site.tagline"); got != want {
 		t.Errorf("T(\"de\", …) = %q, want the Bulgarian %q", got, want)
 	}
 }

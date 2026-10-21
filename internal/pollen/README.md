@@ -27,7 +27,7 @@ The numbers were read from the Climate-ADAPT page; the Pfaar 2017 full text was 
 
 ## Known limitation
 
-The source defines the thresholds on hourly concentrations. The area page and the map apply them to the daily mean, which is lower than the hourly peak, so a day can read lower here than the hourly scale would put it. The table also shows the daily maximum.
+The thresholds were first defined by Pfaar et al. 2017 (Allergy 72(5):713-722, doi 10.1111/all.13092) for daily pollen counts. They mark pollen seasons and peak periods in immunotherapy trials. CAMS and Climate-ADAPT apply the same numbers to hourly forecasts. They are season and peak markers, not health thresholds. The area page and the map apply them to the daily mean, which is lower than the hourly peak, so a day can read lower here than the hourly scale would put it. The table also shows the daily maximum.
 
 ## No Bulgarian scale
 
