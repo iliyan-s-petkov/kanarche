@@ -12,7 +12,7 @@
 |---|---|
 | Base | `debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f` (Debian 13.7) |
 | Poppler | poppler-utils 25.03, unpinned from the trixie base (`25.03.0-5+deb13u4` at time of writing) |
-| Go build stage | same `golang:1.26.9@sha256:...` as `Dockerfile` |
+| Go build stage | same `golang:1.26.10@sha256:...` as `Dockerfile` |
 
 The base is pinned by digest. poppler-utils is not pinned, so a rebuild picks up Debian security revisions. The integration test holds `pdftotext -v` to the 25.x series at 25.03 or later. Trivy in the publish workflow is the CVE gate.
 
