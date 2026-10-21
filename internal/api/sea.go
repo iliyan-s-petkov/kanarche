@@ -112,6 +112,8 @@ type seaSample struct {
 	PreSeason        bool   `json:"pre_season"`
 	// Source is eea or an RZI source id. Set only on a site that has RZI samples.
 	Source string `json:"source,omitempty"`
+	// Remarks is the inspectorate's free text, shown as plain text. Empty on EEA samples.
+	Remarks string `json:"remarks,omitempty"`
 }
 
 type seaSiteBody struct {

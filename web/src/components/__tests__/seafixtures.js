@@ -35,6 +35,7 @@ export const textAttrs = {
   tSeaChartShowTable: 'Show as table', tSeaChartShowChart: 'Show as chart',
   tSeaChartBandWithin: 'Within the excellent limit', tSeaChartBandBetween: 'Between the excellent and good limits',
   tSeaChartBandAbove: 'Above the good limit', tSeaChartHollow: 'Hollow dot: below the detection limit',
+  tSeaRemarkLabel: 'RHI remark', tSeaRemarkCredit: 'Source: RHI {rhi}',
   tSeaCreditSource: 'Source: {region}', tSeaSourcesEea: 'EEA', tSeaSourcesInfoLabel: 'About the sources and licence',
 }
 export const seaT = readSeaTexts(textAttrs)

@@ -3,7 +3,7 @@ import {
   SEA_CLASSES, seaClass, seaColours, seaFeatures, seaLevel, seaName, fillSeason, fillSlots, readSeaTexts, safePageURL,
   SEA_METRICS, LEVEL_MARKS, seasonsWithSamples, samplePoints, chipLevel, classInitial, classLabel,
   sourceCredit, creditedSamples, latestSamples, sampleSources, seasonCells, cellName, inkFor, nextTab,
-  pendingSeason, formatDay, levelText, httpURL, offSeasonText,
+  pendingSeason, formatDay, levelText, httpURL, offSeasonText, rhiName, remarkedSamples,
 } from '../sea.js'
 import { seaT, textsWith, limits, sample, textAttrs } from '../../components/__tests__/seafixtures.js'
 
@@ -368,5 +368,20 @@ describe('offSeasonText', () => {
     expect(offSeasonText(seaT, { ...closed, latest: {} }, rzi)).toBe('')
     expect(offSeasonText(seaT, closed, [])).toBe('')
     expect(offSeasonText({ ...seaT, latest: { ...seaT.latest, offSeason: '' } }, closed, rzi)).toBe('')
+  })
+})
+
+describe('RZI remarks', () => {
+  it('names the inspectorate without its RHI or РЗИ prefix', () => {
+    expect(rhiName(seaT, 'rzi_varna')).toBe('Varna')
+    expect(rhiName(textsWith({ tSeaSourceRziBurgas: 'РЗИ Бургас' }), 'rzi_burgas')).toBe('Бургас')
+    expect(rhiName(seaT, 'rzi_unknown')).toBe('')
+  })
+
+  it('keeps only RZI samples with a non-blank remark', () => {
+    const rzi = sample({ source: 'rzi_varna', remarks: 'rain' })
+    const rows = [rzi, sample({ source: 'rzi_varna', remarks: '  ' }), sample({ source: 'rzi_varna' }), sample({ source: 'eea', remarks: 'x' })]
+    expect(remarkedSamples(rows, seaT)).toEqual([rzi])
+    expect(remarkedSamples(rows, textsWith({ tSeaRemarkCredit: '' }))).toEqual([])
   })
 })

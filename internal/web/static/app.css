@@ -550,6 +550,12 @@ strong, b { font-weight: var(--weight-emphasis); }
 .sea-panel__chips { list-style: none; margin: 0 0 var(--space-1); padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .sea-chip { display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-pill); font-variant-numeric: tabular-nums; }
 .sea-chip__mark { font-weight: var(--weight-emphasis); }
+.sea-remarks { list-style: none; margin: var(--space-2) 0 var(--space-1); padding: 0; display: grid; gap: var(--space-2); }
+.sea-remark { padding-inline-start: var(--space-2); border-inline-start: 2px solid var(--border); overflow-wrap: anywhere; }
+.sea-remark p { margin: 0; }
+.sea-remark__label, .sea-remark__credit { color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
+.sea-remark__label { font-weight: var(--weight-emphasis); }
+.sea-remark__text { white-space: pre-wrap; }
 .sea-panel__details {
   inline-size: 100%; min-block-size: 44px; margin-block: var(--space-3) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--bg); color: var(--fg); font: inherit; font-weight: var(--weight-emphasis); cursor: pointer;
