@@ -56,9 +56,59 @@ func TestImportRZIBuildsACollectorWhenDisabled(t *testing.T) {
 }
 
 type fakeApprover struct {
-	res  rzi.Approval
-	err  error
+	res rzi.Approval
+	err error
+	// rec is the review record; nil means there is none to show.
+	rec  *rzi.File
 	args []string
+}
+
+func (f *fakeApprover) Review(string) (rzi.File, error) {
+	if f.rec == nil {
+		return rzi.File{}, rzi.ErrNoReviewRecord
+	}
+	return *f.rec, nil
+}
+
+func TestWriteRZIRemarksListsEveryRemark(t *testing.T) {
+	rec := rzi.File{Blocks: []rzi.Block{
+		{Point: "P1", Name: "Sunny Beach", Rows: []rzi.Row{
+			{Date: "2026-07-01", Remarks: "rain"},
+			{Date: "2026-07-02"},
+		}},
+		{Point: "P2", Rows: []rzi.Row{{Date: "2026-07-03", Remarks: "bad\x1b[31m\ncolour"}}},
+	}}
+	var out bytes.Buffer
+	writeRZIRemarks(&out, rec)
+	want := "remark 2026-07-01 Sunny Beach: rain\n" +
+		"remark 2026-07-03 P2: bad [31m colour\n"
+	if out.String() != want {
+		t.Errorf("got %q want %q", out.String(), want)
+	}
+}
+
+func TestWriteRZIRemarksSaysNone(t *testing.T) {
+	rec := rzi.File{Blocks: []rzi.Block{{Name: "A", Rows: []rzi.Row{{Date: "2026-07-01"}}}}}
+	var out bytes.Buffer
+	writeRZIRemarks(&out, rec)
+	if out.String() != "remarks: none\n" {
+		t.Errorf("got %q", out.String())
+	}
+}
+
+func TestRZIApprovePrintsRemarksBeforeApproving(t *testing.T) {
+	sha := strings.Repeat("ab", 32)
+	f := &fakeApprover{
+		res: rzi.Approval{Source: "varna", SHA256: sha, Published: 1},
+		rec: &rzi.File{Blocks: []rzi.Block{{Name: "A", Rows: []rzi.Row{{Date: "2026-07-01", Remarks: "rain"}}}}},
+	}
+	var out, errb bytes.Buffer
+	if code := runRZIApprove(context.Background(), []string{sha}, f, &out, &errb); code != 0 {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	if !strings.HasPrefix(out.String(), "remark 2026-07-01 A: rain\napproved ") {
+		t.Errorf("stdout %q", out.String())
+	}
 }
 
 func (f *fakeApprover) Approve(_ context.Context, sha string) (rzi.Approval, error) {

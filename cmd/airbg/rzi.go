@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
+	"unicode"
 
 	"kanarche.eu/internal/config"
 	"kanarche.eu/internal/store"
@@ -38,16 +40,50 @@ func rziFetchOptions(sink rzi.Sink) rzi.Options {
 
 // approver is the part of the ingester the approve command needs.
 type approver interface {
+	Review(sha string) (rzi.File, error)
 	Approve(ctx context.Context, sha string) (rzi.Approval, error)
 }
 
-// runRZIApprove publishes the passed rows of one needs_review file. It prints
-// counts, the hash and the source only, never document text, and reports
-// only the fixed sentinel messages.
+// writeRZIRemarks prints one line per sample remark: date, site, text.
+// Remarks are untrusted, so control characters are replaced with spaces.
+func writeRZIRemarks(w io.Writer, rec rzi.File) {
+	clean := func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}
+	n := 0
+	for _, b := range rec.Blocks {
+		site := b.Name
+		if site == "" {
+			site = b.Point
+		}
+		for _, r := range b.Rows {
+			if r.Remarks == "" {
+				continue
+			}
+			n++
+			fmt.Fprintf(w, "remark %s %s: %s\n", r.Date,
+				strings.Map(clean, site), strings.Map(clean, r.Remarks))
+		}
+	}
+	if n == 0 {
+		fmt.Fprintln(w, "remarks: none")
+	}
+}
+
+// runRZIApprove publishes the passed rows of one needs_review file. It lists
+// the sample remarks first, then prints counts, the hash and the source, and
+// reports only the fixed sentinel messages.
 func runRZIApprove(ctx context.Context, args []string, a approver, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
 		fmt.Fprintln(stderr, "usage: airbg rzi-approve <sha256>")
 		return 2
+	}
+	// A missing record is left to Approve to refuse or to report as done.
+	if rec, err := a.Review(args[0]); err == nil {
+		writeRZIRemarks(stdout, rec)
 	}
 	res, err := a.Approve(ctx, args[0])
 	if err != nil {
