@@ -11,6 +11,7 @@ const (
 	schemaContext = "https://schema.org"
 	sourceRepoURL = "https://github.com/iliyan-s-petkov/kanarche"
 	odblURL       = "https://opendatacommons.org/licenses/odbl/1-0/"
+	mitURL        = "https://opensource.org/license/mit"
 	// Controller named in the privacy notice. A natural person: the project has no legal entity.
 	controllerName  = "Iliyan Petkov"
 	controllerEmail = "privacy@kanarche.eu"
@@ -203,7 +204,7 @@ func (p PageData) homeJSONLD() (template.JS, error) {
 		ApplicationCategory: "UtilitiesApplication",
 		OperatingSystem:     "Any",
 		IsAccessibleForFree: true,
-		License:             odblURL,
+		License:             mitURL,
 		IsPartOf:            ldRef{ID: site.ID},
 		Author:              ldRef{ID: person.ID},
 		IsBasedOn:           ldRef{ID: p.datasetID()},

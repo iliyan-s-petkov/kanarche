@@ -125,6 +125,7 @@ func buildWindow(ctx context.Context, s *store.Store, live *Snapshot, now time.T
 	if err != nil {
 		return nil, fmt.Errorf("snapshot: %s sensors: %w", spec.Name, err)
 	}
+	roundSensorPositions(sensors)
 
 	w := live.windowShell()
 

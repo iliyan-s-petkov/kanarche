@@ -58,3 +58,12 @@ func TestSensorLocationsKeepASensorWithNoKnownArea(t *testing.T) {
 		}
 	}
 }
+
+func TestSensorLocationsRoundCoordinatesToThreeDecimals(t *testing.T) {
+	sensors := []store.SensorReading{{SensorID: 7, Lon: 23.321867, Lat: 42.697712}}
+	roundSensorPositions(sensors)
+	locs := sensorLocationsFrom(sensors, nil)
+	if got := locs[7]; got.Lat != 42.698 || got.Lon != 23.322 {
+		t.Errorf("position = %v,%v, want 42.698,23.322", got.Lat, got.Lon)
+	}
+}
