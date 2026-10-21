@@ -4,7 +4,7 @@
   // SeaPanel unmounts it while another site loads (its detail is null then), and the {#key} on the
   // site id remounts it for a direct switch, so either way they reset.
   import {
-    seaName, fillSlots, formatDay, safePageURL, isRZISource, nextTab, pendingSeason, seaLevel, rziCredit, creditDate,
+    seaName, fillSlots, formatDay, safePageURL, isRZISource, remarkedSamples, rhiName, nextTab, pendingSeason, seaLevel, rziCredit, creditDate,
     creditedSamples, seasonsWithSamples, samplePoints, sampleSources, SEA_METRICS, levelText, httpURL, offSeasonText,
   } from '../lib/sea.js'
   import SeaSampleChart from './SeaSampleChart.svelte'
@@ -23,6 +23,7 @@
   let opener = null
 
   const samples = $derived(creditedSamples(d.samples, t))
+  const remarked = $derived(remarkedSamples(samples, t).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)))
   const seasons = $derived(seasonsWithSamples(samples))
   const season = $derived(seasons.includes(chosenSeason) ? chosenSeason : (seasons[0] ?? null))
   const points = $derived(season === null ? [] : samplePoints(samples, season, metric))
@@ -120,6 +121,19 @@
           {/if}
         </div>
         <SeaSampleChart {points} limits={d.limits[metric]} {metricName} {season} {t} {lang} />
+      {/if}
+      {#if remarked.length}
+        <ul class="sea-remarks">
+          {#each remarked as s, i (`${s.date}-${s.source}-${i}`)}
+            <li class="sea-remark">
+              <div role="group" aria-labelledby={`sea-details-remark-${i}`}>
+                <p class="sea-remark__label" id={`sea-details-remark-${i}`}>{t.remark.label}, {formatDay(s.date, lang)}</p>
+                <p class="sea-remark__text">{s.remarks}</p>
+                <p class="sea-remark__credit">{fillSlots(t.remark.credit, { rhi: rhiName(t, s.source) })}</p>
+              </div>
+            </li>
+          {/each}
+        </ul>
       {/if}
     </div>
 

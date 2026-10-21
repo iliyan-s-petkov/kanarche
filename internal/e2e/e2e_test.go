@@ -285,11 +285,17 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	// An RZI sample thirty days old is past the 21-day freshness window, so the card shows the stale note.
 	// In season only: outside it the card shows the closed-season note instead, also a line of text.
 	staleDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -30)
-	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 2}
+	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 4}
 	rziSample := store.RZISample{SiteID: "BG0000000000000002", Date: staleDay, Season: staleDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml"}
 	remarkDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -3)
 	remarkSample := store.RZISample{SiteID: "BG0000000000000003", Date: remarkDay, Season: remarkDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml", Remarks: "Пробата е взета след пороен дъжд."}
-	if err := st.ReplaceRZISource(ctx, "rzi_varna", rziFile, []store.RZISample{rziSample, remarkSample}); err != nil {
+	// Two older samples with their own remarks: the card shows the newest remark only, Details lists all three.
+	olderRemarks := []store.RZISample{
+		{SiteID: "BG0000000000000003", Date: remarkDay.AddDate(0, 0, -7), Season: remarkDay.Year(), EC: 30, IE: 15, Unit: "cfu/100ml", Remarks: "Втора бележка: водата е мътна след вълнение."},
+		{SiteID: "BG0000000000000003", Date: remarkDay.AddDate(0, 0, -14), Season: remarkDay.Year(), EC: 40, IE: 20, Unit: "cfu/100ml", Remarks: "Трета бележка: пробата е взета при силен вятър."},
+	}
+	rziSamples := append([]store.RZISample{rziSample, remarkSample}, olderRemarks...)
+	if err := st.ReplaceRZISource(ctx, "rzi_varna", rziFile, rziSamples); err != nil {
 		t.Fatalf("ReplaceRZISource: %v", err)
 	}
 

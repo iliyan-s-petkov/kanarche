@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach, beforeAll } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
 import SeaDetails from '../SeaDetails.svelte'
-import { seaT, textsWith, colours, detail, sample } from './seafixtures.js'
+import { seaT, textsWith, colours, detail, sample, remarkedSamples3 } from './seafixtures.js'
 
 // jsdom has no showModal; the stand-in flips `open`.
 beforeAll(() => {
@@ -215,6 +215,19 @@ describe('Samples tab', () => {
     const lines = [...panel(dialog, 'samples').querySelectorAll('.sea-chart__credit')].map((p) => p.textContent)
     expect(lines).toEqual(['Data: EEA, CC BY 4.0', 'Source: RHI Varna'])
     expect(panel(dialog, 'samples').textContent.split('Source: RHI Varna')).toHaveLength(2)
+  })
+
+  it('lists every remark in the samples tab, newest first, as text with date and source', () => {
+    const body = { ...detail, samples: remarkedSamples3.map((r, i) => (i === 0 ? { ...r, remarks: '<b>Newest remark</b>' } : r)) }
+    const items = [...panel(render(body).dialog, 'samples').querySelectorAll('.sea-remark')]
+    expect(items.map((n) => n.querySelector('.sea-remark__label').textContent)).toEqual(['RHI remark, Aug 12, 2026', 'RHI remark, Aug 5, 2026', 'RHI remark, Jul 29, 2026'])
+    expect(items.map((n) => n.querySelector('.sea-remark__text').textContent)).toEqual(['<b>Newest remark</b>', 'Middle remark', 'Oldest remark'])
+    expect(items[0].querySelector('.sea-remark__credit').textContent).toBe('Source: RHI Varna')
+    expect(items[0].querySelector('b')).toBeNull()
+  })
+
+  it('shows no remark list in the samples tab when no sample has a remark', () => {
+    expect(panel(render().dialog, 'samples').querySelector('.sea-remarks')).toBeNull()
   })
 
   it('keeps the pending note for a datahub class with no samples yet', () => {

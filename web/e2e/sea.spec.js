@@ -239,8 +239,46 @@ test('an RZI remark shows under the samples with its label and credit', async ({
   await page.mouse.click(pt.x, pt.y)
   const sheet = page.locator('.map-sea')
   await expect(sheet.locator('.sea-panel__title')).toHaveText('Remark Site')
-  await expect(sheet.locator('.sea-remark__label')).toContainText('RHI remark')
-  await expect(sheet.locator('.sea-remark__text')).toHaveText('Пробата е взета след пороен дъжд.')
-  await expect(sheet.locator('.sea-remark__credit')).toHaveText('Source: RHI Varna')
+  await expect(sheet.locator('.sea-remark__label:not(dialog *)')).toContainText('RHI remark')
+  await expect(sheet.locator('.sea-remark__text:not(dialog *)')).toHaveText('Пробата е взета след пороен дъжд.')
+  await expect(sheet.locator('.sea-remark__credit:not(dialog *)')).toHaveText('Source: RHI Varna')
   await context.close()
 })
+
+// The remark site has three remarked samples. The card shows the newest and never scrolls,
+// and the Details samples tab lists all three. E2E_SHOTS_DIR saves screenshots of both.
+for (const theme of ['light', 'dark']) {
+  test(`390: the card shows one remark and does not scroll, Details lists all three (bg, ${theme})`, async ({ browser }, testInfo) => {
+    testInfo.setTimeout(60000)
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: theme })
+    const page = await context.newPage()
+    await prepareMap(page, '/')
+    await page.evaluate((th) => document.documentElement.setAttribute('data-theme', th), theme)
+    await toggleSea(page, 'Води за къпане', true)
+    let pt = null
+    await expect.poll(async () => { pt = await sitePoint(page, REMARK_SITE); return pt }, { timeout: 20000 }).not.toBeNull()
+    await page.mouse.click(pt.x, pt.y)
+    const sheet = page.locator('.map-sea')
+    await expect(sheet.locator('.sea-panel__title')).toHaveText('Бележка')
+    const blocks = sheet.locator('.sea-remark:not(dialog *)')
+    await expect(blocks).toHaveCount(1)
+    await expect(blocks.locator('.sea-remark__text')).toHaveText('Пробата е взета след пороен дъжд.')
+    const fit = await sheet.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }))
+    expect(fit.scroll, JSON.stringify(fit)).toBeLessThanOrEqual(fit.client + 1)
+    const dir = process.env.E2E_SHOTS_DIR
+    if (dir) await page.screenshot({ path: `${dir}/card-390-bg-${theme}.png` })
+
+    await sheet.locator('.sea-panel__details').click()
+    const dialog = page.locator('dialog.sea-details')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.locator('#sea-panel-samples .sea-remark')).toHaveCount(3)
+    await expect(dialog.locator('#sea-panel-samples .sea-remark__text')).toHaveText([
+      'Пробата е взета след пороен дъжд.',
+      'Втора бележка: водата е мътна след вълнение.',
+      'Трета бележка: пробата е взета при силен вятър.',
+    ])
+    await dialog.locator('#sea-panel-samples .sea-remarks').scrollIntoViewIfNeeded()
+    if (dir) await page.screenshot({ path: `${dir}/details-390-bg-${theme}.png` })
+    await context.close()
+  })
+}

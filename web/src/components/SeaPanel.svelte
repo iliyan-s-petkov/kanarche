@@ -28,7 +28,8 @@
   const chips = $derived(latestSamples(credited.filter((s) => s.season === newestSeason), t, 3))
   // The class is the EEA's, so the EEA is named first whenever there is one.
   const shownSources = $derived(sampleSources([...(d?.classes?.length ? [{ source: '' }] : []), ...chips], t))
-  const remarked = $derived(remarkedSamples(chips, t))
+  // The card is a fixed-height sheet, so it shows the newest remark only. Details lists them all.
+  const remarked = $derived(remarkedSamples(chips, t).slice(0, 1))
   const hasRZI = $derived(chips.some((s) => isRZISource(s.source)))
 
   // Freshness is the API's flag on the newest RZI sample. Off season is the API's season_open flag,
