@@ -826,6 +826,19 @@ func (p PageData) AreaTier() string {
 // makes the footer's ODbL credit required — and, when false, wrong.
 func (p PageData) HasBasemap() bool { return p.BasemapStyleURL != "" }
 
+// TilesOrigin is the scheme and host of the basemap, for a preconnect hint,
+// or empty when no basemap is configured.
+func (p PageData) TilesOrigin() string {
+	if !p.HasBasemap() {
+		return ""
+	}
+	u, err := url.Parse(p.BasemapStyleURL)
+	if err != nil || u.Host == "" {
+		return ""
+	}
+	return u.Scheme + "://" + u.Host
+}
+
 // AttributionURL looks up the licence URL api.Attributions() publishes for a
 // source, so the footer's links cannot drift from what /api/v1/meta reports.
 // It panics on an unknown source: html/template recovers a panicking template

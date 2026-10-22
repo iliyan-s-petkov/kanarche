@@ -3,6 +3,9 @@ package web
 import (
 	"encoding/json"
 	"html/template"
+	"time"
+
+	"kanarche.eu/internal/i18n"
 )
 
 // Structured data (OpenProject #607): schema.org JSON-LD emitted by base.gohtml.
@@ -12,9 +15,14 @@ const (
 	sourceRepoURL = "https://github.com/iliyan-s-petkov/kanarche"
 	odblURL       = "https://opendatacommons.org/licenses/odbl/1-0/"
 	mitURL        = "https://opensource.org/license/mit"
-	// Controller named in the privacy notice. A natural person: the project has no legal entity.
+	// Privacy controller: a natural person, kept apart from the Organization publisher.
 	controllerName  = "Iliyan Petkov"
 	controllerEmail = "privacy@kanarche.eu"
+	// First day of the hourly series on prod; reading_hourly keeps two years (migration 00003).
+	dataCoverageStart  = "2026-08-31"
+	dataRetentionYears = 2
+	// Square logo shipped in static/, used as the Organization logo.
+	logoStatic, logoSize = "apple-touch-icon.png", 180
 	// Bulgaria's extent from data/boundaries/bulgaria.geojson, "south west north east".
 	bulgariaBox = "41.2381 22.3450 44.2284 28.6035"
 )
@@ -33,6 +41,23 @@ type ldPerson struct {
 	ID    string `json:"@id,omitempty"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type ldImageObject struct {
+	Type   string `json:"@type"`
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+}
+
+type ldOrganization struct {
+	Type          string        `json:"@type"`
+	ID            string        `json:"@id"`
+	Name          string        `json:"name"`
+	AlternateName string        `json:"alternateName"`
+	URL           string        `json:"url"`
+	Logo          ldImageObject `json:"logo"`
+	SameAs        []string      `json:"sameAs"`
 }
 
 type ldWebSite struct {
@@ -77,8 +102,9 @@ type ldWebApplication struct {
 	IsAccessibleForFree bool   `json:"isAccessibleForFree"`
 	License             string `json:"license"`
 	IsPartOf            ldRef  `json:"isPartOf"`
-	Author              ldRef  `json:"author"`
 	IsBasedOn           ldRef  `json:"isBasedOn"`
+	Publisher           ldRef  `json:"publisher"`
+	Creator             ldRef  `json:"creator"`
 }
 
 type ldPropertyValue struct {
@@ -103,7 +129,9 @@ type ldDataset struct {
 	InLanguage          string            `json:"inLanguage"`
 	License             string            `json:"license"`
 	IsAccessibleForFree bool              `json:"isAccessibleForFree"`
-	Creator             ldPerson          `json:"creator"`
+	Creator             ldRef             `json:"creator"`
+	Publisher           ldRef             `json:"publisher"`
+	TemporalCoverage    string            `json:"temporalCoverage"`
 	SpatialCoverage     ldPlace           `json:"spatialCoverage"`
 	VariableMeasured    []ldPropertyValue `json:"variableMeasured"`
 	Distribution        []ldDataDownload  `json:"distribution"`
@@ -166,6 +194,7 @@ func encodeJSONLD(nodes ...interface{ ldNode() }) (template.JS, error) {
 }
 
 func (ldPerson) ldNode()         {}
+func (ldOrganization) ldNode()   {}
 func (ldWebSite) ldNode()        {}
 func (ldWebApplication) ldNode() {}
 func (ldDataset) ldNode()        {}
@@ -174,16 +203,48 @@ func (ldPlace) ldNode()          {}
 func (ldFAQPage) ldNode()        {}
 func (ldArticle) ldNode()        {}
 
-// controller is the natural person behind the site; no node claims a legal entity.
+// controller is the natural person named in the privacy notice.
 func (p PageData) controller() ldPerson {
 	return ldPerson{Type: "Person", ID: p.BaseURL + "/#controller", Name: controllerName, Email: controllerEmail}
+}
+
+// organization is the publisher of the graph; sameAs is GitHub plus any configured social profiles.
+func (p PageData) organization() ldOrganization {
+	other := "en"
+	if p.Lang != i18n.DefaultLang {
+		other = i18n.DefaultLang
+	}
+	sameAs := []string{sourceRepoURL}
+	for _, u := range []string{p.FacebookURL, p.LinkedInURL} {
+		if u != "" {
+			sameAs = append(sameAs, u)
+		}
+	}
+	return ldOrganization{
+		Type: "Organization", ID: p.BaseURL + "/#org", Name: p.T("seo.title_brand"),
+		AlternateName: p.cat.T(other, "seo.title_brand"), URL: p.BaseURL + "/",
+		Logo:   ldImageObject{Type: "ImageObject", URL: p.BaseURL + p.Static(logoStatic), Width: logoSize, Height: logoSize},
+		SameAs: sameAs,
+	}
+}
+
+// temporalCoverage runs from the first stored day, or two years before the snapshot once older data is gone.
+func (p PageData) temporalCoverage() string {
+	start, err := time.Parse("2006-01-02", dataCoverageStart)
+	if err != nil {
+		return ""
+	}
+	if cut := p.GeneratedAt.UTC().AddDate(-dataRetentionYears, 0, 0); !p.GeneratedAt.IsZero() && cut.After(start) {
+		start = cut
+	}
+	return start.Format("2006-01-02") + "/.."
 }
 
 // datasetID is language-independent: the Dataset lives on about-the-data and the home WebApplication references it.
 func (p PageData) datasetID() string { return p.BaseURL + "/about-the-data#dataset" }
 
 func (p PageData) homeJSONLD() (template.JS, error) {
-	person := p.controller()
+	person, org := p.controller(), p.organization()
 	site := ldWebSite{
 		Type:          "WebSite",
 		ID:            p.BaseURL + "/#website",
@@ -191,7 +252,7 @@ func (p PageData) homeJSONLD() (template.JS, error) {
 		AlternateName: p.T("brand.wordmark"),
 		URL:           p.CanonicalURL(),
 		InLanguage:    p.Lang,
-		Publisher:     ldRef{ID: person.ID},
+		Publisher:     ldRef{ID: org.ID},
 		SameAs:        []string{sourceRepoURL},
 	}
 	app := ldWebApplication{
@@ -206,10 +267,11 @@ func (p PageData) homeJSONLD() (template.JS, error) {
 		IsAccessibleForFree: true,
 		License:             mitURL,
 		IsPartOf:            ldRef{ID: site.ID},
-		Author:              ldRef{ID: person.ID},
 		IsBasedOn:           ldRef{ID: p.datasetID()},
+		Publisher:           ldRef{ID: org.ID},
+		Creator:             ldRef{ID: org.ID},
 	}
-	return encodeJSONLD(site, app, person)
+	return encodeJSONLD(site, app, org, person)
 }
 
 func (p PageData) datasetJSONLD() (template.JS, error) {
@@ -222,6 +284,7 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 		return "", err
 	}
 	api := p.BaseURL + "/api/v1/"
+	org := p.organization()
 	ds := ldDataset{
 		Type:                "Dataset",
 		ID:                  p.datasetID(),
@@ -231,7 +294,9 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 		InLanguage:          p.Lang,
 		License:             odblURL,
 		IsAccessibleForFree: true,
-		Creator:             p.controller(),
+		Creator:             ldRef{ID: org.ID},
+		Publisher:           ldRef{ID: org.ID},
+		TemporalCoverage:    p.temporalCoverage(),
 		SpatialCoverage:     ldPlace{Type: "Place", Name: p.T("seo.dataset.place"), Geo: geo},
 		VariableMeasured:    vars,
 		Distribution: []ldDataDownload{
@@ -242,8 +307,8 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 	if !p.GeneratedAt.IsZero() {
 		ds.DateModified = p.GeneratedAtISO()
 	}
-	nodes := []interface{ ldNode() }{ds}
-	// A page built without the About FAQ carries the Dataset alone.
+	nodes := []interface{ ldNode() }{ds, org}
+	// A page built without the About FAQ carries the Dataset and Organization alone.
 	if p.AboutFAQ != nil {
 		nodes = append(nodes, faqPageOf(p.AboutFAQ))
 	}

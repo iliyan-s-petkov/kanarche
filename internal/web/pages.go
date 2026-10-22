@@ -88,6 +88,7 @@ func (rr *Renderer) handlers() map[string]http.Handler {
 
 	// One robots.txt and one sitemap for all languages.
 	h["GET /robots.txt"] = http.HandlerFunc(rr.handleRobots)
+	h["GET /llms.txt"] = http.HandlerFunc(rr.handleLLMSTxt)
 	h["GET /sitemap.xml"] = http.HandlerFunc(rr.handleSitemap)
 
 	// Content-hashed bundles: cacheable forever, because the name changes when
