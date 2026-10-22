@@ -162,10 +162,14 @@ test('the about container grows to 96rem and paragraphs use its full width', asy
   const c = await box(page.locator('.about-page'))
   expect(c.w).toBeGreaterThan(1240)
   expect(c.w).toBeLessThanOrEqual(1536)
-  for (const sel of ['.page-head > p', '#start > p', '.about-steps p']) {
+  for (const sel of ['.page-head > p', '#start > p']) {
     const p = await box(page.locator(sel).first())
     expect(p.w).toBeGreaterThan(1200)
   }
+  // Step text shares its row with a screenshot, so it fills its own column.
+  const step = await page.locator('.about-steps p').first().evaluate((el) =>
+    [el.getBoundingClientRect().width, el.parentElement.getBoundingClientRect().width])
+  expect(step[0]).toBeGreaterThan(step[1] - 1)
   // Below the cap the container and its paragraphs track the viewport.
   await page.setViewportSize({ width: 1280, height: 800 })
   const c2 = await box(page.locator('.about-page'))
