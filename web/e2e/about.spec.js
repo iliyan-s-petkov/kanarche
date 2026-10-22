@@ -155,7 +155,7 @@ test('the step number is a filled circle on the same row as the heading', async 
   await page.close()
 })
 
-test('the about container grows to 96rem and paragraphs stop at about 80ch', async ({ ctx }) => {
+test('the about container grows to 96rem and paragraphs use its full width', async ({ ctx }) => {
   const page = await ctx.newPage()
   await page.setViewportSize({ width: 1920, height: 1080 })
   await page.goto('/en/about')
@@ -164,7 +164,7 @@ test('the about container grows to 96rem and paragraphs stop at about 80ch', asy
   expect(c.w).toBeLessThanOrEqual(1536)
   for (const sel of ['.page-head > p', '#start > p', '.about-steps p']) {
     const p = await box(page.locator(sel).first())
-    expect(p.w).toBeLessThanOrEqual(900)
+    expect(p.w).toBeGreaterThan(1200)
   }
   // Below the cap it tracks the viewport.
   await page.setViewportSize({ width: 1280, height: 800 })
