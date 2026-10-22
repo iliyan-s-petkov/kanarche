@@ -216,3 +216,20 @@ func TestNoDraftPlaceholdersRemain(t *testing.T) {
 		}
 	}
 }
+
+// Search results cut a meta description at about 160 characters. The Dataset
+// description feeds JSON-LD only, which has no such limit.
+func TestMetaDescriptionsFitSearchSnippet(t *testing.T) {
+	c := loaded(t)
+	metaKey := regexp.MustCompile(`^seo\.[a-z_]+\.description`)
+	for _, lang := range c.Languages() {
+		for _, key := range c.Keys() {
+			if !metaKey.MatchString(key) || strings.HasPrefix(key, "seo.dataset.") || !c.Has(lang, key) {
+				continue
+			}
+			if n := len([]rune(c.T(lang, key))); n > 160 {
+				t.Errorf("%s %q is %d characters, want at most 160", lang, key, n)
+			}
+		}
+	}
+}
