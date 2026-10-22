@@ -90,3 +90,48 @@ for (const width of widths) {
     await page.close()
   })
 }
+
+// On touch phones .frame is a grid (hover: none in app.css), a grid item does
+// not collapse its children's margins, so the sensorbar island is 36px taller
+// there than on desktop. Its reservation was the desktop height and the map
+// and summary below it shifted on hydrate (prod /area/sofia CLS 0.21). A
+// touch context is needed to reproduce it; 390x844 is the Lighthouse mobile size.
+const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }
+
+test('area page layout shift stays under 0.05 at 390x844', async ({ browser }) => {
+  const context = await browser.newContext(phone)
+  const page = await context.newPage()
+  await page.addInitScript(() => {
+    window.__cls = 0
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (!entry.hadRecentInput) window.__cls += entry.value
+      }
+    }).observe({ type: 'layout-shift', buffered: true })
+  })
+  await page.goto('/area/sofia')
+  await page.waitForTimeout(3000)
+  const cls = await page.evaluate(() => window.__cls)
+  expect(cls).toBeLessThan(0.05)
+  await context.close()
+})
+
+for (const width of [360, 390, 412]) {
+  test(`area sensorbar reservation covers its rendered height at ${width}px touch`, async ({ browser }) => {
+    const context = await browser.newContext({ ...phone, viewport: { width, height: 844 } })
+    const page = await context.newPage()
+    await page.goto('/area/sofia')
+    await expect(page.locator('[data-island="sensorbar"] .sensor-bar')).toBeVisible()
+    const m = await page.evaluate(() => {
+      const bar = document.querySelector('[data-island="sensorbar"]')
+      return {
+        reserved: parseFloat(getComputedStyle(bar).minBlockSize),
+        actual: bar.getBoundingClientRect().height,
+      }
+    })
+    // Rendered above the reservation means the island grows on hydrate.
+    expect(m.actual, 'sensorbar height').toBeLessThanOrEqual(m.reserved + 1)
+    expect(m.reserved - m.actual, 'sensorbar over-reservation').toBeLessThan(8)
+    await context.close()
+  })
+}
