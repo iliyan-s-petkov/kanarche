@@ -2043,7 +2043,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .storage-table td { border: 0; padding: 0; }
 }
 
-.about-stats { background: var(--bg); border: 1px solid var(--border-faint); border-radius: var(--radius); padding: var(--space-4); display: grid; gap: var(--space-3); }
+.about-stats { background: var(--bg); border: 1px solid var(--border-faint); border-radius: var(--radius); padding: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 .about-stats__title { margin: 0; font-size: var(--text-card); font-weight: var(--weight-body); }
 .about-stats__chart { min-block-size: 200px; }
 .about-stats__note { margin: 0; color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); line-height: 1.4; }
