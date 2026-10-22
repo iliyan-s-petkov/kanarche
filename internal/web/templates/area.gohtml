@@ -286,9 +286,10 @@
 {{template "nearbyList" .}}
 
 {{/* Every sensor in the area as a table, the map's text alternative and keyboard route to
-     each sensor. Filled by the map island (web/src/lib/mapareasensors.js), hidden until then. */}}
+     each sensor. Filled by the map island (web/src/lib/mapareasensors.js). The static list
+     inside is what crawlers and no-JS readers get, the island swaps it out once it is ready. */}}
 {{if .Area.Covered}}
-<div class="area-sensors-host" data-area-sensors hidden
+<div class="area-sensors-host" data-area-sensors{{if not .AreaStations}} hidden{{end}}
      data-area="{{.Area.Name}}"
      {{with .AreaSensorDistricts}}data-districts="{{.}}"
      data-t-col-district="{{$.T "area.sensors.col.district"}}"{{end}}
@@ -321,7 +322,25 @@
      data-t-p1="{{.T "metric.P1"}}"
      data-t-unit-p2="{{.T "unit.P2"}}"
      data-t-unit-p1="{{.T "unit.P1"}}"
-     {{template "bandLabels" .}}></div>
+     {{template "bandLabels" .}}>
+{{with .AreaStations}}<details class="area-sensors area-sensors--static" data-area-sensors-static>
+  <summary>{{.Summary $}}</summary>
+  <div class="area-sensors__scroll">
+    <table class="table area-sensors__table">
+      <caption>{{.Caption $}}</caption>
+      <thead><tr>
+        <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
+        <th scope="col" class="num">{{$.T "metric.P2"}}, {{$.T "unit.P2"}}</th>
+        <th scope="col" class="num">{{$.T "metric.P1"}}, {{$.T "unit.P1"}}</th>
+        <th scope="col">{{$.T "area.updated"}}</th>
+      </tr></thead>
+      <tbody>{{range .Rows}}
+        <tr><th scope="row">{{.ID}}</th><td class="num">{{.P2}}</td><td class="num">{{.P1}}</td><td>{{.Updated}}</td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
+  {{with .Capped $}}<p class="meta">{{.}}</p>{{end}}
+</details>{{end}}</div>
 {{end}}
 
 {{if .Area.Covered}}

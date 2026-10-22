@@ -44,6 +44,19 @@ describe('installAreaSensors', () => {
     expect(el.querySelector('tbody tr:nth-child(2)').textContent).toContain('Mladost')
   })
 
+  it('drops the server static table once the interactive one is ready', () => {
+    const shell = host()
+    shell.innerHTML = '<details data-area-sensors-static><summary>static</summary></details>'
+    shell.hidden = false
+    stop = installAreaSensors({ map: fakeMap(), el: shell, cfg: { slug: 'sofia', lang: 'en' }, onopen: () => {} })
+    flushSync()
+    expect(shell.querySelector('[data-area-sensors-static]')).not.toBeNull()
+    setSensors(body, 'sofia')
+    flushSync()
+    expect(shell.querySelector('[data-area-sensors-static]')).toBeNull()
+    expect(shell.querySelectorAll('details').length).toBe(1)
+  })
+
   it('brings the map to the sensor before opening it', () => {
     setSensors(body, 'sofia')
     const map = fakeMap(10)
