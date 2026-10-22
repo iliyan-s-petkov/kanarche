@@ -3,6 +3,9 @@ package web
 import (
 	"encoding/json"
 	"html/template"
+	"time"
+
+	"kanarche.eu/internal/i18n"
 )
 
 // Structured data (OpenProject #607): schema.org JSON-LD emitted by base.gohtml.
@@ -12,11 +15,12 @@ const (
 	sourceRepoURL = "https://github.com/iliyan-s-petkov/kanarche"
 	odblURL       = "https://opendatacommons.org/licenses/odbl/1-0/"
 	mitURL        = "https://opensource.org/license/mit"
-	// Controller named in the privacy notice. A natural person: the project has no legal entity.
+	// Privacy controller: a natural person, kept apart from the Organization publisher.
 	controllerName  = "Iliyan Petkov"
 	controllerEmail = "privacy@kanarche.eu"
-	// First day of stored data: the commit that added the ingest cycle. No earlier reading exists.
-	dataCoverageStart = "2026-08-08"
+	// First day of the hourly series on prod; reading_hourly keeps two years (migration 00003).
+	dataCoverageStart  = "2026-08-31"
+	dataRetentionYears = 2
 	// Square logo shipped in static/, used as the Organization logo.
 	logoStatic, logoSize = "apple-touch-icon.png", 180
 	// Bulgaria's extent from data/boundaries/bulgaria.geojson, "south west north east".
@@ -199,22 +203,41 @@ func (ldPlace) ldNode()          {}
 func (ldFAQPage) ldNode()        {}
 func (ldArticle) ldNode()        {}
 
-// controller is the natural person behind the site; no node claims a legal entity.
+// controller is the natural person named in the privacy notice.
 func (p PageData) controller() ldPerson {
 	return ldPerson{Type: "Person", ID: p.BaseURL + "/#controller", Name: controllerName, Email: controllerEmail}
 }
 
-// organization is the publisher of every node; the Person controller stays a separate privacy node.
+// organization is the publisher of the graph; sameAs is GitHub plus any configured social profiles.
 func (p PageData) organization() ldOrganization {
-	name, alt := "Канарче", "Kanarche"
-	if p.Lang != "bg" {
-		name, alt = alt, name
+	other := "en"
+	if p.Lang != i18n.DefaultLang {
+		other = i18n.DefaultLang
+	}
+	sameAs := []string{sourceRepoURL}
+	for _, u := range []string{p.FacebookURL, p.LinkedInURL} {
+		if u != "" {
+			sameAs = append(sameAs, u)
+		}
 	}
 	return ldOrganization{
-		Type: "Organization", ID: p.BaseURL + "/#org", Name: name, AlternateName: alt, URL: p.BaseURL,
+		Type: "Organization", ID: p.BaseURL + "/#org", Name: p.T("seo.title_brand"),
+		AlternateName: p.cat.T(other, "seo.title_brand"), URL: p.BaseURL + "/",
 		Logo:   ldImageObject{Type: "ImageObject", URL: p.BaseURL + p.Static(logoStatic), Width: logoSize, Height: logoSize},
-		SameAs: []string{sourceRepoURL},
+		SameAs: sameAs,
 	}
+}
+
+// temporalCoverage runs from the first stored day, or two years before the snapshot once older data is gone.
+func (p PageData) temporalCoverage() string {
+	start, err := time.Parse("2006-01-02", dataCoverageStart)
+	if err != nil {
+		return ""
+	}
+	if cut := p.GeneratedAt.UTC().AddDate(-dataRetentionYears, 0, 0); !p.GeneratedAt.IsZero() && cut.After(start) {
+		start = cut
+	}
+	return start.Format("2006-01-02") + "/.."
 }
 
 // datasetID is language-independent: the Dataset lives on about-the-data and the home WebApplication references it.
@@ -273,7 +296,7 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 		IsAccessibleForFree: true,
 		Creator:             ldRef{ID: org.ID},
 		Publisher:           ldRef{ID: org.ID},
-		TemporalCoverage:    dataCoverageStart + "/..",
+		TemporalCoverage:    p.temporalCoverage(),
 		SpatialCoverage:     ldPlace{Type: "Place", Name: p.T("seo.dataset.place"), Geo: geo},
 		VariableMeasured:    vars,
 		Distribution: []ldDataDownload{

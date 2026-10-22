@@ -135,7 +135,7 @@ func TestJSONLDHomeHasOrganization(t *testing.T) {
 		if org == nil {
 			t.Fatalf("%s: no Organization node", path)
 		}
-		if org.ID != "https://airbg.org/#org" || org.Name != want[0] || org.AlternateName != want[1] || org.URL != "https://airbg.org" {
+		if org.ID != "https://airbg.org/#org" || org.Name != want[0] || org.AlternateName != want[1] || org.URL != "https://airbg.org/" {
 			t.Errorf("%s: Organization = %+v", path, org)
 		}
 		if org.Logo == nil || org.Logo.Type != "ImageObject" || !strings.HasPrefix(org.Logo.URL, "https://airbg.org/") || !strings.Contains(org.Logo.URL, ".png") || org.Logo.Width < 112 || org.Logo.Height < 112 {
@@ -366,7 +366,7 @@ func collectRefs(v any, refs *[]string) {
 
 func TestJSONLDIDReferencesResolveInGraph(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
-	for _, path := range []string{"/", "/en/", "/about-the-data", "/en/about-the-data", "/area/plovdiv"} {
+	for _, path := range []string{"/", "/en/", "/about-the-data", "/en/about-the-data", "/area/plovdiv", "/pm25", "/pm10", "/en/pm25", "/en/pm10"} {
 		body := fetch(t, rr, path).Body.String()
 		start := strings.Index(body, ldOpen) + len(ldOpen)
 		end := strings.Index(body[start:], "</script>")
@@ -399,6 +399,47 @@ func TestJSONLDIDReferencesResolveInGraph(t *testing.T) {
 			if !ids[r] {
 				t.Errorf("%s: reference %q has no node in the graph", path, r)
 			}
+		}
+	}
+}
+
+func TestJSONLDDatasetTemporalCoverage(t *testing.T) {
+	cases := map[time.Time]string{
+		time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC): "2026-08-31/..",
+		time.Date(2029, 3, 15, 9, 0, 0, 0, time.UTC):  "2027-03-15/..",
+	}
+	for at, want := range cases {
+		snap := jsonLDFixture(t)
+		snap.GeneratedAt = at
+		for _, path := range []string{"/about-the-data", "/en/about-the-data"} {
+			ds := nodeOfType(jsonLD(t, path, fetch(t, renderer(t, snap), path).Body.String()), "Dataset")
+			if ds == nil || ds.TemporalCoverage != want {
+				t.Errorf("%s at %s: temporalCoverage = %+v, want %q", path, at.Format("2006-01-02"), ds, want)
+			}
+		}
+	}
+}
+
+func TestJSONLDOrganizationSameAsIncludesConfiguredSocial(t *testing.T) {
+	fb, li := "https://www.facebook.com/airbg", "https://www.linkedin.com/company/airbg"
+	for path, want := range map[string][]string{"/": {"https://github.com/iliyan-s-petkov/kanarche", fb, li}} {
+		org := nodeOfType(jsonLD(t, path, fetch(t, rendererWithSocial(t, fb, li), path).Body.String()), "Organization")
+		if org == nil || strings.Join(org.SameAs, " ") != strings.Join(want, " ") {
+			t.Errorf("%s: Organization = %+v, want sameAs %v", path, org, want)
+		}
+	}
+}
+
+func TestJSONLDPMArticlePublishedByOrganization(t *testing.T) {
+	rr := renderer(t, jsonLDFixture(t))
+	for _, path := range []string{"/pm25", "/pm10", "/en/pm25", "/en/pm10"} {
+		doc := jsonLD(t, path, fetch(t, rr, path).Body.String())
+		art, org := nodeOfType(doc, "Article"), nodeOfType(doc, "Organization")
+		if art == nil || org == nil || art.Publisher == nil || art.Publisher.ID != org.ID || org.ID != "https://airbg.org/#org" {
+			t.Errorf("%s: Article = %+v, Organization = %+v", path, art, org)
+		}
+		if art != nil && (art.Author == nil || art.Author.ID != "https://airbg.org/#controller") {
+			t.Errorf("%s: Article.author = %+v, want the controller", path, art.Author)
 		}
 	}
 }
