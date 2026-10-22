@@ -65,11 +65,39 @@ func TestRobotsGivesEachAICrawlerItsOwnGroupWithAPIDisallow(t *testing.T) {
 			continue
 		}
 		// A named group replaces `*`, so each one must repeat the /api/ rule.
-		if !slices.Contains(rules, "Allow: /") {
-			t.Errorf("%s group lacks Allow: /: %q", bot, rules)
-		}
 		if !slices.Contains(rules, "Disallow: /api/") {
 			t.Errorf("%s group lacks Disallow: /api/: %q", bot, rules)
+		}
+	}
+}
+
+// Parsers that take the first match need each group's dataset Allow lines
+// before its Disallow line.
+func TestRobotsDatasetAllowsPrecedeDisallowInEveryGroup(t *testing.T) {
+	groups := robotsGroups(fetch(t, renderer(t, fixture(t)), "/robots.txt").Body.String())
+	for agent, rules := range groups {
+		disallow := slices.Index(rules, "Disallow: /api/")
+		if disallow < 0 {
+			t.Errorf("%s group has no Disallow: /api/: %q", agent, rules)
+			continue
+		}
+		for _, p := range []string{"/api/v1/areas$", "/api/v1/overview$"} {
+			i := slices.Index(rules, "Allow: "+p)
+			if i < 0 {
+				t.Errorf("%s group lacks Allow: %s: %q", agent, p, rules)
+			} else if i > disallow {
+				t.Errorf("%s group has Allow: %s after its Disallow: %q", agent, p, rules)
+			}
+		}
+	}
+}
+
+// Both text indexes change only on deploy, so they share one hour-long edge cache.
+func TestRobotsAndLLMSTxtAreEdgeCacheable(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, path := range []string{"/robots.txt", "/llms.txt"} {
+		if got := fetch(t, rr, path).Header().Get("Cache-Control"); got != "public, max-age=3600" {
+			t.Errorf("GET %s Cache-Control = %q, want public, max-age=3600", path, got)
 		}
 	}
 }
@@ -93,7 +121,7 @@ func TestRobotsAllowsEveryDatasetDistributionURL(t *testing.T) {
 			t.Fatalf("contentUrl %q does not parse: %v", m[1], err)
 		}
 		for agent, rules := range groups {
-			if !slices.Contains(rules, "Allow: "+u.Path) {
+			if !slices.Contains(rules, "Allow: "+u.Path+"$") {
 				t.Errorf("%s group does not allow the distribution path %s: %q", agent, u.Path, rules)
 			}
 		}
@@ -144,6 +172,30 @@ func TestLLMSTxtCopyHasNoSemicolonOrDash(t *testing.T) {
 	for _, bad := range []string{";", "–", "—"} {
 		if strings.Contains(body, bad) {
 			t.Errorf("llms.txt contains %q, which the copy rules forbid", bad)
+		}
+	}
+}
+
+// Catalogue bodies go into llms.txt as plain text. Markup from them would
+// leak into the file, and a stray `#` line would read as a heading. The one
+// `>` allowed is the blockquote marker that opens the summary line.
+func TestLLMSTxtBodiesAreMarkupAndHeadingFree(t *testing.T) {
+	body := fetch(t, renderer(t, fixture(t)), "/llms.txt").Body.String()
+
+	// Strip only the blockquote marker, then no angle bracket may remain.
+	plain := strings.Replace(body, "\n> ", "\n", 1)
+	for _, bad := range []string{"<", ">"} {
+		if strings.Contains(plain, bad) {
+			t.Errorf("llms.txt contains %q outside the blockquote marker", bad)
+		}
+	}
+
+	for i, line := range strings.Split(body, "\n") {
+		if !strings.HasPrefix(line, "#") {
+			continue
+		}
+		if line != "# Kanarche" && !strings.HasPrefix(line, "## ") {
+			t.Errorf("llms.txt line %d is a stray heading: %q", i+1, line)
 		}
 	}
 }

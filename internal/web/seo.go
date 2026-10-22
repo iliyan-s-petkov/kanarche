@@ -21,17 +21,19 @@ var aiCrawlers = []string{
 	"Google-Extended", "CCBot", "Applebot-Extended", "Bingbot",
 }
 
-// datasetPaths are the Dataset distribution URLs in jsonld.go. They sit under
-// /api/, so every group re-allows them. The longer Allow wins over Disallow.
+// datasetPaths are the Dataset distribution URLs in jsonld.go, each one exact
+// file. The `$` anchors each Allow to that URL alone, so siblings under /api/
+// stay disallowed. Each group lists them before its Disallow, for parsers that
+// take the first match.
 var datasetPaths = []string{"/api/v1/areas", "/api/v1/overview"}
 
 // robotsTxt: /embed is not disallowed, because a crawl block would hide its X-Robots-Tag noindex.
 func robotsTxt(baseURL string) string {
 	var b strings.Builder
 	group := func(agent string) {
-		fmt.Fprintf(&b, "User-agent: %s\nAllow: /\n", agent)
+		fmt.Fprintf(&b, "User-agent: %s\n", agent)
 		for _, p := range datasetPaths {
-			fmt.Fprintf(&b, "Allow: %s\n", p)
+			fmt.Fprintf(&b, "Allow: %s$\n", p)
 		}
 		b.WriteString("Disallow: /api/\n\n")
 	}
@@ -43,18 +45,20 @@ func robotsTxt(baseURL string) string {
 	return b.String()
 }
 
+// textCacheControl is for the two text indexes, which change only on deploy,
+// so an hour at the edge is safe.
+const textCacheControl = "public, max-age=3600"
+
 func (rr *Renderer) handleRobots(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", textCacheControl)
 	fmt.Fprint(w, robotsTxt(rr.baseURL))
 }
 
-// releaseDay is the image build date, YYYY-MM-DD. The Dockerfile stamps it
-// with -ldflags -X. Empty outside the image, which leaves static lastmods out.
-var releaseDay string
-
-// handleLLMSTxt serves the llmstxt.org index. Cacheable like robots.txt.
+// handleLLMSTxt serves the llmstxt.org index.
 func (rr *Renderer) handleLLMSTxt(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", textCacheControl)
 	fmt.Fprint(w, rr.llmsTxt())
 }
 
@@ -159,11 +163,11 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	}
 	// lastmod only where the page body follows the data. The home and the
 	// directory follow every snapshot. An area carries the day its own figures
-	// last changed, and none when that is unknown. Static pages change only
-	// when the image is rebuilt, so they carry the release day, or none outside it.
+	// last changed, and none when that is unknown. Static pages get none
+	// rather than a date nothing supports.
 	type entry struct{ path, lastMod string }
 	entries := make([]entry, 0, len(slugs)+6)
-	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", releaseDay}, entry{"/about-the-data", releaseDay}, entry{"/privacy", releaseDay}, entry{"/licences", releaseDay}, entry{"/terms", releaseDay}, entry{"/pm25", releaseDay}, entry{"/pm10", releaseDay})
+	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""})
 	for _, slug := range slugs {
 		var changed string
 		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {

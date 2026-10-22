@@ -214,8 +214,7 @@ func TestSitemapExcludesEmbedAndAPI(t *testing.T) {
 // robotsGroup is one User-agent group with the /api/ rule repeated.
 func robotsGroup(agent string) string {
 	return "User-agent: " + agent + "\n" +
-		"Allow: /\n" +
-		"Allow: /api/v1/areas\n" +
-		"Allow: /api/v1/overview\n" +
+		"Allow: /api/v1/areas$\n" +
+		"Allow: /api/v1/overview$\n" +
 		"Disallow: /api/\n"
 }
