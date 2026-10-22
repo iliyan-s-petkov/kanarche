@@ -169,7 +169,26 @@ jobs:
       # this is the one build in CI that opts in.
       - run: VITE_E2E_MAP_HANDLE=1 npm run build
         working-directory: web
-      - run: npx playwright install --with-deps chromium
+      # Playwright browser builds are keyed by the locked Playwright version, so a
+      # version bump gets a fresh cache and an unchanged one skips the download.
+      - name: Read Playwright version from lockfile
+        id: playwright-version
+        run: echo "version=$(node -p "require('./web/package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25  # v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      # Miss: download browsers and OS deps. Hit: browsers are already on disk,
+      # so only the apt system libraries still need installing.
+      - name: Install Playwright browsers and deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: web
+        timeout-minutes: 10
+      - name: Install Playwright system deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
         working-directory: web
         timeout-minutes: 10
       - run: go test -tags e2e -timeout 30m ./internal/e2e/
