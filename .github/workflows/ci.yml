@@ -179,18 +179,27 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      # The apt mirror stalls under load, so retry and fall back to the canonical
+      # archive host. Playwright's install-deps runs apt itself, so the retry
+      # settings go in an apt config file rather than as command flags.
+      - name: Harden apt for Playwright system deps
+        run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's#http://azure.archive.ubuntu.com#https://archive.ubuntu.com#' /etc/apt/sources.list.d/ubuntu.sources
+          fi
       # Miss: download browsers and OS deps. Hit: browsers are already on disk,
       # so only the apt system libraries still need installing.
       - name: Install Playwright browsers and deps
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
         working-directory: web
-        timeout-minutes: 10
+        timeout-minutes: 15
       - name: Install Playwright system deps (cache hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
         working-directory: web
-        timeout-minutes: 10
+        timeout-minutes: 15
       - run: go test -tags e2e -timeout 30m ./internal/e2e/
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: failure()
