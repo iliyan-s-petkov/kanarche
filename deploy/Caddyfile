@@ -43,8 +43,8 @@ airbg.org, www.airbg.org {
 
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
-	# 302 keeps rollback real for the first 24-48h; change to 301 to make it permanent.
-	redir https://kanarche.eu{uri} 302
+	# Permanent, matching the 301 Cloudflare's edge rule answers first.
+	redir https://kanarche.eu{uri} 301
 }
 
 tiles.airbg.org {

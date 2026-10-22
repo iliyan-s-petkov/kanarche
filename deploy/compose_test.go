@@ -1202,7 +1202,8 @@ func TestNoProductionVhostSendsXRobotsTag(t *testing.T) {
 }
 
 // The example .env is what an operator copies: it must name kanarche.eu as
-// canonical and keep both tile origins in connect-src for the redirect window.
+// canonical. No kanarche.eu page loads tiles.airbg.org any more, so connect-src
+// drops it.
 func TestExampleEnvIsCanonicalOnKanarche(t *testing.T) {
 	if got, want := envExampleValue(t, "KANARCHE_LISTEN_BASE_URL"), "https://kanarche.eu"; got != want {
 		t.Errorf(".env.example KANARCHE_LISTEN_BASE_URL = %q, want %q", got, want)
@@ -1217,10 +1218,11 @@ func TestExampleEnvIsCanonicalOnKanarche(t *testing.T) {
 			connect = fields[1:]
 		}
 	}
-	for _, origin := range []string{"https://tiles.kanarche.eu", "https://tiles.airbg.org"} {
-		if !slices.Contains(connect, origin) {
-			t.Errorf(".env.example connect-src %v lacks %s", connect, origin)
-		}
+	if !slices.Contains(connect, "https://tiles.kanarche.eu") {
+		t.Errorf(".env.example connect-src %v lacks https://tiles.kanarche.eu", connect)
+	}
+	if slices.Contains(connect, "https://tiles.airbg.org") {
+		t.Errorf(".env.example connect-src %v still allows https://tiles.airbg.org", connect)
 	}
 }
 
@@ -1289,9 +1291,10 @@ func TestAirbgRedirectsToKanarche(t *testing.T) {
 				if m[1] != "https://kanarche.eu{uri}" {
 					t.Errorf("%s redirects to %q, want https://kanarche.eu{uri} (path and query, no marker)", name, m[1])
 				}
-				// 302 for the rollback window, then 301; never a method-preserving 307/308.
-				if m[2] != "302" && m[2] != "301" {
-					t.Errorf("%s redirect status %q, want 302 or 301", name, m[2])
+				// Permanent since the rollback window closed. Cloudflare's edge rule
+				// answers 301 first, the origin must agree.
+				if m[2] != "301" {
+					t.Errorf("%s redirect status %q, want 301", name, m[2])
 				}
 			}
 		}
@@ -1318,7 +1321,8 @@ func TestAirbgRedirectStatusLivesOnOneLine(t *testing.T) {
 	}
 }
 
-// tiles.airbg.org keeps serving the same archive for cached style.json copies.
+// tiles.airbg.org keeps serving the same archive for anyone still using its
+// style.json URL directly. A redirect would break their cross-origin range requests.
 func TestAirbgTilesKeepsServing(t *testing.T) {
 	block, ok := caddyBlocks(t, "Caddyfile")["tiles.airbg.org"]
 	if !ok {
