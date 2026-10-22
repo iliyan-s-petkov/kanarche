@@ -242,7 +242,12 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 	if !p.GeneratedAt.IsZero() {
 		ds.DateModified = p.GeneratedAtISO()
 	}
-	return encodeJSONLD(ds, faqPageOf(p.AboutFAQ))
+	nodes := []interface{ ldNode() }{ds}
+	// A page built without the About FAQ carries the Dataset alone.
+	if p.AboutFAQ != nil {
+		nodes = append(nodes, faqPageOf(p.AboutFAQ))
+	}
+	return encodeJSONLD(nodes...)
 }
 
 // areaBreadcrumb maps the visible trail (p.AreaCrumbs, built by Breadcrumbs) one-to-one onto the BreadcrumbList.
