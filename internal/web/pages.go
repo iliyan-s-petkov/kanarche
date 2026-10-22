@@ -291,6 +291,7 @@ func (rr *Renderer) handleAbout(w http.ResponseWriter, r *http.Request) {
 	data := rr.newPageData(lang, path, generatedAt)
 	data.Title = composeTitle(rr.cat.T(lang, "seo.about_data.title"), rr.cat.T(lang, "seo.title_brand"))
 	data.Description = rr.cat.T(lang, "seo.about_data.description")
+	data.AboutFAQ = data.aboutFAQBlock()
 	data.JSONLD = rr.mustJSONLD(data.datasetJSONLD())
 	// The privacy section (OpenProject #585): every key comes from the
 	// embedded allow-list, never hand-typed here — see storagekeys.go.

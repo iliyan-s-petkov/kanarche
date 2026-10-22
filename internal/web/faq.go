@@ -61,10 +61,27 @@ func eaqiEdgePairs() []string {
 	}
 }
 
+// faqLink names a phrase inside an answer that becomes an anchor in the visible HTML. JSON-LD keeps the plain text.
+type faqLink struct{ Label, Href string }
+
+// newFAQItem escapes the answer and turns the first occurrence of each link label into an anchor.
+func newFAQItem(question, answer string, links ...faqLink) FAQItem {
+	out := html.EscapeString(answer)
+	for _, l := range links {
+		label := html.EscapeString(l.Label)
+		if label == "" || !strings.Contains(out, label) {
+			continue
+		}
+		anchor := `<a class="link" href="` + html.EscapeString(l.Href) + `">` + label + `</a>`
+		out = strings.Replace(out, label, anchor, 1)
+	}
+	return FAQItem{Question: question, Answer: answer, AnswerHTML: template.HTML(out)}
+}
+
 // faqBlock renders the area FAQ. faq.a5_official joins answer 5 only when the area has EEA data, the same rule as the area description.
 func (p PageData) faqBlock(row AreaRow) *FAQBlock {
 	fill := p.faqReplacer(row)
-	aboutLabel := p.T("about.title")
+	aboutLink := faqLink{Label: p.T("about.title"), Href: p.Path("/about-the-data")}
 	block := &FAQBlock{Heading: fill.Replace(p.T("faq.heading"))}
 	for n := 1; n <= faqCount; n++ {
 		num := strconv.Itoa(n)
@@ -72,17 +89,43 @@ func (p PageData) faqBlock(row AreaRow) *FAQBlock {
 		if n == 5 && row.hasEEA() {
 			answer += " " + p.T("faq.a5_official")
 		}
-		answer = fill.Replace(answer)
-		item := FAQItem{Question: fill.Replace(p.T("faq.q" + num)), Answer: answer}
-		item.AnswerHTML = template.HTML(html.EscapeString(answer))
+		var links []faqLink
 		// Answer 6 names the About page in quotes; the name becomes the link.
 		if n == 6 {
-			if i := strings.Index(answer, aboutLabel); i >= 0 {
-				link := `<a class="link" href="` + html.EscapeString(p.Path("/about-the-data")) + `">` + html.EscapeString(aboutLabel) + `</a>`
-				item.AnswerHTML = template.HTML(html.EscapeString(answer[:i]) + link + html.EscapeString(answer[i+len(aboutLabel):]))
-			}
+			links = append(links, aboutLink)
 		}
-		block.Items = append(block.Items, item)
+		block.Items = append(block.Items, newFAQItem(fill.Replace(p.T("faq.q"+num)), fill.Replace(answer), links...))
+	}
+	return block
+}
+
+// aboutFAQCount is the number of questions on the About the data page (about_faq.q1 to q9).
+const aboutFAQCount = 9
+
+// aboutFAQKeys maps About question n to its catalogue keys. Questions 3 and 4 reuse the area FAQ's PM and colour entries.
+func aboutFAQKeys(n int) (q, a string) {
+	switch n {
+	case 3:
+		return "faq.q2", "faq.a2"
+	case 4:
+		return "faq.q3", "faq.a3"
+	}
+	num := strconv.Itoa(n)
+	return "about_faq.q" + num, "about_faq.a" + num
+}
+
+// aboutFAQBlock renders the About page FAQ. No area is involved, so only the poll interval and EAQI edges are filled.
+func (p PageData) aboutFAQBlock() *FAQBlock {
+	pairs := append([]string{"{minutes}", strconv.Itoa(p.pollMinutes)}, eaqiEdgePairs()...)
+	fill := strings.NewReplacer(pairs...)
+	links := []faqLink{
+		{Label: p.T("about.sources.heading"), Href: "#sources"},
+		{Label: p.T("licences.title"), Href: p.Path("/licences")},
+	}
+	block := &FAQBlock{Heading: p.T("about_faq.heading")}
+	for n := 1; n <= aboutFAQCount; n++ {
+		qKey, aKey := aboutFAQKeys(n)
+		block.Items = append(block.Items, newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...))
 	}
 	return block
 }

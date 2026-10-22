@@ -194,6 +194,8 @@ type PageData struct {
 	AreaPollen *PollenBlock
 	// AreaFAQ is the area page's FAQ, rendered once so the markup and the FAQPage JSON-LD share strings.
 	AreaFAQ *FAQBlock
+	// AboutFAQ is the About the data page's FAQ, built the same way.
+	AboutFAQ *FAQBlock
 	// AreaSensorDistricts is JSON {sensor id: district name} for the sensor table, "" outside Sofia.
 	AreaSensorDistricts string
 
