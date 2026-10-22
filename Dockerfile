@@ -32,7 +32,7 @@ COPY . .
 # repo. Without this the embed picks up an empty tree and the image serves
 # the no-JavaScript site — the exact failure the .keep design makes silent.
 COPY --from=web /src/internal/web/dist ./internal/web/dist
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/airbg ./cmd/airbg
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w -X kanarche.eu/internal/web.releaseDay=$(date -u +%F)" -o /out/airbg ./cmd/airbg
 
 # Distroless: no shell, no package manager, no writable document root. Nothing
 # dropped into the container can be executed the way anything in the legacy

@@ -21,10 +21,12 @@ func TestRobotsTxt(t *testing.T) {
 		t.Errorf("Content-Type = %q, want text/plain", ct)
 	}
 
-	want := "User-agent: *\n" +
-		"Allow: /\n" +
-		"Disallow: /api/\n" +
-		"Sitemap: https://airbg.org/sitemap.xml\n"
+	// The exact body is pinned here; the per-group rules are checked in seo_crawl_access_test.go.
+	want := robotsGroup("*") + "\n"
+	for _, bot := range aiCrawlerAgents {
+		want += robotsGroup(bot) + "\n"
+	}
+	want += "Sitemap: https://airbg.org/sitemap.xml\n"
 	if got := rec.Body.String(); got != want {
 		t.Errorf("robots.txt = %q, want %q", got, want)
 	}
@@ -207,4 +209,13 @@ func TestSitemapExcludesEmbedAndAPI(t *testing.T) {
 	if strings.Contains(body, "/api/") {
 		t.Error("sitemap.xml references /api/, which robots.txt disallows")
 	}
+}
+
+// robotsGroup is one User-agent group with the /api/ rule repeated.
+func robotsGroup(agent string) string {
+	return "User-agent: " + agent + "\n" +
+		"Allow: /\n" +
+		"Allow: /api/v1/areas\n" +
+		"Allow: /api/v1/overview\n" +
+		"Disallow: /api/\n"
 }

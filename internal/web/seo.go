@@ -5,21 +5,93 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"kanarche.eu/internal/i18n"
 	"kanarche.eu/internal/snapshot"
 )
 
-// /embed is not disallowed: a crawl block would hide its X-Robots-Tag noindex.
-const robotsBody = "User-agent: *\n" +
-	"Allow: /\n" +
-	"Disallow: /api/\n" +
-	"Sitemap: %s/sitemap.xml\n"
+// aiCrawlers are allowed on purpose, training crawlers included: the data is open.
+// Each named group repeats the /api/ rule, because a named group replaces `*`.
+var aiCrawlers = []string{
+	"GPTBot", "OAI-SearchBot", "ChatGPT-User",
+	"ClaudeBot", "Claude-SearchBot", "Claude-User",
+	"PerplexityBot", "Perplexity-User",
+	"Google-Extended", "CCBot", "Applebot-Extended", "Bingbot",
+}
+
+// datasetPaths are the Dataset distribution URLs in jsonld.go. They sit under
+// /api/, so every group re-allows them. The longer Allow wins over Disallow.
+var datasetPaths = []string{"/api/v1/areas", "/api/v1/overview"}
+
+// robotsTxt: /embed is not disallowed, because a crawl block would hide its X-Robots-Tag noindex.
+func robotsTxt(baseURL string) string {
+	var b strings.Builder
+	group := func(agent string) {
+		fmt.Fprintf(&b, "User-agent: %s\nAllow: /\n", agent)
+		for _, p := range datasetPaths {
+			fmt.Fprintf(&b, "Allow: %s\n", p)
+		}
+		b.WriteString("Disallow: /api/\n\n")
+	}
+	group("*")
+	for _, bot := range aiCrawlers {
+		group(bot)
+	}
+	fmt.Fprintf(&b, "Sitemap: %s/sitemap.xml\n", baseURL)
+	return b.String()
+}
 
 func (rr *Renderer) handleRobots(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	fmt.Fprintf(w, robotsBody, rr.baseURL)
+	fmt.Fprint(w, robotsTxt(rr.baseURL))
+}
+
+// releaseDay is the image build date, YYYY-MM-DD. The Dockerfile stamps it
+// with -ldflags -X. Empty outside the image, which leaves static lastmods out.
+var releaseDay string
+
+// handleLLMSTxt serves the llmstxt.org index. Cacheable like robots.txt.
+func (rr *Renderer) handleLLMSTxt(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprint(w, rr.llmsTxt())
+}
+
+// llmsTxt builds the file from the catalogue, so its copy is the page copy.
+func (rr *Renderer) llmsTxt() string {
+	en := func(key string) string { return rr.cat.T("en", key) }
+	bg := func(key string) string { return rr.cat.T("bg", key) }
+	base := rr.baseURL
+
+	var b strings.Builder
+	b.WriteString("# Kanarche\n\n")
+	fmt.Fprintf(&b, "> %s\n\n", en("seo.about.description"))
+	fmt.Fprintf(&b, "%s\n\n", en("terms.what.body"))
+	fmt.Fprintf(&b, "%s\n\n", bg("terms.what.body"))
+
+	b.WriteString("## Pages\n\n")
+	pages := []struct{ path, title, desc string }{
+		{"/", "Map (Bulgarian)", en("seo.home.description")},
+		{"/en/", "Map (English)", en("seo.home.description")},
+		{"/areas", "Areas", en("seo.areas.description")},
+		{"/about", "About", en("seo.about.description")},
+		{"/about-the-data", "About the data", en("seo.about_data.description")},
+		{"/licences", "Licences", en("seo.licences.description")},
+		{"/privacy", "Privacy", en("seo.privacy.description")},
+	}
+	for _, p := range pages {
+		fmt.Fprintf(&b, "- [%s](%s%s): %s\n", p.title, base, p.path, p.desc)
+	}
+
+	b.WriteString("\n## Data\n\n")
+	fmt.Fprintf(&b, "%s\n\n", en("about.sources.body"))
+	fmt.Fprintf(&b, "%s\n\n", bg("about.sources.body"))
+	fmt.Fprintf(&b, "%s\n\n", en("licences.intro"))
+
+	b.WriteString("## Optional\n\n")
+	fmt.Fprintf(&b, "- [Sitemap](%s/sitemap.xml): every page in both languages, with hreflang alternates.\n", base)
+	return b.String()
 }
 
 // Sitemap protocol plus the xhtml:link hreflang extension.
@@ -87,11 +159,11 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	}
 	// lastmod only where the page body follows the data. The home and the
 	// directory follow every snapshot. An area carries the day its own figures
-	// last changed, and none when that is unknown. Static pages get none
-	// rather than a date nothing supports.
+	// last changed, and none when that is unknown. Static pages change only
+	// when the image is rebuilt, so they carry the release day, or none outside it.
 	type entry struct{ path, lastMod string }
 	entries := make([]entry, 0, len(slugs)+6)
-	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""})
+	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", releaseDay}, entry{"/about-the-data", releaseDay}, entry{"/privacy", releaseDay}, entry{"/licences", releaseDay}, entry{"/terms", releaseDay}, entry{"/pm25", releaseDay}, entry{"/pm10", releaseDay})
 	for _, slug := range slugs {
 		var changed string
 		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {
