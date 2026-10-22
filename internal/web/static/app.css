@@ -1951,11 +1951,12 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 /* /about Prose page: tiles, numbered lists, a table and one chart. */
 /* Fluid: tracks the viewport, stops at 96rem. Other .measure pages keep 60rem. */
 .measure.about-page { max-inline-size: 96rem; }
-.about-page .page-head > p { max-inline-size: 80ch; }
+/* Overrides the design-kit .page-head p 60ch cap: About text runs to the column edge. */
+.about-page .page-head > p { max-inline-size: none; }
 .about-section { padding-block: var(--space-8) 0; }
 .about-section--first { padding-block-start: 0; }
 .about-section > h2 { margin: 0 0 var(--space-3); }
-.about-section > p { color: var(--fg-2); max-inline-size: 80ch; margin: 0 0 var(--space-4); }
+.about-section > p { color: var(--fg-2); margin: 0 0 var(--space-4); }
 .about-toc { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block-start: var(--space-4); }
 .about-toc a { font-size: var(--text-compact); text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-3); color: var(--fg-2); }
 .about-toc a:hover { border-color: var(--accent); color: var(--accent); }
@@ -1980,7 +1981,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .about-steps h4::before { content: counter(step); flex: none; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--accent); color: var(--accent-on); display: grid; place-items: center; font: var(--weight-emphasis) var(--text-compact)/1 var(--font-body); font-variant-numeric: tabular-nums; }
 .about-step__extra { display: grid; gap: var(--space-2); }
 .about-step__extra p { margin: 0; }
-.about-steps p { margin: 0; color: var(--fg-2); max-inline-size: 80ch; }
+.about-steps p { margin: 0; color: var(--fg-2); }
 .about-code { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-2); border-radius: var(--radius-sm); overflow-x: auto; font: var(--text-caption)/1.5 ui-monospace, monospace; color: var(--fg); }
 .about-code-wrap { position: relative; min-inline-size: 0; }
 .about-code-wrap--js .about-code { padding-block-start: var(--space-8); }
@@ -2042,7 +2043,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .storage-table td { border: 0; padding: 0; }
 }
 
-.about-stats { background: var(--bg); border: 1px solid var(--border-faint); border-radius: var(--radius); padding: var(--space-4); display: grid; gap: var(--space-3); }
+.about-stats { background: var(--bg); border: 1px solid var(--border-faint); border-radius: var(--radius); padding: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 .about-stats__title { margin: 0; font-size: var(--text-card); font-weight: var(--weight-body); }
 .about-stats__chart { min-block-size: 200px; }
 .about-stats__note { margin: 0; color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); line-height: 1.4; }

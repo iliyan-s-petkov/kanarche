@@ -155,21 +155,37 @@ test('the step number is a filled circle on the same row as the heading', async 
   await page.close()
 })
 
-test('the about container grows to 96rem and paragraphs stop at about 80ch', async ({ ctx }) => {
+test('the about container grows to 96rem and paragraphs use its full width', async ({ ctx }) => {
   const page = await ctx.newPage()
   await page.setViewportSize({ width: 1920, height: 1080 })
   await page.goto('/en/about')
   const c = await box(page.locator('.about-page'))
   expect(c.w).toBeGreaterThan(1240)
   expect(c.w).toBeLessThanOrEqual(1536)
-  for (const sel of ['.page-head > p', '#start > p', '.about-steps p']) {
+  for (const sel of ['.page-head > p', '#start > p']) {
     const p = await box(page.locator(sel).first())
-    expect(p.w).toBeLessThanOrEqual(900)
+    expect(p.w).toBeGreaterThan(1200)
   }
-  // Below the cap it tracks the viewport.
+  // Step text shares its row with a screenshot, so it fills its own column.
+  const step = await page.locator('.about-steps p').first().evaluate((el) =>
+    [el.getBoundingClientRect().width, el.parentElement.getBoundingClientRect().width])
+  expect(step[0]).toBeGreaterThan(step[1] - 1)
+  // Below the cap the container and its paragraphs track the viewport.
   await page.setViewportSize({ width: 1280, height: 800 })
   const c2 = await box(page.locator('.about-page'))
   expect(c2.w / 1280).toBeGreaterThan(0.9)
+  for (const sel of ['.page-head > p', '#start > p']) {
+    const p = await box(page.locator(sel).first())
+    expect(p.w).toBeGreaterThan(1100)
+  }
+  // On a phone the same paragraphs wrap inside the screen.
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const sel of ['.page-head > p', '#start > p', '.about-steps p']) {
+    const p = await box(page.locator(sel).first())
+    expect(p.w).toBeLessThanOrEqual(390)
+    expect(p.h).toBeGreaterThan(30)
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await page.close()
 })
 
