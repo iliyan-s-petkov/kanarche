@@ -43,7 +43,7 @@ func (rr *Renderer) handlePM(key, other string) http.HandlerFunc {
 
 // pmJSONLD is the breadcrumb trail plus an Article for the explainer.
 func (p PageData) pmJSONLD() (template.JS, error) {
-	person := p.controller()
+	person, org := p.controller(), p.organization()
 	article := ldArticle{
 		Type:             "Article",
 		Headline:         p.T(p.PM.Key + ".h1"),
@@ -51,11 +51,11 @@ func (p PageData) pmJSONLD() (template.JS, error) {
 		InLanguage:       p.Lang,
 		MainEntityOfPage: p.CanonicalURL(),
 		Author:           ldRef{ID: person.ID},
-		Publisher:        ldRef{ID: person.ID},
+		Publisher:        ldRef{ID: org.ID},
 	}
 	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: []ldListItem{
 		{Type: "ListItem", Position: 1, Name: p.T("area.breadcrumb.home"), Item: p.BaseURL + p.Path("/")},
 		{Type: "ListItem", Position: 2, Name: p.T(p.PM.Key + ".h1"), Item: p.CanonicalURL()},
 	}}
-	return encodeJSONLD(crumbs, article, person)
+	return encodeJSONLD(crumbs, article, org, person)
 }
