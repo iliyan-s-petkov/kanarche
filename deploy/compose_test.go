@@ -1224,8 +1224,8 @@ func TestExampleEnvIsCanonicalOnKanarche(t *testing.T) {
 	}
 }
 
-// HSTS on a new name is hard to undo, so it starts short and unscoped. No
-// preload and no includeSubDomains until the cutover.
+// HSTS on a new name is hard to undo, so it ramps: 300, then 86400 (this), then
+// 31536000 with includeSubDomains. No preload.
 func TestKanarcheHSTSIsShortAndUnscoped(t *testing.T) {
 	blocks := caddyBlocks(t, "Caddyfile")
 	re := regexp.MustCompile(`Strict-Transport-Security\s+"([^"]*)"`)
@@ -1235,8 +1235,8 @@ func TestKanarcheHSTSIsShortAndUnscoped(t *testing.T) {
 			t.Errorf("%s sends no Strict-Transport-Security", name)
 			continue
 		}
-		if m[1] != "max-age=300" {
-			t.Errorf("%s HSTS = %q, want exactly %q", name, m[1], "max-age=300")
+		if m[1] != "max-age=86400" {
+			t.Errorf("%s HSTS = %q, want exactly %q", name, m[1], "max-age=86400")
 		}
 	}
 }
