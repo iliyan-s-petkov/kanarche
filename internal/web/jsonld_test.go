@@ -2,6 +2,7 @@ package web_test
 
 import (
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -28,11 +29,17 @@ type ldNode struct {
 		ID string `json:"@id"`
 	} `json:"publisher"`
 	Creator *struct {
-		Type  string `json:"@type"`
-		Name  string `json:"name"`
-		Email string `json:"email"`
+		ID string `json:"@id"`
 	} `json:"creator"`
-	Distribution []struct {
+	Logo *struct {
+		Type   string `json:"@type"`
+		URL    string `json:"url"`
+		Width  int    `json:"width"`
+		Height int    `json:"height"`
+	} `json:"logo"`
+	DateModified     string `json:"dateModified"`
+	TemporalCoverage string `json:"temporalCoverage"`
+	Distribution     []struct {
 		Type           string `json:"@type"`
 		EncodingFormat string `json:"encodingFormat"`
 		ContentURL     string `json:"contentUrl"`
@@ -119,6 +126,30 @@ func jsonLDFixture(t *testing.T) *snapshot.Snapshot {
 	return snap
 }
 
+func TestJSONLDHomeHasOrganization(t *testing.T) {
+	rr := renderer(t, jsonLDFixture(t))
+	names := map[string][2]string{"/": {"Канарче", "Kanarche"}, "/en/": {"Kanarche", "Канарче"}}
+	for path, want := range names {
+		doc := jsonLD(t, path, fetch(t, rr, path).Body.String())
+		org := nodeOfType(doc, "Organization")
+		if org == nil {
+			t.Fatalf("%s: no Organization node", path)
+		}
+		if org.ID != "https://airbg.org/#org" || org.Name != want[0] || org.AlternateName != want[1] || org.URL != "https://airbg.org" {
+			t.Errorf("%s: Organization = %+v", path, org)
+		}
+		if org.Logo == nil || org.Logo.Type != "ImageObject" || !strings.HasPrefix(org.Logo.URL, "https://airbg.org/") || !strings.Contains(org.Logo.URL, ".png") || org.Logo.Width < 112 || org.Logo.Height < 112 {
+			t.Errorf("%s: logo = %+v", path, org.Logo)
+		}
+		if len(org.SameAs) != 1 || org.SameAs[0] != "https://github.com/iliyan-s-petkov/kanarche" {
+			t.Errorf("%s: Organization.sameAs = %v", path, org.SameAs)
+		}
+		if org.Email != "" {
+			t.Errorf("%s: Organization exposes email %q", path, org.Email)
+		}
+	}
+}
+
 func TestJSONLDHomeHasWebSiteAndPerson(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
 	for path, lang := range map[string]string{"/": "bg", "/en/": "en"} {
@@ -131,15 +162,15 @@ func TestJSONLDHomeHasWebSiteAndPerson(t *testing.T) {
 		if len(site.SameAs) != 1 || site.SameAs[0] != "https://github.com/iliyan-s-petkov/kanarche" {
 			t.Errorf("%s: WebSite.sameAs = %v", path, site.SameAs)
 		}
-		if nodeOfType(doc, "Organization") != nil {
-			t.Errorf("%s: an Organization node implies a legal entity", path)
-		}
 		person := nodeOfType(doc, "Person")
 		if person == nil || person.Name != "Iliyan Petkov" || person.Email != "privacy@kanarche.eu" {
 			t.Fatalf("%s: Person = %+v", path, person)
 		}
-		if site.Publisher == nil || site.Publisher.ID != person.ID || person.ID == "" {
-			t.Errorf("%s: WebSite.publisher = %+v, want @id %q", path, site.Publisher, person.ID)
+		if person.ID != "https://airbg.org/#controller" {
+			t.Errorf("%s: Person @id = %q", path, person.ID)
+		}
+		if site.Publisher == nil || site.Publisher.ID != "https://airbg.org/#org" {
+			t.Errorf("%s: WebSite.publisher = %+v, want #org", path, site.Publisher)
 		}
 	}
 }
@@ -148,7 +179,7 @@ func TestJSONLDHomeHasWebApplication(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
 	for path, lang := range map[string]string{"/": "bg", "/en/": "en"} {
 		doc := jsonLD(t, path, fetch(t, rr, path).Body.String())
-		site, person, app := nodeOfType(doc, "WebSite"), nodeOfType(doc, "Person"), nodeOfType(doc, "WebApplication")
+		site, app := nodeOfType(doc, "WebSite"), nodeOfType(doc, "WebApplication")
 		if app == nil {
 			t.Fatalf("%s: no WebApplication node", path)
 		}
@@ -161,8 +192,11 @@ func TestJSONLDHomeHasWebApplication(t *testing.T) {
 		if app.IsPartOf == nil || app.IsPartOf.ID != site.ID {
 			t.Errorf("%s: isPartOf = %+v, want %q", path, app.IsPartOf, site.ID)
 		}
-		if app.Author == nil || app.Author.ID != person.ID {
-			t.Errorf("%s: author = %+v, want %q", path, app.Author, person.ID)
+		if app.Publisher == nil || app.Publisher.ID != "https://airbg.org/#org" {
+			t.Errorf("%s: publisher = %+v, want #org", path, app.Publisher)
+		}
+		if app.Creator == nil || app.Creator.ID != "https://airbg.org/#org" {
+			t.Errorf("%s: creator = %+v, want #org", path, app.Creator)
 		}
 		if app.License != "https://opensource.org/license/mit" {
 			t.Errorf("%s: license = %q", path, app.License)
@@ -217,8 +251,17 @@ func TestJSONLDAboutHasDataset(t *testing.T) {
 		if ds.License != "https://opendatacommons.org/licenses/odbl/1-0/" {
 			t.Errorf("%s: license = %q, want the ODbL URL", path, ds.License)
 		}
-		if ds.Creator == nil || ds.Creator.Type != "Person" || ds.Creator.Name != "Iliyan Petkov" || ds.Creator.Email != "privacy@kanarche.eu" {
-			t.Errorf("%s: creator = %+v", path, ds.Creator)
+		if ds.Creator == nil || ds.Creator.ID != "https://airbg.org/#org" {
+			t.Errorf("%s: creator = %+v, want #org", path, ds.Creator)
+		}
+		if ds.Publisher == nil || ds.Publisher.ID != "https://airbg.org/#org" {
+			t.Errorf("%s: publisher = %+v, want #org", path, ds.Publisher)
+		}
+		if !regexp.MustCompile(`^\d{4}-\d{2}-\d{2}/\.\.$`).MatchString(ds.TemporalCoverage) {
+			t.Errorf("%s: temporalCoverage = %q", path, ds.TemporalCoverage)
+		}
+		if _, err := time.Parse(time.RFC3339, ds.DateModified); err != nil {
+			t.Errorf("%s: dateModified = %q: %v", path, ds.DateModified, err)
 		}
 		if !ds.IsAccessibleForFree {
 			t.Errorf("%s: isAccessibleForFree is false", path)
