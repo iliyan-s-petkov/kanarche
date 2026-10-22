@@ -15,8 +15,17 @@
 <h2>{{.T "about.reference.heading"}}</h2>
 <p>{{.T "about.reference.body"}}</p>
 
-<h2>{{.T "about.sensors.heading"}}</h2>
-<p>{{.T "about.sensors.body"}}</p>
+{{/* Question headings with the answer right below, always visible. The FAQPage
+     JSON-LD is built from the same strings (aboutFAQBlock). */}}
+{{with .AboutFAQ}}
+<section class="about-faq" aria-labelledby="about-faq-heading">
+<h2 id="about-faq-heading">{{.Heading}}</h2>
+{{range .Items}}
+<h3>{{.Question}}</h3>
+<p>{{.AnswerHTML}}</p>
+{{end}}
+</section>
+{{end}}
 
 <h2>{{.T "about.cities.heading"}}</h2>
 <p>{{.T "about.cities.body"}}</p>
@@ -44,7 +53,7 @@
   <li><a href="https://www.eea.europa.eu/en/analysis/maps-and-charts/state-of-bathing-waters-in-2025" rel="noopener noreferrer">{{.T "sea.info.link_map"}}</a></li>
 </ul>
 
-<h2>{{.T "about.sources.heading"}}</h2>
+<h2 id="sources">{{.T "about.sources.heading"}}</h2>
 <p>{{.T "about.sources.body"}}{{if .RZIEnabled}} {{.T "about.sources.rzi"}}{{end}}</p>
 
 <h2>{{.T "about.privacy.heading"}}</h2>

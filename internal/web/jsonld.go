@@ -242,7 +242,7 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 	if !p.GeneratedAt.IsZero() {
 		ds.DateModified = p.GeneratedAtISO()
 	}
-	return encodeJSONLD(ds)
+	return encodeJSONLD(ds, faqPageOf(p.AboutFAQ))
 }
 
 // areaBreadcrumb maps the visible trail (p.AreaCrumbs, built by Breadcrumbs) one-to-one onto the BreadcrumbList.
@@ -258,9 +258,12 @@ func (rr *Renderer) areaBreadcrumb(p PageData) []ldListItem {
 }
 
 // faqPage maps the rendered FAQ one-to-one onto a FAQPage, so markup and visible text share strings.
-func (p PageData) faqPage() ldFAQPage {
+func (p PageData) faqPage() ldFAQPage { return faqPageOf(p.AreaFAQ) }
+
+// faqPageOf maps any FAQBlock onto a FAQPage, for the area and About pages alike.
+func faqPageOf(block *FAQBlock) ldFAQPage {
 	page := ldFAQPage{Type: "FAQPage"}
-	for _, it := range p.AreaFAQ.Items {
+	for _, it := range block.Items {
 		page.MainEntity = append(page.MainEntity, ldQuestion{
 			Type: "Question", Name: it.Question,
 			AcceptedAnswer: ldAnswer{Type: "Answer", Text: it.Answer},
