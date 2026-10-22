@@ -269,8 +269,13 @@ func seedFixtures(t *testing.T, st *store.Store) {
 				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000002", Season: y, Quality: "good"})
 			}
 			// Ten classified seasons for the remark site, so its card carries the season strip too.
+			// The newest class comes from the EEA data hub, which adds a second line to the badge, as on the real Kavarna card.
 			for y := 2016; y <= 2025; y++ {
-				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000003", Season: y, Quality: "good"})
+				c := store.BathingClass{SiteID: "BG0000000000000003", Season: y, Quality: "good"}
+				if y == 2025 {
+					c.Source = "datahub"
+				}
+				cs = append(cs, c)
 			}
 			return append(cs,
 				store.BathingClass{SiteID: "BG0000000000000001", Season: 2023, Quality: "good"},

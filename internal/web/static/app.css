@@ -631,6 +631,13 @@ strong, b { font-weight: var(--weight-emphasis); }
   .sea-panel p { margin-block-end: var(--space-1); }
   .sea-panel__badge { margin-block: var(--space-1); }
   .sea-panel .sea-key { margin-block-start: var(--space-1); }
+  /* Room for the two-line class badge of EEA data hub sites (Kavarna): at least 16px of slack on the 390x844 sheet. */
+  .sea-remarks { margin-block: var(--space-1) 0; }
+  .sea-panel__details { margin-block-end: 0; }
+  .sea-panel__chips { margin-block-end: 0; }
+  .sea-panel .sea-key { margin-block-start: 0; }
+  .sea-panel__h { margin-block-start: var(--space-1); }
+  .sea-panel .sea-panel__key, .sea-panel .sea-panel__fresh, .sea-panel .sea-seasons__ticks { margin-block-end: 0; }
 }
 @media (max-width: 672px) {
   .sea-details { inline-size: 100%; max-inline-size: none; block-size: 100%; max-block-size: none; border-radius: 0; }
