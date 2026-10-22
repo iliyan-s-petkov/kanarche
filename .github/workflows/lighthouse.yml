@@ -1,0 +1,32 @@
+name: lighthouse
+on:
+  # Monday 05:00 UTC. Lab data for SEO and performance trends.
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: '26'
+      # Installed into a temp dir so no package.json or lockfile touches the repo.
+      - name: install lhci
+        run: npm install --prefix "$RUNNER_TEMP/lhci" @lhci/cli@0.15.1
+      # Assertions are warn-level, so scores never fail the job.
+      - name: run lighthouse
+        run: |
+          "$RUNNER_TEMP/lhci/node_modules/.bin/lhci" autorun \
+            --config=.github/lighthouse/lighthouserc.json
+      # Upload even when lhci fails, e.g. a page is down.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
+        if: always()
+        with:
+          name: lighthouse-report
+          path: ./lhci
+          retention-days: 90
