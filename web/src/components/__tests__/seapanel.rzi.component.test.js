@@ -127,21 +127,15 @@ describe('SeaPanel RZI remarks', () => {
   const remark = 'Sample taken after heavy rain'
   const withRemark = (text = remark, source = 'rzi_varna') => withRZI({ samples: [{ ...rziRow, source, remarks: text }, { ...detail.samples[0], source: 'eea' }] })
 
-  it('shows the remark under its sample with a label, the date and the credit', () => {
+  it('shows the remark as one clamped line with label, date and full text and no credit', () => {
     const root = render(withRemark())
-    const item = root.querySelector('.sea-remark')
-    expect(item.querySelector('.sea-remark__label').textContent).toBe('RHI remark, Aug 12, 2026')
-    expect(item.querySelector('.sea-remark__text').textContent).toBe(remark)
-    expect(item.querySelector('.sea-remark__credit').textContent).toBe('Source: RHI Varna')
-  })
-
-  it('names the inspectorate of the sample in the credit', () => {
-    expect(render(withRemark(remark, 'rzi_burgas'), textsWith({ tSeaSourceRziBurgas: 'RHI Burgas' })).querySelector('.sea-remark__credit').textContent).toBe('Source: RHI Burgas')
-  })
-
-  it('ties the label to the text for assistive tech', () => {
-    const group = render(withRemark()).querySelector('.sea-remark [role="group"]')
-    expect(document.getElementById(group.getAttribute('aria-labelledby')).className).toBe('sea-remark__label')
+    const items = cardRemarks(root)
+    expect(items).toHaveLength(1)
+    expect(items[0].classList.contains('sea-remark--line')).toBe(true)
+    expect(items[0].textContent).toBe(`RHI remark, Aug 12, 2026: ${remark}`)
+    expect(items[0].getAttribute('title')).toBe(`RHI remark, Aug 12, 2026: ${remark}`)
+    expect(items[0].querySelector('.sea-remark__credit')).toBeNull()
+    expect(items[0].querySelector('p')).toBeNull()
   })
 
   it('renders nothing for a sample with no remark', () => {
@@ -159,24 +153,21 @@ describe('SeaPanel RZI remarks', () => {
     const root = render(withRemark(hostile))
     expect(root.querySelector('img')).toBeNull()
     expect(root.querySelector('.sea-remark b')).toBeNull()
-    expect(root.querySelector('.sea-remark__text').textContent).toBe(hostile)
+    expect(cardRemarks(root)[0].textContent).toContain(hostile)
   })
 
   it('shows only the newest remark when three samples carry one', () => {
     const root = render(withRZI({ samples: remarkedSamples3 }))
     const items = cardRemarks(root)
     expect(items).toHaveLength(1)
-    expect(items[0].querySelector('.sea-remark__label').textContent).toBe('RHI remark, Aug 12, 2026')
-    expect(items[0].querySelector('.sea-remark__text').textContent).toBe('Newest remark')
-    expect(items[0].querySelector('.sea-remark__credit').textContent).toBe('Source: RHI Varna')
+    expect(items[0].textContent).toBe('RHI remark, Aug 12, 2026: Newest remark')
   })
 
   it('shows the newest remark that exists when the newest sample has none', () => {
     const samples = [{ ...remarkedSamples3[0], remarks: '' }, remarkedSamples3[1], remarkedSamples3[2]]
     const items = cardRemarks(render(withRZI({ samples })))
     expect(items).toHaveLength(1)
-    expect(items[0].querySelector('.sea-remark__label').textContent).toBe('RHI remark, Aug 5, 2026')
-    expect(items[0].querySelector('.sea-remark__text').textContent).toBe('Middle remark')
+    expect(items[0].textContent).toBe('RHI remark, Aug 5, 2026: Middle remark')
   })
 
   it('shows no remark block when no sample has a remark', () => {

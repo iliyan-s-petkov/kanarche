@@ -556,6 +556,8 @@ strong, b { font-weight: var(--weight-emphasis); }
 .sea-remark__label, .sea-remark__credit { color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
 .sea-remark__label { font-weight: var(--weight-emphasis); }
 .sea-remark__text { white-space: pre-wrap; }
+/* The card shows the remark as one line. The full text stays in the DOM and the title. */
+.sea-remark--line { min-inline-size: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
 .sea-panel__details {
   inline-size: 100%; min-block-size: 44px; margin-block: var(--space-3) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--bg); color: var(--fg); font: inherit; font-weight: var(--weight-emphasis); cursor: pointer;

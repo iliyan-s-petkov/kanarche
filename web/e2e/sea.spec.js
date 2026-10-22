@@ -239,9 +239,10 @@ test('an RZI remark shows under the samples with its label and credit', async ({
   await page.mouse.click(pt.x, pt.y)
   const sheet = page.locator('.map-sea')
   await expect(sheet.locator('.sea-panel__title')).toHaveText('Remark Site')
-  await expect(sheet.locator('.sea-remark__label:not(dialog *)')).toContainText('RHI remark')
-  await expect(sheet.locator('.sea-remark__text:not(dialog *)')).toHaveText('Пробата е взета след пороен дъжд.')
-  await expect(sheet.locator('.sea-remark__credit:not(dialog *)')).toHaveText('Source: RHI Varna')
+  const line = sheet.locator('.sea-remark--line:not(dialog *)')
+  await expect(line).toContainText('RHI remark')
+  await expect(line).toContainText('Пробата е взета след пороен дъжд.')
+  await expect(sheet.locator('.sea-remark__credit:not(dialog *)')).toHaveCount(0)
   await context.close()
 })
 
@@ -260,20 +261,25 @@ for (const theme of ['light', 'dark']) {
     await page.mouse.click(pt.x, pt.y)
     const sheet = page.locator('.map-sea')
     await expect(sheet.locator('.sea-panel__title')).toHaveText('Бележка')
-    const blocks = sheet.locator('.sea-remark:not(dialog *)')
-    await expect(blocks).toHaveCount(1)
-    await expect(blocks.locator('.sea-remark__text')).toHaveText('Пробата е взета след пороен дъжд.')
+    await expect(sheet.locator('.sea-seasons--strip')).toBeVisible()
     const fit = await sheet.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }))
     expect(fit.scroll, JSON.stringify(fit)).toBeLessThanOrEqual(fit.client + 1)
+    const remarks = sheet.locator('.sea-remark')
+    const onCard = await remarks.evaluateAll((els) => els.filter((e) => !e.closest('dialog')).length)
+    expect(onCard).toBe(1)
+    const clip = await sheet.locator('.sea-remark--line').evaluateAll((els) => els.filter((e) => !e.closest('dialog')).map((e) => ({ sw: e.scrollWidth, cw: e.clientWidth, text: e.textContent })))
+    expect(clip).toHaveLength(1)
+    expect(clip[0].text).toContain('Пробата е взета след пороен дъжд.')
+    expect(clip[0].sw, JSON.stringify(clip[0])).toBeGreaterThan(clip[0].cw)
     const dir = process.env.E2E_SHOTS_DIR
-    if (dir) await page.screenshot({ path: `${dir}/card-390-bg-${theme}.png` })
+    if (dir) await sheet.screenshot({ path: `${dir}/card-390-bg-${theme}.png` })
 
     await sheet.locator('.sea-panel__details').click()
     const dialog = page.locator('dialog.sea-details')
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('#sea-panel-samples .sea-remark')).toHaveCount(3)
     await expect(dialog.locator('#sea-panel-samples .sea-remark__text')).toHaveText([
-      'Пробата е взета след пороен дъжд.',
+      /^Пробата е взета след пороен дъжд\. Водата/,
       'Втора бележка: водата е мътна след вълнение.',
       'Трета бележка: пробата е взета при силен вятър.',
     ])
