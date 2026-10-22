@@ -72,7 +72,15 @@ export function installAreaSensors({ map, el, cfg, onopen }) {
       lang: cfg.lang,
       onopen: open,
       // Shown only once this area's sensors are in, so a loading or adopted body never reads "(0)".
-      onready: () => { el.hidden = false },
+      // The server's static copy of the table gives way to the interactive one.
+      onready: () => {
+        const stat = el.querySelector('[data-area-sensors-static]')
+        const wasOpen = stat?.open
+        stat?.remove()
+        el.hidden = false
+        // A reader who opened the static copy keeps the table open.
+        if (wasOpen) queueMicrotask(() => { const d = el.querySelector('details.area-sensors'); if (d) d.open = true })
+      },
     },
   })
   return () => unmount(component)

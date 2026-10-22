@@ -198,6 +198,8 @@ type PageData struct {
 	AboutFAQ *FAQBlock
 	// AreaSensorDistricts is JSON {sensor id: district name} for the sensor table, "" outside Sofia.
 	AreaSensorDistricts string
+	// AreaStations is the same table as plain HTML for readers without JS, nil when the area has none.
+	AreaStations *StationList
 
 	TitleKey string
 	BodyKey  string

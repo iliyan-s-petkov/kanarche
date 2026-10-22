@@ -16,7 +16,7 @@ async function axeViolations(page, selector) {
 const VIEWPORTS = { desktop: { width: 1280, height: 800 }, phone: { width: 390, height: 844 } }
 const THEMES = ['light', 'dark']
 
-const table = (page) => page.locator('details.area-sensors')
+const table = (page) => page.locator('details.area-sensors:not([data-area-sensors-static])')
 const summary = (page) => table(page).locator('summary')
 const rowButton = (page, id) => table(page).getByRole('button', { name: `Show sensor ${id} on the map` })
 
