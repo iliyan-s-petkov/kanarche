@@ -22,5 +22,7 @@ export default defineConfig({
     baseURL: e2eEnv('BASE_URL'),
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // CI uses the runner image's Chrome, which ships with its system libraries, so
+  // no browser download or apt install. Local runs keep Playwright's Chromium.
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], ...(process.env.CI ? { channel: 'chrome' } : {}) } }],
 })

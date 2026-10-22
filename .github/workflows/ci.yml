@@ -169,9 +169,9 @@ jobs:
       # this is the one build in CI that opts in.
       - run: VITE_E2E_MAP_HANDLE=1 npm run build
         working-directory: web
-      - run: npx playwright install --with-deps chromium
-        working-directory: web
-        timeout-minutes: 10
+      # Playwright drives the image's preinstalled Chrome (channel 'chrome' in
+      # web/playwright.config.js), so there is no browser install step.
+      - run: google-chrome --version
       - run: go test -tags e2e -timeout 30m ./internal/e2e/
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: failure()
