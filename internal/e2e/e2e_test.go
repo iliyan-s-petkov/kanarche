@@ -268,6 +268,10 @@ func seedFixtures(t *testing.T, st *store.Store) {
 			for y := 2007; y <= 2025; y++ {
 				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000002", Season: y, Quality: "good"})
 			}
+			// Ten classified seasons for the remark site, so its card carries the season strip too.
+			for y := 2016; y <= 2025; y++ {
+				cs = append(cs, store.BathingClass{SiteID: "BG0000000000000003", Season: y, Quality: "good"})
+			}
 			return append(cs,
 				store.BathingClass{SiteID: "BG0000000000000001", Season: 2023, Quality: "good"},
 				store.BathingClass{SiteID: "BG0000000000000001", Season: 2024, Quality: "excellent"},
@@ -288,7 +292,9 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	rziFile := store.RZIFile{Source: "rzi_varna", URL: "https://example.org/rzi.pdf", SHA256: strings.Repeat("ab", 32), Bytes: 1, FetchedAt: now, ExtractorVersion: "e2e", Status: store.RZIStatusOK, RowsOK: 4}
 	rziSample := store.RZISample{SiteID: "BG0000000000000002", Date: staleDay, Season: staleDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml"}
 	remarkDay := remarkDates(now)[0]
-	remarkSample := store.RZISample{SiteID: "BG0000000000000003", Date: remarkDay, Season: remarkDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml", Remarks: "Пробата е взета след пороен дъжд."}
+	// Over 200 characters, so the one-line clamp has something to cut.
+	const longRemark = "Пробата е взета след пороен дъжд. Водата в района на плажа е мътна, на брега има нанесени водорасли и дребни отпадъци след бурното вълнение от предишната нощ, затова се препоръчва повторно вземане на проба."
+	remarkSample := store.RZISample{SiteID: "BG0000000000000003", Date: remarkDay, Season: remarkDay.Year(), EC: 20, IE: 10, Unit: "cfu/100ml", Remarks: longRemark}
 	// Two older samples with their own remarks: the card shows the newest remark only, Details lists all three.
 	olderRemarks := []store.RZISample{
 		{SiteID: "BG0000000000000003", Date: remarkDates(now)[1], Season: remarkDay.Year(), EC: 30, IE: 15, Unit: "cfu/100ml", Remarks: "Втора бележка: водата е мътна след вълнение."},

@@ -107,13 +107,8 @@
       {#if remarked.length}
         <ul class="sea-remarks">
           {#each remarked as s, i (`${s.date}-${s.source}-${i}`)}
-            <li class="sea-remark">
-              <div role="group" aria-labelledby={`sea-remark-${i}`}>
-                <p class="sea-remark__label" id={`sea-remark-${i}`}>{t.remark.label}, {formatDay(s.date, lang)}</p>
-                <p class="sea-remark__text">{s.remarks}</p>
-                <p class="sea-remark__credit">{fillSlots(t.remark.credit, { rhi: rhiName(t, s.source) })}</p>
-              </div>
-            </li>
+            {@const line = `${t.remark.label}, ${formatDay(s.date, lang)}: ${s.remarks}`}
+            <li class="sea-remark sea-remark--line" title={line}>{line}</li>
           {/each}
         </ul>
       {/if}
