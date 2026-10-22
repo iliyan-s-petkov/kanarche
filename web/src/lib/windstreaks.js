@@ -87,28 +87,42 @@ export function toUV(body) {
 }
 
 // idw blends u/v from the NEAREST closest vectors within REACH_KM; the third value is a 0..1 fade that is 1 within FULL_KM of a vector and 0 at REACH_KM. Null past REACH_KM.
+// Hot loop (one call per grid node, hundreds per rebuild): no per-call arrays, a latitude reject before the longitude math, and a running top-NEAREST instead of a sort.
 export function idw(vectors, lon, lat) {
   const kmLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180)
-  const near = []
+  const reach2 = REACH_KM * REACH_KM
+  // Sorted ascending by squared distance; earlier vectors win ties, as the stable sort they replace did.
+  const bestD = new Float64Array(NEAREST).fill(Infinity)
+  const best = new Array(NEAREST)
+  let count = 0
   for (const p of vectors) {
-    const dx = (p.lon - lon) * kmLon
     const dy = (p.lat - lat) * KM_PER_DEG
+    if (dy > REACH_KM || dy < -REACH_KM) continue
+    const dx = (p.lon - lon) * kmLon
     const d2 = dx * dx + dy * dy
-    if (d2 < REACH_KM * REACH_KM) near.push([d2, p])
+    if (d2 >= reach2 || d2 >= bestD[NEAREST - 1]) continue
+    let k = Math.min(count, NEAREST - 1)
+    while (k > 0 && bestD[k - 1] > d2) {
+      bestD[k] = bestD[k - 1]
+      best[k] = best[k - 1]
+      k--
+    }
+    bestD[k] = d2
+    best[k] = p
+    if (count < NEAREST) count++
   }
-  if (near.length === 0) return null
-  near.sort((a, b) => a[0] - b[0])
+  if (count === 0) return null
   let su = 0
   let sv = 0
   let sw = 0
-  for (const [d2, p] of near.slice(0, NEAREST)) {
+  for (let k = 0; k < count; k++) {
     // The +25 keeps a point sitting on a vector from ignoring every other one.
-    const w = 1 / (d2 + 25)
-    su += p.u * w
-    sv += p.v * w
+    const w = 1 / (bestD[k] + 25)
+    su += best[k].u * w
+    sv += best[k].v * w
     sw += w
   }
-  const fade = Math.min(1, (REACH_KM - Math.sqrt(near[0][0])) / (REACH_KM - FULL_KM))
+  const fade = Math.min(1, (REACH_KM - Math.sqrt(bestD[0])) / (REACH_KM - FULL_KM))
   return [su / sw, sv / sw, fade]
 }
 
