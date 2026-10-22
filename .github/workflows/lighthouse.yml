@@ -15,9 +15,9 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with:
           node-version: '26'
-      # Installed into a temp dir so no package.json or lockfile touches the repo.
+      # Installed into a temp dir so no package.json or lockfile touches the repo. No install scripts run.
       - name: install lhci
-        run: npm install --prefix "$RUNNER_TEMP/lhci" @lhci/cli@0.15.1
+        run: npm install --ignore-scripts --prefix "$RUNNER_TEMP/lhci" @lhci/cli@0.15.1
       # Assertions are warn-level, so scores never fail the job.
       - name: run lighthouse
         run: |
