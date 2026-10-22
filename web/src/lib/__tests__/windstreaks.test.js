@@ -156,3 +156,45 @@ describe('stepPx', () => {
     expect(stepPx(10, 16)).toBeGreaterThanOrEqual(4 * stepPx(2, 16))
   })
 })
+
+// The pre-optimisation idw, kept as the oracle: filter, stable sort, first four.
+function idwReference(vectors, lon, lat) {
+  const kmPerDeg = (Math.PI * 6371) / 180
+  const kmLon = kmPerDeg * Math.cos((lat * Math.PI) / 180)
+  const near = []
+  for (const p of vectors) {
+    const dx = (p.lon - lon) * kmLon
+    const dy = (p.lat - lat) * kmPerDeg
+    const d2 = dx * dx + dy * dy
+    if (d2 < WIND_REACH_KM * WIND_REACH_KM) near.push([d2, p])
+  }
+  if (near.length === 0) return null
+  near.sort((a, b) => a[0] - b[0])
+  let su = 0
+  let sv = 0
+  let sw = 0
+  for (const [d2, p] of near.slice(0, 4)) {
+    const w = 1 / (d2 + 25)
+    su += p.u * w
+    sv += p.v * w
+    sw += w
+  }
+  const fade = Math.min(1, (WIND_REACH_KM - Math.sqrt(near[0][0])) / (WIND_REACH_KM - WIND_FULL_KM))
+  return [su / sw, sv / sw, fade]
+}
+
+describe('idw matches the sort-based reference', () => {
+  it('agrees on scattered vectors at many query points', () => {
+    let seed = 7
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
+    const vectors = Array.from({ length: 120 }, () => ({ lon: 22 + rnd() * 6, lat: 41 + rnd() * 2.5, u: rnd() * 10 - 5, v: rnd() * 10 - 5 }))
+    for (let i = 0; i < 300; i++) {
+      const lon = 21.5 + rnd() * 7
+      const lat = 40.5 + rnd() * 3.5
+      const got = idw(vectors, lon, lat)
+      const want = idwReference(vectors, lon, lat)
+      if (want === null) expect(got).toBeNull()
+      else want.forEach((x, k) => expect(got[k]).toBeCloseTo(x, 9))
+    }
+  })
+})

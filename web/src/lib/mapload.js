@@ -55,12 +55,12 @@ import { openFavouriteSensor } from './favourite.js'
 import { installTimelapseLazy } from './timelapse-lazy.js'
 import { whenRenderSettled } from './idle.js'
 import { hexExtrusionPaint, installHexRise } from './hexrise.js'
+import { deferFirstOn } from './deferfirst.js'
 
 // Named rather than positional: windState and boundaryState are structurally
 // identical objects, so a transposed pair would be silent here and at runtime.
 export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundaryState, seaState = {}, pollenState = {}, onMoveEnd, subs }) {
-  // Resolved once the first data paint has run; the deferred wind start waits on it.
-  let windStarted = false
+  // Resolved once the first data paint has run; the deferred wind and outlines wait on it.
   let markDataPainted
   const dataPainted = new Promise((resolve) => { markDataPainted = resolve })
   map.on('load', async () => {
@@ -325,37 +325,26 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     // On by default (no defaultOff), so a first visit fetches the forecast.
     // A stored "on" is applied after the first data paint and an idle slot, so the wind fetch
     // and streaks bundle stay off the first render. A toggle in the meantime only changes what is applied then.
-    let windDeferred = false
-    let windWanted = true
+    // Both start after the first data paint and a render-settled slot, so their fetches and first draws
+    // do not share a frame with the readings. The outlines stay eager on an area page, where the province is fixed.
+    const afterFirstPaint = () => Promise.race([dataPainted, new Promise((r) => setTimeout(r, 8000))])
+      .then(() => whenRenderSettled(map))
     const windView = {
       id: 'wind',
       label: cfg.t.windToggle,
       // No needsMap: the arrows are this island's own source and layer, not the
       // basemap's, so they still draw on a map served without tiles.
-      apply: (on) => {
-        windWanted = on
-        if (windDeferred) return on
-        const first = !windStarted
-        windStarted = true
-        if (!on || !first) return setWind(map, cfg, chrome, windState, on)
-        windDeferred = true
-        Promise.race([dataPainted, new Promise((r) => setTimeout(r, 8000))])
-          .then(() => whenRenderSettled(map))
-          .then(() => {
-            windDeferred = false
-            return setWind(map, cfg, chrome, windState, windWanted)
-          })
-        return on
-      },
+      apply: deferFirstOn(afterFirstPaint, (on) => setWind(map, cfg, chrome, windState, on)),
     }
 
     // No defaultOff: the outlines are on unless the reader has switched them
     // off, because a province map with no provinces drawn on it is a claim the
     // page keeps making in words and never showing.
+    const applyBoundaries = (on) => setBoundaries(map, state, boundaryState, on)
     const boundaryView = {
       id: 'boundaries',
       label: cfg.t.viewBoundaries,
-      apply: (on) => setBoundaries(map, state, boundaryState, on),
+      apply: cfg.slug ? applyBoundaries : deferFirstOn(afterFirstPaint, applyBoundaries),
     }
 
     // One toggle per network, both on by default (no defaultOff).
