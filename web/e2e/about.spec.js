@@ -166,10 +166,22 @@ test('the about container grows to 96rem and paragraphs use its full width', asy
     const p = await box(page.locator(sel).first())
     expect(p.w).toBeGreaterThan(1200)
   }
-  // Below the cap it tracks the viewport.
+  // Below the cap the container and its paragraphs track the viewport.
   await page.setViewportSize({ width: 1280, height: 800 })
   const c2 = await box(page.locator('.about-page'))
   expect(c2.w / 1280).toBeGreaterThan(0.9)
+  for (const sel of ['.page-head > p', '#start > p']) {
+    const p = await box(page.locator(sel).first())
+    expect(p.w).toBeGreaterThan(1100)
+  }
+  // On a phone the same paragraphs wrap inside the screen.
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const sel of ['.page-head > p', '#start > p', '.about-steps p']) {
+    const p = await box(page.locator(sel).first())
+    expect(p.w).toBeLessThanOrEqual(390)
+    expect(p.h).toBeGreaterThan(30)
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await page.close()
 })
 
