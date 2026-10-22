@@ -1491,6 +1491,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     .frame:has(> .area-summary) { display: grid; grid-template-columns: minmax(0, 1fr); }
     /* The kit's margin-inline:auto makes a grid item shrink-to-fit the canvas; fill the track. */
     .frame:has(> .area-summary) > .map-shell { inline-size: 100%; }
+    /* Grid items keep their children's margins inside: 102px plus 24px above and 12px below. */
+    .frame:has(> .area-summary) > [data-island="sensorbar"] { min-block-size: 138px; }
   }
 
 
