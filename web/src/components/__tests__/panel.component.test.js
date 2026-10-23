@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, unmount } from 'svelte'
 import SensorPanel from '../SensorPanel.svelte'
+import Gauge from '../Gauge.svelte'
 import { needlePoint } from '../../lib/gauge.js'
 
 const scaledModel = {
@@ -16,6 +17,16 @@ const rows = [
   { metric: 'P2', label: 'PM2.5', value: 12.4, unit: 'µg/m³', missing: false, model: scaledModel },
   { metric: 'P1', label: 'PM10', value: null, unit: 'µg/m³', missing: true, model: missingModel },
 ]
+
+// Accessible name from content: aria-hidden subtrees skipped, direct children space-separated (the gauge is a grid).
+function nameFromContent(el) {
+  const text = (n) => {
+    if (n.nodeType === 3) return n.textContent
+    if (n.nodeType !== 1 || n.getAttribute('aria-hidden') === 'true' || n.tagName === 'svg') return ''
+    return [...n.childNodes].map(text).join('')
+  }
+  return [...el.children].map(text).join(' ').replace(/\s+/g, ' ').trim()
+}
 
 let component
 afterEach(() => { if (component) unmount(component) })
@@ -34,12 +45,35 @@ describe('SensorPanel.svelte spoken units', () => {
   afterEach(() => { document.head.innerHTML = '' })
 
   // The symbol stays on screen, the name a screen reader gets says it in words.
-  it('names the gauge with the spoken unit and keeps the symbol visible', () => {
+  it('names the gauge from its content in visual order and keeps the symbol visible', () => {
     document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
-    const target = render()
+    const target = render({ rows: [{ ...rows[0], band: 'good' }] })
     const gauge = target.querySelectorAll('.gauge')[0]
-    expect(gauge.getAttribute('aria-label')).toBe('PM2.5: 12.4 micrograms per cubic metre')
+    expect(gauge.tagName).toBe('BUTTON')
+    expect(gauge.hasAttribute('aria-label')).toBe(false)
+    const name = nameFromContent(gauge)
+    expect(name).toBe('12.4 micrograms per cubic metre PM2.5· good')
+    expect(name.startsWith('12.4')).toBe(true)
     expect(gauge.textContent).toContain('µg/m³')
+    expect(gauge.querySelector('.gauge__value [aria-hidden="true"]').textContent).toBe('µg/m³')
+  })
+
+  it('leaves the symbol readable when the unit has no spoken form', () => {
+    const gauge = render().querySelectorAll('.gauge')[0]
+    expect(gauge.querySelector('.gauge__value [aria-hidden]')).toBeNull()
+    expect(gauge.querySelector('.gauge__value .sr-only')).toBeNull()
+    expect(nameFromContent(gauge)).toBe('12.4 µg/m³ PM2.5')
+  })
+
+  it('keeps an author aria-label on the group variant', () => {
+    document.head.innerHTML = '<meta name="spoken-units" content=\'{"µg/m³":"micrograms per cubic metre"}\'>'
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const g = mount(Gauge, { target, props: { label: 'PM2.5', value: '12.4', unit: 'µg/m³', band: 'good' } })
+    const el = target.querySelector('.gauge')
+    expect(el.getAttribute('role')).toBe('group')
+    expect(el.getAttribute('aria-label')).toBe('PM2.5: 12.4 micrograms per cubic metre, good')
+    unmount(g)
   })
 })
 
@@ -48,7 +82,7 @@ describe('SensorPanel.svelte', () => {
     const target = render()
     const gauges = target.querySelectorAll('.gauge')
     expect(gauges.length).toBe(2)
-    expect(gauges[0].getAttribute('aria-label')).toBe('PM2.5: 12.4 µg/m³')
+    expect(gauges[0].hasAttribute('aria-label')).toBe(false)
     expect(gauges[0].textContent).toContain('PM2.5')
     expect(gauges[0].textContent).toContain('12.4')
     expect(gauges[0].textContent).toContain('µg/m³')
@@ -59,7 +93,8 @@ describe('SensorPanel.svelte', () => {
     const target = render()
     const missingGauge = target.querySelectorAll('.gauge')[1]
     expect(missingGauge.textContent).toContain('no reading')
-    expect(missingGauge.getAttribute('aria-label')).toBe('PM10: no reading')
+    expect(missingGauge.hasAttribute('aria-label')).toBe(false)
+    expect(nameFromContent(missingGauge)).toBe('no reading PM10')
   })
 
   it('omits the needle for a missing row', () => {

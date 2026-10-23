@@ -63,9 +63,9 @@ test.describe('phone sensor sheet', () => {
     const page = await phone.newPage()
     await page.goto('/area/sofia#sensor=101')
     await expect(page.locator('.sensor-panel')).toBeVisible({ timeout: 15000 })
-    const labels = await page.locator('.sensor-panel .gauge').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))
-    expect(labels.some((l) => /: \d+,\d/.test(l))).toBe(true)
-    expect(labels.some((l) => /: \d+\.\d/.test(l))).toBe(false)
+    const values = await page.locator('.sensor-panel .gauge__value').allInnerTexts()
+    expect(values.some((v) => /^\d+,\d/.test(v))).toBe(true)
+    expect(values.some((v) => /^\d+\.\d/.test(v))).toBe(false)
   })
 
   test('tapping a gauge selects the chart metric', async ({ phone }) => {
@@ -75,14 +75,14 @@ test.describe('phone sensor sheet', () => {
     expect(count).toBeGreaterThan(1)
     const pressedBefore = await page.locator('.sensor-panel button.gauge[aria-pressed="true"]').count()
     expect(pressedBefore).toBe(1)
-    const name = await page.locator('.sensor-panel button.gauge[aria-pressed="false"]').first().getAttribute('aria-label')
-    const other = page.locator(`.sensor-panel button.gauge[aria-label="${name}"]`)
+    const idx = (await gauges.evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed')))).indexOf('false')
+    expect(idx).toBeGreaterThanOrEqual(0)
+    const other = gauges.nth(idx)
     const requested = page.waitForRequest((r) => r.url().includes('/series?metric='))
     await other.tap()
     await requested
     await expect(other).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.sensor-panel button.gauge[aria-pressed="true"]')).toHaveCount(1)
-    expect(name).toBeTruthy()
   })
 
   test('the period control is a segmented control of 24h / 7d / 30d / 1y', async ({ phone }) => {
