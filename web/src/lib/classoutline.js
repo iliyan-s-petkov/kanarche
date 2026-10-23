@@ -2,6 +2,14 @@
 // Index is the band's position in the served table, best first; CSS px. Mirrored as --class-outline-N in both theme.css.
 export const CLASS_OUTLINE_PX = [0.75, 1.5, 2.25, 3, 3.75, 4.5]
 
+// Class 0 under prefers-contrast: more; mirrors the --class-outline-0 override in both theme.css.
+export const CONTRAST_CLASS_0_PX = 1
+
+// No matchMedia (jsdom) reads as no contrast preference.
+export function prefersMoreContrast() {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-contrast: more)').matches
+}
+
 const TOP = CLASS_OUTLINE_PX.length - 1
 
 // bandIndex(value, bands) -> the band a value falls in, or -1 with no reading.
@@ -19,7 +27,8 @@ export function classOutlineWidth(index) {
 // The same lookup as a MapLibre expression over the feature's `band`, plus `extra` px.
 export function classOutlineExpr(extra = 0) {
   const index = ['max', 0, ['min', TOP, ['to-number', ['coalesce', ['get', 'band'], 0]]]]
-  const width = ['at', index, ['literal', CLASS_OUTLINE_PX]]
+  const ladder = prefersMoreContrast() ? [CONTRAST_CLASS_0_PX, ...CLASS_OUTLINE_PX.slice(1)] : CLASS_OUTLINE_PX
+  const width = ['at', index, ['literal', ladder]]
   return extra ? ['+', width, extra] : width
 }
 

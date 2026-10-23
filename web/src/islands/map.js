@@ -392,6 +392,6 @@ export function mount(el) {
   return {
     map,
     chrome,
-    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); stopAreaSensors(); stopCategoryWatch(); tip.destroy() },
+    stop: () => { subs.unsubscribe?.(); subs.unprovide?.(); subs.unfilter?.(); subs.unfilterSource?.(); subs.unfilterFaulty?.(); subs.uncontrast?.(); unselect(); unprovidePin(); addressPin.clear(); stopNearby(); stopAreaSensors(); stopCategoryWatch(); tip.destroy() },
   }
 }

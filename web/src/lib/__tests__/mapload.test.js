@@ -18,8 +18,8 @@ const assigned = [...load.matchAll(/\bsubs\.(\w+)\s*=/g)].map((m) => m[1]).sort(
 const released = [...island.matchAll(/\bsubs\.(\w+)\?\.\(\)/g)].map((m) => m[1]).sort()
 
 describe('the load handler\'s teardown handles', () => {
-  it('assigns the five the island knows about', () => {
-    expect(assigned).toEqual(['unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe'])
+  it('assigns the six the island knows about', () => {
+    expect(assigned).toEqual(['uncontrast', 'unfilter', 'unfilterFaulty', 'unfilterSource', 'unprovide', 'unsubscribe'])
   })
 
   // A11Y-05: the basemap stays light in both themes, so the map outlines keep the dark ink and nothing repaints them.
