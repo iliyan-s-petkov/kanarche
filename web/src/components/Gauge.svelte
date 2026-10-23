@@ -5,7 +5,10 @@
 
   let { label, value, unit, band = '', model = { fraction: null, colour: null, stops: [] }, missing = false, onselect = null, pressed = false } = $props()
 
+  // The group variant has no content-derived name, so it keeps an author label.
   const ariaLabel = $derived(missing ? `${label}: ${value}` : `${label}: ${value} ${spokenUnit(unit)}${band ? `, ${band}` : ''}`)
+  const spoken = $derived(spokenUnit(unit))
+  const speak = $derived(spoken !== unit)
 </script>
 
 <svelte:element
@@ -15,7 +18,7 @@
   role={onselect ? undefined : 'group'}
   type={onselect ? 'button' : undefined}
   aria-pressed={onselect ? pressed : undefined}
-  aria-label={ariaLabel}
+  aria-label={onselect ? undefined : ariaLabel}
   onclick={onselect ?? undefined}
 >
   <svg class="gauge__svg" viewBox="0 0 100 60" aria-hidden="true" focusable="false">
@@ -38,6 +41,6 @@
       <circle class="gauge__pivot" cx="50" cy="50" r="3" />
     {/if}
   </svg>
-  <span class="gauge__value">{missing ? value : `${value} ${unit}`}</span>
+  <span class="gauge__value">{#if missing}{value}{:else}{value}{' '}<span aria-hidden={speak ? 'true' : undefined}>{unit}</span>{#if speak}<span class="sr-only"> {spoken}</span>{/if}{/if}</span>
   <span class="gauge__label">{label}{#if band && !missing}<span class="gauge__name"> · {band}</span>{/if}</span>
 </svelte:element>

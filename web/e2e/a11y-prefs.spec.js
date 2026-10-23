@@ -67,6 +67,17 @@ test('axe target-size: phone 390x844 dark with the sensor sheet open', async ({ 
   expect(found).toEqual([])
 })
 
+test('axe label-content-name-mismatch: gauge buttons match their visible text with the sensor panel open', async ({ deskCtx }) => {
+  const page = await deskCtx.newPage()
+  await openSensor(page, '/en/area/sofia#sensor=101')
+  await page.addScriptTag({ path: axeSource })
+  const found = await page.evaluate(async () => {
+    const r = await window.axe.run(document, { runOnly: { type: 'rule', values: ['label-content-name-mismatch'] } })
+    return r.violations.flatMap((v) => v.nodes.map((n) => n.target.join(' ')))
+  })
+  expect(found).toEqual([])
+})
+
 for (const [name, ctxName] of [['desktop', 'deskCtx'], ['phone', 'phoneCtx']]) {
   test(`every visible button is at least 24x24 on ${name} with a sensor open`, async ({ deskCtx, phoneCtx }) => {
     const page = await (ctxName === 'phoneCtx' ? phoneCtx : deskCtx).newPage()
