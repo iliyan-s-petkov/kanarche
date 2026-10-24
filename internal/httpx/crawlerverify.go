@@ -25,9 +25,9 @@ type DNSResolver interface {
 	LookupHost(ctx context.Context, host string) ([]string, error)
 }
 
-// Documented reverse DNS suffixes per crawler family.
+// Reverse DNS suffixes per crawler family. googleusercontent.com is left out: every Google Cloud VM has it.
 var crawlerDomains = map[string][]string{
-	"googlebot": {".googlebot.com", ".google.com", ".googleusercontent.com"},
+	"googlebot": {".googlebot.com", ".google.com"},
 	"bingbot":   {".search.msn.com"},
 }
 

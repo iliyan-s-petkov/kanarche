@@ -116,6 +116,17 @@ func TestSuffixLookalikePTRStaysLimited(t *testing.T) {
 	}
 }
 
+// Any Google Cloud VM reverse-resolves under googleusercontent.com, so that suffix proves nothing.
+func TestCloudVMPTRStaysLimited(t *testing.T) {
+	dns := &fakeDNS{
+		ptr: map[string][]string{crawlIP: {"77.113.0.203.bc.googleusercontent.com."}},
+		fwd: map[string][]string{"77.113.0.203.bc.googleusercontent.com": {crawlIP}},
+	}
+	if got := lastStatus(crawlerChain(t, dns), googleUA, crawlIP, 5); got != http.StatusTooManyRequests {
+		t.Fatalf("status = %d, want 429", got)
+	}
+}
+
 func TestMatchingPTRWithoutForwardConfirmationStaysLimited(t *testing.T) {
 	dns := &fakeDNS{
 		ptr: map[string][]string{crawlIP: {"crawl-1.googlebot.com."}},
