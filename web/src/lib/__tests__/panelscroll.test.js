@@ -1,17 +1,21 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createPanelScroll } from '../panelscroll.js'
 
-function env({ phone = true, panelTop = 917, scrollY = 0, full = false, reduce = false, narrow = false, wide = false, docked = false } = {}) {
+function env({ phone = true, panelTop = 917, scrollY = 0, full = false, reduce = false, narrow = false, wide = false, docked = false, dockTop = null } = {}) {
   const win = {
     scrollY, innerHeight: 873,
     matchMedia: (q) => ({
       matches: q.includes('min-width: 1024px') ? wide
         : q.includes('hover: none') || q.includes('max-width: 1023px') ? (phone || narrow) : q.includes('reduced-motion') ? reduce : false,
     }),
-    scrollTo: vi.fn(),
+    scrollTo: vi.fn(), scrollBy: vi.fn(),
   }
+  // The sticky masthead ends at 48px; dockTop is where the map dock's top edge sits.
+  const rect = { '.masthead': { top: 0, bottom: 48 }, '.map-dock': { top: dockTop, bottom: (dockTop ?? 0) + 338 } }
+  const ownerDocument = { querySelector: (sel) => (sel === '.map-dock' && dockTop === null ? null : rect[sel] && { getBoundingClientRect: () => rect[sel] }) }
   const panel = {
     getBoundingClientRect: () => ({ top: panelTop }), scrollIntoView: vi.fn(), focus: vi.fn(),
+    ownerDocument,
     closest: (sel) => (docked && sel === '.place-host--docked' ? {} : null),
   }
   const e = { win, panel, isFull: () => e.full, full }
@@ -62,6 +66,25 @@ describe('panel scroll', () => {
     const e = env({ wide: true, docked: true }); const s = createPanelScroll(e)
     s.opened({ initial: false })
     expect(e.panel.scrollIntoView).not.toHaveBeenCalled()
+    expect(s.closed()).toBe(false)
+  })
+  // Desktop: a sensor opened from the nearby list below a half-scrolled map leaves the dock's header under the masthead.
+  it('brings a docked card clipped by the masthead back under it', () => {
+    const e = env({ phone: false, wide: true, docked: true, dockTop: -22 }); const s = createPanelScroll(e)
+    s.opened({ initial: false })
+    expect(e.win.scrollBy).toHaveBeenCalledWith({ top: -22 - 48 - 8, behavior: 'smooth' })
+    expect(e.panel.scrollIntoView).not.toHaveBeenCalled()
+  })
+  it('returns to the remembered position after revealing a docked card', () => {
+    const e = env({ phone: false, wide: true, docked: true, dockTop: -22, scrollY: 476 }); const s = createPanelScroll(e)
+    s.opened({ initial: false })
+    expect(s.closed()).toBe(true)
+    expect(e.win.scrollTo).toHaveBeenCalledWith({ top: 476, behavior: 'smooth' })
+  })
+  it('leaves a docked card that clears the masthead where it is', () => {
+    const e = env({ phone: false, wide: true, docked: true, dockTop: 200 }); const s = createPanelScroll(e)
+    s.opened({ initial: false })
+    expect(e.win.scrollBy).not.toHaveBeenCalled()
     expect(s.closed()).toBe(false)
   })
   it('still scrolls on a wide touch screen where the section is shown', () => {

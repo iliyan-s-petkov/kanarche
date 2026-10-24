@@ -71,3 +71,35 @@ for (const viewport of ['desktop', 'phone']) {
     }
   }
 }
+
+// A sensor opened from the nearby list under a half-scrolled map: the dock must not slide under the masthead.
+test('axe target-size: the dock star clears the masthead after opening from the nearby list', async ({ deskCtx }) => {
+  const page = await deskCtx.newPage()
+  await mockWind(page)
+  const placed = page.waitForResponse(/\/api\/v1\/hexes/)
+  await page.goto('/en/')
+  await placed
+  await mapSettled(page)
+  await page.evaluate(() => document.querySelector('[data-island="map"]').__map.jumpTo({ center: [23.32, 42.69], zoom: 13 }))
+  await mapSettled(page)
+  await page.locator('details.nearby > summary').click()
+  await page.locator('details.nearby button.nearby__item').first().click()
+  const star = page.locator('.map-dock .panel-star')
+  await expect(star).toBeVisible({ timeout: 20000 })
+  // Let the smooth scroll finish before sampling.
+  await page.waitForTimeout(1200)
+  // Unobscured width and height of the star: points where it is the topmost element.
+  const clear = await star.evaluate((s) => {
+    const r = s.getBoundingClientRect()
+    let w = 0
+    let h = 0
+    for (let x = r.left + 1; x < r.right; x += 2) if (s.contains(document.elementFromPoint(x, r.top + r.height / 2))) w += 2
+    for (let y = r.top + 1; y < r.bottom; y += 2) if (s.contains(document.elementFromPoint(r.left + r.width / 2, y))) h += 2
+    return { w, h }
+  })
+  expect(clear.w).toBeGreaterThanOrEqual(24)
+  expect(clear.h).toBeGreaterThanOrEqual(24)
+  await page.addScriptTag({ path: axeSource })
+  expect(await violations(page)).toEqual([])
+  await page.close()
+})
