@@ -48,12 +48,14 @@ func probe(name string) {
 // "unattributed" otherwise, which would pool every client into one bucket. Chain
 // guarantees the ordering.
 func RateLimit(next http.Handler, l *ratelimit.Limiter) http.Handler {
-	return rateLimitSplit(next, l, nil)
+	return rateLimitSplit(next, l, nil, nil)
 }
 
 // rateLimitSplit sends /api/ requests to api and everything else to pages. A
 // nil pages falls back to api. The split is by path, never by User-Agent.
-func rateLimitSplit(next http.Handler, api, pages *ratelimit.Limiter) http.Handler {
+// A refused request from a DNS-verified Googlebot or Bingbot is let through;
+// a nil crawlers disables that, and the User-Agent alone never exempts.
+func rateLimitSplit(next http.Handler, api, pages *ratelimit.Limiter, crawlers *CrawlerVerifier) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		probe("rateLimit")
 		key := BucketKeyFrom(r.Context())
@@ -62,6 +64,9 @@ func rateLimitSplit(next http.Handler, api, pages *ratelimit.Limiter) http.Handl
 			l, group = pages, "pages"
 		}
 		ok, retryAfter := l.Allow(key)
+		if !ok && crawlers.Verified(r.Context(), r.UserAgent(), ClientIPFrom(r.Context())) {
+			ok = true
+		}
 		if !ok {
 			// Label by the route PATTERN, never the concrete path: the path is
 			// caller-controlled and would give the metric unbounded label
@@ -102,6 +107,10 @@ type Chain struct {
 	PageLimiter  *ratelimit.Limiter
 	MaxBodyBytes int64
 
+	// Crawlers exempts DNS-verified Googlebot and Bingbot from the limiters.
+	// Nil disables the exemption.
+	Crawlers *CrawlerVerifier
+
 	// CSP is the policy SecurityHeaders sets. Per-process rather than constant,
 	// because it is widened by the configured basemap host. Empty falls back to
 	// CSPValue.
@@ -130,7 +139,7 @@ type Chain struct {
 // api package's per-route handlers.
 func (c Chain) Wrap(h http.Handler) http.Handler {
 	h = LimitBody(h, c.MaxBodyBytes)
-	h = rateLimitSplit(h, c.Limiter, c.PageLimiter)
+	h = rateLimitSplit(h, c.Limiter, c.PageLimiter, c.Crawlers)
 	h = WithClientIP(h, c.Resolver)
 	h = SecurityHeaders(h, c.CSP, c.PermissionsPolicy)
 	h = Recover(h)
