@@ -119,3 +119,24 @@ func ogBoundaryAreas(t *testing.T, files ...string) []snapshot.AreaMeta {
 	}
 	return out
 }
+
+// TestAreaCardAltNamesTheArea: a page with its own card describes that card,
+// and a page without one keeps the generic alt.
+func TestAreaCardAltNamesTheArea(t *testing.T) {
+	snap := areaPageFixture(t)
+	snap.KnownSlugs["no-card-yet"] = snapshot.AreaMeta{Slug: "no-card-yet", Kind: "city", NameBG: "Тест", NameEN: "Test",
+		CentroidLon: 24, CentroidLat: 42, DefaultZoom: 11, Covered: true, SensorCount: 1}
+	rr := renderer(t, snap)
+	for _, c := range []struct{ path, want string }{
+		{"/area/plovdiv", "Пловдив на картата на качеството на въздуха Канарче"},
+		{"/en/area/plovdiv", "Plovdiv on the Kanarche air quality map"},
+		{"/area/no-card-yet", "Карта на качеството на въздуха в България, Канарче"},
+		{"/en/area/no-card-yet", "Air quality map of Bulgaria, Kanarche"},
+		{"/en/", "Air quality map of Bulgaria, Kanarche"},
+	} {
+		body := fetch(t, rr, c.path).Body.String()
+		if got := tagAttr(t, body, `<meta property="og:image:alt" content="`); got != c.want {
+			t.Errorf("%s: og:image:alt = %q, want %q", c.path, got, c.want)
+		}
+	}
+}

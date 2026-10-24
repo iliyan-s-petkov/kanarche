@@ -723,6 +723,14 @@ func (p PageData) OGImageURL() string {
 	return p.BaseURL + p.Static("social-preview.png")
 }
 
+// OGImageAlt describes whichever image OGImageURL picks: an area card names its area.
+func (p PageData) OGImageAlt() string {
+	if p.areaCard() != "" {
+		return strings.ReplaceAll(p.T("seo.card_alt"), "{name}", p.Area.Name)
+	}
+	return p.T("seo.image_alt")
+}
+
 // OGImageWidth and OGImageHeight are the pixel size of whichever image OGImageURL picks.
 func (p PageData) OGImageWidth() int {
 	if p.areaCard() != "" {
