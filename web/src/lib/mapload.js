@@ -32,7 +32,7 @@ import { emptyCollection } from './mapfeatures.js'
 import {
   markerMaxZoom, hexOutlinePaint, hexFillPaint, hexPointPaint,
   hexLabelPaint, layerPaint, NOT_OFFICIAL, officialLayout, officialPaint, labelLayout,
-  hexLabelLayout, hexLabelSize, labelPaint, MARKER_PIXEL_RATIO, NOT_FAULTY, IS_FAULTY, faultyPaint,
+  hexLabelLayout, hexLabelSize, labelPaint, MARKER_PIXEL_RATIO, NOT_FAULTY, IS_FAULTY, faultyPaint, followContrast,
 } from './mappaint.js'
 import { addBasemapOverlay } from './mapstyle.js'
 import { setWind, refreshWind } from './mapwind-lazy.js'
@@ -458,6 +458,7 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       refreshHexes(map, state, cfg)
     })
 
+    subs.uncontrast = followContrast(map, cfg)
     subs.unfilterFaulty = onShowFaultyChange(() => repaintSensors(map, state, cfg))
 
     subs.unfilterSource = onSourceChange(() => {
