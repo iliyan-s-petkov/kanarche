@@ -514,6 +514,7 @@
   "seo.home.description": "Live map of air pollution in Bulgaria: PM2.5 and PM10 from sensor.community citizen sensors, updated about every 5 minutes.",
   "seo.home.title": "Bulgaria air quality map: PM2.5 and PM10 now",
   "seo.image_alt": "Air quality map of Bulgaria, Kanarche",
+  "seo.card_alt": "{name} on the Kanarche air quality map",
   "seo.locale": "en_US",
   "seo.oblast.description": "Air quality in {inline}, Bulgaria: PM2.5 and PM10 from citizen sensors, with the province median and 24-hour history.",
   "seo.oblast.inline": "{name} Province",
