@@ -432,3 +432,21 @@ func TestAboutInvolvedBodyRendersInlineLinks(t *testing.T) {
 		})
 	}
 }
+
+// TestAboutMascotIsHighPriority. The mascot is the /about LCP element, so the
+// browser must fetch it ahead of other images.
+func TestAboutMascotIsHighPriority(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, path := range []string{"/about", "/en/about"} {
+		t.Run(path, func(t *testing.T) {
+			body := fetch(t, rr, path).Body.String()
+			tag := regexp.MustCompile(`<img class="about-mascot"[^>]*>`).FindString(body)
+			if tag == "" {
+				t.Fatal("no about-mascot img in the page")
+			}
+			if !strings.Contains(tag, `fetchpriority="high"`) {
+				t.Errorf("mascot img lacks fetchpriority=\"high\": %s", tag)
+			}
+		})
+	}
+}
