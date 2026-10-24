@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"math"
 	"net/http"
 	"net/url"
@@ -715,7 +716,55 @@ func (p PageData) BaseHost() string {
 // OGImageURL is the absolute URL of the static share-card image, built from
 // BaseURL rather than hard-coded, so it agrees with whatever host the
 // deployment is actually configured for.
-func (p PageData) OGImageURL() string { return p.BaseURL + p.Static("social-preview.png") }
+func (p PageData) OGImageURL() string {
+	if name := p.areaCard(); name != "" {
+		return p.BaseURL + p.Static(name)
+	}
+	return p.BaseURL + p.Static("social-preview.png")
+}
+
+// OGImageWidth and OGImageHeight are the pixel size of whichever image OGImageURL picks.
+func (p PageData) OGImageWidth() int {
+	if p.areaCard() != "" {
+		return ogCardWidth
+	}
+	return ogFallbackWidth
+}
+
+func (p PageData) OGImageHeight() int {
+	if p.areaCard() != "" {
+		return ogCardHeight
+	}
+	return ogFallbackHeight
+}
+
+const (
+	ogCardWidth, ogCardHeight         = 1200, 630
+	ogFallbackWidth, ogFallbackHeight = 1280, 640
+)
+
+// ogCards is the set of embedded og/<lang>/<slug>.png files, read once at startup.
+var ogCards = func() map[string]bool {
+	set := map[string]bool{}
+	_ = fs.WalkDir(staticFS, "static/og", func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			set[strings.TrimPrefix(p, "static/")] = true
+		}
+		return nil
+	})
+	return set
+}()
+
+// areaCard is the static name of this area page's own card, or "" when the page has none.
+func (p PageData) areaCard() string {
+	if p.Area == nil {
+		return ""
+	}
+	if name := "og/" + p.Lang + "/" + p.Area.Slug + ".png"; ogCards[name] {
+		return name
+	}
+	return ""
+}
 
 // OGLocale is this page's og:locale, in the seo.locale key's og-style form
 // ("bg_BG", not "bg").

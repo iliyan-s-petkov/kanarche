@@ -46,14 +46,19 @@ func TestOpenGraphTagsOnIndexablePages(t *testing.T) {
 		}
 
 		ogImage := tagAttr(t, body, `<meta property="og:image" content="`)
-		if !strings.HasPrefix(ogImage, "https://airbg.org/static/social-preview.png") {
-			t.Errorf("%s: og:image = %q, want an absolute https://airbg.org/static/social-preview.png URL", path, ogImage)
+		// Area pages carry their own 1200x630 card, every other page the shared preview.
+		wantImage, wantW, wantH := "https://airbg.org/static/social-preview.png", "1280", "640"
+		if strings.Contains(path, "/area/") {
+			wantImage, wantW, wantH = "https://airbg.org/static/og/", "1200", "630"
 		}
-		if !hasMarker(body, `<meta property="og:image:width" content="1280">`) {
-			t.Errorf("%s: og:image:width != 1280", path)
+		if !strings.HasPrefix(ogImage, wantImage) {
+			t.Errorf("%s: og:image = %q, want an absolute %s URL", path, ogImage, wantImage)
 		}
-		if !hasMarker(body, `<meta property="og:image:height" content="640">`) {
-			t.Errorf("%s: og:image:height != 640", path)
+		if !hasMarker(body, `<meta property="og:image:width" content="`+wantW+`">`) {
+			t.Errorf("%s: og:image:width != %s", path, wantW)
+		}
+		if !hasMarker(body, `<meta property="og:image:height" content="`+wantH+`">`) {
+			t.Errorf("%s: og:image:height != %s", path, wantH)
 		}
 		if tagAttr(t, body, `<meta property="og:image:alt" content="`) == "" {
 			t.Errorf("%s: og:image:alt is empty", path)
