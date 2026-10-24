@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { expression } from '@maplibre/maplibre-gl-style-spec'
 import {
   CLASS_OUTLINE_PX, bandIndex, classOutlineWidth, classOutlineExpr,
-  outlineSwatch,
+  outlineSwatch, CONTRAST_CLASS_0_PX, prefersMoreContrast,
 } from '../classoutline.js'
 import { hexOutlinePaint, hexPointPaint, layerPaint, officialPaint } from '../mappaint.js'
 
@@ -147,4 +147,36 @@ describe('outline ink', () => {
     ]).toEqual(['#161616', '#161616', '#161616', '#161616'])
   })
 
+})
+
+// Under prefers-contrast: more the CSS sets --class-outline-0 to 1px, so the map draws class 0 the same.
+describe('high-contrast class 0', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const stubContrast = (matches) => vi.stubGlobal('matchMedia', (q) => ({ matches: matches && q === '(prefers-contrast: more)' }))
+
+  it('is 1px in both theme.css overrides', () => {
+    expect(CONTRAST_CLASS_0_PX).toBe(1)
+    for (const path of ['../internal/web/static/theme.css', 'src/styles/theme.css']) {
+      expect(readFileSync(path, 'utf8')).toMatch(new RegExp(`prefers-contrast: more[^@]*--class-outline-0:\\s*${CONTRAST_CLASS_0_PX}px;`))
+    }
+  })
+
+  it('draws class 0 at 1px when the preference is on, others unchanged', () => {
+    stubContrast(true)
+    expect(prefersMoreContrast()).toBe(true)
+    expect(evalWidth(classOutlineExpr(), 0)).toBe(1)
+    expect(evalWidth(classOutlineExpr(), 1)).toBe(CLASS_OUTLINE_PX[1])
+  })
+
+  it('draws class 0 at 0.75px when the preference is off', () => {
+    stubContrast(false)
+    expect(evalWidth(classOutlineExpr(), 0)).toBe(0.75)
+  })
+
+  it('reads as no contrast preference without matchMedia', () => {
+    vi.stubGlobal('matchMedia', undefined)
+    expect(prefersMoreContrast()).toBe(false)
+    expect(evalWidth(classOutlineExpr(), 0)).toBe(0.75)
+  })
 })

@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   bandsFor, hexOutlinePaint, markerMaxZoom, layerPaint, markerPaint, officialLayout, officialPaint,
   hexLabelPaint, hexPointPaint, CARRIED_OPACITY, FRESH_OPACITY, SETTLING_OPACITY,
-  setCellValues, applyMarkerZoomRange,
+  setCellValues, applyMarkerZoomRange, followContrast,
 } from '../mappaint.js'
 import { classOutlineExpr } from '../classoutline.js'
 import { DIAMOND_RADIUS_PX } from '../markericon.js'
 import { GRID_MIN_ZOOM_FRACTIONAL, POINT_TIER_MIN_ZOOM_FRACTIONAL } from '../hexes.js'
-import { HEX_LABEL_LAYER_ID, LABEL_LAYER_ID } from '../mapids.js'
+import { HEX_LABEL_LAYER_ID, LABEL_LAYER_ID, HEX_OUTLINE_LAYER_ID, HEX_POINT_LAYER_ID, LAYER_ID, OFFICIAL_LAYER_ID } from '../mapids.js'
 
 // bandsFor: matching by `metric` field, not array position, so a reordered
 // /api/v1/scales response cannot silently recolour the map with the wrong
@@ -268,5 +268,45 @@ describe('hexLabelPaint', () => {
   it('keeps the colour and halo the measured labels use', () => {
     expect(hexLabelPaint(cfg)['text-color']).toBe('#222')
     expect(hexLabelPaint(cfg)['text-halo-color']).toBe('#fff')
+  })
+})
+
+describe('followContrast', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function fakeQuery() {
+    const q = { matches: false, listener: null }
+    q.addEventListener = (type, fn) => { if (type === 'change') q.listener = fn }
+    q.removeEventListener = (type, fn) => { if (type === 'change' && q.listener === fn) q.listener = null }
+    return q
+  }
+
+  it('re-applies every class outline width when the preference changes', () => {
+    const q = fakeQuery()
+    vi.stubGlobal('matchMedia', () => q)
+    const map = { setPaintProperty: vi.fn() }
+    const cfg = { labelColour: '#161616' }
+    followContrast(map, cfg)
+    expect(map.setPaintProperty).not.toHaveBeenCalled()
+    q.matches = true
+    q.listener()
+    const set = map.setPaintProperty.mock.calls
+    expect(set.map((c) => c.slice(0, 2))).toEqual([
+      [HEX_OUTLINE_LAYER_ID, 'line-width'],
+      [HEX_POINT_LAYER_ID, 'circle-stroke-width'],
+      [LAYER_ID, 'circle-stroke-width'],
+      [OFFICIAL_LAYER_ID, 'icon-halo-width'],
+    ])
+    expect(set[2][2]).toEqual(layerPaint(cfg)['circle-stroke-width'])
+    expect(JSON.stringify(set[2][2])).toContain('[1,1.5')
+  })
+
+  it('stops listening when released, and tolerates a missing matchMedia', () => {
+    const q = fakeQuery()
+    vi.stubGlobal('matchMedia', () => q)
+    followContrast({ setPaintProperty: vi.fn() }, {})()
+    expect(q.listener).toBeNull()
+    vi.stubGlobal('matchMedia', undefined)
+    expect(() => followContrast({ setPaintProperty: vi.fn() }, {})()).not.toThrow()
   })
 })

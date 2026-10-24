@@ -6,6 +6,7 @@ import {
 } from './hexes.js'
 import {
   OFFICIAL_IMAGE_ID, HEX_LABEL_LAYER_ID, LAYER_ID, OFFICIAL_LAYER_ID, LABEL_LAYER_ID, FAULTY_LAYER_ID,
+  HEX_OUTLINE_LAYER_ID, HEX_POINT_LAYER_ID,
 } from './mapids.js'
 import { MAX_ZOOM_CEILING } from './mapconfig.js'
 import { classOutlineExpr } from './classoutline.js'
@@ -236,6 +237,20 @@ export function officialPaint(cfg) {
     'icon-halo-color': cfg.labelColour,
     'icon-halo-width': classOutlineExpr(),
   }
+}
+
+// followContrast re-applies the class outline widths when prefers-contrast changes; returns the release.
+export function followContrast(map, cfg) {
+  const query = typeof matchMedia === 'function' ? matchMedia('(prefers-contrast: more)') : null
+  if (!query?.addEventListener) return () => {}
+  const apply = () => {
+    map.setPaintProperty(HEX_OUTLINE_LAYER_ID, 'line-width', hexOutlinePaint(cfg)['line-width'])
+    map.setPaintProperty(HEX_POINT_LAYER_ID, 'circle-stroke-width', hexPointPaint(cfg)['circle-stroke-width'])
+    map.setPaintProperty(LAYER_ID, 'circle-stroke-width', layerPaint(cfg)['circle-stroke-width'])
+    map.setPaintProperty(OFFICIAL_LAYER_ID, 'icon-halo-width', officialPaint(cfg)['icon-halo-width'])
+  }
+  query.addEventListener('change', apply)
+  return () => query.removeEventListener('change', apply)
 }
 
 // labelLayout and labelPaint are the symbol layer that prints each area's
