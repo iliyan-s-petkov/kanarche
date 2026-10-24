@@ -523,6 +523,28 @@ func TestPageRevalidatesAgainstItsETag(t *testing.T) {
 	}
 }
 
+// A HEAD carries the same ETag as the GET, no body, and 304s on a match.
+func TestPageHeadCarriesETag(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	etag := fetch(t, rr, "/area/sofia").Header().Get("ETag")
+
+	req := httptest.NewRequest(http.MethodHead, "/area/sofia", nil)
+	rec := httptest.NewRecorder()
+	rr.Routes().ServeHTTP(rec, req)
+	// The recorder does not strip a HEAD body the way net/http does, so only status and tag are checked.
+	if rec.Code != http.StatusOK || rec.Header().Get("ETag") != etag {
+		t.Errorf("HEAD: status %d etag %q, want 200 %s", rec.Code, rec.Header().Get("ETag"), etag)
+	}
+
+	req = httptest.NewRequest(http.MethodHead, "/area/sofia", nil)
+	req.Header.Set("If-None-Match", etag)
+	rec = httptest.NewRecorder()
+	rr.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotModified {
+		t.Errorf("HEAD with matching If-None-Match -> %d, want 304", rec.Code)
+	}
+}
+
 // TestMapIslandCarriesItsConfiguration. The island reads all of this from
 // data-* attributes because the CSP forbids an inline script; a missing
 // attribute is a map that silently falls back to a default nobody chose.
