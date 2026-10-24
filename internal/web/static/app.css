@@ -497,6 +497,8 @@ strong, b { font-weight: var(--weight-emphasis); }
    button's width plus its gutter, so the (i) ends up beside it — info on the
    left, find-me on the right — rather than under it. */
 .maplibregl-ctrl-bottom-right { margin-inline-end: 2.5rem; }
+/* Attribution links sit in running text: underline them (axe link-in-text-block). Two classes beat the stock none. */
+.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner a { text-decoration: underline; }
 /* The forecast disclosure. Never behind a control and never a tooltip: it is
    the whole reason the layer is allowed on a map of measurements. Its control
    is a checkbox in the layers menu, so this corner holds only .map-locate. */

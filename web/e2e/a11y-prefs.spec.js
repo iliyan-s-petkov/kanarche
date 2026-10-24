@@ -78,6 +78,23 @@ test('axe label-content-name-mismatch: gauge buttons match their visible text wi
   expect(found).toEqual([])
 })
 
+test('axe link-in-text-block: the expanded attribution links are underlined on desktop', async ({ deskCtx }) => {
+  const page = await deskCtx.newPage()
+  await page.goto('/en/')
+  await mapSettled(page)
+  await page.locator('.maplibregl-ctrl-attrib-button').click()
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toHaveClass(/maplibregl-compact-show/)
+  const link = page.locator('.maplibregl-ctrl-attrib-inner a').first()
+  await expect(link).toBeVisible()
+  expect(await link.evaluate((a) => getComputedStyle(a).textDecorationLine)).toContain('underline')
+  await page.addScriptTag({ path: axeSource })
+  const found = await page.evaluate(async () => {
+    const r = await window.axe.run('.maplibregl-ctrl-attrib', { runOnly: { type: 'rule', values: ['link-in-text-block'] } })
+    return r.violations.flatMap((v) => v.nodes.map((n) => n.target.join(' ')))
+  })
+  expect(found).toEqual([])
+})
+
 for (const [name, ctxName] of [['desktop', 'deskCtx'], ['phone', 'phoneCtx']]) {
   test(`every visible button is at least 24x24 on ${name} with a sensor open`, async ({ deskCtx, phoneCtx }) => {
     const page = await (ctxName === 'phoneCtx' ? phoneCtx : deskCtx).newPage()
