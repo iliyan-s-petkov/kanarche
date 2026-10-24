@@ -168,6 +168,7 @@ func New(opts Options) (*Server, error) {
 		Limiter:           limiter,
 		PageLimiter:       pageLimiter,
 		MaxBodyBytes:      maxBodyBytes,
+		Crawlers:          httpx.NewCrawlerVerifier(net.DefaultResolver),
 		CSP:               opts.Config.Listen.CSP,
 		PermissionsPolicy: opts.Config.Listen.PermissionsPolicy,
 	}
