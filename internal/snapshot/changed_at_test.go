@@ -3,50 +3,52 @@ package snapshot
 import (
 	"testing"
 	"time"
+
+	"kanarche.eu/internal/store"
 )
 
-func TestCarryChangedAt(t *testing.T) {
+func persisted(stamps ...store.AreaChange) map[string]store.AreaChange {
+	m := map[string]store.AreaChange{}
+	for _, s := range stamps {
+		m[s.Slug] = s
+	}
+	return m
+}
+
+// A fresh process has only what the database kept, so passing the stored
+// stamps back in is a restart.
+func TestChangeStampSurvivesRestart(t *testing.T) {
 	t0 := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
-	t1 := t0.Add(time.Hour)
-	meta := AreaMeta{Slug: "a", SensorCount: 3, Values: map[string]float64{"pm25": 10}}
-	prevMeta := meta
-	prevMeta.ChangedAt = t0
-	prev := &Snapshot{KnownSlugs: map[string]AreaMeta{"a": prevMeta}}
+	t1 := t0.Add(48 * time.Hour)
+	meta := AreaMeta{Slug: "a", Covered: true, SensorCount: 3, Values: map[string]float64{"pm25": 10.2}}
 
-	if got := carryChangedAt(prev, meta, t1); !got.Equal(t0) {
-		t.Errorf("unchanged data: got %v, want carried %v", got, t0)
+	first := changeStamp(persisted(), meta, t0)
+	if !first.ChangedAt.Equal(t0) {
+		t.Fatalf("new area: got %v, want now %v", first.ChangedAt, t0)
 	}
+	stored := persisted(first)
 
-	changed := meta
-	changed.Values = map[string]float64{"pm25": 11}
-	if got := carryChangedAt(prev, changed, t1); !got.Equal(t1) {
-		t.Errorf("changed value: got %v, want now %v", got, t1)
-	}
-
-	moreSensors := meta
-	moreSensors.SensorCount = 4
-	if got := carryChangedAt(prev, moreSensors, t1); !got.Equal(t1) {
-		t.Errorf("changed sensor count: got %v, want now %v", got, t1)
+	same := meta
+	same.Values = map[string]float64{"pm25": 10.4}
+	same.SensorCount = 4
+	if got := changeStamp(stored, same, t1); !got.ChangedAt.Equal(t0) {
+		t.Errorf("sub-display drift after restart: got %v, want kept %v", got.ChangedAt, t0)
 	}
 
 	for name, mut := range map[string]func(*AreaMeta){
+		"value":   func(m *AreaMeta) { m.Values = map[string]float64{"pm25": 12.0} },
+		"metric":  func(m *AreaMeta) { m.Values = map[string]float64{"pm25": 10.2, "pm10": 20} },
 		"name_bg": func(m *AreaMeta) { m.NameBG = "x" },
 		"name_en": func(m *AreaMeta) { m.NameEN = "x" },
 		"parent":  func(m *AreaMeta) { m.ParentSlug = "p" },
 		"kind":    func(m *AreaMeta) { m.Kind = "city" },
+		"covered": func(m *AreaMeta) { m.Covered = false },
 		"day":     func(m *AreaMeta) { m.Day = &DayRange{Min: 1, Max: 2, Buckets: 80} },
 	} {
 		m := meta
 		mut(&m)
-		if got := carryChangedAt(prev, m, t1); !got.Equal(t1) {
-			t.Errorf("changed %s: got %v, want now %v", name, got, t1)
+		if got := changeStamp(stored, m, t1); !got.ChangedAt.Equal(t1) {
+			t.Errorf("changed %s: got %v, want now %v", name, got.ChangedAt, t1)
 		}
-	}
-
-	if got := carryChangedAt(nil, meta, t1); !got.IsZero() {
-		t.Errorf("no previous snapshot: got %v, want zero (unknown)", got)
-	}
-	if got := carryChangedAt(&Snapshot{}, meta, t1); !got.IsZero() {
-		t.Errorf("area absent from previous: got %v, want zero", got)
 	}
 }

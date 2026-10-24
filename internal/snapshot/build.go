@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"reflect"
+	"sort"
 	"time"
 
 	"kanarche.eu/internal/store"
@@ -220,8 +220,19 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 	if err != nil {
 		return nil, fmt.Errorf("snapshot: area series counts: %w", err)
 	}
-	if err := buildSensors(snap, h, sensors, seriesBySlug, counts, s.CoverageThreshold(), now); err != nil {
+	// The stamps outlive the process; without them every restart forgets when an
+	// area last changed. A read failure leaves ChangedAt unknown, not wrong.
+	stamps, err := s.AreaChanges(ctx)
+	if err != nil {
+		slog.Warn("snapshot: area change times unavailable", "error", err)
+		stamps = nil
+	}
+	changed, err := buildSensors(snap, h, sensors, seriesBySlug, counts, s.CoverageThreshold(), stamps, now)
+	if err != nil {
 		return nil, err
+	}
+	if err := s.SaveAreaChanges(ctx, changed); err != nil {
+		slog.Warn("snapshot: area change times not saved", "error", err)
 	}
 
 	// The animation history extends the snapshot currently being served, which
@@ -364,7 +375,7 @@ func minDayBuckets(bucket time.Duration) int {
 // sensor list and series. It is handed the readings rather than querying for
 // its own: a second fetch would let this view and the grid's disagree about
 // what "now" means.
-func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seriesBySlug map[string][]store.Point, counts map[string]map[time.Time]int, coverageThreshold int, now time.Time) error {
+func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seriesBySlug map[string][]store.Point, counts map[string]map[time.Time]int, coverageThreshold int, stamps map[string]store.AreaChange, now time.Time) ([]store.AreaChange, error) {
 	// Group sensors by area. A sensor in three nested areas appears in three
 	// entries; that is correct, since each is a separate response.
 	bySlug := make(map[string][]store.SensorReading, len(snap.KnownSlugs))
@@ -374,19 +385,20 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 		}
 	}
 	floor := minDayBuckets(h.bucket)
+	var changed []store.AreaChange
 	// Iterate the known areas, not bySlug, so every existing area gets an
 	// entry — including empty ones. See TestBuildIncludesEmptyAreasInAreaSensors.
 	for slug, meta := range snap.KnownSlugs {
 		body, err := encode(sensorPayloadFrom(now, bySlug[slug]))
 		if err != nil {
-			return fmt.Errorf("snapshot: encode sensors for %q: %w", slug, err)
+			return nil, fmt.Errorf("snapshot: encode sensors for %q: %w", slug, err)
 		}
 		snap.AreaSensors[slug] = body
 
 		points := seriesBySlug[slug]
 		seriesBody, err := encode(seriesPayloadFrom(slug, h.metric, points))
 		if err != nil {
-			return fmt.Errorf("snapshot: encode series for %q: %w", slug, err)
+			return nil, fmt.Errorf("snapshot: encode series for %q: %w", slug, err)
 		}
 		snap.AreaSeries[slug] = seriesBody
 
@@ -396,11 +408,17 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 			}
 		}
 		// After Day is set, so the 24h range counts as part of what the page shows.
-		meta.ChangedAt = carryChangedAt(h.Load(), meta, now)
+		if stamps != nil {
+			stamp := changeStamp(stamps, meta, now)
+			meta.ChangedAt = stamp.ChangedAt
+			if old, ok := stamps[slug]; !ok || old.Fingerprint != stamp.Fingerprint {
+				changed = append(changed, stamp)
+			}
+		}
 		snap.KnownSlugs[slug] = meta
 	}
 	snap.SensorLocations = sensorLocationsFrom(sensors, snap.KnownSlugs)
-	return nil
+	return changed, nil
 }
 
 // buildDayRange is the 24h min/max of one area's median series, ignoring any
@@ -676,25 +694,48 @@ func zeroGeneratedAt(payload canonicalisable) any {
 	return payload.withoutGeneratedAt()
 }
 
-// carryChangedAt keeps the previous snapshot's change time while the area's
-// figures are identical, and stamps now once they differ. With no previous
-// snapshot, or none for this area, nothing is known and the time stays zero.
-func carryChangedAt(prev *Snapshot, meta AreaMeta, now time.Time) time.Time {
-	if prev == nil {
-		return time.Time{}
+// changeStamp returns the area's change stamp: the stored time while the
+// fingerprint of what the page shows is unchanged, now once it differs or the
+// area has no stamp yet.
+func changeStamp(stamps map[string]store.AreaChange, meta AreaMeta, now time.Time) store.AreaChange {
+	fp := fingerprint(meta)
+	if old, ok := stamps[meta.Slug]; ok && old.Fingerprint == fp {
+		return old
 	}
-	old, ok := prev.KnownSlugs[meta.Slug]
-	if !ok {
-		return time.Time{}
+	return store.AreaChange{Slug: meta.Slug, Fingerprint: fp, ChangedAt: now}
+}
+
+// fingerprint hashes the page content at display precision. Values are whole
+// numbers and the sensor count is left out, so a median wobbling by tenths
+// every cycle does not count as the page changing.
+func fingerprint(meta AreaMeta) string {
+	type content struct {
+		Slug, Kind, NameBG, NameEN, ParentSlug, Source string
+		Covered                                        bool
+		Values                                         map[string]float64
+		Sources                                        []string
+		DayMin, DayMax                                 *float64
 	}
-	// Everything AreaMeta carries is page content (Values are the medians, Day
-	// the 24h range, the rest names and links), so any difference is a change.
-	// ChangedAt itself is excluded from the comparison.
-	old.ChangedAt, meta.ChangedAt = time.Time{}, time.Time{}
-	if reflect.DeepEqual(old, meta) {
-		return prev.KnownSlugs[meta.Slug].ChangedAt
+	c := content{
+		Slug: meta.Slug, Kind: meta.Kind, NameBG: meta.NameBG, NameEN: meta.NameEN,
+		ParentSlug: meta.ParentSlug, Source: meta.Source, Covered: meta.Covered,
+		Values: make(map[string]float64, len(meta.Values)),
 	}
-	return now
+	for m, v := range meta.Values {
+		c.Values[m] = math.Round(v)
+	}
+	for src := range meta.BySource {
+		c.Sources = append(c.Sources, src)
+	}
+	sort.Strings(c.Sources)
+	if meta.Day != nil {
+		lo, hi := math.Round(meta.Day.Min), math.Round(meta.Day.Max)
+		c.DayMin, c.DayMax = &lo, &hi
+	}
+	// Marshal sorts map keys, so the encoding is stable.
+	raw, _ := json.Marshal(c)
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
 }
 
 // roundSensorPositions is the one place served sensor positions are rounded,
