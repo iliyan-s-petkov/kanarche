@@ -7,6 +7,14 @@ around it or goose splits it on the semicolons inside.
 The reasoning behind a migration lives here, not in the file. Numbers below are
 the ones documented so far.
 
+## 00021 — `area_change`
+
+When each area's page content last changed, for the sitemap lastmod. The row
+holds a fingerprint of what the page shows (whole-number values, names, parent)
+and the time it was first seen. Kept in the database because an in-memory time
+resets on every restart and deploy. Rows appear on the first snapshot build
+after the migration, so no backfill.
+
 ## 00018 — `bathing_rzi_file`, `bathing_rzi_sample`
 
 Current-season results from the regional health inspectorates (OpenProject
