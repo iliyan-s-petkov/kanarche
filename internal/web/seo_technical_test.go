@@ -82,8 +82,8 @@ func TestFaviconICORedirectsToTheSVG(t *testing.T) {
 }
 
 // lastmod is the snapshot day for the home and the directory; an area carries
-// its own change day, none when unknown (see seo_alias_lastmod_test.go). Static pages and areas without
-// data carry none, rather than a date nothing supports.
+// its own change day, none when unknown (see seo_alias_lastmod_test.go). Static pages carry
+// the fixed release date.
 func TestSitemapLastModOnlyWhereDataSupportsIt(t *testing.T) {
 	doc := fetchSitemap(t)
 	want := map[string]string{
@@ -91,10 +91,10 @@ func TestSitemapLastModOnlyWhereDataSupportsIt(t *testing.T) {
 		"https://airbg.org/areas":             "2026-08-09",
 		"https://airbg.org/area/sofia":        "",
 		"https://airbg.org/en/area/sofia":     "",
-		"https://airbg.org/about":             "",
-		"https://airbg.org/about-the-data":    "",
-		"https://airbg.org/en/about":          "",
-		"https://airbg.org/en/about-the-data": "",
+		"https://airbg.org/about":             "2026-10-25",
+		"https://airbg.org/about-the-data":    "2026-10-25",
+		"https://airbg.org/en/about":          "2026-10-25",
+		"https://airbg.org/en/about-the-data": "2026-10-25",
 	}
 	seen := 0
 	for _, u := range doc.URLs {
