@@ -44,13 +44,13 @@ func faqVisible(t *testing.T, body string) []faqEntry {
 	return out
 }
 
-func TestFAQRendersSevenQuestionsInBothLanguages(t *testing.T) {
+func TestFAQRendersElevenQuestionsInBothLanguages(t *testing.T) {
 	rr := renderer(t, eeaFixture(t))
 	for _, path := range []string{"/area/plovdiv", "/en/area/plovdiv", "/area/smolyan", "/en/area/smolyan-oblast", "/area/mladost"} {
 		body := fetch(t, rr, path).Body.String()
 		items := faqVisible(t, body)
-		if len(items) != 7 {
-			t.Fatalf("%s: %d FAQ entries, want 7", path, len(items))
+		if len(items) != 11 {
+			t.Fatalf("%s: %d FAQ entries, want 11", path, len(items))
 		}
 		for i, it := range items {
 			if strings.TrimSpace(it.Q) == "" || strings.TrimSpace(it.A) == "" {
@@ -197,8 +197,30 @@ func TestFAQAboutLinkFollowsLanguage(t *testing.T) {
 	for _, c := range cases {
 		sec := faqSection(t, fetch(t, rr, c.path).Body.String())
 		links := regexp.MustCompile(`<a [^>]*href="([^"]*)"[^>]*>([^<]*)</a>`).FindAllStringSubmatch(sec, -1)
-		if len(links) != 1 || links[0][1] != c.href || links[0][2] != c.label {
-			t.Errorf("%s: FAQ links = %v, want one link %s labelled %q", c.path, links, c.href, c.label)
+		if len(links) != 2 || links[0][1] != c.href || links[0][2] != c.label {
+			t.Errorf("%s: FAQ links = %v, want the About link %s labelled %q first", c.path, links, c.href, c.label)
+		}
+		if rec := fetch(t, rr, c.href); rec.Code != 200 {
+			t.Errorf("%s: link target %s answers %d", c.path, c.href, rec.Code)
+		}
+	}
+}
+
+// Answer 8 links to the air pollution explainer in the page's language.
+func TestFAQAirPollutionLinkFollowsLanguage(t *testing.T) {
+	rr := renderer(t, eeaFixture(t))
+	cases := []struct{ path, href, label string }{
+		{"/area/plovdiv", "/air-pollution", "Замърсяване на въздуха"},
+		{"/en/area/plovdiv", "/en/air-pollution", "Air pollution"},
+	}
+	for _, c := range cases {
+		sec := faqSection(t, fetch(t, rr, c.path).Body.String())
+		anchor := `<a class="link" href="` + c.href + `">` + c.label + `</a>`
+		if !strings.Contains(sec, anchor) {
+			t.Errorf("%s: FAQ lacks %s", c.path, anchor)
+		}
+		if strings.Contains(sec, "{air_pollution_link}") {
+			t.Errorf("%s: raw placeholder left in the FAQ", c.path)
 		}
 		if rec := fetch(t, rr, c.href); rec.Code != 200 {
 			t.Errorf("%s: link target %s answers %d", c.path, c.href, rec.Code)
@@ -255,8 +277,8 @@ func TestFAQPageJSONLDMatchesVisibleText(t *testing.T) {
 			t.Fatalf("%s: no FAQPage node in the graph", path)
 		}
 		visible := faqVisible(t, body)
-		if len(faq.MainEntity) != 7 || len(visible) != 7 {
-			t.Fatalf("%s: %d JSON-LD entries and %d visible, want 7 each", path, len(faq.MainEntity), len(visible))
+		if len(faq.MainEntity) != 11 || len(visible) != 11 {
+			t.Fatalf("%s: %d JSON-LD entries and %d visible, want 11 each", path, len(faq.MainEntity), len(visible))
 		}
 		for i, q := range faq.MainEntity {
 			if q.Type != "Question" || q.AcceptedAnswer.Type != "Answer" {
