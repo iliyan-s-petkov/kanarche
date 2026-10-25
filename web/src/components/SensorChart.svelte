@@ -34,6 +34,7 @@
     periodShortLabels = [], moreLabel = '', aboutLabel = '', shareLabel = '', embedLabel = '',
     shareDone = '', embedDone = '', copyFailed = '',
     link = createPanelLink(),
+    stamp = 0,
   } = $props()
 
   // Seeded from the server's defaults, owned here afterwards. The default
@@ -238,7 +239,7 @@
         <p class="chart-message">{rangeInvalid}</p>
       {:else if chartSources.length}
         {#key resetToken}
-          <Chart sources={chartSources} {timeLabel} {empty} {unavailable} {periodLabel} {text} fill title="" />
+          <Chart sources={chartSources} {timeLabel} {empty} {unavailable} {periodLabel} {text} {stamp} fill title="" />
         {/key}
       {/if}
     </div>
@@ -289,6 +290,7 @@
         {unavailable}
         {periodLabel}
         {text}
+        {stamp}
         resizable
         title=""
       />

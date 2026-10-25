@@ -33,12 +33,19 @@ export const CACHE_LIMIT = 64
 // callers share one request, so aborting has to be refcounted (see getJSON).
 const inFlight = new Map()
 
+// URLs held before a clearCache, owed one revalidating fetch.
+const revalidate = new Set()
+
 // clearCache is the invalidation. The cache below has no TTL of its own, so
 // without this the refresh button would be a control that visibly does nothing:
 // every call would be answered from a Map populated at page load. Called from
 // exactly one place — the reload the map island registers with the freshness
 // store (islands/map.js) — and from tests.
 export function clearCache() {
+  // The API sends max-age, so the browser's HTTP cache would answer the next
+  // fetch of these URLs with the same stale body. Each is revalidated once.
+  for (const url of cache.keys()) revalidate.add(url)
+  for (const url of inFlight.keys()) revalidate.add(url)
   cache.clear()
   // Aborted, not merely dropped: a response already on the wire lands after the
   // clear and writes through cacheSet, which silently undoes the invalidation
@@ -145,7 +152,8 @@ function cacheSet(url, body) {
 }
 
 async function fetchOnce(url, retryOn429, signal) {
-  let response = await fetch(url, { headers: { Accept: 'application/json' }, signal })
+  const mode = revalidate.delete(url) ? 'no-cache' : 'default'
+  let response = await fetch(url, { headers: { Accept: 'application/json' }, signal, cache: mode })
 
   if (response.status === 429 && retryOn429) {
     const retryMs = retryDelayMs(response)
@@ -160,7 +168,7 @@ async function fetchOnce(url, retryOn429, signal) {
     // An abort during the retry delay ends the request. A cancelled pan must
     // not come back and spend a limiter token nobody is waiting on.
     if (signal && signal.aborted) throw abortReason(signal)
-    response = await fetch(url, { headers: { Accept: 'application/json' }, signal })
+    response = await fetch(url, { headers: { Accept: 'application/json' }, signal, cache: mode })
   }
   if (!response.ok) {
     // Thrown, not returned as a sentinel: the caller's catch is what leaves the

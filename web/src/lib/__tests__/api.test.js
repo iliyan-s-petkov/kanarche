@@ -344,3 +344,23 @@ it('does not let a request in flight during clearCache() re-seed the cache', asy
   expect(await getJSON('/api/v1/overview')).toEqual({ areas: ['fresh'] })
   expect(fetchMock, 'the second call really went to the network').toHaveBeenCalledTimes(2)
 })
+
+// The API marks series and sensor bodies max-age, so the browser's HTTP cache
+// would answer a post-clear fetch with the same stale body. A URL held before
+// the clear is revalidated once; a URL never seen keeps the default policy.
+it('revalidates against the server, once, a URL that was cached before clearCache()', async () => {
+  fetchMock.mockImplementation(async () => jsonResponse({ n: 1 }))
+  await getJSON('/api/v1/a')
+  await getJSON('/api/v1/b')
+  clearCache()
+
+  await getJSON('/api/v1/a')
+  expect(fetchMock.mock.calls[2][1].cache).toBe('no-cache')
+
+  clearCache()
+  await getJSON('/api/v1/c')
+  expect(fetchMock.mock.calls[3][1].cache).toBe('default')
+
+  await getJSON('/api/v1/b')
+  expect(fetchMock.mock.calls[4][1].cache).toBe('no-cache')
+})

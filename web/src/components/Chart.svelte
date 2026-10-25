@@ -39,7 +39,7 @@
   let {
     url, lineColour, valueLabel, valueUnit = '', metricLabel = '', sources = null,
     title, timeLabel, empty, unavailable, resizable = false, fill = false,
-    periodLabel = '', text = {},
+    periodLabel = '', text = {}, stamp = 0,
   } = $props()
 
   const defs = $derived(sources ?? [{ url, label: valueLabel, name: metricLabel || valueLabel, colour: lineColour, scale: 'y', unit: valueUnit }])
@@ -135,6 +135,8 @@
     // read after the first await happens outside the tracking context and the
     // chart would never redraw when the reader picks another metric.
     const lines = defs
+    // Moves on every completed refresh, so the series is fetched again.
+    void stamp
 
     // One getJSON per line, not per distinct url: three lines off one banded
     // response name the same url and differ only in which column they read, and

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, unmount } from 'svelte'
+import { SvelteMap } from 'svelte/reactivity'
 import SensorChart from '../SensorChart.svelte'
 import { clearCache } from '../../lib/api.js'
 import { setScales } from '../../lib/sensors.svelte.js'
@@ -83,7 +84,8 @@ function render(extra) {
   })
   const target = document.createElement('div')
   document.body.appendChild(target)
-  component = mount(SensorChart, { target, props: { ...props, ...extra } })
+  // Descriptors, not a spread: a spread would read a getter once and freeze it.
+  component = mount(SensorChart, { target, props: Object.defineProperties({ ...props }, Object.getOwnPropertyDescriptors(extra ?? {})) })
   return { target, fetched }
 }
 
@@ -116,6 +118,16 @@ describe('SensorChart.svelte', () => {
     await vi.waitFor(() => expect(fetched).toHaveLength(2))
     expect(fetched[1]).toContain('/api/v1/sensor/43/series')
     expect(fetched[1]).toContain('metric=temperature')
+  })
+
+  it('refetches the series when the refresh stamp moves', async () => {
+    const stamp = new SvelteMap([['at', 1]])
+    const { fetched } = render({ get stamp() { return stamp.get('at') } })
+    await vi.waitFor(() => expect(fetched).toHaveLength(1))
+    clearCache()
+    stamp.set('at', 2)
+    await vi.waitFor(() => expect(fetched).toHaveLength(2))
+    expect(fetched[1]).toBe(fetched[0])
   })
 
   it('falls back to the station id for a metric with no source of its own', async () => {
