@@ -230,7 +230,12 @@ func (rr *Renderer) areaSEO(row AreaRow, lang string) (title, description string
 		desc := strings.ReplaceAll(rr.cat.T(lang, row.descKey("seo.oblast.description")), "{inline}", inline)
 		return composeTitle(core, brand), desc
 	case "city":
-		core := strings.ReplaceAll(rr.cat.T(lang, "seo.city.title"), "{name}", row.Name)
+		// Same в/във rule as the h1 (startsWithVav); the _vav key exists only in bg.
+		titleKey := "seo.city.title"
+		if startsWithVav(row.Name) && rr.cat.Has(lang, "seo.city.title_vav") {
+			titleKey = "seo.city.title_vav"
+		}
+		core := strings.ReplaceAll(rr.cat.T(lang, titleKey), "{name}", row.Name)
 		desc := strings.ReplaceAll(rr.cat.T(lang, row.descKey("seo.city.description")), "{name}", row.Name)
 		return composeTitle(core, brand), desc
 	default: // "neighbourhood" — the 24 Sofia districts; no other kind exists.
