@@ -109,7 +109,7 @@ func TestSeriesRejectsNonNumericSensorID(t *testing.T) {
 // a chart that is wrong without being empty, which is the hardest kind to catch.
 func TestLongPeriodsUseTheRollup(t *testing.T) {
 	cfg := testConfig(t).Series
-	cases := map[string]bool{"24h": false, "7d": false, "30d": true, "1y": true}
+	cases := map[string]bool{"1h": false, "24h": false, "7d": false, "30d": true, "1y": true}
 	for period, wantHourly := range cases {
 		_, hourly, ok := api.ParsePeriodForTesting(cfg, period)
 		if !ok {
@@ -678,5 +678,24 @@ func TestSnapshotSeriesDoesNotConsumeAdmission(t *testing.T) {
 	srv.ServeHTTP(rec, newSeriesRequest("/api/v1/area/sofia/series?metric=P2&period=24h"))
 	if rec.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200 — a memory-served response was refused by a database cap", rec.Code)
+	}
+}
+
+// The 1-hour period reads raw readings, not hourly rollups: one hour of
+// rollups is a single point. Its bucket must be fine enough to draw a line.
+func TestOneHourPeriodIsRawAndFinelyBucketed(t *testing.T) {
+	cfg := testConfig(t).Series
+	window, hourly, ok := api.ParsePeriodForTesting(cfg, "1h")
+	if !ok {
+		t.Fatal("period 1h was rejected")
+	}
+	if window != time.Hour {
+		t.Errorf("1h window = %v, want 1h", window)
+	}
+	if hourly {
+		t.Error("1h reads the hourly rollup, want raw readings")
+	}
+	if got := cfg.Periods["1h"].Bucket; got != time.Minute {
+		t.Errorf("1h bucket = %v, want 1m", got)
 	}
 }

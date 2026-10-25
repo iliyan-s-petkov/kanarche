@@ -85,10 +85,10 @@ test.describe('phone sensor sheet', () => {
     await expect(page.locator('.sensor-panel button.gauge[aria-pressed="true"]')).toHaveCount(1)
   })
 
-  test('the period control is a segmented control of 24h / 7d / 30d / 1y', async ({ phone }) => {
+  test('the period control is a segmented control of 1h / 24h / 7d / 30d / 1y', async ({ phone }) => {
     const page = await open(phone)
     const seg = page.locator('.sensor-panel .period-seg')
-    await expect(seg.getByRole('button')).toHaveText(['24h', '7d', '30d', '1y'])
+    await expect(seg.getByRole('button')).toHaveText(['1h', '24h', '7d', '30d', '1y'])
     await expect(seg.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'true')
     await seg.getByRole('button', { name: '7d' }).tap()
     await expect(seg.getByRole('button', { name: '7d' })).toHaveAttribute('aria-pressed', 'true')

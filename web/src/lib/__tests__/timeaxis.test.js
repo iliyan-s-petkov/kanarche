@@ -13,6 +13,18 @@ describe('tickMode', () => {
     expect(tickMode(2 * DAY)).toBe('hour')
   })
 
+  // An hour of data is clock times, and the label carries minutes so ticks ten
+  // minutes apart read differently.
+  it('prints clock times with minutes for a one-hour span', () => {
+    const HOUR = 3600
+    expect(tickMode(HOUR)).toBe('hour')
+    const xs = [NOON, NOON + HOUR]
+    const labels = tickValues(xs, 'en-GB')(null, [NOON, NOON + 600, NOON + 1200])
+    expect(new Set(labels).size).toBe(3)
+    for (const l of labels) expect(l).toMatch(/^\d{2}:\d{2}$/)
+    expect(labels[1].slice(-2)).not.toBe(labels[0].slice(-2))
+  })
+
   it('prints dates once past two days', () => {
     expect(tickMode(2 * DAY + 1)).toBe('day')
     expect(tickMode(7 * DAY)).toBe('day')

@@ -106,6 +106,7 @@ func TestCustomSpanTakesTheResolutionOfTheNamedPeriodThatCoversIt(t *testing.T) 
 	}{
 		{"an afternoon", 4 * time.Hour, false},
 		{"three days", 3 * 24 * time.Hour, false},
+		{"half an hour", 30 * time.Minute, false},
 		{"a fortnight", 14 * 24 * time.Hour, true},
 		{"six months", 182 * 24 * time.Hour, true},
 	} {

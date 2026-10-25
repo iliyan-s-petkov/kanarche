@@ -28,6 +28,10 @@ describe('periodQuery', () => {
     expect(periodQuery('7d', '', '')).toBe('period=7d')
   })
 
+  it('sends the 1 hour period as its own name', () => {
+    expect(periodQuery('1h', '', '')).toBe('period=1h')
+  })
+
   it('escapes the period name rather than pasting it into the query', () => {
     expect(periodQuery('7d&metric=P1', '', '')).toBe('period=7d%26metric%3DP1')
   })

@@ -24,9 +24,9 @@ const chartProps = {
   stationId: 42,
   sources: { P2: 42, P1: 42 },
   options: [{ metric: 'P2', label: 'PM2.5' }, { metric: 'P1', label: 'PM10' }],
-  periods: ['24h', '7d', '30d', '1y'],
-  periodLabels: ['24 hours', '7 days', '30 days', '1 year'],
-  periodShortLabels: ['24h', '7d', '30d', '1y'],
+  periods: ['1h', '24h', '7d', '30d', '1y'],
+  periodLabels: ['1 hour', '24 hours', '7 days', '30 days', '1 year'],
+  periodShortLabels: ['1h', '24h', '7d', '30d', '1y'],
   initialPeriod: '24h',
   initialMetric: 'P2',
   metricLegend: 'Metric', periodLegend: 'Period', customLabel: 'Custom range',
@@ -152,16 +152,18 @@ describe('SensorChart phone controls', () => {
   it('has a segmented period control with the short labels', () => {
     const { target } = renderChart()
     const btns = [...target.querySelectorAll('.period-seg button')]
-    expect(btns.map((b) => b.textContent.trim())).toEqual(['24h', '7d', '30d', '1y'])
-    expect(btns[0].getAttribute('aria-pressed')).toBe('true')
+    expect(btns.map((b) => b.textContent.trim())).toEqual(['1h', '24h', '7d', '30d', '1y'])
+    // 1h leads the row, 24h stays the one in force.
+    expect(btns[0].getAttribute('aria-pressed')).toBe('false')
+    expect(btns[1].getAttribute('aria-pressed')).toBe('true')
   })
 
   it('a segment re-requests the series over that window', async () => {
     const { target } = renderChart()
-    target.querySelectorAll('.period-seg button')[1].click()
+    target.querySelectorAll('.period-seg button')[2].click()
     flushSync()
     await vi.waitFor(() => expect(urls().some((u) => u.includes('period=7d'))).toBe(true))
-    expect(target.querySelectorAll('.period-seg button')[1].getAttribute('aria-pressed')).toBe('true')
+    expect(target.querySelectorAll('.period-seg button')[2].getAttribute('aria-pressed')).toBe('true')
   })
 
   it('follows the metric the link carries', async () => {
@@ -220,12 +222,12 @@ describe('SensorChart phone controls', () => {
 
   it('Reset chart returns the window to the opening one', () => {
     const { target } = renderChart()
-    target.querySelectorAll('.period-seg button')[2].click()
+    target.querySelectorAll('.period-seg button')[3].click()
     flushSync()
     openMenu(target)
     items(target)[2].click()
     flushSync()
-    expect(target.querySelectorAll('.period-seg button')[0].getAttribute('aria-pressed')).toBe('true')
+    expect(target.querySelectorAll('.period-seg button')[1].getAttribute('aria-pressed')).toBe('true')
   })
 
   it('About this station asks the panel to open its sheet', () => {
