@@ -168,53 +168,53 @@ func TestRenderedTitlesAndDescriptionsMatchApprovedCopy(t *testing.T) {
 		},
 		{
 			path:          "/area/plovdiv",
-			bgTitle:       "Качество на въздуха в Пловдив сега: ФПЧ2.5 и ФПЧ10 | Канарче",
-			bgDescription: "Пловдив: замърсяване на въздуха с фини прахови частици ФПЧ2.5 и ФПЧ10 сега. Медиана от граждански сензори и графика за 24 часа.",
-			enTitle:       "Plovdiv air quality now: PM2.5 and PM10 | Kanarche",
-			enDescription: "Plovdiv air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the city median and 24-hour history.",
+			bgTitle:       "Индекс за качество на въздуха в Пловдив (AQI) сега | Канарче",
+			bgDescription: "Пловдив: индекс за качество на въздуха (AQI) по ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори, оценка по Европейския индекс и графика за 24 часа.",
+			enTitle:       "Plovdiv air quality (AQI) now: PM2.5 and PM10 | Kanarche",
+			enDescription: "Plovdiv AQI and air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the European index band and 24-hour history.",
 		},
 		{
 			path:          "/area/smolyan",
-			bgTitle:       "Качество на въздуха в Смолян сега: ФПЧ2.5 и ФПЧ10 | Канарче",
-			bgDescription: "Смолян: замърсяване на въздуха с фини прахови частици ФПЧ2.5 и ФПЧ10 сега. Медиана от граждански сензори и графика за 24 часа.",
-			enTitle:       "Smolyan air quality now: PM2.5 and PM10 | Kanarche",
-			enDescription: "Smolyan air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the city median and 24-hour history.",
+			bgTitle:       "Индекс за качество на въздуха в Смолян (AQI) сега | Канарче",
+			bgDescription: "Смолян: индекс за качество на въздуха (AQI) по ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори, оценка по Европейския индекс и графика за 24 часа.",
+			enTitle:       "Smolyan air quality (AQI) now: PM2.5 and PM10 | Kanarche",
+			enDescription: "Smolyan AQI and air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the European index band and 24-hour history.",
 		},
 		{
 			path:          "/area/mladost",
-			bgTitle:       "Младост, София: качество на въздуха днес | Канарче",
-			bgDescription: "Район Младост, София: замърсяване на въздуха с фини прахови частици ФПЧ2.5 и ФПЧ10 по данни от граждански сензори, графика за 24 часа.",
-			enTitle:       "Mladost, Sofia: air quality today | Kanarche",
-			enDescription: "Mladost, Sofia: air pollution by district. PM2.5 and PM10 from citizen sensors on a live map, with the district median and 24-hour history.",
+			bgTitle:       "Младост, София: индекс за качество на въздуха (AQI)",
+			bgDescription: "Индекс за качество на въздуха (AQI) в район Младост, София: ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори и оценка по Европейския индекс.",
+			enTitle:       "Mladost, Sofia: air quality index (AQI) today | Kanarche",
+			enDescription: "Mladost, Sofia: air quality index (AQI) by district. PM2.5 and PM10 from citizen sensors, with the European index band and 24-hour history.",
 		},
 		{
 			path:          "/area/smolyan-oblast",
-			bgTitle:       "Област Смолян: качество и замърсяване на въздуха | Канарче",
-			bgDescription: "Качество на въздуха в област Смолян: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, медиана за областта и графика за 24 часа.",
-			enTitle:       "Smolyan Province: air quality and pollution today | Kanarche",
-			enDescription: "Air quality in Smolyan Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the province median and 24-hour history.",
+			bgTitle:       "Област Смолян: индекс за качество на въздуха (AQI) | Канарче",
+			bgDescription: "Индекс за качество на въздуха (AQI) в област Смолян: ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори и оценка по Европейския индекс.",
+			enTitle:       "Smolyan Province: air quality index (AQI) today | Kanarche",
+			enDescription: "Air quality index (AQI) in Smolyan Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the European index band and 24-hour history.",
 		},
 		{
 			path:          "/area/sofiyska-oblast",
-			bgTitle:       "Софийска област: качество и замърсяване на въздуха | Канарче",
-			bgDescription: "Качество на въздуха в Софийска област: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, медиана за областта и графика за 24 часа.",
-			enTitle:       "Sofia Province: air quality and pollution today | Kanarche",
-			enDescription: "Air quality in Sofia Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the province median and 24-hour history.",
+			bgTitle:       "Софийска област: индекс за качество на въздуха (AQI)",
+			bgDescription: "Индекс за качество на въздуха (AQI) в Софийска област: ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори и оценка по Европейския индекс.",
+			enTitle:       "Sofia Province: air quality index (AQI) today | Kanarche",
+			enDescription: "Air quality index (AQI) in Sofia Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the European index band and 24-hour history.",
 		},
 		{
 			path:          "/area/sofia-grad-oblast",
-			bgTitle:       "Област София-град: качество и замърсяване на въздуха",
-			bgDescription: "Качество на въздуха в област София-град: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, медиана за областта и графика за 24 часа.",
-			enTitle:       "Sofia City Province: air quality and pollution today",
-			enDescription: "Air quality in Sofia City Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the province median and 24-hour history.",
+			bgTitle:       "Област София-град: индекс за качество на въздуха (AQI)",
+			bgDescription: "Индекс за качество на въздуха (AQI) в област София-град: ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори и оценка по Европейския индекс.",
+			enTitle:       "Sofia City Province: air quality index (AQI) today",
+			enDescription: "Air quality index (AQI) in Sofia City Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the European index band and 24-hour history.",
 		},
 		// Longest names: both go over 60 runes with the suffix, so it is dropped.
 		{
 			path:          "/area/veliko-tarnovo-oblast",
-			bgTitle:       "Област Велико Търново: качество и замърсяване на въздуха",
-			bgDescription: "Качество на въздуха в област Велико Търново: фини прахови частици ФПЧ2.5 и ФПЧ10 от граждански сензори, медиана за областта и графика за 24 часа.",
-			enTitle:       "Veliko Tarnovo Province: air quality and pollution today",
-			enDescription: "Air quality in Veliko Tarnovo Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the province median and 24-hour history.",
+			bgTitle:       "Област Велико Търново: индекс за качество на въздуха (AQI)",
+			bgDescription: "Индекс за качество на въздуха (AQI) в област Велико Търново: ФПЧ2.5 и ФПЧ10. Медиана от граждански сензори и оценка по Европейския индекс.",
+			enTitle:       "Veliko Tarnovo Province: air quality index (AQI) today",
+			enDescription: "Air quality index (AQI) in Veliko Tarnovo Province, Bulgaria: PM2.5 and PM10 from citizen sensors, with the European index band and 24-hour history.",
 		},
 	}
 
@@ -311,6 +311,19 @@ func TestNotFoundPageHasNoIndexAndNoCanonical(t *testing.T) {
 		}
 		if hasMarker(body, `rel="alternate"`) {
 			t.Errorf("%s: 404 page carries hreflang alternates for a URL that does not exist", path)
+		}
+	}
+}
+
+// TestAreaTitlesNameTheAQI pins the SEO decision that every area page kind
+// carries the AQI term in its title, in both languages.
+func TestAreaTitlesNameTheAQI(t *testing.T) {
+	rr := renderer(t, seoFixture(t))
+	for _, path := range []string{"/area/plovdiv", "/area/mladost", "/area/smolyan-oblast"} {
+		for _, prefix := range []string{"", "/en"} {
+			if got := pageTitle(t, fetch(t, rr, prefix+path).Body.String()); !strings.Contains(got, "AQI") {
+				t.Errorf("%s%s title %q lacks AQI", prefix, path, got)
+			}
 		}
 	}
 }
