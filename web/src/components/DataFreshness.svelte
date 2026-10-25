@@ -15,6 +15,8 @@
     return () => clearInterval(timer)
   })
   const stale = $derived(isStale(at, now))
+  // The visible time has to be in the name (WCAG 2.5.3); the word stays first.
+  const name = $derived(at == null ? labels.trigger : `${labels.trigger} ${formatTime(at, lang)}`)
 
   let open = $state(false)
   let root
@@ -61,7 +63,7 @@
     aria-controls={id}
     aria-busy={busy}
     title={hint}
-    aria-label={labels.trigger}
+    aria-label={name}
     onclick={() => { open = !open }}
   >
     <svg class="data-refresh__ico" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">

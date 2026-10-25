@@ -38,6 +38,12 @@ describe('DataFreshness time beside the icon', () => {
     expect(el.querySelector('.data-refresh__btn--icon').contains(time(el))).toBe(true)
   })
 
+  // WCAG 2.5.3: the visible time must be inside the accessible name, and the word stays so voice control still finds it.
+  it('keeps the visible time inside the accessible name', () => {
+    const name = timed().querySelector('.data-refresh__btn--icon').getAttribute('aria-label')
+    expect(name).toBe(`Обнови ${formatTime(NOW, 'en')}`)
+  })
+
   it('shows no time before there is one, and keeps the accessible name static', () => {
     const el = timed({ at: null })
     expect(time(el)).toBe(null)
