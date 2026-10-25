@@ -206,6 +206,14 @@ strong, b { font-weight: var(--weight-emphasis); }
 .areas-directory__group:has(> .areas-directory__districts) { grid-column: 1 / -1; }
 .areas-directory__districts { columns: 5 10rem; column-gap: var(--space-4); }
 .areas-directory__districts li { break-inside: avoid; }
+/* /news list and post pages. */
+.news-list, .news-areas { list-style: none; margin: 0; padding: 0; }
+.news-item { padding-block: var(--space-4); border-block-end: 1px solid var(--border); }
+.news-item__title { font-size: var(--text-card); margin: 0 0 var(--space-1); }
+.news-item__meta { font-size: var(--text-compact); color: var(--fg-2); margin: 0 0 var(--space-2); }
+.news-body { overflow-wrap: anywhere; }
+.news-body table { display: block; max-inline-size: 100%; overflow-x: auto; border-collapse: collapse; }
+.news-body th, .news-body td { padding: var(--space-1) var(--space-3); border: 1px solid var(--border); text-align: start; }
 /* The frame, the 926:382 country fit, the height floor and the 1056px
    breakpoint are all the kit's .data-frame/.map/.map--hero now, and this file's
    own version of them is gone. It was the same rules written twice, and the
@@ -1465,7 +1473,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* Keeps the wordmark plus both pickers inside 360px. */
   .langpick__btn { padding-inline: var(--space-2); gap: var(--space-1); }
   @media (max-width: 480px) {
-    .masthead__link--source, .masthead__link--about { display: none; }
+    .masthead__link--source, .masthead__link--about, .masthead__link--news { display: none; }
     .langpick__extra { display: list-item; }
     .langpick__extra--first { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
   }

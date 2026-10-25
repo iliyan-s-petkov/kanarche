@@ -27,7 +27,8 @@
 <meta name="twitter:image" content="{{.OGImageURL}}">
 {{with .JSONLD}}<script type="application/ld+json">{{.}}</script>
 {{end}}{{end}}{{/* First, so it runs once fetched instead of waiting on the stylesheets below. */}}
-<script src="{{.Static "theme-init.js"}}"></script>
+{{with .FeedURL}}<link rel="alternate" type="application/atom+xml" href="{{.}}" title="{{$.T "news.feed_title"}}">
+{{end}}<script src="{{.Static "theme-init.js"}}"></script>
 {{with .TilesOrigin}}<link rel="preconnect" href="{{.}}" crossorigin>
 {{end}}<link rel="icon" href="{{.Static "favicon.svg"}}" type="image/svg+xml">
 <link rel="icon" href="{{.Static "favicon-32.png"}}" type="image/png" sizes="32x32">
@@ -46,6 +47,7 @@
   <nav class="masthead__nav" aria-label="{{.T "nav.map"}}">
     <a class="masthead__link" href="{{.Path "/"}}"{{if .OnPath "/"}} aria-current="page"{{end}}>{{.T "nav.map"}}</a>
     <a class="masthead__link" href="{{.Path "/areas"}}"{{if .OnPath "/areas"}} aria-current="page"{{end}}>{{.T "nav.areas"}}</a>
+    <a class="masthead__link masthead__link--news" href="{{.Path "/news"}}"{{if .OnNews}} aria-current="page"{{end}}>{{.T "nav.news"}}</a>
     <a class="masthead__link masthead__link--about" href="{{.Path "/about"}}"{{if .OnPath "/about"}} aria-current="page"{{end}}>{{.T "nav.about"}}</a>
     {{/* Off-site, so it is the one link here that opens in its own tab, with the
          opener severed. The mark is inline rather than a static file: it is the
@@ -72,7 +74,8 @@
         {{range .LangLinks}}<li>{{if .Current}}<span class="langpick__opt" lang="{{.Lang}}" aria-current="true">{{if .Flag}}<span class="langpick__mark"><img src="{{.Flag}}" width="20" height="12" alt=""></span>{{else}}<span class="langpick__mark langpick__mark--code">{{.Code}}</span>{{end}}{{.Name}}</span>{{else}}<a class="langpick__opt" href="{{.URL}}" hreflang="{{.Lang}}" lang="{{.Lang}}">{{if .Flag}}<span class="langpick__mark"><img src="{{.Flag}}" width="20" height="12" alt=""></span>{{else}}<span class="langpick__mark langpick__mark--code">{{.Code}}</span>{{end}}{{.Name}}</a>{{end}}</li>
         {{end}}
         {{/* Phone only (app.css): the header drops both links at that width. */}}
-        <li class="langpick__extra langpick__extra--first"><a class="langpick__opt" href="{{.Path "/about"}}"{{if .OnPath "/about"}} aria-current="page"{{end}}>{{.T "nav.about"}}</a></li>
+        <li class="langpick__extra langpick__extra--first"><a class="langpick__opt" href="{{.Path "/news"}}"{{if .OnNews}} aria-current="page"{{end}}>{{.T "nav.news"}}</a></li>
+        <li class="langpick__extra"><a class="langpick__opt" href="{{.Path "/about"}}"{{if .OnPath "/about"}} aria-current="page"{{end}}>{{.T "nav.about"}}</a></li>
         <li class="langpick__extra"><a class="langpick__opt" href="{{.SourceRepoURL}}" target="_blank" rel="noopener noreferrer">{{.T "nav.source"}}</a></li>
       </ul>
     </details>
@@ -129,6 +132,7 @@
     <nav class="footer__col" aria-labelledby="footer-project-h">
       <h2 class="footer__heading" id="footer-project-h">{{.T "footer.project"}}</h2>
       <ul>
+        <li><a href="{{.Path "/news"}}">{{.T "nav.news"}}</a></li>
         <li><a href="{{.Path "/about"}}">{{.T "nav.about"}}</a></li>
         <li><a href="{{.Path "/about-the-data"}}">{{.T "footer.about_data"}}</a></li>
         <li><a href="{{.Path "/about-the-data"}}#faq">{{.T "footer.faq"}}</a></li>

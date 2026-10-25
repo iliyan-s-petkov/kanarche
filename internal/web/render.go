@@ -16,6 +16,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	"kanarche.eu/internal/config"
 	"kanarche.eu/internal/httpx"
 	"kanarche.eu/internal/i18n"
+	"kanarche.eu/internal/news"
 	"kanarche.eu/internal/snapshot"
 	"kanarche.eu/internal/upstream"
 )
@@ -74,6 +76,7 @@ type Renderer struct {
 	// Cached /sitemap.xml, keyed on the snapshot's GeneratedAt.
 	sitemapMu   sync.Mutex
 	sitemapAt   time.Time
+	sitemapDay  string
 	sitemapBody []byte
 
 	// sofiaLoc is the zone every area sentence's {time} is printed in
@@ -82,6 +85,10 @@ type Renderer struct {
 	// import in cmd/airbg — a wrong zone is a display bug, not a reason to
 	// fail startup.
 	sofiaLoc *time.Location
+
+	// The /news posts and the clock that decides which are public yet.
+	news    *news.Set
+	newsNow func() time.Time
 }
 
 // defaultPeriodName is the period whose window is series.default_window, so a
@@ -144,12 +151,16 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 		loc = time.UTC
 	}
 	rr.sofiaLoc = loc
+	rr.newsNow = time.Now
+	if err := rr.loadEmbeddedNews(); err != nil {
+		return nil, err
+	}
 
 	rr.embedCSP = httpx.EmbedCSP(cfg.Listen.CSP)
 
 	// "embed" is parsed with base.gohtml like the rest, and then redefines
 	// "base" itself: it needs base's map partials but none of its chrome.
-	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "terms", "pm", "air_pollution", "error", "embed"} {
+	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "terms", "pm", "air_pollution", "news_list", "news_post", "error", "embed"} {
 		t, err := template.New("base.gohtml").Funcs(templateFuncs).ParseFS(templateFS,
 			"templates/base.gohtml", "templates/"+page+".gohtml")
 		if err != nil {
@@ -232,6 +243,17 @@ type PageData struct {
 	// robots noindex instead.
 	NoIndex bool
 
+	// AltLangs limits the languages a page exists in. Nil means every loaded
+	// language. Fewer than two means no hreflang alternates at all.
+	AltLangs []string
+	// AltFallbackPath is where the language switcher sends a language the page
+	// does not exist in. Empty keeps the same path.
+	AltFallbackPath string
+	// NewsPosts is the /news list, NewsPost the single post page.
+	NewsPosts []NewsItem
+	NewsPost  *NewsPostView
+	// FeedURL, when set, is advertised as the page's Atom feed.
+	FeedURL string
 	// JSONLD is the schema.org graph for this page (jsonld.go); empty emits no script.
 	JSONLD template.JS
 
@@ -799,7 +821,7 @@ func (p PageData) OGLocale() string { return p.T("seo.locale") }
 // mirroring LangLinks/Alternates: the set is whatever catalogues loaded, not a
 // hardcoded pair.
 func (p PageData) OGLocaleAlternates() []string {
-	langs := p.cat.Languages()
+	langs := p.pageLangs()
 	out := make([]string, 0, len(langs))
 	for _, lang := range langs {
 		if lang == p.Lang {
@@ -975,10 +997,14 @@ func (p PageData) LangLinks() []langLink {
 	langs := p.cat.Languages()
 	out := make([]langLink, 0, len(langs))
 	for _, lang := range langs {
-		other := PageData{Lang: lang, RequestPath: p.RequestPath, BaseURL: p.BaseURL}
+		path := p.RequestPath
+		if p.AltLangs != nil && p.AltFallbackPath != "" && !slices.Contains(p.AltLangs, lang) {
+			path = p.AltFallbackPath
+		}
+		other := PageData{Lang: lang, RequestPath: path, BaseURL: p.BaseURL}
 		out = append(out, langLink{
 			Lang:    lang,
-			URL:     other.BaseURL + other.Path(p.RequestPath),
+			URL:     other.BaseURL + other.Path(path),
 			Name:    p.cat.T(lang, "lang.name"),
 			Code:    p.cat.T(lang, "lang.code"),
 			Flag:    p.flagURL(lang),
@@ -989,13 +1015,24 @@ func (p PageData) LangLinks() []langLink {
 }
 
 func (p PageData) Alternates() []alternate {
-	langs := p.cat.Languages()
+	langs := p.pageLangs()
+	if p.AltLangs != nil && len(langs) < 2 {
+		return nil
+	}
 	out := make([]alternate, 0, len(langs))
 	for _, lang := range langs {
 		other := PageData{Lang: lang, RequestPath: p.RequestPath, BaseURL: p.BaseURL}
 		out = append(out, alternate{Lang: lang, URL: other.BaseURL + other.Path(p.RequestPath)})
 	}
 	return out
+}
+
+// pageLangs is the languages this page exists in: AltLangs when set, else all.
+func (p PageData) pageLangs() []string {
+	if p.AltLangs != nil {
+		return p.AltLangs
+	}
+	return p.cat.Languages()
 }
 
 // XDefaultURL is the default-language alternate, which the head names x-default

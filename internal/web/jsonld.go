@@ -169,6 +169,9 @@ type ldArticle struct {
 	MainEntityOfPage string `json:"mainEntityOfPage"`
 	Author           ldRef  `json:"author"`
 	Publisher        ldRef  `json:"publisher"`
+	DatePublished    string `json:"datePublished,omitempty"`
+	DateModified     string `json:"dateModified,omitempty"`
+	Image            string `json:"image,omitempty"`
 }
 
 type ldBreadcrumbList struct {
