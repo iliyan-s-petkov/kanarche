@@ -93,15 +93,23 @@
 
 /* Text for an old reading: --warn pulled toward the foreground, so it follows the theme. Stated on :root, the element that
    carries data-theme, so var(--fg) resolves to the dark foreground in dark.
-   The literals are the floor for a browser without color-mix: the light value on the light theme and a light amber on the dark one. */
-:root { --stale: #78631a; }
-@supports (color: color-mix(in srgb, red 50%, blue)) {
-  :root { --stale: color-mix(in srgb, var(--warn) 45%, var(--fg)); }
+   Floor for a browser without color-mix: a dark amber on light, the kit's --warn on dark. */
+:root {
+  --stale: #78631a;
 }
 @supports not (color: color-mix(in srgb, red 50%, blue)) {
-  :root[data-theme="dark"] { --stale: #e3c64d; }
+  :root[data-theme="dark"] {
+    --stale: var(--warn);
+  }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --stale: #e3c64d; }
+    :root:not([data-theme="light"]) {
+      --stale: var(--warn);
+    }
+  }
+}
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  :root {
+    --stale: color-mix(in srgb, var(--warn) 45%, var(--fg));
   }
 }
 
