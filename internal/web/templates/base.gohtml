@@ -414,3 +414,6 @@
 {{/* Not on the embed page, which has its own layout. The sentinel stands in for the map on pages without one; web/src/lib/backtotop.js. */}}
 {{define "backToTop"}}<div class="back-to-top-sentinel" aria-hidden="true"></div>
 <button type="button" class="back-to-top" aria-label="{{.T "nav.back_to_top"}}"><svg class="back-to-top__ico" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 10l5-5 5 5"/></svg></button>{{end}}
+
+{{/* The trail as an ordered list. The separators are CSS (app.css .breadcrumb li + li::before), so they stay out of the accessibility tree. */}}
+{{define "breadcrumb"}}<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}"><ol>{{range .Crumbs}}<li>{{if .Current}}<span aria-current="page">{{.Name}}</span>{{else}}<a class="link" href="{{.URL}}">{{.Name}}</a>{{end}}</li>{{end}}</ol></nav>{{end}}

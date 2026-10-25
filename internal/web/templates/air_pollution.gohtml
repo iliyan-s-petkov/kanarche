@@ -1,9 +1,7 @@
 {{/* /air-pollution: static explainer. Copy is owner-approved; the FAQPage JSON-LD is built from the same FAQBlock as the details below. */}}
 {{define "main"}}
 <div class="measure">
-<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
-<a class="link" href="{{.Path "/"}}">{{.T "area.breadcrumb.home"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><span aria-current="page">{{.T "air_pollution.breadcrumb"}}</span>
-</nav>
+{{template "breadcrumb" .}}
 <div class="page-head">
   <h1 class="t-title">{{.T "air_pollution.h1"}}</h1>
   <p class="t-body">{{.T "air_pollution.intro"}}</p>

@@ -13,6 +13,7 @@
 <h1 class="visually-hidden">{{.T "home.h1"}}</h1>
 {{else}}
 <div class="frame">
+{{template "breadcrumb" .}}
 {{/* The list tab keeps its visible head and toolbar: the table is the page, not
      a map with a caption. */}}
 <div class="page-head page-head--compact">
