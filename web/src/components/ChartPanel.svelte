@@ -2,7 +2,6 @@
   import { untrack } from 'svelte'
   import Chart from './Chart.svelte'
   import PeriodPicker from './PeriodPicker.svelte'
-  import MetricMenu from './MetricMenu.svelte'
   import ResetButton from './ResetButton.svelte'
   import { CUSTOM, periodQuery } from '../lib/period.js'
 
@@ -17,7 +16,7 @@
   // resolve the heading label and the y-axis unit from that metric without a
   // round trip to the server.
   let {
-    slug, selected, metric, metricOptions, metricUnits, onMetricChange, metricLegend,
+    slug, selected, metric, metricOptions, metricUnits, heading,
     periods, periodLabels, initialPeriod,
     tier, periodLegend, customLabel, fromLabel, toLabel, nowLabel,
     resetLabel, rangeInvalid,
@@ -69,20 +68,9 @@
      template level, leaves that $state untouched, so closing the card
      restores the same window without a save/restore dance. -->
 {#if !selected}
+<h2 class="chart-heading">{heading}</h2>
 {#if metricMeasured}
 <div class="chart-controls">
-  {#if metricOptions.length > 1}
-    <!-- Hidden for a one-metric area: a menu whose only option is already
-         selected offers nothing, and the caption below already names it. -->
-    <MetricMenu
-      options={metricOptions}
-      selected={metric}
-      onselect={onMetricChange}
-      legend={metricLegend}
-      id="area-chart-metric"
-      name="area-chart-metric"
-    />
-  {/if}
   <PeriodPicker
     {periods}
     {periodLabels}

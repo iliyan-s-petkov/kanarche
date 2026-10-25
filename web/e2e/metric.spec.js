@@ -58,4 +58,15 @@ test.describe.serial('metric switcher', () => {
     await page.goto('/en/area/sofia#metric=plutonium')
     await expect(chooser()).toHaveText('Metric: PM2.5')
   })
+
+  // The chart has no picker of its own: the map metric drives its series request.
+  test('the area chart has no metric picker and follows the map metric', async () => {
+    await page.goto('/en/area/sofia')
+    await expect(page.locator('#chart .chart-controls')).toBeVisible()
+    await expect(page.locator('#chart #area-chart-metric')).toHaveCount(0)
+    await expect(page.locator('#chart').getByRole('heading', { level: 2, name: 'History' })).toBeVisible()
+    const series = page.waitForRequest((r) => /\/api\/v1\/area\/sofia\/series\?.*metric=P1/.test(r.url()))
+    await choose('PM10')
+    await series
+  })
 })
