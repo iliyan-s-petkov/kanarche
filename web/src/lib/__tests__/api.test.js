@@ -381,13 +381,15 @@ it('forgets the oldest owed revalidations past the cap', async () => {
 })
 
 describe('server clock', () => {
+  // A fresh URL per call, or the second would be answered from the client cache.
+  let clockCalls = 0
   const SERVER = Date.parse('2026-10-25T12:00:00Z')
 
   // The client clock is set, then a response says what the server's clock read.
   async function seen(clientNow, headers) {
     vi.setSystemTime(clientNow)
     fetchMock.mockResolvedValueOnce(jsonResponse({}, 200, headers))
-    await getJSON(`/api/v1/clock-${clientNow}-${Object.keys(headers).join()}`)
+    await getJSON(`/api/v1/clock-${(clockCalls += 1)}`)
   }
 
   it('is the client clock until a response has a Date', () => {
