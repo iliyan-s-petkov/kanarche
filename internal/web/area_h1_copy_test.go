@@ -148,7 +148,7 @@ func TestHomeAboutPMUsesScaleEdges(t *testing.T) {
 }
 
 // TestUncoveredAreaSEOSaysNoDataYet: an area with no covered sensors gets the
-// honest "no data yet" title and description, stays noindex, and still links
+// honest "no data yet" title and description, stays indexable, and still links
 // its nearby areas, which the description promises.
 func TestUncoveredAreaSEOSaysNoDataYet(t *testing.T) {
 	rr := renderer(t, h1Fixture(t))
@@ -178,8 +178,8 @@ func TestUncoveredAreaSEOSaysNoDataYet(t *testing.T) {
 		if m := metaDesc.FindStringSubmatch(body); m == nil || m[1] != c.desc {
 			t.Errorf("%s: description = %v, want %q", c.path, m, c.desc)
 		}
-		if !strings.Contains(body, `<meta name="robots" content="noindex">`) {
-			t.Errorf("%s: uncovered area lost its noindex", c.path)
+		if strings.Contains(body, `content="noindex"`) {
+			t.Errorf("%s: uncovered area is noindex", c.path)
 		}
 		// Links carry the /en prefix on the English pages, so match the slug tail only.
 		if !strings.Contains(body, `<nav class="area-links"`) || !strings.Contains(body, `area/varna"`) {
