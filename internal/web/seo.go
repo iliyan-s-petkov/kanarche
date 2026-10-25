@@ -167,7 +167,7 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	// rather than a date nothing supports.
 	type entry struct{ path, lastMod string }
 	entries := make([]entry, 0, len(slugs)+6)
-	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""})
+	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""}, entry{"/air-pollution", ""})
 	for _, slug := range slugs {
 		var changed string
 		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {

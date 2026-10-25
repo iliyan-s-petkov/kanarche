@@ -1,0 +1,65 @@
+{{/* /air-pollution: static explainer. Copy is owner-approved; the FAQPage JSON-LD is built from the same FAQBlock as the details below. */}}
+{{define "main"}}
+<div class="measure">
+<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
+<a class="link" href="{{.Path "/"}}">{{.T "area.breadcrumb.home"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><span aria-current="page">{{.T "air_pollution.breadcrumb"}}</span>
+</nav>
+<div class="page-head">
+  <h1 class="t-title">{{.T "air_pollution.h1"}}</h1>
+  <p class="t-body">{{.T "air_pollution.intro"}}</p>
+</div>
+
+<h2>{{.T "air_pollution.what.heading"}}</h2>
+<p>{{.APText "air_pollution.what.body"}}</p>
+<p>{{.APText "air_pollution.what.body2"}}</p>
+<p>{{.APText "air_pollution.what.body3"}}</p>
+
+<h2>{{.T "air_pollution.pm.heading"}}</h2>
+<p>{{.APText "air_pollution.pm.body"}}</p>
+<p>{{.APText "air_pollution.pm.body2"}}</p>
+
+<h2>{{.T "air_pollution.sources.heading"}}</h2>
+<p>{{.APText "air_pollution.sources.body"}}</p>
+<p>{{.APText "air_pollution.sources.body2"}}</p>
+<p>{{.APText "air_pollution.sources.body3"}}</p>
+
+<h2>{{.T "air_pollution.season.heading"}}</h2>
+<p>{{.APText "air_pollution.season.body"}}</p>
+<p>{{.APText "air_pollution.season.body2"}}</p>
+<p>{{.APText "air_pollution.season.body3"}}</p>
+
+<h2>{{.T "air_pollution.health.heading"}}</h2>
+<p>{{.APText "air_pollution.health.body"}}</p>
+<p>{{.APText "air_pollution.health.body2"}}</p>
+<p>{{.APText "air_pollution.health.body3"}}</p>
+
+<h2>{{.T "air_pollution.aqi.heading"}}</h2>
+<p>{{.APText "air_pollution.aqi.body"}}</p>
+<p>{{.APText "air_pollution.aqi.body2"}}</p>
+<p>{{.APText "air_pollution.aqi.body3"}}</p>
+<p>{{.APText "air_pollution.aqi.body4"}}</p>
+<p>{{.APText "air_pollution.aqi.body5"}}</p>
+
+<h2>{{.T "air_pollution.read.heading"}}</h2>
+<p>{{.APText "air_pollution.read.body"}}</p>
+<p>{{.APText "air_pollution.read.body2"}}</p>
+<p>{{.APText "air_pollution.read.body3"}}</p>
+
+<h2>{{.T "air_pollution.act.heading"}}</h2>
+<p>{{.APText "air_pollution.act.body"}}</p>
+<p>{{.APText "air_pollution.act.body2"}}</p>
+<p>{{.APText "air_pollution.act.body3"}}</p>
+
+{{with .AirPollutionFAQ}}
+<section class="faq" aria-labelledby="faq-heading">
+<h2 id="faq-heading">{{.Heading}}</h2>
+{{range .Items}}
+<details class="faq__item">
+<summary>{{.Question}}</summary>
+<div class="faq__answer"><p>{{.AnswerHTML}}</p></div>
+</details>
+{{end}}
+</section>
+{{end}}
+</div>
+{{end}}
