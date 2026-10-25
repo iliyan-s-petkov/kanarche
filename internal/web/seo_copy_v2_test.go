@@ -95,7 +95,7 @@ func TestOfficialStationsMentionedOnlyWhenAreaHasEEA(t *testing.T) {
 	}
 }
 
-// Copy uses ФПЧ (never ПМ) in Bulgarian and says AQI and "индекс" only on /air-pollution and area pages, by owner approval.
+// Copy uses ФПЧ (never ПМ) in Bulgarian and says AQI only on /air-pollution and area pages, and "индекс" only on area pages, by owner approval.
 func TestSEOCopyWordingRules(t *testing.T) {
 	snap := eeaFixture(t)
 	rr := renderer(t, snap)
@@ -106,14 +106,16 @@ func TestSEOCopyWordingRules(t *testing.T) {
 	for _, lang := range []string{"", "/en"} {
 		for _, path := range paths {
 			body := fetch(t, rr, lang+path).Body.String()
-			// "AQI" and "индекс" are approved for the explainer and the area pages only.
-			aqiOK := path == "/air-pollution" || strings.HasPrefix(path, "/area/")
+			// "AQI" is approved for the explainer and area pages; "индекс" for area pages only.
+			isArea := strings.HasPrefix(path, "/area/")
+			aqiOK := path == "/air-pollution" || isArea
+			indexOK := isArea
 			for name, text := range map[string]string{
 				"title":       pageTitle(t, body),
 				"description": pageDescription(t, body),
 				"og:title":    tagAttr(t, body, `<meta property="og:title" content="`),
 			} {
-				if (!aqiOK && strings.Contains(strings.ToUpper(text), "AQI")) || (!aqiOK && strings.Contains(strings.ToLower(text), "индекс")) {
+				if (!aqiOK && strings.Contains(strings.ToUpper(text), "AQI")) || (!indexOK && strings.Contains(strings.ToLower(text), "индекс")) {
 					t.Errorf("%s%s %s %q uses AQI/индекс wording", lang, path, name, text)
 				}
 				if lang == "" && strings.Contains(text, "ПМ") {
