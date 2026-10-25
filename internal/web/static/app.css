@@ -166,6 +166,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 .area-links__block h2 { font-size: var(--text-compact); color: var(--fg-2); margin-block-end: var(--space-1); }
 .area-links__block ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
 /* Area FAQ: native details, summary is a 44px tap target. */
+.area-facts { margin-block-start: var(--space-6); }
+.area-facts h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
+.area-facts p { margin-block: 0 var(--space-3); max-inline-size: 70ch; }
 .faq { margin-block-start: var(--space-6); }
 .faq h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
 .faq__item { border-block-start: 1px solid var(--border-faint); }

@@ -14,14 +14,11 @@ type FAQItem struct {
 	AnswerHTML template.HTML
 }
 
-// FAQBlock is the area page's FAQ: a heading and eleven items.
+// FAQBlock is a page's FAQ: a heading and its items.
 type FAQBlock struct {
 	Heading string
 	Items   []FAQItem
 }
-
-// faqCount is the number of questions the catalogue holds (faq.q1 to faq.q11).
-const faqCount = 11
 
 // areaIn is the BG preposition and name ("в Смолян", "във Враца", "в район Младост", "в област Пловдив"), cut out of the h1 so the grammar rule stays in one place.
 func (p PageData) areaIn() string {
@@ -34,26 +31,7 @@ func (p PageData) areaIn() string {
 	return h
 }
 
-// faqArea is {area} in the middle of a sentence: an oblast takes its inline form ("област Смолян"), not the capitalised crumb label.
-func (p PageData) faqArea(row AreaRow) string {
-	if row.Kind == "oblast" {
-		return p.oblastFormKey(row, "seo.oblast.inline")
-	}
-	return row.Name
-}
-
-// faqReplacer fills every FAQ placeholder: the area, the h1's preposition form, the poll interval and the EAQI edges from api.Scales().
-func (p PageData) faqReplacer(row AreaRow) *strings.Replacer {
-	pairs := []string{
-		"{area}", p.faqArea(row),
-		"{area_in}", p.areaIn(),
-		"{minutes}", strconv.Itoa(p.pollMinutes),
-		"{air_pollution_link}", p.T("faq.air_pollution_link"),
-	}
-	return strings.NewReplacer(append(pairs, eaqiEdgePairs()...)...)
-}
-
-// eaqiEdgePairs is the {p2_*} and {p1_*} placeholder pairs, shared by the FAQ and the PM explainer pages.
+// eaqiEdgePairs is the {p2_*} and {p1_*} placeholder pairs, shared by the About FAQ and the PM explainer pages.
 func eaqiEdgePairs() []string {
 	p2, p1 := pm25Edges(), pm10Edges()
 	return []string{
@@ -79,28 +57,20 @@ func newFAQItem(question, answer string, links ...faqLink) FAQItem {
 	return FAQItem{Question: question, Answer: answer, AnswerHTML: template.HTML(out)}
 }
 
-// faqBlock renders the area FAQ. faq.a5_official joins answer 5 only when the area has EEA data, the same rule as the area description.
-func (p PageData) faqBlock(row AreaRow) *FAQBlock {
-	fill := p.faqReplacer(row)
-	aboutLink := faqLink{Label: p.T("about.title"), Href: p.Path("/about-the-data")}
-	block := &FAQBlock{Heading: fill.Replace(p.T("faq.heading"))}
-	for n := 1; n <= faqCount; n++ {
-		num := strconv.Itoa(n)
-		answer := p.T("faq.a" + num)
-		if n == 5 && row.hasEEA() {
-			answer += " " + p.T("faq.a5_official")
+// faqBlock is the area FAQ. Each answer is a facts block, so the FAQ never says more than the text above it.
+// The rank question is left out when the rank block is.
+func (p PageData) faqBlock(f *AreaFacts) *FAQBlock {
+	block := &FAQBlock{Heading: p.factText("faq.heading")}
+	add := func(qKey, answer string) {
+		if answer != "" {
+			block.Items = append(block.Items, newFAQItem(p.factText(qKey, "{kind_plain}", f.kindPlain), answer))
 		}
-		var links []faqLink
-		// Answer 6 names the About page in quotes; the name becomes the link.
-		if n == 6 {
-			links = append(links, aboutLink)
-		}
-		// Answer 8 ends by pointing at the explainer; the filled placeholder text becomes the link.
-		if n == 8 {
-			links = append(links, faqLink{Label: p.T("faq.air_pollution_link"), Href: p.Path("/air-pollution")})
-		}
-		block.Items = append(block.Items, newFAQItem(fill.Replace(p.T("faq.q"+num)), fill.Replace(answer), links...))
 	}
+	if f.rankFAQ != "" {
+		add("faq.q1", f.rankFAQ+" "+p.T("area.facts.rank.citizen"))
+	}
+	add("faq.q2", f.Network)
+	add("faq.q3", f.Place)
 	return block
 }
 
@@ -110,14 +80,8 @@ const aboutFAQCount = 17
 // aboutFAQRZIAnswers are the About answers that end by pointing at the three RHI bathing pages.
 var aboutFAQRZIAnswers = map[int]bool{10: true, 14: true}
 
-// aboutFAQKeys maps About question n to its catalogue keys. Questions 3 and 4 reuse the area FAQ's PM and colour entries.
+// aboutFAQKeys maps About question n to its catalogue keys.
 func aboutFAQKeys(n int) (q, a string) {
-	switch n {
-	case 3:
-		return "faq.q2", "faq.a2"
-	case 4:
-		return "faq.q3", "faq.a3"
-	}
 	num := strconv.Itoa(n)
 	return "about_faq.q" + num, "about_faq.a" + num
 }
