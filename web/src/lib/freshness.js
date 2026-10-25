@@ -32,13 +32,12 @@ export function minutesFromStored(raw) {
 // failure is neither. An absence is stated plainly rather than dressed as an
 // error (DESIGN.md §2.3) — a page that has never loaded says nothing at all
 // rather than announcing that it has no time to show.
-export function statusText({ busy, at, dataAt, failed }, t, lang = 'bg') {
+export function statusText({ busy, dataAt, failed }, t, lang = 'bg') {
   if (busy) return t.loading
   if (failed) return t.failed
-  // The server snapshot time when a body carried one, else the client fetch time.
-  const when = dataAt ?? at
-  if (when == null) return ''
-  return `${t.updated} ${formatTime(when, lang)}`
+  // Only the server's snapshot time. The client clock is not the server's, so it is never written as "Data from".
+  if (dataAt == null) return ''
+  return `${t.updated} ${formatTime(dataAt, lang)}`
 }
 
 // A snapshot older than this is shown in the stale colour. The ingest cycle is a few minutes.
@@ -57,8 +56,13 @@ export function snapshotTime(...bodies) {
   return null
 }
 
-// The clock the reader's own locale writes, not a fixed HH:MM: 24-hour in
-// Bulgarian, and whatever English asks for where English is read.
+// The snapshot time of the bodies a refresh actually replaced, comparing each slot before and after by identity.
+// A body that was not reloaded (a failed fetch, a tier that keeps none) must not date this refresh.
+export function reloadedSnapshot(before, after) {
+  return snapshotTime(...after.filter((body, i) => body != null && body !== before[i]))
+}
+
+// 24-hour HH:MM in every language: the label is a few characters wide on a phone, and h23 keeps midnight 00:xx.
 export function formatTime(at, lang = 'bg') {
-  return new Date(at).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
+  return new Date(at).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 }

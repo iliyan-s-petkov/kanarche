@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // jsdom: mountPlayer builds the player's real DOM, which these drive directly.
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { installTimelapse } from '../timelapse-island.js'
 import { refreshHexes } from '../mapdata.js'
 import { hexLabelPaint, CARRIED_OPACITY, FRESH_OPACITY, SETTLING_OPACITY } from '../mappaint.js'
@@ -9,11 +9,13 @@ import { PLAY_SPEED_KEY } from '../mapconfig.js'
 import { resolutionForZoom, hexesURL } from '../hexes.js'
 import { mountPlayer } from '../timelapse.js'
 import { FRAME_MS } from '../timelapseframes.js'
+import { getFreshness, resetFreshnessForTests } from '../freshness.svelte.js'
 
 // The animation is the hex layer with a past hour's numbers in it. These fix
 // what that must NOT disturb: the live grid the map goes back to, and the
 // nothing it costs a reader who never presses play.
 describe('installTimelapse', () => {
+  afterEach(() => resetFreshnessForTests())
   const cfg = { metric: 'P2', noDataColour: '#9ca3af', lang: 'en' }
   const BODY = {
     metric: 'P2', resolution_km: 15, cells: [[23, 42]],
@@ -782,6 +784,71 @@ describe('installTimelapse', () => {
     state.hexUrl = null
     await refreshHexes(map, state, cfg, fetchJSON)
     expect(painted.length).toBeGreaterThan(after)
+  })
+
+  // Panning under an open replay fetches the live grid for the new viewport and holds its paint.
+  it('repaints the live grid at the panned viewport when the replay closes', async () => {
+    const fetchJSON = async (url) => {
+      if (url.includes('timelapse')) return BODY
+      const west = new URL(url, 'http://x').searchParams.get('bbox')?.startsWith('10') ?? false
+      return { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: west ? 77 : 99 } }] }
+    }
+    const { ui, painted, state, map } = harness(fetchJSON)
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(10))
+    ui.button.click()
+
+    map.getBounds = () => ({ getWest: () => 10, getSouth: () => 42, getEast: () => 11, getNorth: () => 43 })
+    const before = painted.length
+    await refreshHexes(map, state, cfg, fetchJSON)
+    expect(painted).toHaveLength(before)
+    expect(state.hexBody.hexes[0].values.P2).toBe(77)
+
+    ui.exit.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(77))
+    expect(state.replayOpen).toBe(false)
+    expect(getFreshness().replay).toBe(false)
+  })
+
+  it('never marks the replay open when its body fails to load', async () => {
+    const errs = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchJSON = async (url) => {
+      if (url.includes('timelapse')) throw new Error('down')
+      return { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: 99 } }] }
+    }
+    const { ui, painted, state, map } = harness(fetchJSON)
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await vi.waitFor(() => expect(errs).toHaveBeenCalled())
+    expect(state.replayOpen).toBeFalsy()
+    expect(getFreshness().replay).toBe(false)
+
+    // A refresh still paints, because nothing holds the source.
+    const before = painted.length
+    state.hexUrl = null
+    await refreshHexes(map, state, cfg, fetchJSON)
+    expect(painted.length).toBeGreaterThan(before)
+    errs.mockRestore()
+  })
+
+  it('clears the open flag on a reset, so the next refresh paints', async () => {
+    const fetchJSON = async (url) => (url.includes('timelapse')
+      ? BODY
+      : { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: 99 } }] })
+    const { ui, painted, state, map, ctl } = harness(fetchJSON)
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await vi.waitFor(() => expect(state.replayOpen).toBe(true))
+    expect(getFreshness().replay).toBe(true)
+
+    await ctl.reset()
+    expect(state.replayOpen).toBe(false)
+    expect(getFreshness().replay).toBe(false)
+    const before = painted.length
+    state.hexUrl = null
+    await refreshHexes(map, state, cfg, fetchJSON)
+    expect(painted.length).toBeGreaterThan(before)
   })
 
   it('scrubs while paused, then resumes from the paused frame', async () => {

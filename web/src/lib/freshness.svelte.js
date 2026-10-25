@@ -58,8 +58,9 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
     try {
       const replies = await Promise.all([...providers].map((fn) => fn()))
       at = now()
-      // A provider may answer with the snapshot time it loaded; none means client time.
-      dataAt = replies.find((r) => Number.isFinite(r)) ?? null
+      // A provider may answer with the snapshot time it loaded. None keeps the last server time rather than inventing one.
+      const reported = replies.find((r) => Number.isFinite(r))
+      if (reported !== undefined) dataAt = reported
       changed = categoryChange(before, probe())
     } catch (err) {
       // Reported, not swallowed: the status line is the only place a reader

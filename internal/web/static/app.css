@@ -1140,19 +1140,18 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* Icon-sized: spelled out, this overlay was a 380px bar across the map. */
 .data-refresh__btn--icon {
   display: inline-flex; align-items: center; justify-content: center;
-  inline-size: 1.75rem; block-size: 1.75rem; padding: 0;
+  gap: var(--space-1); min-inline-size: 1.75rem; block-size: 1.75rem; padding: 0 var(--space-1);
   background: none; border: 0; border-radius: var(--radius-sm);
   color: var(--fg-2); cursor: pointer;
 }
 .data-refresh__btn--icon:hover { color: var(--fg); background: var(--surface-2); }
-/* The snapshot time sits right of the icon at the size of the window button beside it. */
-.data-refresh__btn--icon:has(.data-refresh__time) { inline-size: auto; gap: var(--space-1); padding-inline: var(--space-2); }
+/* The snapshot time sits right of the icon at the size of the window button beside it. The button grows with it, so no :has() is needed. */
 .data-refresh__time {
   font-size: var(--text-caption); letter-spacing: var(--track-caption);
-  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--fg-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--fg-2); padding-inline-end: var(--space-1);
 }
 .data-refresh__time--stale { color: var(--stale); }
-/* Last, so a replay greys the time whatever its age. */
+/* After --stale at equal specificity, so a paused time is muted even when old. An open popover (below) still wins with the inverted ink. */
 .data-refresh__time--paused { color: var(--muted); }
 .data-refresh__btn--icon[aria-expanded="true"] .data-refresh__time { color: inherit; }
 @media (prefers-reduced-motion: no-preference) {
@@ -1647,7 +1646,6 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-window__btn { inline-size: auto; min-inline-size: 44px; }
   .map-play__speed { inline-size: auto; min-inline-size: 44px; }
   .data-refresh__btn--icon { min-inline-size: 44px; block-size: 44px; }
-  .data-refresh__btn--icon:not(:has(.data-refresh__time)) { inline-size: 44px; }
 
   /* Hero: title stays (h1), tagline restates the masthead and goes. */
   .page-head--compact { padding-block: var(--space-2); }

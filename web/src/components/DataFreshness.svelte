@@ -14,16 +14,21 @@
     const timer = setInterval(() => { now = nowFn() }, 60 * 1000)
     return () => clearInterval(timer)
   })
+  // A new snapshot is judged against the clock as it reads now, not as it read a minute ago.
+  $effect(() => {
+    void at
+    now = nowFn()
+  })
   const stale = $derived(isStale(at, now))
-  // The visible time has to be in the name (WCAG 2.5.3); the word stays first.
-  const name = $derived(at == null ? labels.trigger : `${labels.trigger} ${formatTime(at, lang)}`)
+  // One text for the eye and the name: the visible time has to be inside the name (WCAG 2.5.3), the word first.
+  const label = $derived(at == null ? '' : formatTime(at, lang))
+  const name = $derived(label ? `${labels.trigger} ${label}` : labels.trigger)
 
   let open = $state(false)
   let root
   let trigger
 
   const id = 'data-refresh-panel'
-  const hint = $derived(status ? `${labels.trigger} · ${status}` : labels.trigger)
 
   function close(refocus) {
     open = false
@@ -52,7 +57,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="data-refresh colmenu" bind:this={root} {onkeydown}>
-  <!-- Live only for a band change or a failure (D4). The plain time is in the title. -->
+  <!-- Live only for a band change or a failure (D4). The plain time is in the name and the title. -->
   <span class="data-refresh__status sr-only" role="status">{announce}</span>
   <!-- Not disabled while in flight: a disabled button drops keyboard focus. -->
   <button
@@ -62,7 +67,7 @@
     aria-expanded={open}
     aria-controls={id}
     aria-busy={busy}
-    title={hint}
+    title={status || undefined}
     aria-label={name}
     onclick={() => { open = !open }}
   >
@@ -70,12 +75,12 @@
       <path d="M13.5 8a5.5 5.5 0 1 1-1.61-3.89" fill="none" stroke="currentColor" stroke-width="1.5"/>
       <path d="M13.5 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>
     </svg>
-    {#if at != null}
+    {#if label}
       <span
         class="data-refresh__time"
         class:data-refresh__time--stale={stale}
         class:data-refresh__time--paused={paused}
-      >{formatTime(at, lang)}</span>
+      >{label}</span>
     {/if}
   </button>
   <div class="colmenu__panel data-refresh__panel" {id} hidden={!open}>

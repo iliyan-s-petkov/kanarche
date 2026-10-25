@@ -63,14 +63,14 @@ describe('snapshot time', () => {
     expect(createFreshness({ win: fakeWin(), storage: store() }).dataAt).toBeNull()
   })
 
-  it('drops to null when a provider reports nothing', async () => {
+  it('keeps the last server time when a provider reports nothing', async () => {
     const f = createFreshness({ win: fakeWin(), storage: store() })
     let reply = SNAP
     f.provide(async () => reply)
     await f.request()
     reply = undefined
     await f.request()
-    expect(f.dataAt).toBeNull()
+    expect(f.dataAt).toBe(SNAP)
   })
 
   it('keeps the old snapshot time when the refresh fails', async () => {

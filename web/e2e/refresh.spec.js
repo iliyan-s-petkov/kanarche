@@ -116,6 +116,10 @@ test('an old boolean setting is read as 5 minutes or off', async ({ ctx }) => {
 
 const isApi = (r, name) => new URL(r.url()).pathname === `/api/v1/${name}`
 
+// The label's clock as the page writes it: 24-hour HH:MM in the page language.
+const clock = (page, ms) => page.evaluate((t) => new Date(t)
+  .toLocaleTimeString(document.documentElement.lang || 'en', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }), ms)
+
 // Refresh now must go back to the server, and the label must name the snapshot
 // the server built, not the moment the browser asked.
 test('Refresh now revalidates /hexes and /overview and the label shows the snapshot time', async ({ ctx }) => {
@@ -150,9 +154,9 @@ test('Refresh now revalidates /hexes and /overview and the label shows the snaps
     expect(calls[0].cache, path).toBe('no-cache')
   }
 
-  const want = await page.evaluate((ms) => new Date(ms)
-    .toLocaleTimeString(document.documentElement.lang || 'en', { hour: '2-digit', minute: '2-digit' }), snapshot)
+  const want = await clock(page, snapshot)
   await expect(page.locator('.data-refresh__btn--icon')).toHaveAttribute('title', new RegExp(`${want}$`))
+  await expect(page.locator('.data-refresh__btn--icon')).toHaveAttribute('aria-label', `Refresh ${want}`)
   await page.close()
 })
 
@@ -178,13 +182,21 @@ test('a refresh while the replay is paused leaves the frame and the clock alone'
   const clock = await page.locator('.map-play__clock').textContent()
   expect(paused).not.toEqual(live)
 
-  const hexes = hexRequests(page)
+  // Counts every paint of the hex source from here on. The listener is on the document's capture phase because the event does not bubble.
+  await page.evaluate(() => {
+    window.__hexPaints = 0
+    document.addEventListener('kanarche:paint', (e) => {
+      if (e.detail?.source === 'kanarche-hexes') window.__hexPaints += 1
+    }, true)
+  })
+  const reloaded = page.waitForResponse((r) => isApi(r.request(), 'hexes'))
   await openPopover(page, false)
   await page.getByRole('button', { name: 'Refresh now' }).click()
   // The live grid is reloaded underneath, so the request still goes out.
-  await expect.poll(() => hexes.length).toBeGreaterThan(0)
+  await reloaded
+  // The refresh is over when the button stops being busy, and nothing was painted by it.
   await expect(page.locator('.data-refresh__btn--icon')).toHaveAttribute('aria-busy', 'false')
-  await page.waitForTimeout(1000)
+  expect(await page.evaluate(() => window.__hexPaints)).toBe(0)
   expect(await hexData(page)).toEqual(paused)
   expect(await page.locator('.map-play__clock').textContent()).toBe(clock)
 
@@ -194,12 +206,11 @@ test('a refresh while the replay is paused leaves the frame and the clock alone'
 })
 
 // The time beside the refresh icon: the snapshot the server built, in view and
-// inside its box at both widths. Shots go to the verification cache for review.
-const SHOTS = '/Users/iliyan/.cache/kanarche-verify/refresh-shots'
+// inside its box at both widths. Set E2E_SHOTS=1 to keep a screenshot of each in test-results.
 
 for (const [name, vp, phone] of [['1440', { width: 1440, height: 900 }, false], ['390', { width: 390, height: 844 }, true]]) {
   for (const scheme of ['light', 'dark']) {
-    test(`the refresh icon shows the snapshot time at ${name} in ${scheme}`, async ({ ctx }) => {
+    test(`the refresh icon shows the snapshot time at ${name} in ${scheme}`, async ({ ctx }, testInfo) => {
       const page = await ctx.newPage()
       await page.emulateMedia({ colorScheme: scheme })
       await page.setViewportSize(vp)
@@ -211,9 +222,12 @@ for (const [name, vp, phone] of [['1440', { width: 1440, height: 900 }, false], 
       const btn = page.locator('.data-refresh__btn--icon')
       const time = btn.locator('.data-refresh__time')
       await expect(time).toBeVisible()
-      const want = await page.evaluate((iso) => new Date(iso)
-        .toLocaleTimeString(document.documentElement.lang || 'en', { hour: '2-digit', minute: '2-digit' }), generated)
+      const want = await clock(page, Date.parse(generated))
       await expect(time).toHaveText(want)
+      // --stale resolves against the theme's own foreground, so the dark theme gets the dark one.
+      const token = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--stale'))
+      const fg = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--fg').trim())
+      expect(token.toLowerCase()).toContain(fg.toLowerCase())
 
       // One line, inside the button, inside the viewport.
       const t = await time.boundingBox()
@@ -224,8 +238,71 @@ for (const [name, vp, phone] of [['1440', { width: 1440, height: 900 }, false], 
       expect(b.x + b.width).toBeLessThanOrEqual(vp.width)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 
-      await page.screenshot({ path: `${SHOTS}/time-${name}-${scheme}.png` })
+      if (process.env.E2E_SHOTS) await page.screenshot({ path: testInfo.outputPath(`time-${name}-${scheme}.png`) })
       await page.close()
     })
   }
 }
+
+// Where the label's time comes from, end to end: the hex body's generated_at, kept
+// when a later refresh brings none, and never the browser's own clock.
+test.describe('the refresh time follows the server snapshot', () => {
+  const T1 = '2026-01-15T03:07:00Z'
+  const T2 = '2026-01-15T03:22:00Z'
+
+  // mode.at is the generated_at to serve, undefined to strip it, and mode.fail drops the request.
+  async function withHexTime(ctx, mode) {
+    const page = await ctx.newPage()
+    await page.setViewportSize(DESKTOP)
+    await page.route('**/api/v1/hexes*', async (route) => {
+      if (mode.fail) return route.abort()
+      const res = await route.fetch()
+      const body = await res.json()
+      if (mode.at === undefined) delete body.generated_at
+      else body.generated_at = mode.at
+      return route.fulfill({ response: res, json: body })
+    })
+    return page
+  }
+
+  async function refreshOnce(page) {
+    const hexes = hexRequests(page)
+    await openPopover(page, false)
+    await page.getByRole('button', { name: 'Refresh now' }).click()
+    await expect.poll(() => hexes.length).toBeGreaterThan(0)
+    await expect(page.locator('.data-refresh__btn--icon')).toHaveAttribute('aria-busy', 'false')
+  }
+
+  test('takes the hex time, keeps it through a refresh that brings none, and moves to a newer one', async ({ ctx }) => {
+    const mode = { at: T1 }
+    const page = await withHexTime(ctx, mode)
+    await page.goto('/en/')
+    await mapSettled(page)
+    const time = page.locator('.data-refresh__time')
+    await expect(time).toHaveText(await clock(page, Date.parse(T1)))
+
+    mode.fail = true
+    await refreshOnce(page)
+    await expect(time).toHaveText(await clock(page, Date.parse(T1)))
+
+    mode.fail = false
+    mode.at = undefined
+    await refreshOnce(page)
+    await expect(time).toHaveText(await clock(page, Date.parse(T1)))
+
+    mode.at = T2
+    await refreshOnce(page)
+    await expect(time).toHaveText(await clock(page, Date.parse(T2)))
+    await page.close()
+  })
+
+  test('shows no time at all when the server never gave one', async ({ ctx }) => {
+    const page = await withHexTime(ctx, { at: undefined })
+    await page.goto('/en/')
+    await mapSettled(page)
+    await expect(page.locator('.data-refresh__btn--icon')).toBeVisible()
+    await expect(page.locator('.data-refresh__time')).toHaveCount(0)
+    await expect(page.locator('.data-refresh__btn--icon')).toHaveAttribute('aria-label', 'Refresh')
+    await page.close()
+  })
+})
