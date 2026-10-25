@@ -1,8 +1,7 @@
 // The chart island is only a mount point: every decision lives in
 // ChartPanel.svelte, which owns the selected period and therefore the URL.
 // The metric is the one exception — it lives in the shared view state (see
-// lib/viewstate.svelte.js) so the page's top switcher and this island's own
-// menu both drive the same value.
+// lib/viewstate.svelte.js) and only the page's top switcher and the map drive it.
 import { mount as mountComponent } from 'svelte'
 import ChartPanel from '../components/ChartPanel.svelte'
 import { parseMetricList, zipLabels } from '../lib/metrics.js'
@@ -45,9 +44,7 @@ export function mount(el) {
       // Positional against areaMetrics, read by ChartPanel to re-resolve the
       // y-axis unit whenever the metric changes.
       metricUnits: Object.fromEntries(areaMetrics.map((m, i) => [m, areaMetricUnits[i] || ''])),
-      onMetricChange: (m) => vs.setMetric(m),
-      // Own attribute, not the switcher's tLegend (#563).
-      metricLegend: d.tChartMetricLegend || '',
+      heading: d.tHeading || '',
       periods: list(d.periods),
       periodLabels: list(d.periodLabels),
       initialPeriod: d.period,

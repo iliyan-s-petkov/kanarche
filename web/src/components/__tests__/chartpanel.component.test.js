@@ -31,8 +31,7 @@ const props = {
   metric: 'P2',
   metricOptions: [{ metric: 'P2', label: 'PM2.5' }, { metric: 'P1', label: 'PM10' }],
   metricUnits: { P2: 'µg/m³', P1: 'µg/m³' },
-  onMetricChange: () => {},
-  metricLegend: 'Metric',
+  heading: 'History',
   periods: ['1h', '24h', '7d', '30d', '1y'],
   periodLabels: ['1 hour', '24 hours', '7 days', '30 days', '1 year'],
   initialPeriod: '24h',
@@ -220,39 +219,37 @@ describe('ChartPanel.svelte', () => {
       .toBe('PM2.5 · 24 hours · province average')
   })
 
-  // The composed text sits below the chart it describes, so it is no longer
-  // acting as a heading: an <h2> printed after its content breaks the page's
-  // heading outline. It renders as a caption paragraph instead, and nothing
-  // in the app references it as a heading (no aria-labelledby, no locator).
-  it('renders the caption as a paragraph, not a section heading', () => {
+  // The section heading is the one h2: the composed text below the chart is a caption paragraph.
+  it('renders the caption as a paragraph, not a second heading', () => {
     const target = render()
-    expect(target.querySelector('h2')).toBeNull()
+    expect(target.querySelectorAll('h2')).toHaveLength(1)
     expect(target.querySelector('p.chart-caption.t-caption')).not.toBeNull()
   })
 
-  // The metric menu is the toolbar's own leftmost control now that the
-  // heading no longer shares the row and pushes it right of centre.
-  it('places the metric menu first among the toolbar controls', () => {
+  // The chart follows the map metric, so it owns no metric control.
+  it('has no metric control in the toolbar', () => {
     const target = render()
-    const controls = target.querySelector('.chart-controls')
-    expect(controls.firstElementChild.querySelector('#area-chart-metric'))
-      .not.toBeNull()
+    expect(target.querySelector('#area-chart-metric')).toBeNull()
+    expect(target.querySelector('.chart-controls input[type="radio"]')).toBeNull()
+    expect(target.querySelectorAll('.chart-controls select')).toHaveLength(1)
   })
 
-  // The point of the control: picking another metric must reach the API and
-  // relabel the heading and the y-axis, the same proof the period picker gets
-  // above — but with the period held still. metric is wired the same way
+  it('titles the section with an h2 from the server heading', () => {
+    const target = render()
+    expect(target.querySelector('h2').textContent).toBe('History')
+  })
+
+  // A metric change from the shared view state must reach the API and relabel
+  // the caption and the y-axis, with the period held still. metric is wired the same way
   // switcher.js and map.js wire it in production — a getter over the shared
   // view state — so these cases prove the real reactivity path, not a prop
   // the test re-supplies by hand.
-  describe('the metric menu', () => {
+  describe('the shared map metric', () => {
     const metricOptions = [
       { metric: 'P2', label: 'PM2.5' },
       { metric: 'temperature', label: 'Temperature' },
     ]
     const metricUnits = { P2: 'µg/m³', temperature: '°C' }
-    const metricButton = (t) => t.querySelector('#area-chart-metric')
-    const metricRadio = (t, metric) => t.querySelector(`input[type="radio"][value="${metric}"]`)
 
     // At least two points: Chart.svelte treats a single point as 'empty' and
     // never constructs uPlot, and the y-axis unit only reaches uPlot's opts.
@@ -285,7 +282,6 @@ describe('ChartPanel.svelte', () => {
           ...props,
           metricOptions,
           metricUnits,
-          onMetricChange: (m) => vs.setMetric(m),
           get metric() { return vs.metric },
         },
       })
@@ -294,60 +290,30 @@ describe('ChartPanel.svelte', () => {
 
     afterEach(() => resetViewStateForTests())
 
-    it('offers a menu when the area reports more than one metric', () => {
-      const { target } = renderWithViewState()
-      expect(metricButton(target)).not.toBeNull()
-    })
-
-    it('changes the requested URL to the chosen metric, keeping the period', async () => {
-      const { target } = renderWithViewState()
-      await vi.waitFor(() => expect(urls).toHaveLength(1))
-      expect(urls[0]).toContain('metric=P2')
-      expect(urls[0]).toContain('period=24h')
-
-      metricButton(target).click()
-      metricRadio(target, 'temperature').click()
-
-      await vi.waitFor(() => expect(urls).toHaveLength(2))
-      expect(urls[1]).toContain('metric=temperature')
-      expect(urls[1]).toContain('period=24h')
-    })
-
-    it('updates the heading label and the y-axis unit for the chosen metric', async () => {
-      const { target } = renderWithViewState()
-      await vi.waitFor(() => expect(urls).toHaveLength(1))
-
-      metricButton(target).click()
-      metricRadio(target, 'temperature').click()
-
-      await vi.waitFor(() => expect(target.querySelector('.chart-caption').textContent)
-        .toBe('Temperature · 24 hours · province average'))
-      await vi.waitFor(() => expect(uPlot).toHaveBeenCalledTimes(2))
-      const secondCallOpts = uPlot.mock.calls[1][0]
-      expect(secondCallOpts.axes[1].label).toBe('°C')
-    })
-
     // The chart follows a metric change made through the shared view state —
     // i.e. by the top switcher, not only through its own menu.
     it('follows a metric change made through the shared view state', async () => {
       const { target, vs } = renderWithViewState()
       await vi.waitFor(() => expect(urls).toHaveLength(1))
+      expect(urls[0]).toContain('metric=P2')
 
       vs.setMetric('temperature')
       await tick()
 
       await vi.waitFor(() => expect(urls).toHaveLength(2))
       expect(urls[1]).toContain('metric=temperature')
+      expect(urls[1]).toContain('period=24h')
+      await vi.waitFor(() => expect(uPlot).toHaveBeenCalledTimes(2))
+      expect(uPlot.mock.calls[1][0].axes[1].label).toBe('°C')
       expect(target.querySelector('.chart-caption').textContent)
         .toBe('Temperature · 24 hours · province average')
     })
 
-    it('renders without a menu when the area reports a single metric', () => {
+    it('names the single metric in the caption when the area reports one', () => {
       const target = render({
         metricOptions: [{ metric: 'P2', label: 'PM2.5' }],
         metricUnits: { P2: 'µg/m³' },
       })
-      expect(metricButton(target)).toBeNull()
       expect(target.querySelector('.chart-caption').textContent)
         .toBe('PM2.5 · 24 hours · province average')
     })
@@ -374,8 +340,7 @@ describe('ChartPanel.svelte', () => {
             ...props,
             metricOptions: [{ metric: 'P1', label: 'PM10' }],
             metricUnits: { P1: 'µg/m³' },
-            onMetricChange: (m) => vs.setMetric(m),
-            get metric() { return vs.metric },
+              get metric() { return vs.metric },
           },
         })
         return { target, vs }
@@ -434,10 +399,8 @@ describe('ChartPanel.svelte', () => {
       const target = render({
         metricOptions: [],
         metricUnits: {},
-        onMetricChange: (m) => vs.setMetric(m),
         get metric() { return vs.metric },
       })
-      expect(metricButton(target)).toBeNull()
       expect(target.querySelector('.chart-controls')).toBeNull()
       expect(target.querySelector('.data-frame .chart-message').textContent).toBe(props.unavailable)
       expect(vs.metric).toBe('P2')
@@ -486,8 +449,7 @@ describe('ChartPanel.svelte', () => {
             ...props,
             get selected() { return vs.sensorId === 42 },
             get metric() { return vs.metric },
-            onMetricChange: (m) => vs.setMetric(m),
-          },
+            },
         })
         await vi.waitFor(() => expect(urls).toHaveLength(1))
 
