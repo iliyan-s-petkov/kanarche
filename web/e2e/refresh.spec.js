@@ -128,14 +128,27 @@ test('Refresh now revalidates /hexes and /overview and the label shows the snaps
     body.generated_at = new Date(snapshot).toISOString()
     await route.fulfill({ response: res, json: body })
   })
-  const sent = []
-  page.on('request', async (r) => {
-    if (isApi(r, 'hexes') || isApi(r, 'overview')) sent.push({ name: new URL(r.url()).pathname, headers: await r.allHeaders() })
+  // The request event does not carry the fetch cache mode, so the page's own fetch is watched.
+  await page.evaluate(() => {
+    window.__sent = []
+    const real = window.fetch
+    window.fetch = (input, init) => {
+      const path = new URL(typeof input === 'string' ? input : input.url, location.href).pathname
+      window.__sent.push({ path, cache: init?.cache ?? input?.cache })
+      return real(input, init)
+    }
   })
+  const wire = []
+  page.on('request', (r) => { if (isApi(r, 'hexes') || isApi(r, 'overview')) wire.push(new URL(r.url()).pathname) })
   await openPopover(page, false)
   await page.getByRole('button', { name: 'Refresh now' }).click()
-  await expect.poll(() => new Set(sent.map((s) => s.name)).size).toBe(2)
-  for (const s of sent) expect(s.headers['cache-control'], s.name).toMatch(/no-cache|max-age=0/)
+  await expect.poll(() => new Set(wire).size).toBe(2)
+  const sent = await page.evaluate(() => window.__sent)
+  for (const path of ['/api/v1/hexes', '/api/v1/overview']) {
+    const calls = sent.filter((s) => s.path === path)
+    expect(calls.length, path).toBeGreaterThan(0)
+    expect(calls[0].cache, path).toBe('no-cache')
+  }
 
   const want = await page.evaluate((ms) => new Date(ms)
     .toLocaleTimeString(document.documentElement.lang || 'en', { hour: '2-digit', minute: '2-digit' }), snapshot)
