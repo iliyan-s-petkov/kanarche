@@ -3,9 +3,7 @@
      data width. Slice D gives it the kit's .readouts and .map--wide; the
      container is what it needs now that <main> no longer clamps anything. */}}
 <div class="frame">
-<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
-{{range $i, $c := .AreaCrumbs}}{{if $i}}<span class="breadcrumb__sep" aria-hidden="true">›</span>{{end}}{{if .Current}}<span aria-current="page">{{.Name}}</span>{{else}}<a class="link" href="{{.URL}}">{{.Name}}</a>{{end}}{{end}}
-</nav>
+{{template "breadcrumb" .}}
 
 {{/* The kit's .page-head: the name, then whatever qualifies it, above the
      figures rather than between them. */}}

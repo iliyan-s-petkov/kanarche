@@ -36,6 +36,10 @@ func (rr *Renderer) handlePM(key, other string) http.HandlerFunc {
 			OtherPath: data.Path("/" + other),
 			OtherKey:  "guide.links." + other,
 		}
+		data.Crumbs = []Crumb{
+			{Name: data.T("area.breadcrumb.home"), URL: data.Path("/")},
+			{Name: data.T(key + ".h1"), URL: data.Path("/" + key), Current: true},
+		}
 		data.JSONLD = rr.mustJSONLD(data.pmJSONLD())
 		rr.render(w, r, http.StatusOK, "pm", data)
 	}
@@ -53,9 +57,5 @@ func (p PageData) pmJSONLD() (template.JS, error) {
 		Author:           ldRef{ID: person.ID},
 		Publisher:        ldRef{ID: org.ID},
 	}
-	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: []ldListItem{
-		{Type: "ListItem", Position: 1, Name: p.T("area.breadcrumb.home"), Item: p.BaseURL + p.Path("/")},
-		{Type: "ListItem", Position: 2, Name: p.T(p.PM.Key + ".h1"), Item: p.CanonicalURL()},
-	}}
-	return encodeJSONLD(crumbs, article, org, person)
+	return encodeJSONLD(p.breadcrumbLD(), article, org, person)
 }

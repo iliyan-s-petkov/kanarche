@@ -318,16 +318,13 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 	return encodeJSONLD(nodes...)
 }
 
-// areaBreadcrumb maps the visible trail (p.AreaCrumbs, built by Breadcrumbs) one-to-one onto the BreadcrumbList.
-func (rr *Renderer) areaBreadcrumb(p PageData) []ldListItem {
-	items := make([]ldListItem, 0, len(p.AreaCrumbs))
-	for _, c := range p.AreaCrumbs {
-		items = append(items, ldListItem{Name: c.Name, Item: p.BaseURL + c.URL})
+// breadcrumbLD maps the visible trail (p.Crumbs) one-to-one onto a BreadcrumbList with absolute URLs.
+func (p PageData) breadcrumbLD() ldBreadcrumbList {
+	items := make([]ldListItem, 0, len(p.Crumbs))
+	for i, c := range p.Crumbs {
+		items = append(items, ldListItem{Type: "ListItem", Position: i + 1, Name: c.Name, Item: p.BaseURL + c.URL})
 	}
-	for i := range items {
-		items[i].Type, items[i].Position = "ListItem", i+1
-	}
-	return items
+	return ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: items}
 }
 
 // faqPage maps the rendered FAQ one-to-one onto a FAQPage, so markup and visible text share strings.
@@ -347,7 +344,7 @@ func faqPageOf(block *FAQBlock) ldFAQPage {
 
 // areaJSONLD is the breadcrumb trail, the FAQ, and a Place when a centroid exists.
 func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
-	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: rr.areaBreadcrumb(p)}
+	crumbs := p.breadcrumbLD()
 	faq := p.faqPage()
 
 	if row.Lat == 0 && row.Lon == 0 {

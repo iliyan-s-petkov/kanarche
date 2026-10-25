@@ -152,6 +152,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* Desktop only: on phones the extra height pushes the map's pull tab below the fold. */
 @media (min-width: 672px) { .breadcrumb { margin-block-start: var(--space-6); } }
 .breadcrumb__sep { color: var(--muted); padding-inline: var(--space-1); }
+/* The trail is an ol of inline li, so it reads as the same one line as before. */
+.breadcrumb ol { list-style: none; margin: 0; padding: 0; }
+.breadcrumb li { display: inline; }
+.breadcrumb li + li::before { content: "›"; content: "›" / ""; color: var(--muted); padding-inline: var(--space-1); }
 /* The air-now and 24h sentences sit under the h1, above the readouts. */
 .area-now, .area-day { margin-block: var(--space-2) 0; }
 /* Touch phones: summary and no-coverage notice after the map, before #below-map (reordered in the .frame grid). */

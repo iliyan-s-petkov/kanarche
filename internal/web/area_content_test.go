@@ -350,12 +350,12 @@ func TestAreaLinksPerKind(t *testing.T) {
 		{Name: "София", URL: "/area/sofia"},
 		{Name: "Младост", URL: "/area/mladost", Current: true},
 	}
-	if len(p4.AreaCrumbs) != len(wantCrumbs) {
-		t.Fatalf("mladost breadcrumbs = %+v, want %d crumbs", p4.AreaCrumbs, len(wantCrumbs))
+	if len(p4.Crumbs) != len(wantCrumbs) {
+		t.Fatalf("mladost breadcrumbs = %+v, want %d crumbs", p4.Crumbs, len(wantCrumbs))
 	}
 	for i, want := range wantCrumbs {
-		if p4.AreaCrumbs[i] != want {
-			t.Errorf("breadcrumb[%d] = %+v, want %+v", i, p4.AreaCrumbs[i], want)
+		if p4.Crumbs[i] != want {
+			t.Errorf("breadcrumb[%d] = %+v, want %+v", i, p4.Crumbs[i], want)
 		}
 	}
 }
