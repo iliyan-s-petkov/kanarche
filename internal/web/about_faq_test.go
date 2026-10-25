@@ -33,6 +33,9 @@ var aboutFAQQuestions = map[string][]string{
 		"Why does the rating not show the water quality for today?",
 		"How do I find beaches on the map?",
 		"Is the water in the Black Sea clean?",
+		"What do the wind particles and arrows on the map show?",
+		"What does Pollen show on the map?",
+		"Does pollen count as PM?",
 	},
 	"/about-the-data": {
 		"Откъде идват данните за въздуха?",
@@ -49,6 +52,9 @@ var aboutFAQQuestions = map[string][]string{
 		"Защо оценката не показва качеството на водата за днешния ден?",
 		"Как да открия плажовете на картата?",
 		"Чиста ли е водата в Черно море?",
+		"Какво показват частиците и стрелките за вятъра на картата?",
+		"Какво показва „Прашец“ на картата?",
+		"Може ли прашецът да се отчете като ФПЧ?",
 	},
 }
 
@@ -80,7 +86,7 @@ func TestAboutFAQKeysExistInBothCatalogues(t *testing.T) {
 			t.Fatal(err)
 		}
 		keys := []string{"about_faq.heading"}
-		for n := 1; n <= 14; n++ {
+		for n := 1; n <= 17; n++ {
 			if n == 3 || n == 4 {
 				continue // reused from faq.q2/a2 and faq.q3/a3
 			}
@@ -190,8 +196,8 @@ func TestAboutFAQPageJSONLDMatchesVisibleText(t *testing.T) {
 			t.Fatalf("%s: no FAQPage node in the graph", path)
 		}
 		visible := aboutFAQVisible(t, body)
-		if len(faq.MainEntity) != 14 || len(visible) != 14 {
-			t.Fatalf("%s: %d JSON-LD entries and %d visible, want 14 each", path, len(faq.MainEntity), len(visible))
+		if len(faq.MainEntity) != 17 || len(visible) != 17 {
+			t.Fatalf("%s: %d JSON-LD entries and %d visible, want 17 each", path, len(faq.MainEntity), len(visible))
 		}
 		for i, q := range faq.MainEntity {
 			if q.Type != "Question" || q.AcceptedAnswer.Type != "Answer" {
@@ -280,8 +286,8 @@ func TestAboutFAQPageBathingAnswersCarryPlainURLs(t *testing.T) {
 			if n.Type != "FAQPage" {
 				continue
 			}
-			if len(n.MainEntity) != 14 {
-				t.Fatalf("%s: %d FAQ entries, want 14", path, len(n.MainEntity))
+			if len(n.MainEntity) != 17 {
+				t.Fatalf("%s: %d FAQ entries, want 17", path, len(n.MainEntity))
 			}
 			for _, i := range []int{9, 13} {
 				text := n.MainEntity[i].AcceptedAnswer.Text
