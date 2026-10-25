@@ -345,9 +345,10 @@ type PageData struct {
 	// FooterAreas are the footer's Explore links: the busiest cities in the
 	// snapshot, named in the page language. Empty without a snapshot.
 	FooterAreas []FooterArea
-	// HomeCities and HomeSofia feed the home page's city links.
-	HomeCities []FooterArea
-	HomeSofia  bool
+	// HomeBigCities are the rows of the home "Big cities now" block, HomeSofia
+	// whether the block links the Sofia districts.
+	HomeBigCities []AreaRow
+	HomeSofia     bool
 	// FacebookURL and LinkedInURL are the optional footer profiles; empty hides the icon.
 	FacebookURL, LinkedInURL string
 
