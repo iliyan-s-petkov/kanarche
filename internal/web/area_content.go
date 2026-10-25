@@ -385,7 +385,7 @@ func nearestLabelKey(kind string) string {
 	case "city":
 		return "area.nearest.city"
 	default:
-		return "area.nearest.neighbourhood"
+		return "area.siblings.districts"
 	}
 }
 
@@ -401,7 +401,7 @@ const nearestCount = 4
 //   - city: parent is its oblast; children is the city's districts where it
 //     has any (Sofia); nearest is 4 cities.
 //   - neighbourhood (a Sofia district): parent is the chain София, Област
-//     София-град; no children; nearest is 4 districts.
+//     София-град; no children; the siblings block lists every other district.
 func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row AreaRow, snap *snapshot.Snapshot, lang string) {
 	chain := rr.ParentChain(meta, snap, lang)
 	p.AreaCrumbs = p.Breadcrumbs(row, chain)
@@ -424,7 +424,12 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 		}
 	}
 
-	if nearest := rr.nearestSameKind(meta, snap, lang, nearestCount); len(nearest) > 0 {
+	// A district lists every sibling district, nearest first, under its own heading.
+	count := nearestCount
+	if meta.Kind == "neighbourhood" {
+		count = len(snap.KnownSlugs)
+	}
+	if nearest := rr.nearestSameKind(meta, snap, lang, count); len(nearest) > 0 {
 		p.AreaNearestBlock = &AreaLinkBlock{Label: p.T(nearestLabelKey(meta.Kind)), Items: nearest}
 	}
 }
