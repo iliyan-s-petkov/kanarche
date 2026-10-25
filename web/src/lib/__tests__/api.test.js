@@ -418,6 +418,23 @@ describe('server clock', () => {
     expect(serverNow()).toBe(SERVER)
   })
 
+  it('follows a client clock set forward after the window has passed', async () => {
+    await seen(SERVER, { Date: new Date(SERVER).toUTCString() })
+    vi.advanceTimersByTime(11 * 60 * 1000)
+    const later = SERVER + 11 * 60 * 1000
+    // The reader's clock jumps 30 minutes ahead; the server's did not.
+    await seen(later + 30 * 60 * 1000, { Date: new Date(later).toUTCString() })
+    expect(serverNow()).toBe(later)
+  })
+
+  it('keeps the larger offset inside the window even after a forward jump', async () => {
+    await seen(SERVER, { Date: new Date(SERVER).toUTCString() })
+    vi.advanceTimersByTime(60 * 1000)
+    const later = SERVER + 60 * 1000
+    await seen(later + 30 * 60 * 1000, { Date: new Date(later).toUTCString() })
+    expect(serverNow()).toBe(later + 30 * 60 * 1000)
+  })
+
   it('ignores a missing or unreadable Date', async () => {
     await seen(SERVER, {})
     await seen(SERVER, { Date: 'not a date' })

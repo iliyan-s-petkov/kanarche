@@ -160,8 +160,13 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   // keepPlayhead is true only for a zoom-driven refetch: a fresh press of play
   // starts the story over, but a reader mid-animation should not be thrown
   // back to frame 0 just because the tier under them changed.
+  // Bumped by reset and exit. A load that started before either must not
+  // store or open anything when it resolves: its body is for a view that is gone.
+  let generation = 0
+
   const load = async (keepPlayhead = false) => {
     const url = wantedURL()
+    const started = generation
     // show() again on the held body: leaving the animation hides the scrubber,
     // and this is the path that brings it back without a second fetch. Also
     // the dedup that keeps a zoom within the same tier from refetching.
@@ -177,6 +182,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
       console.error('timelapse:', err)
       return false
     }
+    if (started !== generation) return false
     // Drawn from the held body, judged on the measured one: coverage counts the
     // readings actually taken, so filling gaps in before thinFrames saw them
     // would report every hour as complete and silence the guard.
@@ -330,6 +336,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   // control that puts the live grid back. It collapses the scrubber too: the
   // held body stays, so the next press of play repaints without a refetch.
   ui.onexit(async () => {
+    generation++
     open = false
     state.replayOpen = false
     getFreshness().setReplay(false)
@@ -341,6 +348,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   // A different window or metric is a different animation; what is held is stale.
   return {
     async reset() {
+      generation++
       open = false
       state.replayOpen = false
       getFreshness().setReplay(false)

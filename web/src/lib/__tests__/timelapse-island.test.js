@@ -851,6 +851,25 @@ describe('installTimelapse', () => {
     expect(painted.length).toBeGreaterThan(before)
   })
 
+  it('does not open a replay whose load was overtaken by a reset', async () => {
+    let release
+    const gate = new Promise((resolve) => { release = resolve })
+    const fetchJSON = async (url) => {
+      if (url.includes('timelapse')) { await gate; return BODY }
+      return { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: 99 } }] }
+    }
+    const { ui, painted, state, map, ctl } = harness(fetchJSON)
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await ctl.reset()
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(state.replayOpen).toBeFalsy()
+    expect(getFreshness().replay).toBe(false)
+    expect(painted.at(-1).features[0].properties.value).toBe(99)
+    expect(ui.button.getAttribute('aria-pressed')).not.toBe('true')
+  })
+
   it('scrubs while paused, then resumes from the paused frame', async () => {
     const { ui, painted } = harness(async () => BODY)
 
