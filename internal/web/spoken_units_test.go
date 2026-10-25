@@ -78,9 +78,6 @@ func TestReadoutCellCarriesTheSpokenUnit(t *testing.T) {
 	if got[1].UnitSpoken != "degrees Celsius" {
 		t.Errorf("temperature cell spoken unit = %q", got[1].UnitSpoken)
 	}
-	if got[2].UnitSpoken != "" {
-		t.Errorf("the sensor count has no unit, got spoken %q", got[2].UnitSpoken)
-	}
 }
 
 func homePageData(t *testing.T, lang string) PageData {

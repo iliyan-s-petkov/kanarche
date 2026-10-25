@@ -17,8 +17,8 @@ function render(cards) {
   return target
 }
 
-const gauged = { label: 'Максимум · ФПЧ2.5', metric: 'ФПЧ2.5', value: '30', unit: 'µg/m³', tier: 'Овча купел · 9 сензора', gauge: { percent: 60, colour: '#a00' } }
-const plain = { label: 'Този сензор', metric: 'ФПЧ2.5', value: '1', unit: 'от 9', tier: 'Под медианата', gauge: null }
+const gauged = { label: 'Максимум · ФПЧ2.5', metric: 'ФПЧ2.5', value: '30', unit: 'µg/m³', tier: 'Овча купел · 9 сензора', band: { colour: '#a00', word: 'лошо' } }
+const plain = { label: 'Този сензор', metric: 'ФПЧ2.5', value: '1', unit: 'от 9', tier: 'Под медианата', band: null }
 
 describe('Readouts spoken units', () => {
   afterEach(() => { document.head.innerHTML = '' })
@@ -29,7 +29,7 @@ describe('Readouts spoken units', () => {
     const unit = el.querySelector('.readout__unit')
     expect(unit.textContent).toBe('µg/m³')
     expect(unit.getAttribute('aria-hidden')).toBe('true')
-    expect(el.querySelector('.gauge__figure .visually-hidden, .gauge__figure .sr-only').textContent.trim()).toBe('micrograms per cubic metre')
+    expect(el.querySelector('.readout__value .sr-only').textContent.trim()).toBe('micrograms per cubic metre')
   })
 
   it('leaves a unit that is not a symbol alone', () => {
@@ -49,21 +49,23 @@ describe('Readouts', () => {
   })
 
   // style-src is 'self' with no 'unsafe-inline': a style attribute would be
-  // dropped and the arc would never paint. Presentation attributes, as in
+  // dropped and the bar would never paint. Presentation attributes, as in
   // base.gohtml's own strip.
-  it('paints the arc with presentation attributes and no inline style', () => {
-    const arc = render([gauged]).querySelector('.gauge__arc')
-    expect(arc.getAttribute('stroke')).toBe('#a00')
-    expect(arc.getAttribute('stroke-dasharray')).toBe('60 100')
-    expect(arc.getAttribute('style')).toBe(null)
+  it('paints the band bar with a presentation attribute and no inline style', () => {
+    const el = render([gauged])
+    const rect = el.querySelector('.readout__bar rect')
+    expect(rect.getAttribute('fill')).toBe('#a00')
+    expect(el.querySelector('.readout__bar').getAttribute('style')).toBe(null)
+    expect(el.querySelector('.readout__band').textContent).toBe('лошо')
+    expect(el.querySelector('.gauge')).toBe(null)
   })
 
-  // A count has no scale to be a fraction of, so an arc around it would be an
-  // invented proportion.
-  it('leaves a card with no gauge a plain figure', () => {
+  // A count or an axis metric has no health class: no bar and no word.
+  it('leaves a card with no band a plain figure', () => {
     const el = render([plain])
-    expect(el.querySelector('.gauge__dial')).toBe(null)
-    // The unit sits inside the value, as it does in base.gohtml — with the
+    expect(el.querySelector('.readout__bar')).toBe(null)
+    expect(el.querySelector('.readout__band')).toBe(null)
+    // The unit sits inside the value, as it does in base.gohtml, with the
     // space Svelte would otherwise trim out of the markup.
     expect(el.querySelector('.readout__value').textContent).toBe('1 от 9')
     expect(el.querySelector('.readout__unit').textContent).toBe('от 9')

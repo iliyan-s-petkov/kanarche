@@ -3,7 +3,6 @@ package web
 import (
 	"testing"
 
-	"kanarche.eu/internal/api"
 	"kanarche.eu/internal/upstream"
 )
 
@@ -69,85 +68,33 @@ func TestBandColourUsesTheSameTableTheMapDoes(t *testing.T) {
 	}
 }
 
-// The gauge's ceiling is the scale's DRAWN ceiling, the same top the map ramp
-// and the legend stop at. Against the top guideline band instead, every reading
-// over 50 µg/m³ drew an identical full ring. Only µg/m³ is gauged — a pressure
-// or a temperature is not a fraction of its axis.
-func TestGaugePercentScalesAgainstTheDrawnCeiling(t *testing.T) {
+// A health band exists only where an index publishes one. PM and the three EAQI
+// gases have it; benzene and CO are axis-only tables, weather and noise have
+// their own word lists. A bar and a band word on those would claim a health class.
+func TestHealthBandOnlyForEAQIMetrics(t *testing.T) {
 	cases := []struct {
-		name   string
-		metric string
-		value  float64
-		want   int
-		wantOK bool
+		name       string
+		metric     string
+		value      float64
+		wantColour string
+		wantKey    string
 	}{
-		{"nothing", "P2", 0, 0, true},
-		{"the ceiling itself", "P2", ceilingOf(t, "P2"), 100, true},
-		{"half the ceiling", "P2", ceilingOf(t, "P2") / 2, 50, true},
-		{"past the open top band", "P2", ceilingOf(t, "P2") * 3, 100, true},
-		{"a negative reading", "P2", -5, 0, true},
-		{"a metric counted in another unit", "pressure", 1013, 0, false},
-		{"a metric with no scale at all", "not_a_metric", 5, 0, false},
+		{"pm25 moderate", "P2", 19.6, "#f0e641", "moderate"},
+		{"pm25 boundary stays low", "P2", 5, "#50f0e6", "good"},
+		{"pm10 fair", "P1", 25, "#50ccaa", "fair"},
+		{"no2 good", "NO2", 5, "#50f0e6", "good"},
+		{"benzene has no health band", "C6H6", 1.4, "", ""},
+		{"carbon monoxide has no health band", "CO", 2190, "", ""},
+		{"temperature has no health band", "temperature", 11.6, "", ""},
+		{"noise has its own words, not health ones", "noise_LA_max", 60, "", ""},
+		{"unknown metric", "not_a_metric", 1, "", ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, ok := gaugePercent(c.metric, c.value)
-			if ok != c.wantOK || got != c.want {
-				t.Errorf("gaugePercent(%q, %v) = %d, %v; want %d, %v", c.metric, c.value, got, ok, c.want, c.wantOK)
+			colour, key := healthBand(c.metric, c.value)
+			if colour != c.wantColour || key != c.wantKey {
+				t.Errorf("healthBand(%q, %v) = %q, %q; want %q, %q", c.metric, c.value, colour, key, c.wantColour, c.wantKey)
 			}
 		})
-	}
-}
-
-// ceilingOf reads the same first-matching table gaugePercent reads, so the
-// cases above state a ratio rather than a hardcoded 500 that a config change
-// would silently falsify.
-func ceilingOf(t *testing.T, metric string) float64 {
-	t.Helper()
-	for _, scale := range api.Scales() {
-		if scale.Metric != metric {
-			continue
-		}
-		if scale.Ceiling == nil || *scale.Ceiling <= 0 {
-			t.Fatalf("%s states no drawn ceiling", metric)
-		}
-		return *scale.Ceiling
-	}
-	t.Fatalf("%s has no scale at all", metric)
-	return 0
-}
-
-// A ceiling well above the top band is the whole point: the arc must be able to
-// say 51 and 500 differently, and the top EAQI band for PM2.5 opens at 50.
-func TestTheDrawnCeilingIsAboveTheTopBand(t *testing.T) {
-	band, ok := finiteCeiling(scaleFor(t, "P2").Bands)
-	if !ok {
-		t.Fatal("P2 has no finite band bound")
-	}
-	if ceiling := ceilingOf(t, "P2"); ceiling <= band {
-		t.Errorf("drawn ceiling %v is not above the top band %v — every bad reading gauges the same", ceiling, band)
-	}
-}
-
-func scaleFor(t *testing.T, metric string) api.Scale {
-	t.Helper()
-	for _, scale := range api.Scales() {
-		if scale.Metric == metric {
-			return scale
-		}
-	}
-	t.Fatalf("no scale for %s", metric)
-	return api.Scale{}
-}
-
-func TestFiniteCeilingTakesTheHighestBoundWhateverTheOrder(t *testing.T) {
-	up := func(v float64) *float64 { return &v }
-	bands := []api.Band{{Upper: up(50)}, {Upper: up(120)}, {Upper: up(80)}, {Upper: nil}}
-
-	if got, ok := finiteCeiling(bands); !ok || got != 120 {
-		t.Errorf("finiteCeiling = %v, %v; want 120, true — the highest bound, not the last", got, ok)
-	}
-	if _, ok := finiteCeiling([]api.Band{{Upper: nil}}); ok {
-		t.Error("an open-ended band alone is no ceiling: a fraction of infinity means nothing")
 	}
 }

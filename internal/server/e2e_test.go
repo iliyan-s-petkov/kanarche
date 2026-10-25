@@ -279,8 +279,7 @@ func TestEndToEndPageRendersFromTheDatabase(t *testing.T) {
 	// route. Any digit from a coordinate, timestamp, or CSS class cannot
 	// satisfy this, and the tier line pins it to the sensor cell rather than to
 	// whichever cell happens to read 3 µg/m³.
-	const wantSensorCount = "<span class=\"readout__value\">3</span>\n    " +
-		"<span class=\"readout__tier\">отчитащи в този район</span>"
+	const wantSensorCount = "<p class=\"readouts__sub\">медиана за областта · 3 сензора</p>"
 	if !strings.Contains(body, wantSensorCount) {
 		t.Errorf("the area page does not show the sensor count in its own markup: want substring %q, got body:\n%s", wantSensorCount, body)
 	}

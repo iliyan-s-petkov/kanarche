@@ -257,9 +257,9 @@ func TestCountedCellsCarryNoUnit(t *testing.T) {
 	}
 }
 
-// A count with a known total is a fraction: 1 silent province of 4 is a quarter
-// ring, in the same grey the map paints those provinces.
-func TestSilentProvincesDrawTheirShareOfTheCountry(t *testing.T) {
+// The silent count is a plain figure over the denominator its tier line states:
+// 1 silent province of 4. No ring, no bar, no band: a count has no health class.
+func TestSilentProvincesStateTheirTotalWithoutARing(t *testing.T) {
 	got := readoutsFor(t, "bg", []AreaRow{
 		row("a", 5, true, true, 3),
 		row("b", 0, false, true, 1),
@@ -268,30 +268,30 @@ func TestSilentProvincesDrawTheirShareOfTheCountry(t *testing.T) {
 	})
 
 	silent := got[3]
-	if !silent.Gauge || silent.Percent != 25 {
-		t.Errorf("silent cell = gauge %v at %d%%, want an arc at 25%% — one province of four", silent.Gauge, silent.Percent)
+	if silent.Value != "1" {
+		t.Errorf("silent value = %q, want 1", silent.Value)
 	}
-	if silent.Colour != "#9ca3af" {
-		t.Errorf("silent arc colour = %q, want the map's no-data colour", silent.Colour)
+	if silent.BandColour != "" || silent.Band != "" {
+		t.Errorf("silent cell has band %q %q, want none", silent.Band, silent.BandColour)
 	}
-	// The ring is a fraction, so the line under it names the denominator. It
-	// used to read "no recent readings", which is the card's own label said
-	// twice and never the number the arc is drawn against.
 	if !strings.Contains(silent.Tier, "4") || strings.Contains(silent.Tier, "{total}") {
 		t.Errorf("silent tier = %q, want the total of four provinces filled in", silent.Tier)
 	}
 }
 
-// Without a configured no-data colour the cell stays a plain figure rather than
-// painting an arc in the empty string, which renders as a black ring.
-func TestSilentShareNeedsAColourToDraw(t *testing.T) {
-	cat, err := i18n.Load()
-	if err != nil {
-		t.Fatalf("i18n.Load: %v", err)
+// The two PM cells carry the band the figure falls in, as colour and as a word.
+// The counts carry neither.
+func TestMeasuredCellsCarryTheirHealthBand(t *testing.T) {
+	got := readoutsFor(t, "bg", []AreaRow{row("Смолян", 19.6, true, true, 4), row("Видин", 3.1, true, true, 2)})
+	if got[0].Band != "умерено" || got[0].BandColour != "#f0e641" {
+		t.Errorf("highest band = %q %q, want умерено #f0e641", got[0].Band, got[0].BandColour)
 	}
-	p := PageData{Lang: "bg", DefaultMetric: "P2", cat: cat, Areas: []AreaRow{row("a", 0, false, true, 1)}}
-
-	if got := p.Readouts()[3]; got.Gauge {
-		t.Errorf("silent cell drew an arc with no colour configured: %+v", got)
+	if got[1].Band == "" || got[1].BandColour == "" {
+		t.Errorf("median has no band: %+v", got[1])
+	}
+	for _, r := range got[2:] {
+		if r.Band != "" || r.BandColour != "" {
+			t.Errorf("count cell %s has a band: %+v", r.Label, r)
+		}
 	}
 }

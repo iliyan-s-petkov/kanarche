@@ -357,31 +357,22 @@
 
 {{/* The figures strip, given a []Readout. Shared because the home page and an
      area page draw the same cells from different sums, and a second copy of
-     this markup is how the two start rendering differently. Each cell keeps its
-     tier line: no bare numbers (DESIGN.md §9.1). */}}
-{{define "readouts"}}<div class="readouts">
+     this markup is how the two start rendering differently. A card is its
+     figure, the health class word and a bar in the class colour; a figure with
+     no health band gets neither. The home cards keep a tier line (DESIGN.md
+     §9.1), the area cards do not because the section sub-line says it once.
+     A card with a Heading starts a new group: an H3 and its own grid. */}}
+{{define "readouts"}}{{range readoutGroups .}}{{with (index . 0).Heading}}<h3 class="readouts__heading">{{.}}</h3>
+{{end}}<div class="readouts">
 {{range .}}{{$spoken := .UnitSpoken}}  <div class="readout card">
     <span class="readout__label">{{with readoutMetric .Label}}<span class="readout__metric">{{.}} · </span>{{end}}{{readoutRest .Label}}</span>
-{{if .Gauge}}    {{/* SVG presentation attributes, not an inline style: style-src is
-         'self' with no 'unsafe-inline', so a style attribute would be dropped
-         and the arc would never paint. pathLength=100 makes the dash array the
-         percentage directly. aria-hidden because the figure inside says it. */}}
-    <span class="gauge">
-      <svg class="gauge__dial" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
-        <circle class="gauge__track" cx="18" cy="18" r="15.9155" fill="none" pathLength="100"></circle>
-        <circle class="gauge__arc" cx="18" cy="18" r="15.9155" fill="none" pathLength="100"
-                stroke="{{.Colour}}" stroke-dasharray="{{.Percent}} 100"
-                transform="rotate(-90 18 18)"></circle>
-      </svg>
-      <span class="gauge__figure">
-        <span class="readout__value{{if gt (len .Value) 5}} readout__value--long{{end}}">{{.Value}}</span>
-        <span class="readout__unit"{{if .UnitSpoken}} aria-hidden="true"{{end}}>{{.Unit}}</span>{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}
-      </span>
-    </span>
-{{else}}    <span class="readout__value">{{.Value}}{{with .Unit}} <span class="readout__unit"{{if $spoken}} aria-hidden="true"{{end}}>{{.}}</span>{{end}}{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}</span>
-{{end}}    <span class="readout__tier">{{.Tier}}</span>
-  </div>
-{{end}}</div>{{end}}
+    <span class="readout__value">{{.Value}}{{with .Unit}} <span class="readout__unit"{{if $spoken}} aria-hidden="true"{{end}}>{{.}}</span>{{end}}{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}</span>
+{{with .Band}}    <span class="readout__band">{{.}}</span>
+{{end}}{{if .Tier}}    <span class="readout__tier">{{.Tier}}</span>
+{{end}}{{with .BandColour}}    {{/* SVG presentation attribute, not an inline style: style-src is 'self' with no 'unsafe-inline', so a style attribute would be dropped and the bar would never paint. */}}<svg class="readout__bar" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect width="1" height="1" fill="{{.}}"></rect></svg>
+{{end}}  </div>
+{{end}}</div>
+{{end}}{{end}}
 
 {{/* The strip plus the island that swaps it while a sensor is open, given the
      page. The server's cells stay in the DOM and are hidden rather than
@@ -406,6 +397,12 @@
      data-t-source-row-one="{{.T "area.sources.row_one"}}"
      data-t-source-community="{{.T "source.name.sensor_community"}}"
      data-t-source-official="{{.T "source.name.eea"}}"
+     data-t-band-good="{{.T "band.good"}}"
+     data-t-band-fair="{{.T "band.fair"}}"
+     data-t-band-moderate="{{.T "band.moderate"}}"
+     data-t-band-poor="{{.T "band.poor"}}"
+     data-t-band-very-poor="{{.T "band.very_poor"}}"
+     data-t-band-extremely-poor="{{.T "band.extremely_poor"}}"
   >{{with .StripReadouts}}{{template "readouts" .}}{{end}}</div>{{end}}
 
 {{/* The "more below" strip under the map; web/src/lib/scrollcue.js scrolls to #below-map. */}}

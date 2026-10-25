@@ -21,11 +21,10 @@ for (const width of [320, 360, 390]) {
   }
 }
 
-// Desktop: every figure and unit lies inside its card, and a ring figure
-// inside the ring's inner circle. Measured by rect, not scrollWidth.
+// Desktop: every figure and unit lies inside its card. Measured by rect, not scrollWidth.
 const geometry = () => {
   const inside = (r, b, tol = 0.5) => r.left >= b.left - tol && r.right <= b.right + tol && r.top >= b.top - tol && r.bottom <= b.bottom + tol
-  const out = { cards: [], rings: [], seen: '' }
+  const out = { cards: [], seen: '' }
   for (const card of document.querySelectorAll('.readouts .readout.card')) {
     if (card.offsetParent === null) continue
     const cb = card.getBoundingClientRect()
@@ -37,31 +36,20 @@ const geometry = () => {
     out.seen += v.textContent.trim() + '|'
     const clipped = v.scrollWidth > v.clientWidth + 1
     out.cards.push({ text: v.textContent.trim(), ok: inside(rg.getBoundingClientRect(), cb) && (!u || inside(u.getBoundingClientRect(), cb)) && !clipped })
-    const ring = card.querySelector('.gauge')
-    if (ring) {
-      const gb = ring.getBoundingClientRect()
-      const fb = card.querySelector('.gauge__figure').getBoundingClientRect()
-      // Inner circle of the 36-unit dial: radius 15.9 minus half the stroke.
-      const r = (gb.width / 36) * (15.9 - 1.5)
-      const cx = gb.left + gb.width / 2, cy = gb.top + gb.height / 2
-      const corner = Math.max(...[[fb.left, fb.top], [fb.right, fb.top], [fb.left, fb.bottom], [fb.right, fb.bottom]].map(([x, y]) => Math.hypot(x - cx, y - cy)))
-      out.rings.push({ text: v.textContent.trim(), corner, r })
-    }
   }
   return out
 }
 for (const width of [1280, 1440, 2000]) {
   for (const path of ['/area/mladost', '/en/area/sofia']) {
-    test(`readout figures fit their cards and rings: ${path} @${width}`, async ({ ctx }) => {
+    test(`readout figures fit their cards: ${path} @${width}`, async ({ ctx }) => {
       const page = await ctx.newPage()
       await page.setViewportSize({ width, height: 900 })
       await page.goto(path)
       await page.waitForTimeout(800)
       const g = await page.evaluate(geometry)
       expect(g.seen, 'pressure card rendered').toContain('1013')
-      expect(g.seen, 'CO ring rendered').toContain('2190')
+      expect(g.seen, 'CO card rendered').toContain('2190')
       for (const c of g.cards) expect(c.ok, `${c.text} inside its card`).toBe(true)
-      for (const c of g.rings) expect(c.corner, `${c.text} inside the ring`).toBeLessThanOrEqual(c.r)
       await page.close()
     })
   }

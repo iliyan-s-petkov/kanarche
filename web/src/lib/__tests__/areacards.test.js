@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { areaCards, areaSourceCards, gaugeFor, bandColour } from '../areacards.js'
+import { areaCards, areaSourceCards, bandFor, bandColour } from '../areacards.js'
 
 const bands = [
   { upper: 10, colour: '#0a0' },
@@ -7,7 +7,7 @@ const bands = [
   { upper: null, colour: '#a00' },
 ]
 
-const pm = { metric: 'P2', unit: 'µg/m³', ceiling: 50, bands }
+const pm = { name: 'eaqi', metric: 'P2', unit: 'µg/m³', ceiling: 50, bands: bands.map((b, i) => ({ ...b, label: ['Good', 'Fair', 'Moderate'][i] })) }
 
 const t = {
   high: 'Highest · {metric}',
@@ -20,6 +20,7 @@ const t = {
   atMedian: 'At the area median',
   areaSensors: '{area} · {total} sensors',
   sensorsOnly: '{total} sensors in this area',
+  band: { good: 'good', fair: 'fair', moderate: 'moderate' },
 }
 
 const stats = { high: 30, low: 4, median: 12, total: 9, value: 4, rank: 1 }
@@ -37,24 +38,23 @@ describe('bandColour', () => {
   })
 })
 
-describe('gaugeFor', () => {
-  it('measures the value against the scale drawn ceiling', () => {
-    expect(gaugeFor(pm, 25)).toEqual({ percent: 50, colour: '#fa0' })
+describe('bandFor', () => {
+  it('gives the colour and the word of the band the value falls in', () => {
+    expect(bandFor(pm, 25, t)).toEqual({ colour: '#fa0', word: 'fair' })
   })
 
-  it('clamps a reading past the ceiling rather than overdrawing the arc', () => {
-    expect(gaugeFor(pm, 500).percent).toBe(100)
+  it('gives the open top band to anything past the last boundary', () => {
+    expect(bandFor(pm, 500, t)).toEqual({ colour: '#a00', word: 'moderate' })
   })
 
-  it('falls back to the highest band where the scale draws no ceiling', () => {
-    expect(gaugeFor({ ...pm, ceiling: 0, bands: [{ upper: 20, colour: '#0a0' }] }, 10).percent).toBe(50)
+  // Benzene and CO carry an axis table, not a health class: no bar there.
+  it('draws no band for a table that is not the EAQI', () => {
+    expect(bandFor({ ...pm, name: 'axis' }, 20, t)).toBe(null)
+    expect(bandFor(null, 20, t)).toBe(null)
   })
 
-  // 944 hPa is an ordinary day. An arc at 97% would invent an alarm out of an
-  // axis, so only the µg/m³ metrics get one.
-  it('draws no arc for a metric counted in something else', () => {
-    expect(gaugeFor({ ...pm, unit: 'hPa' }, 20)).toBe(null)
-    expect(gaugeFor(null, 20)).toBe(null)
+  it('draws no band when the page gave no word for it', () => {
+    expect(bandFor(pm, 25, { ...t, band: {} })).toBe(null)
   })
 })
 
@@ -95,10 +95,10 @@ describe('areaCards', () => {
     expect(cards({ high: 30.25 }, { lang: 'bg' })[0].value).toBe('30,3')
   })
 
-  it('gauges the three area figures and leaves the rank a plain count', () => {
+  it('bands the three area figures and leaves the rank a plain count', () => {
     const out = cards()
-    expect(out.slice(0, 3).every((c) => c.gauge)).toBe(true)
-    expect(out[3].gauge).toBe(null)
+    expect(out.slice(0, 3).every((c) => c.band)).toBe(true)
+    expect(out[3].band).toBe(null)
   })
 
   // Nothing honest to say, so the caller leaves the national strip standing

@@ -1065,5 +1065,9 @@
   "health.very_poor.general": "Ако усещате симптоми като парене в очите, кашлица или възпалено гърло, помислете дали да не намалите интензивните дейности на открито.",
   "health.very_poor.sensitive": "Намалете физическите натоварвания, особено на открито, най-вече ако усещате симптоми.",
   "health.extremely_poor.general": "Намалете физическите натоварвания на открито.",
-  "health.extremely_poor.sensitive": "Избягвайте физическите натоварвания на открито."
+  "health.extremely_poor.sensitive": "Избягвайте физическите натоварвания на открито.",
+  "area.heading.pollutants": "Замърсители",
+  "area.heading.weather": "Времето",
+  "area.heading.history": "История",
+  "area.heading.sensors": "Сензори"
 }

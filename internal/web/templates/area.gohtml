@@ -9,7 +9,12 @@
      figures rather than between them. */}}
 <div class="page-head">
 <h1 class="t-title">{{.AreaHeading}}</h1>
-
+{{with .AreaChip}}<div class="area-chips">
+  <span class="area-chips__metric">{{.Label}}</span>
+  <span class="area-chips__value">{{.Value}}{{with .Unit}} <span class="area-chips__unit"{{if $.AreaChip.UnitSpoken}} aria-hidden="true"{{end}}>{{.}}</span>{{end}}{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}</span>
+  {{if .Band}}<span class="chip"><svg class="chip__dot" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="7" cy="7" r="6.5" fill="{{.BandColour}}" stroke="currentColor"></circle></svg>{{.Band}}</span>{{end}}
+</div>
+{{end}}
 {{/* Shown on city pages only, because this is the page where the misreading
      happens: a reader comparing two cities has no way to know that 14 of the
      27 are whole municipalities and the rest are the city proper. It is
@@ -420,7 +425,9 @@
      title and again as the fourth cell. Only the cell survives here: it is the
      same number, and the cell carries a tier line saying what the sensors are
      counted in, which the bare sentence did not. */}}
-{{template "readouts-island" .}}
+{{if .AreaReadouts}}<h2 class="readouts__title">{{.T "period.now"}}</h2>
+<p class="readouts__sub">{{.AreaReadoutsSub}}</p>
+{{end}}{{template "readouts-island" .}}
 
 {{/* Pollen forecast per species and local day (PageData.AreaPollen). */}}
 {{with .AreaPollen}}

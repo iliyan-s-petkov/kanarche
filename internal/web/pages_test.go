@@ -140,8 +140,8 @@ func TestAreaPageRendersTheBlendedHeadlineAndSourceRowAttribute(t *testing.T) {
 	}
 	body := rec.Body.String()
 
-	if !strings.Contains(body, ">25.0<") {
-		t.Error("rendered page does not contain the blended headline figure >25.0<")
+	if !strings.Contains(body, `<span class="readout__value">25.0 `) {
+		t.Error("rendered page does not contain the blended headline figure 25.0")
 	}
 	if !strings.Contains(body, `data-t-source-row-one="`) {
 		t.Error("rendered page does not carry the data-t-source-row-one attribute")
