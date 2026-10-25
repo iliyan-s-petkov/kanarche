@@ -25,7 +25,7 @@ func TestAreaFreshnessCarriesTheChangeSentence(t *testing.T) {
 	if !ok || subject == "" {
 		t.Fatal("the area page names no subject for the change sentence")
 	}
-	if !strings.Contains(body, subject+" right now") {
+	if !strings.Contains(body, `<p class="area-now">`+subject) {
 		t.Errorf("subject %q is not the one the area summary uses", subject)
 	}
 }
