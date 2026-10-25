@@ -1298,6 +1298,12 @@ html:has(> body.embed) { block-size: 100%; }
 .embed__attribution a:hover, .embed__reference a:hover { text-decoration: underline; }
 .embed__attribution a:focus-visible, .embed__reference a:focus-visible { box-shadow: var(--focus-ring); }
 .area-summary__note { margin: 0; font-size: var(--text-compact); color: var(--fg-2); }
+.area-health { margin-block: var(--space-3) var(--space-6); }
+.area-health dl, .area-health__source { max-inline-size: var(--prose-measure); }
+.area-health h2 { margin-block: 0 var(--space-2); font-size: var(--text-card); }
+.area-health dt { font-size: var(--text-compact); color: var(--fg-2); margin-block-start: var(--space-2); }
+.area-health dd { margin: 0; }
+.area-health__source { margin: var(--space-2) 0 0; font-size: var(--text-compact); color: var(--fg-2); }
 /* Geolocation is denied by Permissions-Policy and a cross-origin frame needs
    its own allow= besides, so the button could only ever fail here. */
 .embed .map-locate { display: none; }
