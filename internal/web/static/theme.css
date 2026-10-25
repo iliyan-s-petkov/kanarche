@@ -92,6 +92,8 @@
   /* Two containers: prose reads at --measure, data wants --frame. */
   --measure: 60rem;
   --frame: 78rem;
+  /* Prose line length: 65ch floor, grows with the viewport, 90ch ceiling. */
+  --prose-measure: clamp(65ch, 55vw, 90ch);
   --gutter: 16px;
 
   --radius-sm: 6px;
