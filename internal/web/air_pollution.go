@@ -79,6 +79,10 @@ func (rr *Renderer) handleAirPollution(w http.ResponseWriter, r *http.Request) {
 	data.Title = composeTitle(rr.cat.T(lang, "seo.air_pollution.title"), rr.cat.T(lang, "seo.title_brand"))
 	data.Description = rr.cat.T(lang, "seo.air_pollution.description")
 	data.AirPollutionFAQ = data.airPollutionFAQ()
+	data.Crumbs = []Crumb{
+		{Name: data.T("area.breadcrumb.home"), URL: data.Path("/")},
+		{Name: data.T("air_pollution.breadcrumb"), URL: data.Path("/air-pollution"), Current: true},
+	}
 	data.JSONLD = rr.mustJSONLD(data.airPollutionJSONLD())
 	rr.render(w, r, http.StatusOK, "air_pollution", data)
 }
@@ -95,9 +99,5 @@ func (p PageData) airPollutionJSONLD() (template.JS, error) {
 		Author:           ldRef{ID: person.ID},
 		Publisher:        ldRef{ID: org.ID},
 	}
-	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: []ldListItem{
-		{Type: "ListItem", Position: 1, Name: p.T("area.breadcrumb.home"), Item: p.BaseURL + p.Path("/")},
-		{Type: "ListItem", Position: 2, Name: p.T("air_pollution.breadcrumb"), Item: p.CanonicalURL()},
-	}}
-	return encodeJSONLD(crumbs, article, faqPageOf(p.AirPollutionFAQ), org, person)
+	return encodeJSONLD(p.breadcrumbLD(), article, faqPageOf(p.AirPollutionFAQ), org, person)
 }

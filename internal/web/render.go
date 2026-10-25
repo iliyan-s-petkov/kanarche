@@ -196,10 +196,9 @@ type PageData struct {
 	// is what keeps it off the home page's lighter render.
 	Directory []DirGroup
 
-	// AreaCrumbs is the breadcrumb chain for an area page: Map, then each
-	// ancestor root-first, then the current area last with no URL. Empty for
-	// every other page.
-	AreaCrumbs []Crumb
+	// Crumbs is the visible breadcrumb trail, last entry Current. The nav and
+	// the BreadcrumbList both read it. Empty on pages with no breadcrumb.
+	Crumbs []Crumb
 	// AirPollutionFAQ is the /air-pollution explainer FAQ, set on that page only.
 	AirPollutionFAQ *FAQBlock
 	// PM is set on the /pm25 and /pm10 explainer pages only.

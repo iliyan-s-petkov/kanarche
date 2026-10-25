@@ -404,7 +404,7 @@ const nearestCount = 4
 //     София-град; no children; the siblings block lists every other district.
 func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row AreaRow, snap *snapshot.Snapshot, lang string) {
 	chain := rr.ParentChain(meta, snap, lang)
-	p.AreaCrumbs = p.Breadcrumbs(row, chain)
+	p.Crumbs = p.Breadcrumbs(row, chain)
 
 	if len(chain) > 0 {
 		p.AreaParentBlock = &AreaLinkBlock{Label: p.T("area.parent"), Items: chain}

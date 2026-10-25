@@ -147,6 +147,11 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 		// Only on /areas, per §3 of the SEO6 plan: it keeps / — the worst LCP
 		// on the site — from paying for 79 extra links it does not render.
 		data.Directory = rr.buildDirectory(snap, lang)
+		data.Crumbs = []Crumb{
+			{Name: data.T("area.breadcrumb.home"), URL: data.Path("/")},
+			{Name: data.T("nav.areas"), URL: data.Path("/areas"), Current: true},
+		}
+		data.JSONLD = rr.mustJSONLD(encodeJSONLD(data.breadcrumbLD()))
 	} else {
 		data.Title = composeTitle(rr.cat.T(lang, "seo.home.title"), rr.cat.T(lang, "seo.title_brand"))
 		data.Description = rr.cat.T(lang, "seo.home.description")

@@ -1,9 +1,7 @@
 {{/* /news: the list of posts in the page language. Server-rendered, no script needed. */}}
 {{define "main"}}
 <div class="measure">
-<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
-<a class="link" href="{{.Path "/"}}">{{.T "area.breadcrumb.home"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><span aria-current="page">{{.T "news.breadcrumb"}}</span>
-</nav>
+{{template "breadcrumb" .}}
 <div class="page-head">
   <h1 class="t-title">{{.T "news.h1"}}</h1>
   <p class="t-body">{{.Description}}</p>

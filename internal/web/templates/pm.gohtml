@@ -1,9 +1,7 @@
 {{/* /pm25 and /pm10: static explainers. Copy is owner-approved; band edges are filled from the EAQI tables. */}}
 {{define "main"}}
 <div class="measure">
-<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
-<a class="link" href="{{.Path "/"}}">{{.T "area.breadcrumb.home"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><span aria-current="page">{{.T (printf "%s.h1" .PM.Key)}}</span>
-</nav>
+{{template "breadcrumb" .}}
 <div class="page-head">
   <h1 class="t-title">{{.T (printf "%s.h1" .PM.Key)}}</h1>
   <p class="t-body">{{.T (printf "%s.intro" .PM.Key)}}</p>

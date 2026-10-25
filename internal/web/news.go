@@ -133,6 +133,11 @@ func (rr *Renderer) handleNewsList(w http.ResponseWriter, r *http.Request) {
 			DateISO: newsDay(p.Date), DateHuman: data.newsDate(p.Date),
 		})
 	}
+	data.Crumbs = []Crumb{
+		{Name: data.T("area.breadcrumb.home"), URL: data.Path("/")},
+		{Name: data.T("news.breadcrumb"), URL: data.Path(newsPath), Current: true},
+	}
+	data.JSONLD = rr.mustJSONLD(encodeJSONLD(data.breadcrumbLD()))
 	rr.render(w, r, http.StatusOK, "news_list", data)
 }
 
@@ -162,6 +167,11 @@ func (rr *Renderer) handleNewsPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data.NewsPost = view
+	data.Crumbs = []Crumb{
+		{Name: data.T("area.breadcrumb.home"), URL: data.Path("/")},
+		{Name: data.T("news.breadcrumb"), URL: data.Path(newsPath)},
+		{Name: post.Title, URL: data.Path(newsPath + "/" + post.Slug), Current: true},
+	}
 	data.JSONLD = rr.mustJSONLD(data.newsPostJSONLD(post))
 	rr.render(w, r, http.StatusOK, "news_post", data)
 }
@@ -181,12 +191,7 @@ func (p PageData) newsPostJSONLD(post news.Post) (template.JS, error) {
 		DateModified:     post.Updated.Format(time.RFC3339),
 		Image:            p.OGImageURL(),
 	}
-	crumbs := ldBreadcrumbList{Type: "BreadcrumbList", ItemListElement: []ldListItem{
-		{Type: "ListItem", Position: 1, Name: p.T("area.breadcrumb.home"), Item: p.BaseURL + p.Path("/")},
-		{Type: "ListItem", Position: 2, Name: p.T("news.breadcrumb"), Item: p.BaseURL + p.Path(newsPath)},
-		{Type: "ListItem", Position: 3, Name: post.Title, Item: p.CanonicalURL()},
-	}}
-	return encodeJSONLD(crumbs, article, org, person)
+	return encodeJSONLD(p.breadcrumbLD(), article, org, person)
 }
 
 // Atom 1.0, https://www.rfc-editor.org/rfc/rfc4287.
