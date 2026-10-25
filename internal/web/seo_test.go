@@ -91,6 +91,7 @@ func TestSitemapContainsEveryArea(t *testing.T) {
 		"https://airbg.org/about",
 		"https://airbg.org/about-the-data",
 		"https://airbg.org/area/sofia",
+		"https://airbg.org/area/vidin",
 	} {
 		if !locs[want] {
 			t.Errorf("sitemap is missing %q", want)
@@ -107,9 +108,9 @@ func TestSitemapContainsEveryArea(t *testing.T) {
 			t.Errorf("sitemap is missing the English variant %q", want)
 		}
 	}
-	// Eleven pages in each of the two fixture languages (including the explainers); uncovered vidin is left out.
-	if len(doc.URLs) != 22 {
-		t.Errorf("sitemap has %d <url> entries, want 22", len(doc.URLs))
+	// Twelve pages in each of the two fixture languages (including the explainers and uncovered vidin).
+	if len(doc.URLs) != 24 {
+		t.Errorf("sitemap has %d <url> entries, want 24", len(doc.URLs))
 	}
 }
 
