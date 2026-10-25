@@ -168,7 +168,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* Area FAQ: native details, summary is a 44px tap target. */
 .area-facts { margin-block-start: var(--space-6); }
 .area-facts h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
-.area-facts p { margin-block: 0 var(--space-3); max-inline-size: 70ch; }
+.area-facts p { margin-block: 0 var(--space-3); max-inline-size: var(--prose-measure); }
 .faq { margin-block-start: var(--space-6); }
 .faq h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
 .faq__item { border-block-start: 1px solid var(--border-faint); }
