@@ -99,8 +99,11 @@ func (p PageData) faqBlock(row AreaRow) *FAQBlock {
 	return block
 }
 
-// aboutFAQCount is the number of questions on the About the data page (about_faq.q1 to q9).
-const aboutFAQCount = 9
+// aboutFAQCount is the number of questions on the About the data page (about_faq.q1 to q14).
+const aboutFAQCount = 14
+
+// aboutFAQRZIAnswers are the About answers that end by pointing at the three RHI bathing pages.
+var aboutFAQRZIAnswers = map[int]bool{10: true, 14: true}
 
 // aboutFAQKeys maps About question n to its catalogue keys. Questions 3 and 4 reuse the area FAQ's PM and colour entries.
 func aboutFAQKeys(n int) (q, a string) {
@@ -125,7 +128,30 @@ func (p PageData) aboutFAQBlock() *FAQBlock {
 	block := &FAQBlock{Heading: p.T("about_faq.heading")}
 	for n := 1; n <= aboutFAQCount; n++ {
 		qKey, aKey := aboutFAQKeys(n)
-		block.Items = append(block.Items, newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...))
+		item := newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...)
+		if aboutFAQRZIAnswers[n] {
+			item = p.withRZILinks(item)
+		}
+		block.Items = append(block.Items, item)
 	}
 	return block
+}
+
+// withRZILinks appends the RHI pages after an answer that ends in a colon. The page gets labelled anchors
+// separated like /licences; the JSON-LD text stays plain, so it gets the bare URLs instead.
+func (p PageData) withRZILinks(item FAQItem) FAQItem {
+	var anchors, urls []string
+	for _, page := range p.RZIPages() {
+		if page.URL == "" {
+			continue
+		}
+		anchors = append(anchors, `<a href="`+html.EscapeString(page.URL)+`" rel="noopener noreferrer">`+html.EscapeString(p.T(page.LabelKey))+`</a>`)
+		urls = append(urls, page.URL)
+	}
+	if len(urls) == 0 {
+		return item
+	}
+	item.Answer += " " + strings.Join(urls, " ")
+	item.AnswerHTML += template.HTML(" " + strings.Join(anchors, " · "))
+	return item
 }
