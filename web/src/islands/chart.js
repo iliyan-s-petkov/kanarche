@@ -7,6 +7,7 @@ import { mount as mountComponent } from 'svelte'
 import ChartPanel from '../components/ChartPanel.svelte'
 import { parseMetricList, zipLabels } from '../lib/metrics.js'
 import { getViewState } from '../lib/viewstate.svelte.js'
+import { getFreshness } from '../lib/freshness.svelte.js'
 import { findSensor } from '../lib/sensors.svelte.js'
 
 // Positional lists, comma-joined by the server — the same shape the metric
@@ -39,6 +40,7 @@ export function mount(el) {
       // this chart).
       get selected() { return findSensor(vs.sensorId) !== null },
       get metric() { return vs.metric },
+      get stamp() { return getFreshness().at },
       metricOptions: areaMetricOptions,
       // Positional against areaMetrics, read by ChartPanel to re-resolve the
       // y-axis unit whenever the metric changes.

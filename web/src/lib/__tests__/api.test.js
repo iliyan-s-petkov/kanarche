@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getJSON, clearCache, RATE_LIMIT_RETRY_MS } from '../api.js'
+import { getJSON, clearCache, RATE_LIMIT_RETRY_MS, CACHE_LIMIT } from '../api.js'
 
 function jsonResponse(body, status = 200, headers = {}) {
   return {
@@ -363,4 +363,18 @@ it('revalidates against the server, once, a URL that was cached before clearCach
 
   await getJSON('/api/v1/b')
   expect(fetchMock.mock.calls[4][1].cache).toBe('no-cache')
+})
+
+// The owed-revalidation set is capped, so many clears cannot grow it without bound.
+it('forgets the oldest owed revalidations past the cap', async () => {
+  fetchMock.mockImplementation(async () => jsonResponse({ n: 1 }))
+  for (let round = 0; round < 3; round += 1) {
+    for (let i = 0; i < CACHE_LIMIT; i += 1) await getJSON(`/api/v1/u${round}-${i}`)
+    clearCache()
+  }
+  fetchMock.mockClear()
+  await getJSON('/api/v1/u0-0')
+  await getJSON(`/api/v1/u2-${CACHE_LIMIT - 1}`)
+  expect(fetchMock.mock.calls[0][1].cache).toBe('default')
+  expect(fetchMock.mock.calls[1][1].cache).toBe('no-cache')
 })

@@ -14,6 +14,8 @@ vi.mock('uplot', () => ({
   default: vi.fn(function (opts, data, el) {
     uplotCalls.push({ opts, data, el })
     this.setSize = vi.fn()
+    this.setData = vi.fn()
+    this.scales = { x: { min: data[0][0], max: data[0][data[0].length - 1] } }
   }),
 }))
 

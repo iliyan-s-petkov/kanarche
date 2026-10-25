@@ -21,7 +21,7 @@
     periods, periodLabels, initialPeriod,
     tier, periodLegend, customLabel, fromLabel, toLabel, nowLabel,
     resetLabel, rangeInvalid,
-    lineColour, valueLabel, timeLabel, empty, unavailable, text = {},
+    lineColour, valueLabel, timeLabel, empty, unavailable, text = {}, stamp = 0,
   } = $props()
 
   // Seeded from the server's default and owned here after that — untrack says
@@ -122,6 +122,7 @@
         {unavailable}
         {periodLabel}
         {text}
+        {stamp}
         resizable
         title=""
       />

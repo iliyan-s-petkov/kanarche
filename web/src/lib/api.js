@@ -46,6 +46,8 @@ export function clearCache() {
   // fetch of these URLs with the same stale body. Each is revalidated once.
   for (const url of cache.keys()) revalidate.add(url)
   for (const url of inFlight.keys()) revalidate.add(url)
+  // Capped, oldest first, so repeated clears cannot grow it without bound.
+  while (revalidate.size > CACHE_LIMIT * 2) revalidate.delete(revalidate.keys().next().value)
   cache.clear()
   // Aborted, not merely dropped: a response already on the wire lands after the
   // clear and writes through cacheSet, which silently undoes the invalidation
