@@ -6,6 +6,7 @@ import DataFreshness from '../components/DataFreshness.svelte'
 import { getFreshness } from '../lib/freshness.svelte.js'
 import { statusText } from '../lib/freshness.js'
 import { announceText } from '../lib/announce.js'
+import { serverNow } from '../lib/api.js'
 
 export function mount(el, doc = document) {
   const d = el.dataset
@@ -27,6 +28,11 @@ export function mount(el, doc = document) {
       labels: { trigger: d.tLabel || '', now: d.tNow || '', group: d.tAuto || '' },
       options,
       get status() { return statusText(fresh, t, lang) },
+      get at() { return fresh.dataAt },
+      get paused() { return fresh.replay },
+      lang,
+      // Staleness is judged on the server's clock; the reader's may be minutes off.
+      nowFn: serverNow,
       get announce() { return announceText(fresh, t) },
       get minutes() { return fresh.minutes },
       get busy() { return fresh.busy },

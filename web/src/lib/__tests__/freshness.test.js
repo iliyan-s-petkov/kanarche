@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { statusText, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { statusText, snapshotTime, reloadedSnapshot, isStale, STALE_MS, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
 
 const T = { updated: 'Данни от', loading: 'Обновяване…', failed: 'Обновяването не успя' }
 
@@ -19,30 +19,110 @@ describe('statusText', () => {
     expect(statusText({ busy: false, at: AT, failed: true }, T)).toBe(T.failed)
   })
 
-  it('states the time of the last success', () => {
-    expect(statusText({ busy: false, at: AT, failed: false }, T)).toBe(`${T.updated} ${formatTime(AT)}`)
+  it('states the snapshot time of the last success', () => {
+    expect(statusText({ busy: false, at: AT + 99, dataAt: AT, failed: false }, T)).toBe(`${T.updated} ${formatTime(AT)}`)
   })
 
   // Absence stated plainly (DESIGN.md §2.3): a page that has never loaded says
   // nothing at all rather than announcing that it has no time to show.
   it('says nothing when there has never been a reading', () => {
-    expect(statusText({ busy: false, at: null, failed: false }, T)).toBe('')
-    expect(statusText({ busy: false, at: undefined, failed: false }, T)).toBe('')
+    expect(statusText({ busy: false, dataAt: null, failed: false }, T)).toBe('')
+    expect(statusText({ busy: false, dataAt: undefined, failed: false }, T)).toBe('')
   })
 
   // 0 is a legitimate epoch instant, and `at == null` is what distinguishes
   // "never" from it. A truthiness check here would silence the line.
   it('treats epoch zero as a time, not as an absence', () => {
-    expect(statusText({ busy: false, at: 0, failed: false }, T)).not.toBe('')
+    expect(statusText({ busy: false, dataAt: 0, failed: false }, T)).not.toBe('')
+  })
+})
+
+describe('statusText with a snapshot time', () => {
+  const SNAP = Date.parse('2026-10-25T14:20:30Z')
+
+  it('shows the snapshot time, not the client fetch time', () => {
+    expect(statusText({ busy: false, at: AT, dataAt: SNAP, failed: false }, T)).toBe(`${T.updated} ${formatTime(SNAP)}`)
+  })
+
+  // The client clock is not the server's, so it is never written as "Data from".
+  it('says nothing when only the client fetch time is known', () => {
+    expect(statusText({ busy: false, at: AT, dataAt: null, failed: false }, T)).toBe('')
+    expect(statusText({ busy: false, at: AT, failed: false }, T)).toBe('')
+  })
+})
+
+describe('isStale', () => {
+  const NOW = Date.parse('2026-10-25T14:30:00Z')
+
+  it('is stale only past fifteen minutes', () => {
+    expect(STALE_MS).toBe(15 * 60 * 1000)
+    expect(isStale(NOW - STALE_MS - 1, NOW)).toBe(true)
+    expect(isStale(NOW - STALE_MS, NOW)).toBe(false)
+    expect(isStale(NOW, NOW)).toBe(false)
+  })
+
+  it('has nothing to call stale without a time', () => {
+    expect(isStale(null, NOW)).toBe(false)
+    expect(isStale(undefined, NOW)).toBe(false)
+  })
+})
+
+describe('snapshotTime', () => {
+  it('reads generated_at from the first body that has a valid one', () => {
+    expect(snapshotTime({ generated_at: '2026-10-25T14:20:30Z' })).toBe(Date.parse('2026-10-25T14:20:30Z'))
+    expect(snapshotTime(null, {}, { generated_at: 'nope' }, { generated_at: '2026-10-25T14:25:31Z' }))
+      .toBe(Date.parse('2026-10-25T14:25:31Z'))
+  })
+
+  it('is null when no body carries a usable time', () => {
+    expect(snapshotTime()).toBeNull()
+    expect(snapshotTime(null, undefined, {}, { generated_at: '' })).toBeNull()
+  })
+})
+
+describe('reloadedSnapshot', () => {
+  const OLD = { generated_at: '2026-10-25T14:00:00Z' }
+  const NEW = { generated_at: '2026-10-25T14:10:00Z' }
+  const SENSOR = { generated_at: '2026-10-25T14:09:00Z' }
+
+  it('takes the time of a body that was replaced', () => {
+    expect(reloadedSnapshot([OLD, null], [NEW, null])).toBe(Date.parse(NEW.generated_at))
+  })
+
+  // A body the refresh did not reload says nothing about this refresh.
+  it('ignores a body that is the same object as before', () => {
+    expect(reloadedSnapshot([OLD, SENSOR], [OLD, SENSOR])).toBeNull()
+    expect(reloadedSnapshot([OLD, SENSOR], [OLD, { ...SENSOR, generated_at: '2026-10-25T14:12:00Z' }]))
+      .toBe(Date.parse('2026-10-25T14:12:00Z'))
+  })
+
+  it('does not let an unreloaded first-load sensor body supply the time', () => {
+    expect(reloadedSnapshot([OLD, SENSOR], [{}, SENSOR])).toBeNull()
+  })
+
+  it('prefers the first reloaded body in order, and ignores a missing one', () => {
+    expect(reloadedSnapshot([OLD, null], [NEW, SENSOR])).toBe(Date.parse(NEW.generated_at))
+    expect(reloadedSnapshot([null, null], [null, SENSOR])).toBe(Date.parse(SENSOR.generated_at))
+    expect(reloadedSnapshot([OLD, null], [null, null])).toBeNull()
   })
 })
 
 describe('formatTime', () => {
-  it('writes hours and minutes in the page language', () => {
-    expect(formatTime(AT, 'bg')).toMatch(/^\d{2}:\d{2}$/)
-    // en-US asks for a 12-hour clock, so the two spellings must differ — this
-    // is what passing `lang` buys, and a hard-coded format would lose it.
-    expect(formatTime(AT, 'en-US')).toMatch(/AM|PM/)
+  // Zone pinned so the literals are the same on every runner.
+  const zone = process.env.TZ
+  beforeAll(() => { process.env.TZ = 'Europe/Sofia' })
+  afterAll(() => { if (zone === undefined) delete process.env.TZ; else process.env.TZ = zone })
+
+  it('writes 24-hour HH:MM in both page languages', () => {
+    // 14:07 UTC is 16:07 in Sofia in March. The afternoon is what a 12-hour clock would show as PM.
+    expect(formatTime(AT, 'bg')).toBe('16:07')
+    expect(formatTime(AT, 'en')).toBe('16:07')
+    expect(formatTime(AT, 'en-US')).toBe('16:07')
+  })
+
+  it('writes midnight as 00:xx, not 24:xx', () => {
+    expect(formatTime(Date.UTC(2026, 2, 1, 22, 5), 'en')).toBe('00:05')
+    expect(formatTime(Date.UTC(2026, 2, 1, 22, 5), 'bg')).toBe('00:05')
   })
 })
 

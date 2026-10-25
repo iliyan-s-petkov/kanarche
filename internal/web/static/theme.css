@@ -32,6 +32,9 @@
   --warn: #f1c21b;
   --success: #24a148;
   --notice-bg: #fcf4d6;
+  /* Text for an old reading: --warn pulled toward the foreground. This file has no dark theme, so the light literal is the floor. */
+  --stale: #78631a;
+  --stale: color-mix(in srgb, var(--warn) 45%, var(--fg));
 
   /* Map chrome */
   --map-placeholder-bg: #f4f4f4;

@@ -25,6 +25,10 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
   // looking at something that WAS fresh, and the line says so from the first
   // paint rather than staying blank until the first manual refresh.
   let at = $state(now())
+  // Snapshot time the providers reported (ms), null until one does.
+  let dataAt = $state(null)
+  // True while the timelapse is open: the map holds its paint, the pill greys its time.
+  let replay = $state(false)
 
   function readMinutes() {
     try {
@@ -52,8 +56,11 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
     changed = null
     const before = probe()
     try {
-      await Promise.all([...providers].map((fn) => fn()))
+      const replies = await Promise.all([...providers].map((fn) => fn()))
       at = now()
+      // A provider may answer with the snapshot time it loaded. None keeps the last server time rather than inventing one.
+      const reported = replies.find((r) => Number.isFinite(r))
+      if (reported !== undefined) dataAt = reported
       changed = categoryChange(before, probe())
     } catch (err) {
       // Reported, not swallowed: the status line is the only place a reader
@@ -92,6 +99,11 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
     get busy() { return busy },
     get failed() { return failed },
     get at() { return at },
+    get dataAt() { return dataAt },
+    get replay() { return replay },
+    setReplay(on) { replay = Boolean(on) },
+    // The first load is not a refresh, but its snapshot is what the page shows.
+    noteSnapshot(ms) { if (Number.isFinite(ms)) dataAt = ms },
     get minutes() { return minutes },
     setMinutes(next) {
       if (!AUTO_CHOICES.includes(next) || next === minutes) return

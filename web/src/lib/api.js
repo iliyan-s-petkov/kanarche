@@ -178,7 +178,42 @@ async function fetchOnce(url, retryOn429, signal) {
     // data by a caller that forgot to check.
     throw new Error(`${url}: HTTP ${response.status}`)
   }
+  noteServerClock(response)
   return response.json()
+}
+
+// Server time minus client time, in ms, from the Date header of responses. null until one has a Date.
+let clockOffset = null
+// When the held offset was taken, on the monotonic clock, which a change to the reader's clock does not move.
+let clockOffsetAt = 0
+// How long a sample outranks lower ones. Past this a fresh sample replaces it, so a reader's clock that was
+// set forward or back mid-session stops dragging the old offset along.
+const CLOCK_WINDOW_MS = 10 * 60 * 1000
+
+// Within the window the largest sample wins: a response served from the HTTP cache, or one that took a while to arrive,
+// carries a Date older than the moment it was read, so it can only understate the offset. Age adds back
+// the time a shared cache held it.
+function noteServerClock(response) {
+  const get = (name) => (response.headers && response.headers.get ? response.headers.get(name) : null)
+  const date = Date.parse(get('Date'))
+  if (!Number.isFinite(date)) return
+  const age = Number(get('Age'))
+  const sample = date + (Number.isFinite(age) && age > 0 ? age * 1000 : 0) - Date.now()
+  const now = performance.now()
+  if (clockOffset === null || sample > clockOffset || now - clockOffsetAt > CLOCK_WINDOW_MS) {
+    clockOffset = sample
+    clockOffsetAt = now
+  }
+}
+
+// The time on the server's clock. The reader's clock may be minutes off, which would age or youth a snapshot.
+export function serverNow() {
+  return Date.now() + (clockOffset ?? 0)
+}
+
+// TEST-ONLY: forget the offset between cases.
+export function resetServerClockForTests() {
+  clockOffset = null
 }
 
 // Retry-After is legally either a delay in seconds or an HTTP-date. We only
