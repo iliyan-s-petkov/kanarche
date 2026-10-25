@@ -1226,8 +1226,11 @@ strong, b { font-weight: var(--weight-emphasis); }
 .readout.card { container-type: inline-size; }
 .readout.card > .readout__value {
   align-self: center; white-space: nowrap; line-height: 1; font-variant-numeric: tabular-nums;
-  font-size: clamp(2rem, 36cqi, 5.5rem);
+  font-size: clamp(2rem, 33cqi, 5.5rem);
 }
+/* A wide figure ("944,0 hPa") may drop its unit onto a second line instead of
+   pushing the page sideways. */
+.readout.card > .readout__value { flex-wrap: wrap; justify-content: center; max-inline-size: 100%; }
 .readout.card > .readout__value .readout__unit { font-size: 0.4em; font-weight: var(--weight-body); color: var(--fg-2); }
 
 /* The arc is drawn with SVG presentation attributes (see base.gohtml): style-src
@@ -1238,6 +1241,8 @@ strong, b { font-weight: var(--weight-emphasis); }
 .gauge__arc { stroke-width: 3; stroke-linecap: round; }
 .gauge__figure { position: absolute; display: grid; justify-items: center; gap: 0; }
 .gauge__figure .readout__value { line-height: 1; }
+/* Six glyphs ("2190,0") are scaled to stay inside the ring's inner circle. */
+.gauge__figure .readout__value--long { font-size: 0.9em; }
 /* Halo in the card colour: a wide value (47.6 on a phone) runs over the arc. */
 .gauge__figure .readout__value { paint-order: stroke fill; -webkit-text-stroke: 4px var(--bg); }
 

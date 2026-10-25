@@ -238,6 +238,10 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	seedReading(t, st, 104, "P1", 12, "ok", now)
 	seedReading(t, st, 104, "P2", 300, "stuck", now)
 
+	// Wide weather figures on sensor 101: readout-overflow.spec.js needs a
+	// "1013,0 hPa" card to prove no readout pushes the phone page sideways.
+	seedReading(t, st, 101, "pressure", 1013.04, "ok", now)
+
 	// Enough history on sensor 101's P2 series that a 24h chart is non-empty:
 	// one point every two hours across the window.
 	for i := 1; i <= 12; i++ {
@@ -249,6 +253,8 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	station := seedStation(t, st, lon, lat, "BG0050A", "София Дружба")
 	seedReading(t, st, station, "P1", 18, "ok", now)
 	seedReading(t, st, station, "O3", 40, "ok", now)
+	// A 6-glyph ring figure ("2190,0"), for readout-overflow.spec.js.
+	seedReading(t, st, station, "CO", 2190.04, "ok", now)
 
 	// One bathing site east of the sensors, for sea.spec.js.
 	sea := store.BathingData{
