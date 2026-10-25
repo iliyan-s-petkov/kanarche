@@ -210,7 +210,7 @@ func TestAboutPageDropsSensorsSection(t *testing.T) {
 func TestAboutFAQSitsBetweenReferenceAndCities(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	body := fetch(t, rr, "/en/about-the-data").Body.String()
-	ref := strings.Index(body, "This map is for reference, not medical advice")
+	ref := strings.Index(body, "This map is for reference only")
 	faq := strings.Index(body, `class="about-faq"`)
 	cities := strings.Index(body, "City areas are not all the same kind of thing")
 	if ref < 0 || faq < ref || cities < faq {

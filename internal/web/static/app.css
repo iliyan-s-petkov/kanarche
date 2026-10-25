@@ -1486,7 +1486,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* Area pages, covered or not: shrink so the pull tab stays above the fold on touch phones. */
   @media (hover: none) {
     .map--wide {
-      block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: 52svh;
+      block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: 50svh;
     }
   }
   /* Portrait touch phones: a one-column grid so .area-summary can move below the map. */
