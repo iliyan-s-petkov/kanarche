@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { statusText, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
+import { statusText, snapshotTime, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
 
 const T = { updated: 'Данни от', loading: 'Обновяване…', failed: 'Обновяването не успя' }
 
@@ -34,6 +34,32 @@ describe('statusText', () => {
   // "never" from it. A truthiness check here would silence the line.
   it('treats epoch zero as a time, not as an absence', () => {
     expect(statusText({ busy: false, at: 0, failed: false }, T)).not.toBe('')
+  })
+})
+
+describe('statusText with a snapshot time', () => {
+  const SNAP = Date.parse('2026-10-25T14:20:30Z')
+
+  it('shows the snapshot time, not the client fetch time', () => {
+    expect(statusText({ busy: false, at: AT, dataAt: SNAP, failed: false }, T)).toBe(`${T.updated} ${formatTime(SNAP)}`)
+  })
+
+  it('falls back to the client time when the body had none', () => {
+    expect(statusText({ busy: false, at: AT, dataAt: null, failed: false }, T)).toBe(`${T.updated} ${formatTime(AT)}`)
+    expect(statusText({ busy: false, at: AT, failed: false }, T)).toBe(`${T.updated} ${formatTime(AT)}`)
+  })
+})
+
+describe('snapshotTime', () => {
+  it('reads generated_at from the first body that has a valid one', () => {
+    expect(snapshotTime({ generated_at: '2026-10-25T14:20:30Z' })).toBe(Date.parse('2026-10-25T14:20:30Z'))
+    expect(snapshotTime(null, {}, { generated_at: 'nope' }, { generated_at: '2026-10-25T14:25:31Z' }))
+      .toBe(Date.parse('2026-10-25T14:25:31Z'))
+  })
+
+  it('is null when no body carries a usable time', () => {
+    expect(snapshotTime()).toBeNull()
+    expect(snapshotTime(null, undefined, {}, { generated_at: '' })).toBeNull()
   })
 })
 

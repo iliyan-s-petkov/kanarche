@@ -25,6 +25,8 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
   // looking at something that WAS fresh, and the line says so from the first
   // paint rather than staying blank until the first manual refresh.
   let at = $state(now())
+  // Snapshot time the providers reported (ms), null until one does.
+  let dataAt = $state(null)
 
   function readMinutes() {
     try {
@@ -52,8 +54,10 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
     changed = null
     const before = probe()
     try {
-      await Promise.all([...providers].map((fn) => fn()))
+      const replies = await Promise.all([...providers].map((fn) => fn()))
       at = now()
+      // A provider may answer with the snapshot time it loaded; none means client time.
+      dataAt = replies.find((r) => Number.isFinite(r)) ?? null
       changed = categoryChange(before, probe())
     } catch (err) {
       // Reported, not swallowed: the status line is the only place a reader
@@ -92,6 +96,7 @@ export function createFreshness({ win = globalThis, doc = globalThis.document, s
     get busy() { return busy },
     get failed() { return failed },
     get at() { return at },
+    get dataAt() { return dataAt },
     get minutes() { return minutes },
     setMinutes(next) {
       if (!AUTO_CHOICES.includes(next) || next === minutes) return

@@ -741,6 +741,49 @@ describe('installTimelapse', () => {
     expect(painted.at(-1).features[0].properties.value).toBe(10)
   })
 
+  // Refresh now and the timer reload the live grid; a paused replay must not be repainted by them.
+  it('keeps the paused frame through a live refresh, then shows the new live values on exit', async () => {
+    let liveValue = 99
+    const fetchJSON = async (url) => (url.includes('timelapse')
+      ? BODY
+      : { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: liveValue } }] })
+    const { ui, painted, state, map } = harness(fetchJSON)
+
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(10))
+    ui.button.click()
+    const before = painted.length
+
+    // What the freshness provider does: forget the URL, fetch the new body.
+    liveValue = 55
+    state.hexUrl = null
+    await refreshHexes(map, state, cfg, fetchJSON)
+
+    expect(painted).toHaveLength(before)
+    expect(state.hexBody.hexes[0].values.P2).toBe(55)
+
+    ui.exit.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(55))
+  })
+
+  it('paints live refreshes again once the reader has left the replay', async () => {
+    const fetchJSON = async (url) => (url.includes('timelapse')
+      ? BODY
+      : { resolution_km: 15, hexes: [{ lon: 23, lat: 42, values: { P2: 99 } }] })
+    const { ui, painted, state, map } = harness(fetchJSON)
+    await refreshHexes(map, state, cfg, fetchJSON)
+    ui.button.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(10))
+    ui.exit.click()
+    await vi.waitFor(() => expect(painted.at(-1).features[0].properties.value).toBe(99))
+    const after = painted.length
+
+    state.hexUrl = null
+    await refreshHexes(map, state, cfg, fetchJSON)
+    expect(painted.length).toBeGreaterThan(after)
+  })
+
   it('scrubs while paused, then resumes from the paused frame', async () => {
     const { ui, painted } = harness(async () => BODY)
 

@@ -32,11 +32,22 @@ export function minutesFromStored(raw) {
 // failure is neither. An absence is stated plainly rather than dressed as an
 // error (DESIGN.md §2.3) — a page that has never loaded says nothing at all
 // rather than announcing that it has no time to show.
-export function statusText({ busy, at, failed }, t, lang = 'bg') {
+export function statusText({ busy, at, dataAt, failed }, t, lang = 'bg') {
   if (busy) return t.loading
   if (failed) return t.failed
-  if (at == null) return ''
-  return `${t.updated} ${formatTime(at, lang)}`
+  // The server snapshot time when a body carried one, else the client fetch time.
+  const when = dataAt ?? at
+  if (when == null) return ''
+  return `${t.updated} ${formatTime(when, lang)}`
+}
+
+// The snapshot time (ms) of the first body with a parseable generated_at, else null.
+export function snapshotTime(...bodies) {
+  for (const body of bodies) {
+    const ms = Date.parse(body?.generated_at)
+    if (Number.isFinite(ms)) return ms
+  }
+  return null
 }
 
 // The clock the reader's own locale writes, not a fixed HH:MM: 24-hour in

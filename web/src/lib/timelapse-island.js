@@ -297,6 +297,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
     }
     if (!open) {
       open = true
+      state.replayOpen = true
       map.on('zoom', onZoom)
     }
     head.playing = true
@@ -328,6 +329,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   // held body stays, so the next press of play repaints without a refetch.
   ui.onexit(async () => {
     open = false
+    state.replayOpen = false
     ui.show(0)
     ui.say('')
     await stop()
@@ -337,6 +339,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   return {
     async reset() {
       open = false
+      state.replayOpen = false
       body = null
       loaded = ''
       head.count = 0

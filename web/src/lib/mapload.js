@@ -4,6 +4,7 @@
 
 import { getJSON, clearCache } from './api.js'
 import { getFreshness } from './freshness.svelte.js'
+import { snapshotTime } from './freshness.js'
 import { onSensorStatusChange } from './sensorfilter.svelte.js'
 import {
   getSources, onSourceChange, setSourceEnabled,
@@ -487,6 +488,8 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       state.hexUrl = null
       await refreshHexes(map, state, cfg)
       await refreshWind(map, cfg, chrome, windState)
+      // The snapshot the server built, for the freshness label.
+      return snapshotTime(state.hexBody, state.sensorBody)
     })
 
     // The opening camera is settled BEFORE the first paint, inside initData's
