@@ -79,7 +79,7 @@ func TestCopyHasNoContrastSlogans(t *testing.T) {
 	c := loaded(t)
 	rules := map[string]*regexp.Regexp{
 		"bg": regexp.MustCompile(`, а не |\bне е [^.,]{1,60}, а |,\s*не (е|за) `),
-		"en": regexp.MustCompile(`, not |\brather than\b|\bnot [^.,]{1,40}, but\b|, never `),
+		"en": regexp.MustCompile(`, not |\brather than\b|\bnot [^.,]{1,40},? but\b|, never `),
 	}
 	// Plain numeric comparisons, not slogans.
 	allow := map[string]bool{
