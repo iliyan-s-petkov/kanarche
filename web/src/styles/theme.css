@@ -47,8 +47,8 @@
   --sea-band-above: color-mix(in srgb, var(--fg) 20%, var(--bg));
   /* Layout, not colour, so it has nothing to follow. */
   --map-cap: 78vh;
-  /* Prose line length: 65ch floor, grows with the viewport, 90ch ceiling. */
-  --prose-measure: clamp(65ch, 55vw, 90ch);
+  /* Prose line length: 65ch floor, grows with the viewport, 100ch ceiling. */
+  --prose-measure: clamp(65ch, 55vw, 100ch);
   /* Phone chrome above an area page's map, worst case: city note plus a two-line h1 (the area h1 names the air quality, so a long city name wraps at 393px). Measured 374px on the fixture with the two-line h1 (349px before), plus one wrapped line when the city note grew; was 24rem. */
   --phone-chrome-area: 25.5rem;
   /* Phone masthead height; app.css drops it to 40px in landscape. */

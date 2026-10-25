@@ -15,7 +15,7 @@ func TestProseMeasureTokenInBothThemes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read %s: %v", p, err)
 		}
-		if !strings.Contains(string(b), "--prose-measure: clamp(65ch, 55vw, 90ch);") {
+		if !strings.Contains(string(b), "--prose-measure: clamp(65ch, 55vw, 100ch);") {
 			t.Errorf("%s does not define --prose-measure", p)
 		}
 	}
