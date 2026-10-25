@@ -87,9 +87,6 @@ func TestAboutFAQKeysExistInBothCatalogues(t *testing.T) {
 		}
 		keys := []string{"about_faq.heading"}
 		for n := 1; n <= 17; n++ {
-			if n == 3 || n == 4 {
-				continue // reused from faq.q2/a2 and faq.q3/a3
-			}
 			keys = append(keys, "about_faq.q"+strconv.Itoa(n), "about_faq.a"+strconv.Itoa(n))
 		}
 		for _, k := range keys {

@@ -112,8 +112,8 @@ func TestAirPollutionFAQPageMatchesVisibleDetails(t *testing.T) {
 				ldA = append(ldA, q.AcceptedAnswer.Text)
 			}
 		}
-		if len(ldQ) != 10 {
-			t.Fatalf("%s: FAQPage has %d questions, want 10", c.path, len(ldQ))
+		if len(ldQ) != 14 {
+			t.Fatalf("%s: FAQPage has %d questions, want 14", c.path, len(ldQ))
 		}
 		if strings.Join(ldQ, "|") != strings.Join(visibleQ, "|") {
 			t.Errorf("%s: FAQPage questions %q differ from visible details %q", c.path, ldQ, visibleQ)

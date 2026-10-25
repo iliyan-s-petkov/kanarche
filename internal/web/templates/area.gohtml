@@ -470,6 +470,14 @@
 
 {{/* Native details, so it folds with no script. The JSON-LD FAQPage is built
      from these same strings (faqPage), so markup and visible text cannot differ. */}}
+{{with .AreaFacts}}
+<section class="area-facts" aria-labelledby="facts-heading">
+<h2 id="facts-heading">{{.Heading}}</h2>
+{{if .Place}}<p>{{.Place}}</p>
+{{end}}{{if .Network}}<p>{{.Network}}</p>
+{{end}}{{if .Rank}}<p>{{.Rank}}</p>
+{{end}}</section>
+{{end}}
 {{with .AreaFAQ}}
 <section class="faq" aria-labelledby="faq-heading">
 <h2 id="faq-heading">{{.Heading}}</h2>
@@ -480,6 +488,7 @@
 </details>
 {{end}}
 </section>
+<p class="faq__more">{{$.AreaGeneralLine}}</p>
 <p class="faq__more">{{$.AreaExplainerLine}}</p>
 {{end}}
 </div>
