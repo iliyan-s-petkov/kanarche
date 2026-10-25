@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
 import DataFreshness from '../DataFreshness.svelte'
+import { formatTime, STALE_MS } from '../../lib/freshness.js'
 
 let component
 afterEach(() => {
@@ -26,6 +27,84 @@ const options = [
 ]
 const base = { status: '', announce: '', minutes: 5, labels, options, onpick: () => {}, onrefresh: () => {} }
 
+describe('DataFreshness time beside the icon', () => {
+  const NOW = Date.parse('2026-10-25T14:30:00Z')
+  const timed = (over = {}) => render({ ...base, lang: 'en', at: NOW, nowFn: () => NOW, ...over })
+  const time = (el) => el.querySelector('.data-refresh__time')
+
+  it('writes the snapshot time inside the button, in the page locale', () => {
+    const el = timed()
+    expect(time(el).textContent).toBe(formatTime(NOW, 'en'))
+    expect(el.querySelector('.data-refresh__btn--icon').contains(time(el))).toBe(true)
+  })
+
+  // WCAG 2.5.3: the visible time must be inside the accessible name, and the word stays so voice control still finds it.
+  it('keeps the visible time inside the accessible name', () => {
+    const name = timed().querySelector('.data-refresh__btn--icon').getAttribute('aria-label')
+    expect(name).toBe(`Обнови ${formatTime(NOW, 'en')}`)
+  })
+
+  it('shows no time before there is one, and the name falls back to the plain word', () => {
+    const el = timed({ at: null })
+    expect(time(el)).toBe(null)
+    expect(el.querySelector('.data-refresh__btn--icon').getAttribute('aria-label')).toBe('Обнови')
+  })
+
+  it('marks a snapshot older than the stale limit', () => {
+    expect(time(timed({ at: NOW - STALE_MS - 1000 })).classList.contains('data-refresh__time--stale')).toBe(true)
+  })
+
+  it('does not mark a snapshot inside the stale limit', () => {
+    expect(time(timed({ at: NOW - STALE_MS + 1000 })).classList.contains('data-refresh__time--stale')).toBe(false)
+  })
+
+  it('keeps the time and flags aria-busy while a refresh is in flight', () => {
+    const el = timed({ busy: true })
+    expect(el.querySelector('.data-refresh__btn--icon').getAttribute('aria-busy')).toBe('true')
+    expect(time(el).textContent).toBe(formatTime(NOW, 'en'))
+  })
+
+  it('greys the time while a replay is open', () => {
+    expect(time(timed({ paused: true })).classList.contains('data-refresh__time--paused')).toBe(true)
+    expect(time(timed({ paused: false })).classList.contains('data-refresh__time--paused')).toBe(false)
+  })
+})
+
+describe('DataFreshness ageing', () => {
+  const T0 = Date.parse('2026-10-25T14:30:00Z')
+  afterEach(() => { vi.useRealTimers() })
+
+  it('turns stale as the clock moves on, with no refresh', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(T0)
+    const el = render({ ...base, lang: 'en', at: T0 - 14 * 60 * 1000 })
+    const time = el.querySelector('.data-refresh__time')
+    expect(time.classList.contains('data-refresh__time--stale')).toBe(false)
+    flushSync()
+    vi.advanceTimersByTime(2 * 60 * 1000)
+    flushSync()
+    expect(time.classList.contains('data-refresh__time--stale')).toBe(true)
+  })
+
+  it('stops its timer when it is unmounted', () => {
+    vi.useFakeTimers()
+    const clear = vi.spyOn(globalThis, 'clearInterval')
+    render({ ...base, at: T0 })
+    flushSync()
+    expect(vi.getTimerCount()).toBe(1)
+    unmount(component)
+    component = null
+    expect(clear).toHaveBeenCalledTimes(1)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('names the same text it shows', () => {
+    const el = render({ ...base, lang: 'bg', at: T0, nowFn: () => T0 })
+    const btn = el.querySelector('.data-refresh__btn--icon')
+    expect(btn.getAttribute('aria-label')).toBe(`Обнови ${el.querySelector('.data-refresh__time').textContent}`)
+  })
+})
+
 describe('DataFreshness', () => {
   // Clipped, never hidden: display:none would silence the announcement.
   it('carries a live region even before it has anything to report', () => {
@@ -47,19 +126,14 @@ describe('DataFreshness', () => {
     expect(el.querySelector('[role="status"]').textContent).toBe('София: качеството на въздуха вече е лошо, преди беше добро.')
   })
 
-  // The accessible name is the static word. A time inside it changes the name
-  // on every refresh and breaks voice control (WCAG 2.5.3, 4.1.2). The time
-  // stays in the title for hover only.
-  it('puts the time in the hover title but keeps the accessible name static', () => {
-    const el = render({ ...base, status: 'Данни от 14:07' })
-    const btn = el.querySelector('.data-refresh__btn--icon')
-    expect(btn.title).toBe('Обнови · Данни от 14:07')
-    expect(btn.getAttribute('aria-label')).toBe('Обнови')
+  // The name already says "Обнови" and the time, so the title only adds what the time is.
+  it('explains the time in the hover title without repeating the name', () => {
+    const btn = render({ ...base, status: 'Данни от 14:07' }).querySelector('.data-refresh__btn--icon')
+    expect(btn.title).toBe('Данни от 14:07')
   })
 
-  // A dangling "·" is the tell that the empty status was interpolated anyway.
-  it('states the name alone when there is no reading to date', () => {
-    expect(render({ ...base }).querySelector('.data-refresh__btn--icon').title).toBe('Обнови')
+  it('has no title when there is nothing to explain', () => {
+    expect(render({ ...base }).querySelector('.data-refresh__btn--icon').hasAttribute('title')).toBe(false)
   })
 
   it('is one icon button that starts closed', () => {

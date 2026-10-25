@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getJSON, clearCache, RATE_LIMIT_RETRY_MS, CACHE_LIMIT } from '../api.js'
+import { getJSON, clearCache, serverNow, resetServerClockForTests, RATE_LIMIT_RETRY_MS, CACHE_LIMIT } from '../api.js'
 
 function jsonResponse(body, status = 200, headers = {}) {
   return {
@@ -13,6 +13,7 @@ function jsonResponse(body, status = 200, headers = {}) {
 let fetchMock
 beforeEach(() => {
   clearCache()
+  resetServerClockForTests()
   fetchMock = vi.fn()
   globalThis.fetch = fetchMock
   vi.useFakeTimers()
@@ -377,4 +378,66 @@ it('forgets the oldest owed revalidations past the cap', async () => {
   await getJSON(`/api/v1/u2-${CACHE_LIMIT - 1}`)
   expect(fetchMock.mock.calls[0][1].cache).toBe('default')
   expect(fetchMock.mock.calls[1][1].cache).toBe('no-cache')
+})
+
+describe('server clock', () => {
+  // A fresh URL per call, or the second would be answered from the client cache.
+  let clockCalls = 0
+  const SERVER = Date.parse('2026-10-25T12:00:00Z')
+
+  // The client clock is set, then a response says what the server's clock read.
+  async function seen(clientNow, headers) {
+    vi.setSystemTime(clientNow)
+    fetchMock.mockResolvedValueOnce(jsonResponse({}, 200, headers))
+    await getJSON(`/api/v1/clock-${(clockCalls += 1)}`)
+  }
+
+  it('is the client clock until a response has a Date', () => {
+    vi.setSystemTime(SERVER)
+    expect(serverNow()).toBe(SERVER)
+  })
+
+  it('corrects a client clock 20 minutes ahead', async () => {
+    await seen(SERVER + 20 * 60 * 1000, { Date: new Date(SERVER).toUTCString() })
+    expect(serverNow()).toBe(SERVER)
+  })
+
+  it('corrects a client clock 20 minutes behind', async () => {
+    await seen(SERVER - 20 * 60 * 1000, { Date: new Date(SERVER).toUTCString() })
+    expect(serverNow()).toBe(SERVER)
+  })
+
+  it('adds the Age a shared cache held the response for', async () => {
+    await seen(SERVER, { Date: new Date(SERVER - 60 * 1000).toUTCString(), Age: '60' })
+    expect(serverNow()).toBe(SERVER)
+  })
+
+  it('keeps the larger offset when a later response was served from an older Date', async () => {
+    await seen(SERVER, { Date: new Date(SERVER).toUTCString() })
+    await seen(SERVER, { Date: new Date(SERVER - 5 * 60 * 1000).toUTCString() })
+    expect(serverNow()).toBe(SERVER)
+  })
+
+  it('follows a client clock set forward after the window has passed', async () => {
+    await seen(SERVER, { Date: new Date(SERVER).toUTCString() })
+    vi.advanceTimersByTime(11 * 60 * 1000)
+    const later = SERVER + 11 * 60 * 1000
+    // The reader's clock jumps 30 minutes ahead; the server's did not.
+    await seen(later + 30 * 60 * 1000, { Date: new Date(later).toUTCString() })
+    expect(serverNow()).toBe(later)
+  })
+
+  it('keeps the larger offset inside the window even after a forward jump', async () => {
+    await seen(SERVER, { Date: new Date(SERVER).toUTCString() })
+    vi.advanceTimersByTime(60 * 1000)
+    const later = SERVER + 60 * 1000
+    await seen(later + 30 * 60 * 1000, { Date: new Date(later).toUTCString() })
+    expect(serverNow()).toBe(later + 30 * 60 * 1000)
+  })
+
+  it('ignores a missing or unreadable Date', async () => {
+    await seen(SERVER, {})
+    await seen(SERVER, { Date: 'not a date' })
+    expect(serverNow()).toBe(SERVER)
+  })
 })

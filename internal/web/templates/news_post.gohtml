@@ -1,0 +1,18 @@
+{{/* /news/<slug>: one post. The body is Markdown rendered at load time with raw HTML dropped. */}}
+{{define "main"}}
+{{with .NewsPost}}<article class="measure news-post">
+<nav class="breadcrumb" aria-label="{{$.T "area.breadcrumb.label"}}">
+<a class="link" href="{{$.Path "/"}}">{{$.T "area.breadcrumb.home"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><a class="link" href="{{$.Path "/news"}}">{{$.T "news.breadcrumb"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><span aria-current="page">{{.Title}}</span>
+</nav>
+<div class="page-head">
+  <h1 class="t-title">{{.Title}}</h1>
+  <p class="news-item__meta">{{$.T "news.published"}} <time datetime="{{.DateISO}}">{{.DateHuman}}</time>{{if .HasUpdate}}<span class="breadcrumb__sep" aria-hidden="true">·</span>{{$.T "news.updated"}} <time datetime="{{.UpdatedISO}}">{{.UpdatedText}}</time>{{end}}</p>
+</div>
+<div class="news-body">{{.HTML}}</div>
+{{if .Areas}}<h2>{{$.T "news.related_areas"}}</h2>
+<ul class="news-areas">
+{{range .Areas}}  <li><a class="link" href="{{.URL}}">{{.Name}}</a></li>
+{{end}}</ul>
+{{end}}<p class="t-body"><a class="link" href="{{$.Path "/news"}}">{{$.T "news.all"}}</a></p>
+</article>
+{{end}}{{end}}

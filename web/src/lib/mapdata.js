@@ -443,7 +443,12 @@ export async function refreshHexes(map, state, cfg, fetchJSON = getJSON, { defer
   // The same filter the markers answer to. The grid is the tier that covers the
   // country, so leaving it out made "hide inactive sensors" a control with no
   // visible effect anywhere a reader was likely to be looking.
-  const paint = () => paintSource(map, HEX_SOURCE_ID, filterByStatus(features, getSensorStatus()))
+  // While a replay is open the hex source belongs to it. The live body is kept
+  // above and the replay repaints it on exit.
+  const paint = () => {
+    if (state.replayOpen) return
+    paintSource(map, HEX_SOURCE_ID, filterByStatus(features, getSensorStatus()))
+  }
   if (defer) return paint
   paint()
 }

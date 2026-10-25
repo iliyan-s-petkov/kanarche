@@ -4,6 +4,7 @@
 
 import { getJSON, clearCache } from './api.js'
 import { getFreshness } from './freshness.svelte.js'
+import { snapshotTime, reloadedSnapshot } from './freshness.js'
 import { onSensorStatusChange } from './sensorfilter.svelte.js'
 import {
   getSources, onSourceChange, setSourceEnabled,
@@ -481,12 +482,16 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     // reloaded too — they are the density field under the same readings, and a
     // page where half the picture updated is worse than one where none did.
     subs.unprovide = getFreshness().provide(async () => {
+      // The bodies held before, so the time comes only from those this refresh replaced.
+      const before = [state.hexBody, state.sensorBody]
       clearCache()
       await refresh(map, state, cfg, chrome, true)
       // refreshHexes skips a URL it already holds, so forget it or the grid never refetches.
       state.hexUrl = null
       await refreshHexes(map, state, cfg)
       await refreshWind(map, cfg, chrome, windState)
+      // The snapshot the server built, for the freshness label.
+      return reloadedSnapshot(before, [state.hexBody, state.sensorBody])
     })
 
     // The opening camera is settled BEFORE the first paint, inside initData's
@@ -532,6 +537,7 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     }, () => refreshHexes(map, state, cfg, getJSON, { defer: true }))
 
     markDataPainted()
+    getFreshness().noteSnapshot(snapshotTime(state.hexBody, state.sensorBody))
 
     // Every jumpTo above queued a moveend of its own, and the paint it would
     // debounce into has just happened at that exact camera position.

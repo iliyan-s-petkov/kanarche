@@ -9,6 +9,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.9
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
+	github.com/yuin/goldmark v1.8.6
 	gopkg.in/yaml.v3 v3.0.1
 )
 

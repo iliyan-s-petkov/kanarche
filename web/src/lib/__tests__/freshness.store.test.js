@@ -40,6 +40,62 @@ let errs
 beforeEach(() => { errs = vi.spyOn(console, 'error').mockImplementation(() => {}) })
 afterEach(() => { errs.mockRestore(); resetFreshnessForTests() })
 
+describe('snapshot time', () => {
+  const SNAP = Date.parse('2026-10-25T14:20:30Z')
+
+  it('takes the time a provider reports, apart from the client time', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store(), now: () => 5000 })
+    f.provide(async () => SNAP)
+    await f.request()
+    expect(f.dataAt).toBe(SNAP)
+    expect(f.at).toBe(5000)
+  })
+
+  it('takes the snapshot time of the first load without a refresh', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    f.noteSnapshot(SNAP)
+    expect(f.dataAt).toBe(SNAP)
+    f.noteSnapshot(null)
+    expect(f.dataAt).toBe(SNAP)
+  })
+
+  it('has no snapshot time before any refresh', () => {
+    expect(createFreshness({ win: fakeWin(), storage: store() }).dataAt).toBeNull()
+  })
+
+  it('keeps the last server time when a provider reports nothing', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    let reply = SNAP
+    f.provide(async () => reply)
+    await f.request()
+    reply = undefined
+    await f.request()
+    expect(f.dataAt).toBe(SNAP)
+  })
+
+  it('keeps the old snapshot time when the refresh fails', async () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    let fail = false
+    f.provide(async () => { if (fail) throw new Error('down'); return SNAP })
+    await f.request()
+    fail = true
+    await f.request()
+    expect(f.failed).toBe(true)
+    expect(f.dataAt).toBe(SNAP)
+  })
+})
+
+describe('replay flag', () => {
+  it('starts off and follows setReplay', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    expect(f.replay).toBe(false)
+    f.setReplay(true)
+    expect(f.replay).toBe(true)
+    f.setReplay(false)
+    expect(f.replay).toBe(false)
+  })
+})
+
 describe('createFreshness', () => {
   it('starts with a time, because the server-rendered page was fresh', () => {
     const f = createFreshness({ win: fakeWin(), storage: store(), now: () => 1000 })
