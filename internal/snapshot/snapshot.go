@@ -126,6 +126,11 @@ type AreaMeta struct {
 	// Covered or the series has too few coverage-gated buckets — see
 	// buildDayRange.
 	Day *DayRange
+	// Km2 is the boundary's size in square kilometres, 0 when unknown.
+	// Read once per snapshot build.
+	Km2 float64
+	// Stations are the EoI codes of the official stations inside the boundary, sorted.
+	Stations []string
 }
 
 // DayRange is the 24h min/max of an area's median series, gated so a bucket
@@ -235,6 +240,9 @@ type Snapshot struct {
 	// memory: the lookup must not become a way to make the database walk the
 	// sensor table one id at a time.
 	SensorLocations map[int64]SensorLocation
+
+	// Stations is every official station that has a position, by EoI code.
+	Stations map[string]OfficialStation
 
 	// pollen is the per-area forecast table; empty when disabled or unavailable.
 	pollen pollenState
