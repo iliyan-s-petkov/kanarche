@@ -14,14 +14,14 @@ type FAQItem struct {
 	AnswerHTML template.HTML
 }
 
-// FAQBlock is the area page's FAQ: a heading and seven items.
+// FAQBlock is the area page's FAQ: a heading and eleven items.
 type FAQBlock struct {
 	Heading string
 	Items   []FAQItem
 }
 
-// faqCount is the number of questions the catalogue holds (faq.q1 to faq.q7).
-const faqCount = 7
+// faqCount is the number of questions the catalogue holds (faq.q1 to faq.q11).
+const faqCount = 11
 
 // areaIn is the BG preposition and name ("в Смолян", "във Враца", "в район Младост", "в област Пловдив"), cut out of the h1 so the grammar rule stays in one place.
 func (p PageData) areaIn() string {
@@ -48,6 +48,7 @@ func (p PageData) faqReplacer(row AreaRow) *strings.Replacer {
 		"{area}", p.faqArea(row),
 		"{area_in}", p.areaIn(),
 		"{minutes}", strconv.Itoa(p.pollMinutes),
+		"{air_pollution_link}", p.T("faq.air_pollution_link"),
 	}
 	return strings.NewReplacer(append(pairs, eaqiEdgePairs()...)...)
 }
@@ -94,13 +95,20 @@ func (p PageData) faqBlock(row AreaRow) *FAQBlock {
 		if n == 6 {
 			links = append(links, aboutLink)
 		}
+		// Answer 8 ends by pointing at the explainer; the filled placeholder text becomes the link.
+		if n == 8 {
+			links = append(links, faqLink{Label: p.T("faq.air_pollution_link"), Href: p.Path("/air-pollution")})
+		}
 		block.Items = append(block.Items, newFAQItem(fill.Replace(p.T("faq.q"+num)), fill.Replace(answer), links...))
 	}
 	return block
 }
 
-// aboutFAQCount is the number of questions on the About the data page (about_faq.q1 to q9).
-const aboutFAQCount = 9
+// aboutFAQCount is the number of questions on the About the data page (about_faq.q1 to q17).
+const aboutFAQCount = 17
+
+// aboutFAQRZIAnswers are the About answers that end by pointing at the three RHI bathing pages.
+var aboutFAQRZIAnswers = map[int]bool{10: true, 14: true}
 
 // aboutFAQKeys maps About question n to its catalogue keys. Questions 3 and 4 reuse the area FAQ's PM and colour entries.
 func aboutFAQKeys(n int) (q, a string) {
@@ -125,7 +133,30 @@ func (p PageData) aboutFAQBlock() *FAQBlock {
 	block := &FAQBlock{Heading: p.T("about_faq.heading")}
 	for n := 1; n <= aboutFAQCount; n++ {
 		qKey, aKey := aboutFAQKeys(n)
-		block.Items = append(block.Items, newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...))
+		item := newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...)
+		if aboutFAQRZIAnswers[n] {
+			item = p.withRZILinks(item)
+		}
+		block.Items = append(block.Items, item)
 	}
 	return block
+}
+
+// withRZILinks appends the RHI pages after an answer that ends in a colon. The page gets labelled anchors
+// separated like /licences; the JSON-LD text stays plain, so it gets the bare URLs instead.
+func (p PageData) withRZILinks(item FAQItem) FAQItem {
+	var anchors, urls []string
+	for _, page := range p.RZIPages() {
+		if page.URL == "" {
+			continue
+		}
+		anchors = append(anchors, `<a href="`+html.EscapeString(page.URL)+`" rel="noopener noreferrer">`+html.EscapeString(p.T(page.LabelKey))+`</a>`)
+		urls = append(urls, page.URL)
+	}
+	if len(urls) == 0 {
+		return item
+	}
+	item.Answer += " " + strings.Join(urls, " ")
+	item.AnswerHTML += template.HTML(" " + strings.Join(anchors, " · "))
+	return item
 }
