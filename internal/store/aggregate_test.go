@@ -1472,6 +1472,26 @@ func TestAreaParentByLargestOverlap(t *testing.T) {
 	}
 }
 
+// A 5 km buffer is a disc of about 78.5 km2; the polygon approximation sits within a percent of it.
+func TestAreaKm2(t *testing.T) {
+	ctx, pool := migrated(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+
+	seedAreaBuffer(t, ctx, pool, "km2-small", "city", 23.0, 42.0, 5000)
+	seedAreaBuffer(t, ctx, pool, "km2-large", "oblast", 25.0, 43.0, 50000)
+
+	km2, err := s.AreaKm2(ctx)
+	if err != nil {
+		t.Fatalf("AreaKm2: %v", err)
+	}
+	if got := km2["km2-small"]; got < 77 || got > 80 {
+		t.Errorf("km2-small = %v, want about 78.5", got)
+	}
+	if got := km2["km2-large"]; got < 7700 || got > 8000 {
+		t.Errorf("km2-large = %v, want about 7850", got)
+	}
+}
+
 // seedAreaBuffer is seedArea with an explicit buffer radius; seedArea itself
 // hardcodes 5000m, which is too small to build the overlap geometry above.
 func seedAreaBuffer(t *testing.T, ctx contextT, pool poolT, slug, kind string, lon, lat, radiusM float64) {
