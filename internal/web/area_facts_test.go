@@ -97,7 +97,7 @@ func TestFactsBlocksBulgarianCityWithOwnBoundary(t *testing.T) {
 	for _, want := range []string{
 		"За въздуха в Шумен",
 		"Шумен е областен център в област Шумен. Границата на града, по която отнасяме сензорите, обхваща 66 км².",
-		"В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. АИС Шумен е градска фонова станция.",
+		"В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция.",
 		"Шумен сега е на 9-то място от 27 областни центъра по ФПЧ2.5, считано от най-чистия въздух. Стойността е 14,2 µg/m³, а медианата за всички 27 е 19,0 µg/m³. Подредбата се променя с всяко обновяване на данните.",
 	} {
 		if !hasLine(text, want) {
@@ -112,7 +112,7 @@ func TestFactsBlocksEnglishCityWithOwnBoundary(t *testing.T) {
 	for _, want := range []string{
 		"About the air in Shumen",
 		"Shumen is a provincial capital in Shumen Province. The city boundary we use to assign sensors covers 66 km².",
-		"Shumen has 11 citizen sensors and 1 official station of the Executive Environment Agency: AIS Shumen. AIS Shumen is an urban background station.",
+		"Shumen has 11 citizen sensors and 1 official station of the Executive Environment Agency: AIS Shumen. It is an urban background station.",
 		"Shumen currently ranks 9th of 27 provincial capitals for PM2.5, counting from the cleanest air. The value is 14.2 µg/m³ and the median for all 27 is 19.0 µg/m³. The ranking changes with every data update.",
 	} {
 		if !hasLine(text, want) {
@@ -154,12 +154,12 @@ func TestFactsPlaceForDistrictAndOblast(t *testing.T) {
 func TestFactsNetworkWithoutInsideStationNamesTheNearest(t *testing.T) {
 	rr := renderer(t, factsSnapshot())
 	bg := factsText(t, fetch(t, rr, "/area/razgrad-oblast").Body.String())
-	wantBG := "В област Разград има 9 граждански сензора и няма официална станция на ИАОС. Най-близката официална станция е АИС Шумен. Тя е на 44 км югоизточно от средата на област Разград. Стойностите ѝ може да се различават от тези в област Разград. АИС Шумен е градска фонова станция."
+	wantBG := "В област Разград има 9 граждански сензора и няма официална станция на ИАОС. Най-близката официална станция е АИС Шумен. Тя е на 44 км югоизточно от средата на област Разград. Стойностите ѝ може да се различават от тези в област Разград. Тя е градска фонова станция."
 	if !hasLine(bg, wantBG) {
 		t.Errorf("missing %q in:\n%s", wantBG, bg)
 	}
 	en := factsText(t, fetch(t, rr, "/en/area/razgrad-oblast").Body.String())
-	wantEN := "Razgrad Province has 9 citizen sensors and no official station of the Executive Environment Agency. The nearest official station is AIS Shumen. It is 44 km south-east of the centre of Razgrad Province. Its values may differ from those in Razgrad Province. AIS Shumen is an urban background station."
+	wantEN := "Razgrad Province has 9 citizen sensors and no official station of the Executive Environment Agency. The nearest official station is AIS Shumen. It is 44 km south-east of the centre of Razgrad Province. Its values may differ from those in Razgrad Province. It is an urban background station."
 	if !hasLine(en, wantEN) {
 		t.Errorf("missing %q in:\n%s", wantEN, en)
 	}
@@ -201,7 +201,7 @@ func TestFactsNetworkCountVariants(t *testing.T) {
 		wantLine string
 	}{
 		{"k=1 n=1", networkSnapshot(1, "BG0038A"), "/area/shumen",
-			"В Шумен има 1 граждански сензор и 1 официална станция на ИАОС: АИС Шумен. АИС Шумен е градска фонова станция."},
+			"В Шумен има 1 граждански сензор и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция."},
 		{"k=2", networkSnapshot(3, "BG0038A", "BG0050A"), "/area/shumen",
 			"В Шумен има 3 граждански сензора и 2 официални станции на ИАОС: АИС Шумен и София - АИС Хиподрума."},
 		{"k=0 n=3", networkSnapshot(3), "/area/shumen",
@@ -209,7 +209,7 @@ func TestFactsNetworkCountVariants(t *testing.T) {
 		{"k=0 n=1", networkSnapshot(1), "/en/area/shumen",
 			"Shumen has 1 citizen sensor and no official station of the Executive Environment Agency. The nearest official station is AIS Shumen."},
 		{"n=0 k=1", networkSnapshot(0, "BG0038A"), "/area/shumen",
-			"В Шумен няма граждански сензори. Има 1 официална станция на ИАОС: АИС Шумен. АИС Шумен е градска фонова станция."},
+			"В Шумен няма граждански сензори. Има 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция."},
 		{"n=0 k=2 en", networkSnapshot(0, "BG0038A", "BG0050A"), "/en/area/shumen",
 			"Shumen has no citizen sensors. It has 2 official stations of the Executive Environment Agency: AIS Shumen and Sofia - AIS Hipodruma."},
 		{"n=0 k=0", networkSnapshot(0), "/area/shumen",
@@ -337,7 +337,7 @@ func TestFAQHasThreeAreaQuestionsAndMatchesJSONLD(t *testing.T) {
 	if items[0].A != wantA1 {
 		t.Errorf("a1 = %q, want %q", items[0].A, wantA1)
 	}
-	if want := "В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. АИС Шумен е градска фонова станция."; items[1].A != want {
+	if want := "В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция."; items[1].A != want {
 		t.Errorf("a2 = %q, want %q", items[1].A, want)
 	}
 	if want := "Шумен е областен център в област Шумен. Границата на града, по която отнасяме сензорите, обхваща 66 км²."; items[2].A != want {
@@ -440,5 +440,47 @@ func TestFactsLeaveNoRawPlaceholderOrForbiddenPunctuation(t *testing.T) {
 				t.Errorf("%s%s: semicolon or dash in facts: %q", lang, slug, text)
 			}
 		}
+	}
+}
+
+// One station named in the sentence before: the type sentence says "Тя"/"It" and the name appears once.
+func TestFactsTypeSentenceUsesPronounForOneStation(t *testing.T) {
+	cases := []struct {
+		name, path, station, pronoun string
+		snap                         *snapshot.Snapshot
+	}{
+		{"inside bg", "/area/shumen", "АИС Шумен", "Тя е градска фонова станция.", networkSnapshot(3, "BG0038A")},
+		{"inside en", "/en/area/shumen", "AIS Shumen", "It is an urban background station.", networkSnapshot(3, "BG0038A")},
+		{"nearest bg", "/area/shumen", "АИС Шумен", "Тя е градска фонова станция.", networkSnapshot(3)},
+		{"nearest en", "/en/area/shumen", "AIS Shumen", "It is an urban background station.", networkSnapshot(3)},
+	}
+	for _, c := range cases {
+		text := factsText(t, fetch(t, renderer(t, c.snap), c.path).Body.String())
+		var line string
+		for _, l := range strings.Split(text, "\n") {
+			if strings.Contains(l, c.pronoun) {
+				line = l
+			}
+		}
+		if line == "" {
+			t.Errorf("%s: no %q in:\n%s", c.name, c.pronoun, text)
+			continue
+		}
+		if n := strings.Count(line, c.station); n != 1 {
+			t.Errorf("%s: station named %d times in %q, want 1", c.name, n, line)
+		}
+	}
+}
+
+// Two stations: both names stay and no type sentence follows.
+func TestFactsTwoStationsKeepNamesWithoutTypeSentence(t *testing.T) {
+	text := factsText(t, fetch(t, renderer(t, networkSnapshot(3, "BG0038A", "BG0050A")), "/area/shumen").Body.String())
+	for _, want := range []string{"АИС Шумен", "АИС Хиподрума"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q in:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "фонова станция") {
+		t.Errorf("type sentence with two stations:\n%s", text)
 	}
 }

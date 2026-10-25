@@ -189,7 +189,8 @@ func (p PageData) classWord(bg string) string {
 	return ""
 }
 
-// stationType is "АИС Шумен е градска фонова станция", or "" when the station has no class.
+// stationType is "Тя е градска фонова станция", or "" when the station has no class.
+// It only follows a sentence that names the one station, so a pronoun is enough.
 func (p PageData) stationType(info eea.StationInfo) string {
 	var words []string
 	for _, w := range []string{normStationType(info.Type), normStationArea(info.Area)} {
@@ -201,7 +202,7 @@ func (p PageData) stationType(info eea.StationInfo) string {
 		return ""
 	}
 	joined := strings.Join(words, " ")
-	return p.factText("area.facts.net.type", "{name}", stationName(info, p.Lang), "{words}", joined, "{article}", aOrAn(joined))
+	return p.factText("area.facts.net.type_pronoun", "{words}", joined, "{article}", aOrAn(joined))
 }
 
 // nearestStation is the committed station closest to the area's centre, or false when the snapshot has no positions.

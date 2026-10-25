@@ -843,7 +843,7 @@
   "area.facts.net.official_only": "{subject} has no citizen sensors. It has {stations}: {names}.",
   "area.facts.net.neither": "{subject} has no citizen sensors and no official station of the Executive Environment Agency.",
   "area.facts.net.nearest": "The nearest official station is {name}. It is {km} km {dir} of the centre of {area_plain}. Its values may differ from those in {area_plain}.",
-  "area.facts.net.type": "{name} is {article} {words} station.",
+  "area.facts.net.type_pronoun": "It is {article} {words} station.",
   "area.stype.urban": "urban",
   "area.stype.suburban": "suburban",
   "area.stype.remote": "remote",

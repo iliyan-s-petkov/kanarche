@@ -843,7 +843,7 @@
   "area.facts.net.official_only": "{area_in_cap} няма граждански сензори. Има {stations}: {names}.",
   "area.facts.net.neither": "{area_in_cap} няма граждански сензори и няма официална станция на ИАОС.",
   "area.facts.net.nearest": "Най-близката официална станция е {name}. Тя е на {km} км {dir} от средата на {area_plain}. Стойностите ѝ може да се различават от тези {area_in}.",
-  "area.facts.net.type": "{name} е {words} станция.",
+  "area.facts.net.type_pronoun": "Тя е {words} станция.",
   "area.stype.urban": "градска",
   "area.stype.suburban": "извънградска",
   "area.stype.remote": "отдалечена",
