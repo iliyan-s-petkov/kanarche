@@ -511,6 +511,7 @@
   "seo.areas.title": "Air pollution in Bulgaria by province and city",
   "seo.city.description": "{name} air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the city median and 24-hour history.",
   "seo.city.title": "{name} air quality today: PM2.5 and PM10 live",
+  "seo.city.title_vav": "{name} air quality today: PM2.5 and PM10 live",
   "seo.dataset.description": "Current and historical air quality readings for Bulgaria: PM2.5 and PM10 from sensor.community citizen sensors, aggregated by province, city and Sofia district.",
   "seo.dataset.name": "Air quality in Bulgaria: PM2.5 and PM10 by province, city and Sofia district",
   "seo.dataset.place": "Bulgaria",
