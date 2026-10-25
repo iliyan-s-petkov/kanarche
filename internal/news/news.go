@@ -67,7 +67,13 @@ type Post struct {
 }
 
 // HasUpdate reports whether the post was edited after its publication day.
-func (p Post) HasUpdate() bool { return p.Updated.After(p.Date) }
+// It compares calendar days in the publication location, so an update on the
+// publication day (including one capped to now) does not count.
+func (p Post) HasUpdate() bool {
+	y, m, d := p.Date.Date()
+	uy, um, ud := p.Updated.In(p.Date.Location()).Date()
+	return time.Date(uy, um, ud, 0, 0, 0, 0, time.UTC).After(time.Date(y, m, d, 0, 0, 0, 0, time.UTC))
+}
 
 // Set is every post that loaded, in all states.
 type Set struct {
