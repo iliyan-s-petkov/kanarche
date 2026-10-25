@@ -83,11 +83,23 @@ func TestAreaHealthGate(t *testing.T) {
 	noScale := acPageData(rr, "en", t0, t0)
 	noScale.DefaultMetric = "no_such_metric"
 
+	humidity := acPageData(rr, "en", t0, t0)
+	humidity.DefaultMetric = "humidity"
+	temp := acPageData(rr, "en", t0, t0)
+	temp.DefaultMetric = "temperature"
+	pm10 := acPageData(rr, "en", t0, t0)
+	pm10.DefaultMetric = "P1"
+	if got := pm10.areaHealthHTML(healthRow(30)); got == "" {
+		t.Error("PM10 rendered nothing")
+	}
+
 	cases := []struct {
 		name string
 		p    PageData
 		row  AreaRow
 	}{
+		{"humidity", humidity, healthRow(30)},
+		{"temperature", temp, healthRow(30)},
 		{"stale", stale, healthRow(30)},
 		{"uncovered", fresh, AreaRow{Covered: false, HasValue: true, Value: 30}},
 		{"no value", fresh, AreaRow{Covered: true, HasValue: false}},

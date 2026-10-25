@@ -288,6 +288,10 @@ const eaqiGuidanceURL = "https://airindex.eea.europa.eu/AQI/index.html"
 // under the same gate as areaDayHTML (stale, uncovered, no value) and when the
 // metric has no scale. Guidance about current air must not rest on an old reading.
 func (p PageData) areaHealthHTML(row AreaRow) template.HTML {
+	// The messages are the EEA's PM bands; other metrics have scales too.
+	if p.DefaultMetric != "P1" && p.DefaultMetric != "P2" {
+		return ""
+	}
 	if p.stale() || !row.Covered || !row.HasValue {
 		return ""
 	}
