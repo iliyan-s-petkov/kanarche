@@ -187,7 +187,7 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 		entries = append(entries, entry{path: "/area/" + slug, lastMod: changed})
 	}
 	for _, n := range rr.newsSitemapEntries(now) {
-		entries = append(entries, entry{path: n.path, lastMod: n.lastMod, lang: n.lang, alts: n.alts})
+		entries = append(entries, entry(n))
 	}
 
 	urls := make([]sitemapURL, 0, len(entries)*len(rr.cat.Languages()))
