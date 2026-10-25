@@ -134,6 +134,10 @@ func (rr *Renderer) handleSitemap(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
+// staticPagesLastMod is the day the static page copy last changed. Bump it
+// with any change to those pages' text.
+const staticPagesLastMod = "2026-10-25"
+
 // sitemapBytes builds from one snapshot throughout, so the slugs, the lastmods
 // and the cache key cannot come from different loads.
 func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
@@ -161,13 +165,15 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	if !generatedAt.IsZero() {
 		day = generatedAt.UTC().Format("2006-01-02")
 	}
-	// lastmod only where the page body follows the data. The home and the
-	// directory follow every snapshot. An area carries the day its own figures
-	// last changed, and none when that is unknown. Static pages get none
-	// rather than a date nothing supports.
+	// The home and the directory follow every snapshot. An area carries the day
+	// its own figures last changed, and none when that is unknown. Static pages
+	// carry staticPagesLastMod, a fixed release date, never the request day.
 	type entry struct{ path, lastMod string }
-	entries := make([]entry, 0, len(slugs)+6)
-	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""}, entry{"/air-pollution", ""})
+	entries := make([]entry, 0, len(slugs)+10)
+	entries = append(entries, entry{"/", day}, entry{"/areas", day})
+	for _, p := range []string{"/about", "/about-the-data", "/privacy", "/licences", "/terms", "/pm25", "/pm10", "/air-pollution"} {
+		entries = append(entries, entry{p, staticPagesLastMod})
+	}
 	for _, slug := range slugs {
 		var changed string
 		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {
