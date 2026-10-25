@@ -1,6 +1,7 @@
 package news_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -8,6 +9,17 @@ import (
 
 	"kanarche.eu/internal/news"
 )
+
+// The shipped drafts must stay valid so promoting one is a status edit.
+func TestShippedDraftsParseAndStayInvisible(t *testing.T) {
+	set, err := news.Load(os.DirFS("../../content/news/_drafts"), news.Options{})
+	if err != nil {
+		t.Fatalf("Load drafts: %v", err)
+	}
+	if got := len(set.Visible(time.Now())); got != 0 {
+		t.Errorf("status draft posts must not be visible, got %d", got)
+	}
+}
 
 const okPost = `---
 title: Air in Varna in September 2026
