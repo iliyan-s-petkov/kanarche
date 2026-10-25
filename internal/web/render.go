@@ -84,6 +84,18 @@ type Renderer struct {
 	sofiaLoc *time.Location
 }
 
+// defaultPeriodName is the period whose window is series.default_window, so a
+// period listed before it (1h) does not become the one the page opens on. A
+// config with no matching entry falls back to the first listed.
+func defaultPeriodName(s config.Series) string {
+	for _, name := range s.PeriodNames {
+		if p, ok := s.Periods[name]; ok && p.Window == s.DefaultWindow {
+			return name
+		}
+	}
+	return s.PeriodNames[0]
+}
+
 // NewRenderer builds the page renderer.
 //
 // The basemap style URL is derived from config.Tiles, which is empty when no
@@ -117,7 +129,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 		rzi:             cfg.Sea.RZI,
 		pollMinutes:     int(cfg.Upstream.PollInterval / time.Minute),
 		defaultMetric:   cfg.Series.DefaultMetric,
-		defaultPeriod:   cfg.Series.PeriodNames[0],
+		defaultPeriod:   defaultPeriodName(cfg.Series),
 		periodNames:     cfg.Series.PeriodNames,
 		pages:           make(map[string]*template.Template),
 	}

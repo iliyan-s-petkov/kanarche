@@ -13,12 +13,14 @@ func TestPeriodsComeFromTheConfiguredVocabulary(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
 	body := fetch(t, rr, "/area/silent").Body.String()
 
-	if !strings.Contains(body, `data-periods="24h,7d,30d,1y"`) {
+	if !strings.Contains(body, `data-periods="1h,24h,7d,30d,1y"`) {
 		t.Error("the chart island is not given the configured period vocabulary in file order")
 	}
 	// File order, not alphabetical: 1y sorts first alphabetically, and a
 	// switcher opening on "1 year" would put the coarsest view where the
 	// default belongs.
+	// The default is the period matching series.default_window, not the first
+	// one listed: 1h leads the list and must not become the default.
 	if !strings.Contains(body, `data-period="24h"`) {
 		t.Error("the chart island is not given the default period")
 	}
@@ -31,13 +33,26 @@ func TestPeriodLabelsAreTranslatedServerSide(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
 
 	bg := fetch(t, rr, "/area/silent").Body.String()
-	if !strings.Contains(bg, `data-period-labels="24 часа,7 дни,30 дни,1 година"`) {
+	if !strings.Contains(bg, `data-period-labels="1 час,24 часа,7 дни,30 дни,1 година"`) {
 		t.Error("the Bulgarian page does not carry the Bulgarian period labels")
 	}
 
 	en := fetch(t, rr, "/en/area/silent").Body.String()
-	if !strings.Contains(en, `data-period-labels="24 hours,7 days,30 days,1 year"`) {
+	if !strings.Contains(en, `data-period-labels="1 hour,24 hours,7 days,30 days,1 year"`) {
 		t.Error("the English page does not carry the English period labels")
+	}
+}
+
+// The compact (phone) control reads the short labels, which must exist in both
+// languages for every period or the button falls back to the long label.
+func TestPeriodShortLabelsCoverTheOneHourPeriod(t *testing.T) {
+	rr := renderer(t, rankingSnapshot())
+
+	if bg := fetch(t, rr, "/").Body.String(); !strings.Contains(bg, `data-period-short-labels="1ч,24ч,7д,30д,1г"`) {
+		t.Error("the Bulgarian page does not carry the short period labels with 1ч first")
+	}
+	if en := fetch(t, rr, "/en/").Body.String(); !strings.Contains(en, `data-period-short-labels="1h,24h,7d,30d,1y"`) {
+		t.Error("the English page does not carry the short period labels with 1h first")
 	}
 }
 

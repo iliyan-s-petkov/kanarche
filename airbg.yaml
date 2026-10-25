@@ -346,9 +346,9 @@ store:
   official_freshness_window: "12h"
 
 series:
-  # Must match the first entry in periods below: the snapshot serves this
-  # window without touching the database, and api.parsePeriod must derive the
-  # same window from the default period name.
+  # Must match the window of one entry in periods below (not necessarily the
+  # first): the snapshot serves this window without touching the database, and
+  # the page opens on the period with this window.
   default_metric: "P2"
   default_window: "24h"
   # The hourly flag is not a performance hint, it is a correctness
@@ -367,7 +367,13 @@ series:
   # area series returns one point per sensor per report. Each value below is
   # chosen to land the series near 300 points, which is roughly the horizontal
   # pixel budget of the chart and also caps what a single request can extract.
+  # 1h is raw readings at 1m buckets, since an hour of rollups is one point.
   periods:
+    - name: "1h"
+      window: "1h"
+      hourly: false
+      bucket: "1m"
+      max_age: "60s"
     - name: "24h"
       window: "24h"
       hourly: false
