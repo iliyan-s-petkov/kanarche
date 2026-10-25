@@ -19,6 +19,7 @@ import { panelRows, detailRows, stationMeta, networkText, lastUpdated } from '..
 import { createPanelLink } from '../lib/panellink.svelte.js'
 import { parseMetricList, zipLabels } from '../lib/metrics.js'
 import { getViewState } from '../lib/viewstate.svelte.js'
+import { getFreshness } from '../lib/freshness.svelte.js'
 import { getFavourite } from '../lib/favourite.svelte.js'
 import { findSensor, getScales, normaliseSensor } from '../lib/sensors.svelte.js'
 import { gaugeModel } from '../lib/gauge.js'
@@ -247,6 +248,7 @@ function buildChartSnippet(sensor, options, d, link) {
           periodLabels: parseMetricList(d.periodLabels),
           periodShortLabels: parseMetricList(d.periodShortLabels),
           link,
+          get stamp() { return getFreshness().at },
           moreLabel: d.tMore || '',
           aboutLabel: d.tDetails || '',
           shareLabel: d.tShare || '',

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, unmount } from 'svelte'
+import { SvelteMap } from 'svelte/reactivity'
 import Chart from '../Chart.svelte'
 import { clearCache } from '../../lib/api.js'
 import { contrastRatio, legibleStroke } from '../../lib/axiscolour.js'
@@ -21,6 +22,9 @@ vi.mock('uplot', () => ({
   default: vi.fn(function (opts, data, el) {
     uplotCalls.push({ opts, data, el })
     this.setSize = vi.fn()
+    this.setData = vi.fn()
+    this.scales = { x: { min: data[0][0], max: data[0][data[0].length - 1] } }
+    uplotCalls.at(-1).instance = this
   }),
 }))
 
@@ -453,6 +457,67 @@ describe('Chart.svelte', () => {
       await vi.waitFor(() => expect(target.textContent).toContain(props.unavailable))
       expect(target.querySelector('[role="img"]')).toBeNull()
       expect(target.querySelector('table')).toBeNull()
+    })
+  })
+
+  describe('refresh stamp', () => {
+    const body = (v) => new Response(JSON.stringify({ t: ['2026-08-14T00:00:00Z', '2026-08-14T01:00:00Z'], v }), { status: 200 })
+
+    // Descriptors, not a spread: a spread would read the getter once and freeze it.
+    function renderStamped(stamp) {
+      vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      component = mount(Chart, { target, props: Object.defineProperties({ ...props }, { stamp: { get: () => stamp.get('at') } }) })
+      return target
+    }
+
+    it('swaps new data into the plot already on screen, without a rebuild', async () => {
+      const fetches = vi.spyOn(globalThis, 'fetch')
+        .mockImplementationOnce(async () => body([1, 2]))
+        .mockImplementationOnce(async () => body([5, 6]))
+      const stamp = new SvelteMap([['at', 1]])
+      renderStamped(stamp)
+      await vi.waitFor(() => expect(uplotCalls).toHaveLength(1))
+
+      clearCache()
+      stamp.set('at', 2)
+      await vi.waitFor(() => expect(uplotCalls[0].instance.setData).toHaveBeenCalledTimes(1))
+      expect(fetches).toHaveBeenCalledTimes(2)
+      expect(uplotCalls).toHaveLength(1)
+      expect(uplotCalls[0].instance.setData.mock.calls[0][0][1]).toEqual([5, 6])
+    })
+
+    it('keeps a zoomed x range and lets an unzoomed one follow the data', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => body([5, 6]))
+      const stamp = new SvelteMap([['at', 1]])
+      renderStamped(stamp)
+      await vi.waitFor(() => expect(uplotCalls).toHaveLength(1))
+      const plot = uplotCalls[0].instance
+
+      clearCache()
+      stamp.set('at', 2)
+      await vi.waitFor(() => expect(plot.setData).toHaveBeenCalledTimes(1))
+      expect(plot.setData.mock.calls[0][1]).toBe(true)
+
+      plot.scales.x.min += 1
+      clearCache()
+      stamp.set('at', 3)
+      await vi.waitFor(() => expect(plot.setData).toHaveBeenCalledTimes(2))
+      expect(plot.setData.mock.calls[1][1]).toBe(false)
+    })
+
+    it('loads again from nothing when the first answer was empty', async () => {
+      const fetches = vi.spyOn(globalThis, 'fetch')
+        .mockImplementationOnce(async () => new Response(JSON.stringify({ t: [], v: [] }), { status: 200 }))
+        .mockImplementationOnce(async () => body([5, 6]))
+      const stamp = new SvelteMap([['at', 1]])
+      renderStamped(stamp)
+      await vi.waitFor(() => expect(fetches).toHaveBeenCalledTimes(1))
+
+      clearCache()
+      stamp.set('at', 2)
+      await vi.waitFor(() => expect(uplotCalls).toHaveLength(1))
     })
   })
 })
