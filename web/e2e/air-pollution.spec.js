@@ -17,7 +17,7 @@ for (const [lang, path, h1] of [
       await expect(page.locator('h1')).toHaveText(h1)
 
       const first = page.locator('details.faq__item').first()
-      await expect(page.locator('details.faq__item')).toHaveCount(10)
+      await expect(page.locator('details.faq__item')).toHaveCount(14)
       await expect(first.locator('.faq__answer')).toBeHidden()
       await first.locator('summary').click()
       await expect(first).toHaveAttribute('open', '')
