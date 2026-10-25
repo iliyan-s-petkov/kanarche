@@ -3,6 +3,7 @@ package eea
 import (
 	"embed"
 	"encoding/json"
+	"sort"
 )
 
 //go:embed bg_station_names.json
@@ -65,4 +66,14 @@ func LookupStationInfo(code string) (StationInfo, bool) {
 		return StationInfo{}, false
 	}
 	return StationInfo{Code: n.EoI, Name: n.Name, Type: n.Type, Area: n.Area}, true
+}
+
+// StationCodes lists every committed EoI code, sorted.
+func StationCodes() []string {
+	out := make([]string, 0, len(bgStationNames))
+	for code := range bgStationNames {
+		out = append(out, code)
+	}
+	sort.Strings(out)
+	return out
 }
