@@ -41,6 +41,13 @@ export function statusText({ busy, at, dataAt, failed }, t, lang = 'bg') {
   return `${t.updated} ${formatTime(when, lang)}`
 }
 
+// A snapshot older than this is shown in the stale colour. The ingest cycle is a few minutes.
+export const STALE_MS = 15 * 60 * 1000
+
+export function isStale(at, now) {
+  return at != null && now - at > STALE_MS
+}
+
 // The snapshot time (ms) of the first body with a parseable generated_at, else null.
 export function snapshotTime(...bodies) {
   for (const body of bodies) {

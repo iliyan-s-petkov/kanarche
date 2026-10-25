@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { statusText, snapshotTime, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
+import { statusText, snapshotTime, isStale, STALE_MS, formatTime, AUTO_KEY, AUTO_CHOICES, DEFAULT_MINUTES, intervalMs, minutesFromStored } from '../freshness.js'
 
 const T = { updated: 'Данни от', loading: 'Обновяване…', failed: 'Обновяването не успя' }
 
@@ -47,6 +47,22 @@ describe('statusText with a snapshot time', () => {
   it('falls back to the client time when the body had none', () => {
     expect(statusText({ busy: false, at: AT, dataAt: null, failed: false }, T)).toBe(`${T.updated} ${formatTime(AT)}`)
     expect(statusText({ busy: false, at: AT, failed: false }, T)).toBe(`${T.updated} ${formatTime(AT)}`)
+  })
+})
+
+describe('isStale', () => {
+  const NOW = Date.parse('2026-10-25T14:30:00Z')
+
+  it('is stale only past fifteen minutes', () => {
+    expect(STALE_MS).toBe(15 * 60 * 1000)
+    expect(isStale(NOW - STALE_MS - 1, NOW)).toBe(true)
+    expect(isStale(NOW - STALE_MS, NOW)).toBe(false)
+    expect(isStale(NOW, NOW)).toBe(false)
+  })
+
+  it('has nothing to call stale without a time', () => {
+    expect(isStale(null, NOW)).toBe(false)
+    expect(isStale(undefined, NOW)).toBe(false)
   })
 })
 

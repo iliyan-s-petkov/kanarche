@@ -34,6 +34,9 @@
   --scrim: color-mix(in srgb, var(--fg) 45%, transparent);
   --notice-bg: #fcf4d6;
   --notice-bg: color-mix(in srgb, var(--warn) 18%, var(--bg));
+  /* Text for an old reading: --warn pulled toward the foreground so it reads on both grounds. */
+  --stale: #78631a;
+  --stale: color-mix(in srgb, var(--warn) 45%, var(--fg));
 
   /* Letter on a sea class swatch. Fixed keywords: the swatch colours are config values, so the letter must not follow the theme. */
   --sea-ink-light: white;

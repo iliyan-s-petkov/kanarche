@@ -16,6 +16,7 @@ import { HEX_SOURCE_ID } from './mapids.js'
 import { PLAY_SPEED_KEY } from './mapconfig.js'
 import { bandsFor } from './mappaint.js'
 import { refreshHexes, mapInlineSize, paintSource } from './mapdata.js'
+import { getFreshness } from './freshness.svelte.js'
 
 // installTimelapse swaps a past hour's numbers into the hex layer the map
 // already draws, and nothing else — state.hexBody is never written, so the live
@@ -298,6 +299,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
     if (!open) {
       open = true
       state.replayOpen = true
+      getFreshness().setReplay(true)
       map.on('zoom', onZoom)
     }
     head.playing = true
@@ -330,6 +332,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
   ui.onexit(async () => {
     open = false
     state.replayOpen = false
+    getFreshness().setReplay(false)
     ui.show(0)
     ui.say('')
     await stop()
@@ -340,6 +343,7 @@ export function installTimelapse(map, state, cfg, chrome, fetchJSON = getJSON) {
     async reset() {
       open = false
       state.replayOpen = false
+      getFreshness().setReplay(false)
       body = null
       loaded = ''
       head.count = 0

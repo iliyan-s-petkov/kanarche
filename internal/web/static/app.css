@@ -1145,6 +1145,20 @@ strong, b { font-weight: var(--weight-emphasis); }
   color: var(--fg-2); cursor: pointer;
 }
 .data-refresh__btn--icon:hover { color: var(--fg); background: var(--surface-2); }
+/* The snapshot time sits right of the icon at the size of the window button beside it. */
+.data-refresh__btn--icon:has(.data-refresh__time) { inline-size: auto; gap: var(--space-1); padding-inline: var(--space-2); }
+.data-refresh__time {
+  font-size: var(--text-caption); letter-spacing: var(--track-caption);
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--fg-2);
+}
+.data-refresh__time--stale { color: var(--stale); }
+/* Last, so a replay greys the time whatever its age. */
+.data-refresh__time--paused { color: var(--muted); }
+.data-refresh__btn--icon[aria-expanded="true"] .data-refresh__time { color: inherit; }
+@media (prefers-reduced-motion: no-preference) {
+  .data-refresh__btn--icon[aria-busy="true"] .data-refresh__ico { animation: data-refresh-spin 1s linear infinite; }
+}
+@keyframes data-refresh-spin { to { transform: rotate(360deg); } }
 .data-refresh__btn--icon[aria-expanded="true"] { background: var(--fg); color: var(--bg); }
 /* Opens upward like the window panel: there is only map above the corner. */
 .data-refresh__panel {
@@ -1632,7 +1646,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-play__btn, .map-window__btn { inline-size: 44px; block-size: 44px; min-block-size: 44px; }
   .map-window__btn { inline-size: auto; min-inline-size: 44px; }
   .map-play__speed { inline-size: auto; min-inline-size: 44px; }
-  .data-refresh__btn--icon { inline-size: 44px; block-size: 44px; }
+  .data-refresh__btn--icon { min-inline-size: 44px; block-size: 44px; }
+  .data-refresh__btn--icon:not(:has(.data-refresh__time)) { inline-size: 44px; }
 
   /* Hero: title stays (h1), tagline restates the masthead and goes. */
   .page-head--compact { padding-block: var(--space-2); }

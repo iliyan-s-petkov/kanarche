@@ -51,6 +51,14 @@ describe('snapshot time', () => {
     expect(f.at).toBe(5000)
   })
 
+  it('takes the snapshot time of the first load without a refresh', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    f.noteSnapshot(SNAP)
+    expect(f.dataAt).toBe(SNAP)
+    f.noteSnapshot(null)
+    expect(f.dataAt).toBe(SNAP)
+  })
+
   it('has no snapshot time before any refresh', () => {
     expect(createFreshness({ win: fakeWin(), storage: store() }).dataAt).toBeNull()
   })
@@ -74,6 +82,17 @@ describe('snapshot time', () => {
     await f.request()
     expect(f.failed).toBe(true)
     expect(f.dataAt).toBe(SNAP)
+  })
+})
+
+describe('replay flag', () => {
+  it('starts off and follows setReplay', () => {
+    const f = createFreshness({ win: fakeWin(), storage: store() })
+    expect(f.replay).toBe(false)
+    f.setReplay(true)
+    expect(f.replay).toBe(true)
+    f.setReplay(false)
+    expect(f.replay).toBe(false)
   })
 })
 

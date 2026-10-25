@@ -1,9 +1,20 @@
 <script>
   // Map chrome: one icon. Tapping it opens a popover with "Refresh now" and
   // the auto-refresh interval, so there is a single refresh control on the page.
+  import { formatTime, isStale } from '../lib/freshness.js'
+
   let {
     status, announce = '', minutes, options = [], labels, onpick, onrefresh, busy = false,
+    at = null, lang = 'bg', paused = false, nowFn = () => Date.now(),
   } = $props()
+
+  // Re-read once a minute so a snapshot ages into the stale colour without a refresh.
+  let now = $state(nowFn())
+  $effect(() => {
+    const timer = setInterval(() => { now = nowFn() }, 60 * 1000)
+    return () => clearInterval(timer)
+  })
+  const stale = $derived(isStale(at, now))
 
   let open = $state(false)
   let root
@@ -57,6 +68,13 @@
       <path d="M13.5 8a5.5 5.5 0 1 1-1.61-3.89" fill="none" stroke="currentColor" stroke-width="1.5"/>
       <path d="M13.5 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>
     </svg>
+    {#if at != null}
+      <span
+        class="data-refresh__time"
+        class:data-refresh__time--stale={stale}
+        class:data-refresh__time--paused={paused}
+      >{formatTime(at, lang)}</span>
+    {/if}
   </button>
   <div class="colmenu__panel data-refresh__panel" {id} hidden={!open}>
     <button type="button" class="btn btn--secondary data-refresh__now" aria-busy={busy} onclick={refreshNow}>

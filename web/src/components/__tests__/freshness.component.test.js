@@ -2,6 +2,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
 import DataFreshness from '../DataFreshness.svelte'
+import { formatTime, STALE_MS } from '../../lib/freshness.js'
 
 let component
 afterEach(() => {
@@ -25,6 +26,43 @@ const options = [
   { value: 30, text: 'На всеки 30 мин' },
 ]
 const base = { status: '', announce: '', minutes: 5, labels, options, onpick: () => {}, onrefresh: () => {} }
+
+describe('DataFreshness time beside the icon', () => {
+  const NOW = Date.parse('2026-10-25T14:30:00Z')
+  const timed = (over = {}) => render({ ...base, lang: 'en', at: NOW, nowFn: () => NOW, ...over })
+  const time = (el) => el.querySelector('.data-refresh__time')
+
+  it('writes the snapshot time inside the button, in the page locale', () => {
+    const el = timed()
+    expect(time(el).textContent).toBe(formatTime(NOW, 'en'))
+    expect(el.querySelector('.data-refresh__btn--icon').contains(time(el))).toBe(true)
+  })
+
+  it('shows no time before there is one, and keeps the accessible name static', () => {
+    const el = timed({ at: null })
+    expect(time(el)).toBe(null)
+    expect(el.querySelector('.data-refresh__btn--icon').getAttribute('aria-label')).toBe('Обнови')
+  })
+
+  it('marks a snapshot older than the stale limit', () => {
+    expect(time(timed({ at: NOW - STALE_MS - 1000 })).classList.contains('data-refresh__time--stale')).toBe(true)
+  })
+
+  it('does not mark a snapshot inside the stale limit', () => {
+    expect(time(timed({ at: NOW - STALE_MS + 1000 })).classList.contains('data-refresh__time--stale')).toBe(false)
+  })
+
+  it('keeps the time and flags aria-busy while a refresh is in flight', () => {
+    const el = timed({ busy: true })
+    expect(el.querySelector('.data-refresh__btn--icon').getAttribute('aria-busy')).toBe('true')
+    expect(time(el).textContent).toBe(formatTime(NOW, 'en'))
+  })
+
+  it('greys the time while a replay is open', () => {
+    expect(time(timed({ paused: true })).classList.contains('data-refresh__time--paused')).toBe(true)
+    expect(time(timed({ paused: false })).classList.contains('data-refresh__time--paused')).toBe(false)
+  })
+})
 
 describe('DataFreshness', () => {
   // Clipped, never hidden: display:none would silence the announcement.

@@ -535,6 +535,7 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     }, () => refreshHexes(map, state, cfg, getJSON, { defer: true }))
 
     markDataPainted()
+    getFreshness().noteSnapshot(snapshotTime(state.hexBody, state.sensorBody))
 
     // Every jumpTo above queued a moveend of its own, and the paint it would
     // debounce into has just happened at that exact camera position.
