@@ -137,7 +137,7 @@ export function mount(el) {
     window: readWindow(),
   }
 
-  // The wind overlay's own state, separate from `state` above: it is off by
+  // The wind overlay's own state, separate from `state` above: it is on by
   // default and never follows the viewport, the tier, or the metric — one
   // fetch for the whole country, cached for the page's life, because the
   // payload is a single forecast hour and does not change while the visitor

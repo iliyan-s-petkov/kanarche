@@ -287,6 +287,13 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 		parents = nil
 	}
 
+	// Same degradation as the parents: a missing size drops the size sentences, not the page.
+	sizes, err := s.AreaKm2(ctx)
+	if err != nil {
+		slog.Warn("snapshot: area sizes unavailable", "error", err)
+		sizes = nil
+	}
+
 	snap.AreaSensors = make(map[string]Body, len(all))
 	snap.AreaSeries = make(map[string]Body, len(all))
 	snap.KnownSlugs = make(map[string]AreaMeta, len(all))
@@ -298,7 +305,7 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 			CentroidLon: a.CentroidLon, CentroidLat: a.CentroidLat,
 			DefaultZoom: a.DefaultZoom, Covered: a.Covered, SensorCount: a.SensorCount,
 			Values: a.Values, Source: metaSource, BySource: metaBySource,
-			ParentSlug: parents[a.Slug],
+			ParentSlug: parents[a.Slug], Km2: sizes[a.Slug],
 		}
 		snap.KnownSlugs[a.Slug] = meta
 	}
@@ -385,6 +392,8 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 		}
 	}
 	floor := minDayBuckets(h.bucket)
+	stationsIn := stationCodesByArea(sensors)
+	snap.Stations = officialStationsFrom(sensors)
 	var changed []store.AreaChange
 	// Iterate the known areas, not bySlug, so every existing area gets an
 	// entry — including empty ones. See TestBuildIncludesEmptyAreasInAreaSensors.
@@ -407,6 +416,7 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 				meta.Day = day
 			}
 		}
+		meta.Stations = stationsIn[slug]
 		// After Day is set, so the 24h range counts as part of what the page shows.
 		if stamps != nil {
 			stamp := changeStamp(stamps, meta, now)

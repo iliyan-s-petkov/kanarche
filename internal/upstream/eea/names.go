@@ -3,6 +3,7 @@ package eea
 import (
 	"embed"
 	"encoding/json"
+	"sort"
 )
 
 //go:embed bg_station_names.json
@@ -48,4 +49,31 @@ func applyBGStationName(st Station) Station {
 	}
 	st.Name = n.Name
 	return st
+}
+
+// StationInfo is the committed name and classification of one ИАОС station.
+type StationInfo struct {
+	Code string
+	Name string
+	Type string
+	Area string
+}
+
+// LookupStationInfo returns the committed row for an EoI code such as BG0038A.
+func LookupStationInfo(code string) (StationInfo, bool) {
+	n, ok := bgStationNames[code]
+	if !ok {
+		return StationInfo{}, false
+	}
+	return StationInfo{Code: n.EoI, Name: n.Name, Type: n.Type, Area: n.Area}, true
+}
+
+// StationCodes lists every committed EoI code, sorted.
+func StationCodes() []string {
+	out := make([]string, 0, len(bgStationNames))
+	for code := range bgStationNames {
+		out = append(out, code)
+	}
+	sort.Strings(out)
+	return out
 }

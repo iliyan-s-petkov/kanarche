@@ -837,6 +837,27 @@ func (s *Store) AreaParents(ctx context.Context) (map[string]string, error) {
 	return out, rows.Err()
 }
 
+// AreaKm2 returns every area's size in square kilometres, measured on the
+// spheroid. Boundaries change only on import, so the snapshot build asks once.
+func (s *Store) AreaKm2(ctx context.Context) (map[string]float64, error) {
+	rows, err := s.pool.Query(ctx, `SELECT slug, ST_Area(geom) / 1e6 FROM area WHERE geom IS NOT NULL`)
+	if err != nil {
+		return nil, fmt.Errorf("store: area km2: %w", err)
+	}
+	defer rows.Close()
+
+	out := make(map[string]float64)
+	for rows.Next() {
+		var slug string
+		var km2 float64
+		if err := rows.Scan(&slug, &km2); err != nil {
+			return nil, fmt.Errorf("store: scan area km2: %w", err)
+		}
+		out[slug] = km2
+	}
+	return out, rows.Err()
+}
+
 // allAreaRawSeriesCountSQL is allAreaRawSeriesSQL's companion: the number of
 // distinct sensors behind each area's bucket, so a caller can refuse to draw a
 // 24h extreme from a bucket that only ever had one or two sensors reporting

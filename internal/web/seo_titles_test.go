@@ -168,16 +168,16 @@ func TestRenderedTitlesAndDescriptionsMatchApprovedCopy(t *testing.T) {
 		},
 		{
 			path:          "/area/plovdiv",
-			bgTitle:       "Качество на въздуха в Пловдив днес: ФПЧ на живо | Канарче",
+			bgTitle:       "Качество на въздуха в Пловдив сега: ФПЧ2.5 и ФПЧ10 | Канарче",
 			bgDescription: "Пловдив: замърсяване на въздуха с фини прахови частици ФПЧ2.5 и ФПЧ10 сега. Медиана от граждански сензори и графика за 24 часа.",
-			enTitle:       "Plovdiv air quality today: PM2.5 and PM10 live | Kanarche",
+			enTitle:       "Plovdiv air quality now: PM2.5 and PM10 | Kanarche",
 			enDescription: "Plovdiv air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the city median and 24-hour history.",
 		},
 		{
 			path:          "/area/smolyan",
-			bgTitle:       "Качество на въздуха в Смолян днес: ФПЧ на живо | Канарче",
+			bgTitle:       "Качество на въздуха в Смолян сега: ФПЧ2.5 и ФПЧ10 | Канарче",
 			bgDescription: "Смолян: замърсяване на въздуха с фини прахови частици ФПЧ2.5 и ФПЧ10 сега. Медиана от граждански сензори и графика за 24 часа.",
-			enTitle:       "Smolyan air quality today: PM2.5 and PM10 live | Kanarche",
+			enTitle:       "Smolyan air quality now: PM2.5 and PM10 | Kanarche",
 			enDescription: "Smolyan air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the city median and 24-hour history.",
 		},
 		{
