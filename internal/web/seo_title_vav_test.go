@@ -12,10 +12,10 @@ func TestCityTitleTakesVavLikeTheH1(t *testing.T) {
 	cases := []struct {
 		path, want string
 	}{
-		{"/area/varna", "Качество на въздуха във Варна сега: ФПЧ2.5 и ФПЧ10"},
-		{"/area/vratsa", "Качество на въздуха във Враца сега: ФПЧ2.5 и ФПЧ10"},
-		{"/area/veliko-tarnovo", "Качество на въздуха във Велико Търново сега: ФПЧ2.5 и ФПЧ10"},
-		{"/area/plovdiv", "Качество на въздуха в Пловдив сега: ФПЧ2.5 и ФПЧ10"},
+		{"/area/varna", "Индекс за качество на въздуха във Варна (AQI) сега"},
+		{"/area/vratsa", "Индекс за качество на въздуха във Враца (AQI) сега"},
+		{"/area/veliko-tarnovo", "Индекс за качество на въздуха във Велико Търново (AQI) сега"},
+		{"/area/plovdiv", "Индекс за качество на въздуха в Пловдив (AQI) сега"},
 	}
 	for _, c := range cases {
 		body := fetch(t, rr, c.path).Body.String()

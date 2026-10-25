@@ -85,17 +85,17 @@ func TestOfficialStationsMentionedOnlyWhenAreaHasEEA(t *testing.T) {
 	}
 
 	bg := pageDescription(t, fetch(t, rr, "/area/plovdiv").Body.String())
-	if want := "Граждански сензори и станции на ИАОС, графика за 24 часа."; !strings.Contains(bg, want) {
+	if want := "Граждански сензори и станции на ИАОС, оценка по Европейския индекс и графика за 24 часа."; !strings.Contains(bg, want) {
 		t.Errorf("bg eea city description %q does not contain %q", bg, want)
 	}
 	en := pageDescription(t, fetch(t, rr, "/en/area/plovdiv").Body.String())
-	want := "Plovdiv air pollution: PM2.5 and PM10 from citizen sensors and official stations on a live map, with the city median and 24-hour history."
+	want := "Plovdiv AQI and air pollution: PM2.5 and PM10 from citizen sensors and official stations on a live map, with the European index band and 24-hour history."
 	if en != want {
 		t.Errorf("en eea city description = %q, want %q", en, want)
 	}
 }
 
-// Copy uses ФПЧ (never ПМ) in Bulgarian and never says AQI or "индекс"; only /air-pollution may say AQI, by owner approval.
+// Copy uses ФПЧ (never ПМ) in Bulgarian and says AQI and "индекс" only on /air-pollution and area pages, by owner approval.
 func TestSEOCopyWordingRules(t *testing.T) {
 	snap := eeaFixture(t)
 	rr := renderer(t, snap)
@@ -106,14 +106,14 @@ func TestSEOCopyWordingRules(t *testing.T) {
 	for _, lang := range []string{"", "/en"} {
 		for _, path := range paths {
 			body := fetch(t, rr, lang+path).Body.String()
-			// "AQI" is approved for the explainer only; "индекс" stays banned there.
-			aqiOK := path == "/air-pollution"
+			// "AQI" and "индекс" are approved for the explainer and the area pages only.
+			aqiOK := path == "/air-pollution" || strings.HasPrefix(path, "/area/")
 			for name, text := range map[string]string{
 				"title":       pageTitle(t, body),
 				"description": pageDescription(t, body),
 				"og:title":    tagAttr(t, body, `<meta property="og:title" content="`),
 			} {
-				if (!aqiOK && strings.Contains(strings.ToUpper(text), "AQI")) || strings.Contains(strings.ToLower(text), "индекс") {
+				if (!aqiOK && strings.Contains(strings.ToUpper(text), "AQI")) || (!aqiOK && strings.Contains(strings.ToLower(text), "индекс")) {
 					t.Errorf("%s%s %s %q uses AQI/индекс wording", lang, path, name, text)
 				}
 				if lang == "" && strings.Contains(text, "ПМ") {
