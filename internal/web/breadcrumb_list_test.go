@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	crumbNav = regexp.MustCompile(`(?s)<nav class="breadcrumb"[^>]*>(.*?)</nav>`)
+	crumbNav = regexp.MustCompile(`(?s)<nav\b[^>]*\bclass="breadcrumb"[^>]*>(.*?)</nav>`)
+	crumbA   = regexp.MustCompile(`<a\b[^>]*\bhref="([^"]*)"`)
 	crumbLI  = regexp.MustCompile(`(?s)<li[^>]*>(.*?)</li>`)
 	anyTag   = regexp.MustCompile(`<[^>]*>`)
 )
@@ -29,10 +30,27 @@ func crumbOLTexts(t *testing.T, path, body string) []string {
 	for _, m := range crumbLI.FindAllStringSubmatch(nav[1], -1) {
 		names = append(names, strings.TrimSpace(html.UnescapeString(anyTag.ReplaceAllString(m[1], ""))))
 	}
+	items := crumbLI.FindAllStringSubmatch(nav[1], -1)
+	if len(items) > 0 {
+		last := items[len(items)-1][1]
+		if !strings.HasPrefix(last, `<span aria-current="page">`) || strings.Contains(last, "<a") {
+			t.Errorf("%s: last li must be the aria-current span with no link: %q", path, last)
+		}
+	}
 	if strings.Count(nav[1], "aria-current=\"page\"") != 1 || !strings.Contains(nav[1], "<span aria-current=\"page\">") {
 		t.Errorf("%s: want exactly one aria-current span", path)
 	}
 	return names
+}
+
+// crumbHrefs returns the link hrefs of the trail, in order.
+func crumbHrefs(body string) []string {
+	nav := crumbNav.FindStringSubmatch(body)
+	var out []string
+	for _, m := range crumbA.FindAllStringSubmatch(nav[1], -1) {
+		out = append(out, m[1])
+	}
+	return out
 }
 
 func TestBreadcrumbOLMatchesBreadcrumbListJSONLD(t *testing.T) {
@@ -62,7 +80,17 @@ func TestBreadcrumbOLMatchesBreadcrumbListJSONLD(t *testing.T) {
 	for _, c := range cases {
 		body := fetch(t, c.rr, c.path).Body.String()
 		names := crumbOLTexts(t, c.path, body)
-		list := nodeOfType(jsonLD(t, c.path, body), "BreadcrumbList")
+		doc := jsonLD(t, c.path, body)
+		lists := 0
+		for _, n := range doc.Graph {
+			if n.Type == "BreadcrumbList" {
+				lists++
+			}
+		}
+		if lists != 1 {
+			t.Errorf("%s: %d BreadcrumbList nodes, want 1", c.path, lists)
+		}
+		list := nodeOfType(doc, "BreadcrumbList")
 		if list == nil {
 			t.Errorf("%s: no BreadcrumbList", c.path)
 			continue
@@ -70,6 +98,15 @@ func TestBreadcrumbOLMatchesBreadcrumbListJSONLD(t *testing.T) {
 		if len(names) != c.n || len(list.ItemListElement) != c.n {
 			t.Errorf("%s: li=%d jsonld=%d, want %d", c.path, len(names), len(list.ItemListElement), c.n)
 			continue
+		}
+		hrefs := crumbHrefs(body)
+		if len(hrefs) != c.n-1 {
+			t.Errorf("%s: %d links, want %d", c.path, len(hrefs), c.n-1)
+		}
+		for i, h := range hrefs {
+			if i < c.n-1 && list.ItemListElement[i].Item != "https://airbg.org"+h {
+				t.Errorf("%s: link %d %q vs JSON-LD %q", c.path, i, h, list.ItemListElement[i].Item)
+			}
 		}
 		for i, item := range list.ItemListElement {
 			if item.Name != names[i] {
@@ -98,7 +135,7 @@ func TestAreasDirectoryBreadcrumbTrail(t *testing.T) {
 
 func TestBreadcrumbAriaLabelPerLanguage(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
-	for path, label := range map[string]string{"/pm25": "Вие сте тук", "/en/pm25": "Breadcrumb"} {
+	for path, label := range map[string]string{"/pm25": "Вие сте тук", "/en/pm25": "You are here"} {
 		body := fetch(t, rr, path).Body.String()
 		if !strings.Contains(body, `<nav class="breadcrumb" aria-label="`+label+`">`) {
 			t.Errorf("%s: want aria-label %q", path, label)

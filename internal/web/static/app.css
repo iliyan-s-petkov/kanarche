@@ -155,7 +155,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* The trail is an ol of inline li, so it reads as the same one line as before. */
 .breadcrumb ol { list-style: none; margin: 0; padding: 0; }
 .breadcrumb li { display: inline; }
-.breadcrumb li + li::before { content: "›" / ""; color: var(--muted); padding-inline: var(--space-1); }
+.breadcrumb li + li::before { content: "›"; content: "›" / ""; color: var(--muted); padding-inline: var(--space-1); }
 /* The air-now and 24h sentences sit under the h1, above the readouts. */
 .area-now, .area-day { margin-block: var(--space-2) 0; }
 /* Touch phones: summary and no-coverage notice after the map, before #below-map (reordered in the .frame grid). */
