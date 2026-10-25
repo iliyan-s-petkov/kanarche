@@ -85,11 +85,11 @@ func TestOfficialStationsMentionedOnlyWhenAreaHasEEA(t *testing.T) {
 	}
 
 	bg := pageDescription(t, fetch(t, rr, "/area/plovdiv").Body.String())
-	if want := "Граждански сензори и станции на ИАОС, оценка по Европейския индекс и графика за 24 часа."; !strings.Contains(bg, want) {
+	if want := "Граждански сензори и станции на ИАОС, оценка по Европейския индекс."; !strings.Contains(bg, want) {
 		t.Errorf("bg eea city description %q does not contain %q", bg, want)
 	}
 	en := pageDescription(t, fetch(t, rr, "/en/area/plovdiv").Body.String())
-	want := "Plovdiv AQI and air pollution: PM2.5 and PM10 from citizen sensors and official stations on a live map, with the European index band and 24-hour history."
+	want := "Plovdiv AQI and air pollution: PM2.5 and PM10 from citizen sensors and official stations on a live map, with the European index band."
 	if en != want {
 		t.Errorf("en eea city description = %q, want %q", en, want)
 	}
