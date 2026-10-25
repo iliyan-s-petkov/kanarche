@@ -278,6 +278,33 @@ func (p PageData) areaDayHTML(row AreaRow) template.HTML {
 	return template.HTML(`<p class="area-day">` + text + `</p>`)
 }
 
+// healthBandKeys is the catalogue suffix per bandClass index, best first.
+var healthBandKeys = [...]string{"good", "fair", "moderate", "poor", "very_poor", "extremely_poor"}
+
+// eaqiGuidanceURL is the EEA page the per-band health messages come from.
+const eaqiGuidanceURL = "https://airindex.eea.europa.eu/AQI/index.html"
+
+// areaHealthHTML renders the EEA health guidance for the page's PM band, or ""
+// under the same gate as areaDayHTML (stale, uncovered, no value) and when the
+// metric has no scale. Guidance about current air must not rest on an old reading.
+func (p PageData) areaHealthHTML(row AreaRow) template.HTML {
+	if p.stale() || !row.Covered || !row.HasValue {
+		return ""
+	}
+	i := bandClass(p.DefaultMetric, row.Value)
+	if i < 0 || i >= len(healthBandKeys) {
+		return ""
+	}
+	band := "health." + healthBandKeys[i]
+	var b strings.Builder
+	b.WriteString(`<section class="area-health" aria-labelledby="area-health-h">`)
+	b.WriteString(`<h2 id="area-health-h">` + htmlEscape(p.T("health.heading")) + `</h2><dl>`)
+	b.WriteString(`<dt>` + htmlEscape(p.T("health.general")) + `</dt><dd>` + htmlEscape(p.T(band+".general")) + `</dd>`)
+	b.WriteString(`<dt>` + htmlEscape(p.T("health.sensitive")) + `</dt><dd>` + htmlEscape(p.T(band+".sensitive")) + `</dd>`)
+	b.WriteString(`</dl><p class="area-health__source">` + htmlEscape(p.T("health.source")) + ` <a href="` + eaqiGuidanceURL + `" rel="noopener noreferrer">` + htmlEscape(p.T("health.link")) + `</a></p></section>`)
+	return template.HTML(b.String())
+}
+
 // haversineKM is the great-circle distance between two centroids, in
 // kilometres — enough for ranking "nearest", not for anything a boundary
 // query should answer instead.

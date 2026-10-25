@@ -1024,5 +1024,22 @@
   "sea.rzi.ban.label": "Bathing ban",
   "sea.rzi.ban.note": "The RHI reports a bathing ban. The EEA class does not reflect it.",
   "sea.rzi.remark.label": "RHI remark",
-  "sea.rzi.remark.credit": "Source: RHI {rhi}"
+  "sea.rzi.remark.credit": "Source: RHI {rhi}",
+  "health.heading": "What this means for outdoor activity",
+  "health.general": "General population",
+  "health.sensitive": "Sensitive groups: adults and children with respiratory problems, and adults with heart conditions",
+  "health.source": "Source: European Environment Agency, European Air Quality Index health messages. Based on the PM level for this area only.",
+  "health.link": "European Air Quality Index",
+  "health.good.general": "The air quality is good. Enjoy your usual outdoor activities.",
+  "health.good.sensitive": "The air quality is good. Enjoy your usual outdoor activities.",
+  "health.fair.general": "Enjoy your usual outdoor activities.",
+  "health.fair.sensitive": "Enjoy your usual outdoor activities.",
+  "health.moderate.general": "Enjoy your usual outdoor activities.",
+  "health.moderate.sensitive": "Consider reducing intense outdoor activities, if you experience symptoms.",
+  "health.poor.general": "Consider reducing intense activities outdoors, if you experience symptoms such as sore eyes, a cough or sore throat.",
+  "health.poor.sensitive": "Consider reducing physical activities, particularly outdoors, especially if you experience symptoms.",
+  "health.very_poor.general": "Consider reducing intense activities outdoors, if you experience symptoms such as sore eyes, a cough or sore throat.",
+  "health.very_poor.sensitive": "Reduce physical activities, particularly outdoors, especially if you experience symptoms.",
+  "health.extremely_poor.general": "Reduce physical activities outdoors.",
+  "health.extremely_poor.sensitive": "Avoid physical activities outdoors."
 }

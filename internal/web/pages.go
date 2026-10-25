@@ -198,6 +198,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	data.Title, data.Description = rr.areaSEO(row, lang)
 	data.AreaNowHTML = data.areaNowHTML(row)
 	data.AreaDayHTML = data.areaDayHTML(row)
+	data.AreaHealthHTML = data.areaHealthHTML(row)
 	data.AreaPollen = rr.pollenBlock(snap.Pollen(meta.Slug), lang)
 	rr.buildAreaLinks(&data, meta, row, snap, lang)
 	data.AreaFacts = rr.areaFacts(data, meta, snap)
