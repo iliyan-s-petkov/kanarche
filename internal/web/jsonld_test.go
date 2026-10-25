@@ -366,7 +366,7 @@ func collectRefs(v any, refs *[]string) {
 
 func TestJSONLDIDReferencesResolveInGraph(t *testing.T) {
 	rr := renderer(t, jsonLDFixture(t))
-	for _, path := range []string{"/", "/en/", "/about-the-data", "/en/about-the-data", "/area/plovdiv", "/pm25", "/pm10", "/en/pm25", "/en/pm10"} {
+	for _, path := range []string{"/", "/en/", "/about-the-data", "/en/about-the-data", "/area/plovdiv", "/pm25", "/pm10", "/en/pm25", "/en/pm10", "/air-pollution", "/en/air-pollution"} {
 		body := fetch(t, rr, path).Body.String()
 		start := strings.Index(body, ldOpen) + len(ldOpen)
 		end := strings.Index(body[start:], "</script>")

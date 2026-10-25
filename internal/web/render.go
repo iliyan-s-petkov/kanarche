@@ -137,7 +137,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 
 	// "embed" is parsed with base.gohtml like the rest, and then redefines
 	// "base" itself: it needs base's map partials but none of its chrome.
-	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "terms", "pm", "error", "embed"} {
+	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "terms", "pm", "air_pollution", "error", "embed"} {
 		t, err := template.New("base.gohtml").Funcs(templateFuncs).ParseFS(templateFS,
 			"templates/base.gohtml", "templates/"+page+".gohtml")
 		if err != nil {
@@ -177,6 +177,8 @@ type PageData struct {
 	// ancestor root-first, then the current area last with no URL. Empty for
 	// every other page.
 	AreaCrumbs []Crumb
+	// AirPollutionFAQ is the /air-pollution explainer FAQ, set on that page only.
+	AirPollutionFAQ *FAQBlock
 	// PM is set on the /pm25 and /pm10 explainer pages only.
 	PM *PMPage
 	// AreaParentBlock, AreaChildrenBlock and AreaNearestBlock are the

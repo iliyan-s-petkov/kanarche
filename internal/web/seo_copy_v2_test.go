@@ -95,23 +95,25 @@ func TestOfficialStationsMentionedOnlyWhenAreaHasEEA(t *testing.T) {
 	}
 }
 
-// Copy uses ФПЧ (never ПМ) in Bulgarian and never says AQI or "индекс".
+// Copy uses ФПЧ (never ПМ) in Bulgarian and never says AQI or "индекс"; only /air-pollution may say AQI, by owner approval.
 func TestSEOCopyWordingRules(t *testing.T) {
 	snap := eeaFixture(t)
 	rr := renderer(t, snap)
-	paths := []string{"/", "/areas", "/about-the-data"}
+	paths := []string{"/", "/areas", "/about-the-data", "/air-pollution"}
 	for slug := range snap.KnownSlugs {
 		paths = append(paths, "/area/"+slug)
 	}
 	for _, lang := range []string{"", "/en"} {
 		for _, path := range paths {
 			body := fetch(t, rr, lang+path).Body.String()
+			// "AQI" is approved for the explainer only; "индекс" stays banned there.
+			aqiOK := path == "/air-pollution"
 			for name, text := range map[string]string{
 				"title":       pageTitle(t, body),
 				"description": pageDescription(t, body),
 				"og:title":    tagAttr(t, body, `<meta property="og:title" content="`),
 			} {
-				if strings.Contains(strings.ToUpper(text), "AQI") || strings.Contains(strings.ToLower(text), "индекс") {
+				if (!aqiOK && strings.Contains(strings.ToUpper(text), "AQI")) || strings.Contains(strings.ToLower(text), "индекс") {
 					t.Errorf("%s%s %s %q uses AQI/индекс wording", lang, path, name, text)
 				}
 				if lang == "" && strings.Contains(text, "ПМ") {
@@ -130,7 +132,7 @@ func TestSEOCopyWordingRules(t *testing.T) {
 func TestTitlesEndWithBrandAndOGTitleFollows(t *testing.T) {
 	snap := seoFixture(t)
 	rr := renderer(t, snap)
-	paths := []string{"/", "/areas", "/about-the-data"}
+	paths := []string{"/", "/areas", "/about-the-data", "/air-pollution"}
 	for slug := range snap.KnownSlugs {
 		paths = append(paths, "/area/"+slug)
 	}

@@ -81,6 +81,7 @@ func (rr *Renderer) handlers() map[string]http.Handler {
 		h["GET "+prefix+"/privacy"] = http.HandlerFunc(rr.handlePrivacy)
 		h["GET "+prefix+"/licences"] = http.HandlerFunc(rr.handleLicences)
 		h["GET "+prefix+"/terms"] = http.HandlerFunc(rr.handleTerms)
+		h["GET "+prefix+"/air-pollution"] = http.HandlerFunc(rr.handleAirPollution)
 		h["GET "+prefix+"/pm25"] = rr.handlePM("pm25", "pm10")
 		h["GET "+prefix+"/pm10"] = rr.handlePM("pm10", "pm25")
 		h["GET "+prefix+"/embed"] = http.HandlerFunc(rr.handleEmbed)
