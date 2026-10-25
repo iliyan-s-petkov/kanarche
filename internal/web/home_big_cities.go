@@ -48,7 +48,12 @@ func (rr *Renderer) bigCityRows(snap *snapshot.Snapshot, lang string) []AreaRow 
 // bigCityItem is one row: the area link, then its figure and band, or the
 // no-data text when it has no reading.
 func (p PageData) bigCityItem(a AreaRow) string {
-	link := `<a class="link" href="` + htmlEscape(p.Path("/area/"+a.Slug)) + `">` + htmlEscape(a.Name) + `</a>`
+	name := a.Name
+	// Districts carry their city, the one the block lists them under.
+	if a.Kind == "neighbourhood" {
+		name = strings.ReplaceAll(p.T("home.bigcities.district"), "{name}", name)
+	}
+	link := `<a class="link" href="` + htmlEscape(p.Path("/area/"+a.Slug)) + `">` + htmlEscape(name) + `</a>`
 	if !a.HasValue {
 		return `<li>` + link + `: ` + htmlEscape(p.T("map.legend.no_data")) + `</li>`
 	}

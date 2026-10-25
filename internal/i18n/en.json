@@ -297,6 +297,7 @@
   "home.rank.stale": "The latest data is from {time}. Nothing newer has arrived, so these figures may be out of date.",
   "home.rank.none": "No province has enough recent sensor readings to rank right now.",
   "home.bigcities.heading": "Big cities now",
+  "home.bigcities.district": "{name}, Sofia",
   "home.cities.sofia": "Sofia districts: air quality by district",
   "home.cities.all": "All provinces, cities and Sofia districts",
   "home.tier_silent": "no recent readings",
