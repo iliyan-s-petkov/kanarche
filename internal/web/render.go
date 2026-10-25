@@ -324,6 +324,8 @@ type PageData struct {
 	// HomeCities and HomeSofia feed the home page's city links.
 	HomeCities []FooterArea
 	HomeSofia  bool
+	// HomeBigCities are the rows of the home "Big cities now" block.
+	HomeBigCities []AreaRow
 	// FacebookURL and LinkedInURL are the optional footer profiles; empty hides the icon.
 	FacebookURL, LinkedInURL string
 
