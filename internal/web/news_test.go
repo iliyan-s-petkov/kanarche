@@ -101,6 +101,16 @@ func TestNewsListWithNoPostsIsAnEmptyNoindexPage(t *testing.T) {
 	if strings.Contains(body, "news-list") {
 		t.Errorf("empty list renders a list")
 	}
+	if strings.Contains(body, "feed.xml") {
+		t.Errorf("empty list advertises the feed")
+	}
+}
+
+func TestNewsListAdvertisesFeedOnlyWithPosts(t *testing.T) {
+	body := fetch(t, newsRenderer(t), "/news").Body.String()
+	if !strings.Contains(body, `<link rel="alternate" type="application/atom+xml"`) || !strings.Contains(body, `news/feed.xml" type="application/atom+xml">`) {
+		t.Errorf("list with posts misses the feed link")
+	}
 }
 
 func TestNewsPostRendersFullTextWithoutScript(t *testing.T) {
