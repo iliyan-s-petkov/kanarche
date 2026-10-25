@@ -1228,6 +1228,9 @@ strong, b { font-weight: var(--weight-emphasis); }
   align-self: center; white-space: nowrap; line-height: 1; font-variant-numeric: tabular-nums;
   font-size: clamp(2rem, 36cqi, 5.5rem);
 }
+/* A wide figure ("944,0 hPa") may drop its unit onto a second line instead of
+   pushing the page sideways. */
+.readout.card > .readout__value { flex-wrap: wrap; justify-content: center; max-inline-size: 100%; }
 .readout.card > .readout__value .readout__unit { font-size: 0.4em; font-weight: var(--weight-body); color: var(--fg-2); }
 
 /* The arc is drawn with SVG presentation attributes (see base.gohtml): style-src
@@ -1694,6 +1697,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      to one line, and the ring shrinks so the card fits ~170px. */
   .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
   .readout.card { padding: var(--space-2); }
+  /* Six glyphs ("1013,0") must fit the ~125px card on a 320px phone. */
+  .readout.card > .readout__value { font-size: clamp(2rem, 33cqi, 5.5rem); }
   .readout .gauge, .sensor-panel .gauges .gauge { max-inline-size: 80px; }
   .readout .gauge { inline-size: 80px; block-size: 80px; }
   /* Visually hidden, not display:none — same convention as .visually-hidden
