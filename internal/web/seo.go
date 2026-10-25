@@ -83,6 +83,8 @@ func (rr *Renderer) llmsTxt() string {
 		{"/about-the-data", "About the data", en("seo.about_data.description")},
 		{"/licences", "Licences", en("seo.licences.description")},
 		{"/privacy", "Privacy", en("seo.privacy.description")},
+		{"/news", "News (Bulgarian)", en("seo.news.description")},
+		{"/en/news", "News (English)", en("seo.news.description")},
 	}
 	for _, p := range pages {
 		fmt.Fprintf(&b, "- [%s](%s%s): %s\n", p.title, base, p.path, p.desc)
@@ -144,7 +146,10 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	rr.sitemapMu.Lock()
 	defer rr.sitemapMu.Unlock()
 
-	if rr.sitemapBody != nil && rr.sitemapAt.Equal(generatedAt) {
+	// A post becomes public on its date, so the day is part of the cache key.
+	now := rr.newsNow()
+	today := newsDay(now.In(rr.sofiaLoc))
+	if rr.sitemapBody != nil && rr.sitemapAt.Equal(generatedAt) && rr.sitemapDay == today {
 		return rr.sitemapBody, nil
 	}
 
@@ -165,22 +170,37 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	// directory follow every snapshot. An area carries the day its own figures
 	// last changed, and none when that is unknown. Static pages get none
 	// rather than a date nothing supports.
-	type entry struct{ path, lastMod string }
+	// lang limits an entry to one language and alts to the languages it pairs
+	// with, both for pages that exist in some languages only. Empty means every
+	// loaded language, as for the static pages.
+	type entry struct {
+		path, lastMod, lang string
+		alts                []string
+	}
 	entries := make([]entry, 0, len(slugs)+6)
-	entries = append(entries, entry{"/", day}, entry{"/areas", day}, entry{"/about", ""}, entry{"/about-the-data", ""}, entry{"/privacy", ""}, entry{"/licences", ""}, entry{"/terms", ""}, entry{"/pm25", ""}, entry{"/pm10", ""}, entry{"/air-pollution", ""})
+	entries = append(entries, entry{path: "/", lastMod: day}, entry{path: "/areas", lastMod: day}, entry{path: "/about"}, entry{path: "/about-the-data"}, entry{path: "/privacy"}, entry{path: "/licences"}, entry{path: "/terms"}, entry{path: "/pm25"}, entry{path: "/pm10"}, entry{path: "/air-pollution"})
 	for _, slug := range slugs {
 		var changed string
 		if at := snap.KnownSlugs[slug].ChangedAt; !at.IsZero() {
 			changed = at.UTC().Format("2006-01-02")
 		}
-		entries = append(entries, entry{"/area/" + slug, changed})
+		entries = append(entries, entry{path: "/area/" + slug, lastMod: changed})
+	}
+	for _, n := range rr.newsSitemapEntries(now) {
+		entries = append(entries, entry{path: n.path, lastMod: n.lastMod, lang: n.lang, alts: n.alts})
 	}
 
 	urls := make([]sitemapURL, 0, len(entries)*len(rr.cat.Languages()))
 	for _, e := range entries {
+		if e.lang != "" {
+			// One language variant. Alternates only pair it with its siblings.
+			other := PageData{Lang: e.lang, BaseURL: rr.baseURL, RequestPath: e.path}
+			urls = append(urls, sitemapURL{Loc: other.CanonicalURL(), LastMod: e.lastMod, Links: rr.sitemapLinks(e.path, e.alts)})
+			continue
+		}
 		// One <url> per language variant, each carrying the full alternate set.
-		links := rr.sitemapLinks(e.path)
-		for _, a := range rr.pageAlternates(e.path) {
+		links := rr.sitemapLinks(e.path, nil)
+		for _, a := range rr.pageAlternates(e.path, nil) {
 			urls = append(urls, sitemapURL{Loc: a.URL, LastMod: e.lastMod, Links: links})
 		}
 	}
@@ -198,19 +218,24 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	body := append([]byte(xml.Header), out...)
 
 	rr.sitemapAt = generatedAt
+	rr.sitemapDay = today
 	rr.sitemapBody = body
 	return body, nil
 }
 
-// pageAlternates is the same list the page <head> renders for this path.
-func (rr *Renderer) pageAlternates(path string) []alternate {
-	data := PageData{cat: rr.cat, BaseURL: rr.baseURL, RequestPath: path}
+// pageAlternates is the same list the page <head> renders for this path. Nil
+// langs means every loaded language.
+func (rr *Renderer) pageAlternates(path string, langs []string) []alternate {
+	data := PageData{cat: rr.cat, BaseURL: rr.baseURL, RequestPath: path, AltLangs: langs}
 	return data.Alternates()
 }
 
 // sitemapLinks reuses the <head> Alternates so the two never disagree, plus x-default.
-func (rr *Renderer) sitemapLinks(path string) []sitemapLink {
-	alts := rr.pageAlternates(path)
+func (rr *Renderer) sitemapLinks(path string, langs []string) []sitemapLink {
+	alts := rr.pageAlternates(path, langs)
+	if len(alts) == 0 {
+		return nil
+	}
 
 	links := make([]sitemapLink, 0, len(alts)+1)
 	for _, a := range alts {

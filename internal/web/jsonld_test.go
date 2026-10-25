@@ -38,6 +38,10 @@ type ldNode struct {
 		Height int    `json:"height"`
 	} `json:"logo"`
 	DateModified     string `json:"dateModified"`
+	DatePublished    string `json:"datePublished"`
+	Headline         string `json:"headline"`
+	MainEntityOfPage string `json:"mainEntityOfPage"`
+	Image            string `json:"image"`
 	TemporalCoverage string `json:"temporalCoverage"`
 	Distribution     []struct {
 		Type           string `json:"@type"`

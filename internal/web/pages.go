@@ -85,6 +85,9 @@ func (rr *Renderer) handlers() map[string]http.Handler {
 		h["GET "+prefix+"/pm25"] = rr.handlePM("pm25", "pm10")
 		h["GET "+prefix+"/pm10"] = rr.handlePM("pm10", "pm25")
 		h["GET "+prefix+"/embed"] = http.HandlerFunc(rr.handleEmbed)
+		h["GET "+prefix+newsPath] = http.HandlerFunc(rr.handleNewsList)
+		h["GET "+prefix+newsPath+"/{slug}"] = http.HandlerFunc(rr.handleNewsPost)
+		h["GET "+prefix+newsPath+"/feed.xml"] = http.HandlerFunc(rr.handleNewsFeed)
 	}
 
 	// One robots.txt and one sitemap for all languages.

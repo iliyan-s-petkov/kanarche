@@ -1,0 +1,23 @@
+{{/* /news: the list of posts in the page language. Server-rendered, no script needed. */}}
+{{define "main"}}
+<div class="measure">
+<nav class="breadcrumb" aria-label="{{.T "area.breadcrumb.label"}}">
+<a class="link" href="{{.Path "/"}}">{{.T "area.breadcrumb.home"}}</a><span class="breadcrumb__sep" aria-hidden="true">›</span><span aria-current="page">{{.T "news.breadcrumb"}}</span>
+</nav>
+<div class="page-head">
+  <h1 class="t-title">{{.T "news.h1"}}</h1>
+  <p class="t-body">{{.Description}}</p>
+</div>
+
+{{if .NewsPosts}}<ul class="news-list">
+{{range .NewsPosts}}  <li class="news-item">
+    <h2 class="news-item__title"><a class="link" href="{{.URL}}">{{.Title}}</a></h2>
+    <p class="news-item__meta"><time datetime="{{.DateISO}}">{{.DateHuman}}</time></p>
+    <p class="t-body">{{.Description}}</p>
+  </li>
+{{end}}</ul>
+{{else}}<p class="t-body">{{.T "news.empty"}}</p>
+{{end}}
+<p class="t-body"><a class="link" href="{{.FeedURL}}" type="application/atom+xml">{{.T "news.feed_link"}}</a></p>
+</div>
+{{end}}
