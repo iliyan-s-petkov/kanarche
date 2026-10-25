@@ -65,26 +65,24 @@ func TestAreaBreadcrumbMatchesJSONLD(t *testing.T) {
 	}
 }
 
-// TestAreaNoIndexWhenUncovered: an area without recent data is served with
-// robots noindex in both languages; a covered area carries no noindex.
-func TestAreaNoIndexWhenUncovered(t *testing.T) {
+// TestAreaIndexableWhenUncovered: an area without recent data stays indexable
+// in both languages: no robots noindex, and a canonical is emitted.
+func TestAreaIndexableWhenUncovered(t *testing.T) {
 	rr := renderer(t, areaPageFixture(t))
-	const noindex = `<meta name="robots" content="noindex">`
-	for _, path := range []string{"/area/silistra", "/en/area/silistra", "/area/silistra-oblast", "/en/area/silistra-oblast"} {
-		if body := fetch(t, rr, path).Body.String(); !strings.Contains(body, noindex) {
-			t.Errorf("%s: uncovered area has no robots noindex meta", path)
+	for _, path := range []string{"/area/silistra", "/en/area/silistra", "/area/silistra-oblast", "/en/area/silistra-oblast", "/area/plovdiv", "/en/area/plovdiv"} {
+		body := fetch(t, rr, path).Body.String()
+		if strings.Contains(body, `content="noindex"`) {
+			t.Errorf("%s: area is marked noindex", path)
 		}
-	}
-	for _, path := range []string{"/area/plovdiv", "/en/area/plovdiv"} {
-		if body := fetch(t, rr, path).Body.String(); strings.Contains(body, `content="noindex"`) {
-			t.Errorf("%s: covered area is marked noindex", path)
+		if !strings.Contains(body, `<link rel="canonical"`) {
+			t.Errorf("%s: area has no canonical link", path)
 		}
 	}
 }
 
-// TestSitemapOmitsUncoveredAreas: an uncovered area's BG and EN URLs are left
-// out of the sitemap; a covered area's are listed.
-func TestSitemapOmitsUncoveredAreas(t *testing.T) {
+// TestSitemapListsUncoveredAreas: an uncovered area's BG and EN URLs are
+// listed in the sitemap alongside covered ones.
+func TestSitemapListsUncoveredAreas(t *testing.T) {
 	rec := fetch(t, renderer(t, areaPageFixture(t)), "/sitemap.xml")
 	var doc sitemapXML
 	if err := xml.Unmarshal(rec.Body.Bytes(), &doc); err != nil {
@@ -97,14 +95,18 @@ func TestSitemapOmitsUncoveredAreas(t *testing.T) {
 	for _, loc := range []string{
 		"https://airbg.org/area/silistra", "https://airbg.org/en/area/silistra",
 		"https://airbg.org/area/silistra-oblast", "https://airbg.org/en/area/silistra-oblast",
+		"https://airbg.org/area/plovdiv", "https://airbg.org/en/area/plovdiv",
 	} {
-		if listed[loc] {
-			t.Errorf("sitemap lists uncovered area %s", loc)
+		if !listed[loc] {
+			t.Errorf("sitemap omits area %s", loc)
 		}
 	}
-	for _, loc := range []string{"https://airbg.org/area/plovdiv", "https://airbg.org/en/area/plovdiv"} {
-		if !listed[loc] {
-			t.Errorf("sitemap omits covered area %s", loc)
-		}
+}
+
+// TestSitemapIsNoIndex: the sitemap file itself is kept out of the index.
+func TestSitemapIsNoIndex(t *testing.T) {
+	rec := fetch(t, renderer(t, areaPageFixture(t)), "/sitemap.xml")
+	if got := rec.Header().Get("X-Robots-Tag"); got != "noindex" {
+		t.Errorf("sitemap X-Robots-Tag = %q, want noindex", got)
 	}
 }

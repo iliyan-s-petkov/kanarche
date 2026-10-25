@@ -9,8 +9,8 @@ import (
 const (
 	termsLineEN = "Indicative data, with no guarantee. Do not use it for health or safety decisions."
 	termsLineBG = "Данните са ориентировъчни и без гаранция. Не ги използвайте за решения за здраве или безопасност."
-	embedLineEN = "Indicative data, not for health decisions."
-	embedLineBG = "Ориентировъчни данни, не за решения за здравето."
+	embedLineEN = "The data is indicative. Do not use it for health decisions."
+	embedLineBG = "Данните са ориентировъчни. Не ги използвайте за решения за здравето."
 	areaHintEN  = "This figure is indicative."
 	areaHintBG  = "Стойността е ориентировъчна."
 )

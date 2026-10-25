@@ -9,8 +9,8 @@ import (
 const (
 	footerRefEN = "Indicative data, with no guarantee. Do not use it for health or safety decisions."
 	footerRefBG = "Данните са ориентировъчни и без гаранция. Не ги използвайте за решения за здраве или безопасност."
-	aboutRefEN  = "This map is for reference, not medical advice"
-	aboutRefBG  = "Картата е за информация, не е медицински съвет"
+	aboutRefEN  = "This map is for reference only"
+	aboutRefBG  = "Картата е само за информация"
 )
 
 func TestFooterReferenceLine(t *testing.T) {

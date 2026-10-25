@@ -129,6 +129,8 @@ func (rr *Renderer) handleSitemap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	// Keeps the sitemap file itself out of the index.
+	w.Header().Set("X-Robots-Tag", "noindex")
 	_, _ = w.Write(body)
 }
 
@@ -146,13 +148,11 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 		return rr.sitemapBody, nil
 	}
 
-	// Only covered areas: an uncovered page is noindex, so it stays out of the sitemap too.
+	// Every area, covered or not: all area pages are indexable.
 	var slugs []string
 	if snap != nil {
-		for slug, meta := range snap.KnownSlugs {
-			if meta.Covered {
-				slugs = append(slugs, slug)
-			}
+		for slug := range snap.KnownSlugs {
+			slugs = append(slugs, slug)
 		}
 		sort.Strings(slugs)
 	}
