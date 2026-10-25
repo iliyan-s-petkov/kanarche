@@ -127,6 +127,10 @@ func (rr *Renderer) handleNewsList(w http.ResponseWriter, r *http.Request) {
 	posts := rr.news.ForLang(now, data.Lang)
 	// An empty list is a page nobody should land on from search.
 	data.NoIndex = len(posts) == 0
+	// No posts, no feed link in the head or the body.
+	if len(posts) == 0 {
+		data.FeedURL = ""
+	}
 	for _, p := range posts {
 		data.NewsPosts = append(data.NewsPosts, NewsItem{
 			Title: p.Title, Description: p.Description, URL: data.Path(newsPath + "/" + p.Slug),

@@ -215,6 +215,8 @@ type PageData struct {
 	// (stale, uncovered, no value, or no DayRange).
 	AreaNowHTML template.HTML
 	AreaDayHTML template.HTML
+	// AreaHealthHTML is the EEA guidance block; empty under the AreaDayHTML gate.
+	AreaHealthHTML template.HTML
 	// AreaPollen is the pollen table and chip; nil without a forecast.
 	AreaPollen *PollenBlock
 	// AreaFAQ is the area page's FAQ, rendered once so the markup and the FAQPage JSON-LD share strings.

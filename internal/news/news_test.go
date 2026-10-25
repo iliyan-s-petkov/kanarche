@@ -232,3 +232,35 @@ func TestUpdatedDefaultsToDate(t *testing.T) {
 		t.Errorf("Updated = %v", p.Updated)
 	}
 }
+
+func TestHasUpdateComparesCalendarDaysAndNeverPassesNow(t *testing.T) {
+	cases := []struct {
+		name, date, updated string
+		want                bool
+		wantDay             string
+	}{
+		{"same day", "2026-10-25", "2026-10-25", false, "2026-10-25"},
+		{"next day", "2026-10-24", "2026-10-25", true, "2026-10-25"},
+		{"future updated, published today", "2026-10-25", "2026-10-30", false, "2026-10-25"},
+		{"future updated, published earlier", "2026-10-20", "2026-10-30", true, "2026-10-25"},
+		{"no updated", "2026-10-20", "", false, "2026-10-20"},
+	}
+	for _, c := range cases {
+		extra := ""
+		if c.updated != "" {
+			extra = "updated: " + c.updated + "\n"
+		}
+		body := strings.Replace(okPost, "date: 2026-09-30\n", "date: "+c.date+"\n"+extra, 1)
+		set := mustLoad(t, fstest.MapFS{"2026-09-varna.en.md": file(body)}, news.Options{})
+		p, ok := set.Lookup(now, "en", "2026-09-varna")
+		if !ok {
+			t.Fatalf("%s: post not visible", c.name)
+		}
+		if p.HasUpdate() != c.want {
+			t.Errorf("%s: HasUpdate = %v, want %v", c.name, p.HasUpdate(), c.want)
+		}
+		if p.Updated.After(now) || p.Updated.Format("2006-01-02") != c.wantDay {
+			t.Errorf("%s: Updated = %v, want day %s and not after now", c.name, p.Updated, c.wantDay)
+		}
+	}
+}

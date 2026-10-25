@@ -16,6 +16,7 @@
 {{end}}</ul>
 {{else}}<p class="t-body">{{.T "news.empty"}}</p>
 {{end}}
-<p class="t-body"><a class="link" href="{{.FeedURL}}" type="application/atom+xml">{{.T "news.feed_link"}}</a></p>
+{{with .FeedURL}}<p class="t-body"><a class="link" href="{{.}}" type="application/atom+xml">{{$.T "news.feed_link"}}</a></p>
+{{end}}
 </div>
 {{end}}
