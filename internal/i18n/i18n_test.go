@@ -217,6 +217,24 @@ func TestNoDraftPlaceholdersRemain(t *testing.T) {
 	}
 }
 
+// TestNoReviewNotesInCopy catches review annotations pasted into a catalogue
+// value. "(unchanged label)" once shipped in footer.contact and rendered in the
+// footer of every page in both languages.
+func TestNoReviewNotesInCopy(t *testing.T) {
+	c := loaded(t)
+	for _, lang := range c.Languages() {
+		for _, key := range c.Keys() {
+			if !c.Has(lang, key) {
+				continue
+			}
+			value := c.T(lang, key)
+			if strings.Contains(value, "(unchanged label)") || strings.Contains(value, "unchanged label") {
+				t.Errorf("%s %q contains a leftover review note: %q", lang, key, value)
+			}
+		}
+	}
+}
+
 // Search results cut a meta description at about 160 characters. The Dataset
 // description feeds JSON-LD only, which has no such limit.
 func TestMetaDescriptionsFitSearchSnippet(t *testing.T) {

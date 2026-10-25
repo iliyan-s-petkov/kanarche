@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte'
   import uPlot from 'uplot'
   import 'uplot/dist/uPlot.min.css'
   import { mergeSeries } from '../lib/series.js'
@@ -39,7 +40,7 @@
   let {
     url, lineColour, valueLabel, valueUnit = '', metricLabel = '', sources = null,
     title, timeLabel, empty, unavailable, resizable = false, fill = false,
-    periodLabel = '', text = {},
+    periodLabel = '', text = {}, stamp = 0,
   } = $props()
 
   const defs = $derived(sources ?? [{ url, label: valueLabel, name: metricLabel || valueLabel, colour: lineColour, scale: 'y', unit: valueUnit }])
@@ -116,6 +117,42 @@
     u.redraw()
   }
 
+  // The plot on screen, for the in-place update below; null when there is none.
+  let live = null
+  let seenStamp = untrack(() => stamp)
+  let pass = 0
+  // Bumped when a refresh finds no plot to update in place (empty, failed), to run the full load.
+  let reload = $state(0)
+
+  // A refresh moves only the stamp: fetch again and swap the data into the same plot,
+  // so nothing blanks. A zoomed x range is kept; an unzoomed one follows the new data.
+  $effect(() => {
+    const next = stamp
+    untrack(() => {
+      if (next === seenStamp) return
+      seenStamp = next
+      const current = live
+      if (!current) {
+        reload += 1
+        return
+      }
+      if (current.lines !== defs) return
+      const mine = ++pass
+      Promise.all(current.lines.map((s) => getJSON(s.url))).then((bodies) => {
+        if (mine !== pass || live !== current) return
+        const data = mergeSeries(bodies, current.lines.map((s) => s.column ?? 'v'))
+        if (data[0].length < 2) return
+        const x = current.chart.scales.x
+        const first = current.data[0][0]
+        const last = current.data[0][current.data[0].length - 1]
+        const zoomed = x.min > first || x.max < last
+        current.chart.setData(data, !zoomed)
+        current.data = data
+        readings = data
+      }, (err) => console.error('chart refresh:', err))
+    })
+  })
+
   $effect(() => {
     let chart
     let observer
@@ -123,6 +160,8 @@
     let media
     let onMediaChange
     let cancelled = false
+    live = null
+    void reload
 
     // Back to 'loading' before the new url is fetched. The url changes when the
     // reader picks another period, and without this the previous window's "no
@@ -242,6 +281,7 @@
       }, data, host)
       // E2E-only handle for the x labels' positions, which uPlot draws on canvas; stripped from a plain build.
       if (import.meta.env.VITE_E2E_MAP_HANDLE) chart.root.__uplot = chart
+      live = { chart, lines, data, scales }
 
       // The first size was computed before uPlot had drawn its legend, so the
       // strip could only be assumed. Re-fit once against the real one; the
@@ -275,6 +315,7 @@
 
     return () => {
       cancelled = true
+      live = null
       observer?.disconnect()
       themeObserver?.disconnect()
       media?.removeEventListener?.('change', onMediaChange)

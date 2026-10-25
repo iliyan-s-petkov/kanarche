@@ -244,7 +244,7 @@ func TestTitlesAndDescriptionsFitTheirBudget(t *testing.T) {
 	rr := renderer(t, seoFixture(t))
 	snap := seoFixture(t)
 
-	paths := []string{"/", "/areas", "/about-the-data"}
+	paths := []string{"/", "/areas", "/about-the-data", "/air-pollution"}
 	for slug := range snap.KnownSlugs {
 		paths = append(paths, "/area/"+slug)
 	}

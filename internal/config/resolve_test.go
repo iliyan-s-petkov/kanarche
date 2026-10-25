@@ -80,6 +80,7 @@ func TestResolvePeriods(t *testing.T) {
 	}
 	cfg := resolve(r)
 	want := map[string]Period{
+		"1h":  {time.Hour, false, time.Minute, 60 * time.Second},
 		"24h": {24 * time.Hour, false, 5 * time.Minute, 150 * time.Second},
 		"7d":  {7 * 24 * time.Hour, false, time.Hour, 600 * time.Second},
 		"30d": {30 * 24 * time.Hour, true, 6 * time.Hour, 1800 * time.Second},
@@ -95,10 +96,10 @@ func TestResolvePeriods(t *testing.T) {
 			t.Errorf("Series.Periods[%q] = %+v, want %+v", name, got, w)
 		}
 	}
-	if got, want := len(cfg.Series.PeriodNames), 4; got != want {
+	if got, want := len(cfg.Series.PeriodNames), 5; got != want {
 		t.Errorf("len(Series.PeriodNames) = %d, want %d", got, want)
 	}
-	if got, want := cfg.Series.PeriodNames[0], "24h"; got != want {
+	if got, want := cfg.Series.PeriodNames[0], "1h"; got != want {
 		t.Errorf("Series.PeriodNames[0] = %q, want %q (file order is UI order)", got, want)
 	}
 }
@@ -134,8 +135,8 @@ func TestResolvePeriodOrderPreservation(t *testing.T) {
 	}
 	cfg := resolve(r)
 
-	// File order must be preserved: 24h, 7d, 30d, 1y.
-	want := []string{"24h", "7d", "30d", "1y"}
+	// File order must be preserved: 1h, 24h, 7d, 30d, 1y.
+	want := []string{"1h", "24h", "7d", "30d", "1y"}
 	if len(cfg.Series.PeriodNames) != len(want) {
 		t.Fatalf("len(Series.PeriodNames) = %d, want %d", len(cfg.Series.PeriodNames), len(want))
 	}

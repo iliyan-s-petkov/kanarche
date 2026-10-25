@@ -49,8 +49,8 @@ func TestCommittedConfigDecodesStrictly(t *testing.T) {
 	if got, want := *r.Quality.Ranges.Pressure.Min, 650.0; got != want {
 		t.Errorf("quality.ranges.pressure.min = %v, want %v", got, want)
 	}
-	if len(r.Series.Periods) != 4 {
-		t.Errorf("len(series.periods) = %d, want 4", len(r.Series.Periods))
+	if len(r.Series.Periods) != 5 {
+		t.Errorf("len(series.periods) = %d, want 5", len(r.Series.Periods))
 	}
 	// listen.permissions_policy is a security header, not an ordinary knob: it
 	// is the browser-side enforcement that no capability beyond what the site

@@ -59,13 +59,26 @@ func TestAirPollutionHeadTags(t *testing.T) {
 	}
 }
 
+type apLDNode struct {
+	Type       string `json:"@type"`
+	MainEntity []struct {
+		Name           string `json:"name"`
+		AcceptedAnswer struct {
+			Text string `json:"text"`
+		} `json:"acceptedAnswer"`
+	} `json:"mainEntity"`
+	ItemListElement []struct {
+		Item string `json:"item"`
+	} `json:"itemListElement"`
+}
+
 // ldGraph returns the @graph nodes of the page's JSON-LD.
-func ldGraph(t *testing.T, body string) []map[string]any {
+func ldGraph(t *testing.T, body string) []apLDNode {
 	t.Helper()
 	start := strings.Index(body, ldOpen) + len(ldOpen)
 	end := strings.Index(body[start:], "</script>")
 	var doc struct {
-		Graph []map[string]any `json:"@graph"`
+		Graph []apLDNode `json:"@graph"`
 	}
 	if err := json.Unmarshal([]byte(body[start:start+end]), &doc); err != nil {
 		t.Fatalf("json-ld: %v", err)
@@ -73,30 +86,40 @@ func ldGraph(t *testing.T, body string) []map[string]any {
 	return doc.Graph
 }
 
-var summaryRe = regexp.MustCompile(`(?s)<summary>(.*?)</summary>`)
+var (
+	summaryRe = regexp.MustCompile(`(?s)<summary>(.*?)</summary>`)
+	answerRe  = regexp.MustCompile(`(?s)<div class="faq__answer"><p>(.*?)</p></div>`)
+)
 
 func TestAirPollutionFAQPageMatchesVisibleDetails(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	for _, c := range airPollutionPages {
 		body := fetch(t, rr, c.path).Body.String()
-		var visible []string
+		var visibleQ, visibleA []string
 		for _, m := range summaryRe.FindAllStringSubmatch(body, -1) {
-			visible = append(visible, html.UnescapeString(m[1]))
+			visibleQ = append(visibleQ, html.UnescapeString(m[1]))
 		}
-		var ld []string
+		for _, m := range answerRe.FindAllStringSubmatch(body, -1) {
+			visibleA = append(visibleA, html.UnescapeString(m[1]))
+		}
+		var ldQ, ldA []string
 		for _, n := range ldGraph(t, body) {
-			if n["@type"] != "FAQPage" {
+			if n.Type != "FAQPage" {
 				continue
 			}
-			for _, q := range n["mainEntity"].([]any) {
-				ld = append(ld, q.(map[string]any)["name"].(string))
+			for _, q := range n.MainEntity {
+				ldQ = append(ldQ, q.Name)
+				ldA = append(ldA, q.AcceptedAnswer.Text)
 			}
 		}
-		if len(ld) != 8 {
-			t.Fatalf("%s: FAQPage has %d questions, want 8", c.path, len(ld))
+		if len(ldQ) != 8 {
+			t.Fatalf("%s: FAQPage has %d questions, want 8", c.path, len(ldQ))
 		}
-		if strings.Join(ld, "|") != strings.Join(visible, "|") {
-			t.Errorf("%s: FAQPage questions %q differ from visible details %q", c.path, ld, visible)
+		if strings.Join(ldQ, "|") != strings.Join(visibleQ, "|") {
+			t.Errorf("%s: FAQPage questions %q differ from visible details %q", c.path, ldQ, visibleQ)
+		}
+		if strings.Join(ldA, "|") != strings.Join(visibleA, "|") {
+			t.Errorf("%s: FAQPage answers %q differ from visible answers %q", c.path, ldA, visibleA)
 		}
 	}
 }
@@ -104,18 +127,19 @@ func TestAirPollutionFAQPageMatchesVisibleDetails(t *testing.T) {
 func TestAirPollutionBreadcrumb(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	for _, c := range airPollutionPages {
-		var crumbs []any
+		var items []string
 		for _, n := range ldGraph(t, fetch(t, rr, c.path).Body.String()) {
-			if n["@type"] == "BreadcrumbList" {
-				crumbs = n["itemListElement"].([]any)
+			if n.Type == "BreadcrumbList" {
+				for _, it := range n.ItemListElement {
+					items = append(items, it.Item)
+				}
 			}
 		}
-		if len(crumbs) != 2 {
-			t.Fatalf("%s: breadcrumb has %d items, want 2", c.path, len(crumbs))
+		if len(items) != 2 {
+			t.Fatalf("%s: breadcrumb has %d items, want 2", c.path, len(items))
 		}
-		last := crumbs[1].(map[string]any)
-		if last["item"] != "https://airbg.org"+c.path {
-			t.Errorf("%s: last crumb item = %v", c.path, last["item"])
+		if items[1] != "https://airbg.org"+c.path {
+			t.Errorf("%s: last crumb item = %v", c.path, items[1])
 		}
 	}
 }
@@ -185,9 +209,20 @@ func TestExplainerLinesOnHomeAndArea(t *testing.T) {
 
 func TestAboutBGHeadingsRenamed(t *testing.T) {
 	body := fetch(t, renderer(t, fixture(t)), "/about").Body.String()
+	headingRe := regexp.MustCompile(`(?s)<h[1-6][^>]*>\s*([^<]*?)\s*</h[1-6]>`)
+	var headings []string
+	for _, m := range headingRe.FindAllStringSubmatch(body, -1) {
+		headings = append(headings, html.UnescapeString(m[1]))
+	}
+	joined := "\n" + strings.Join(headings, "\n") + "\n"
 	for _, want := range []string{"Какво показва картата", "Какво означават цветовете", "Областите като таблица"} {
-		if !strings.Contains(body, want) {
-			t.Errorf("/about lacks heading %q", want)
+		if !strings.Contains(joined, "\n"+want+"\n") {
+			t.Errorf("/about has no heading %q", want)
+		}
+	}
+	for _, old := range []string{"Прочетете картата", "Прочетете цветовете", "Прочетете областите като таблица"} {
+		if strings.Contains(body, old) {
+			t.Errorf("/about still carries %q", old)
 		}
 	}
 }

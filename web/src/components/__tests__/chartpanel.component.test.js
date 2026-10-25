@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
+import { SvelteMap } from 'svelte/reactivity'
 import ChartPanel from '../ChartPanel.svelte'
 // lib/api.js caches by URL for the page's lifetime, and a test file is one
 // "page": without this the second case to mount on 24h would be answered from
@@ -32,8 +33,8 @@ const props = {
   metricUnits: { P2: 'µg/m³', P1: 'µg/m³' },
   onMetricChange: () => {},
   metricLegend: 'Metric',
-  periods: ['24h', '7d', '30d', '1y'],
-  periodLabels: ['24 hours', '7 days', '30 days', '1 year'],
+  periods: ['1h', '24h', '7d', '30d', '1y'],
+  periodLabels: ['1 hour', '24 hours', '7 days', '30 days', '1 year'],
   initialPeriod: '24h',
   tier: 'province average',
   periodLegend: 'Period',
@@ -70,7 +71,7 @@ function render(extra) {
   })
   const target = document.createElement('div')
   document.body.appendChild(target)
-  component = mount(ChartPanel, { target, props: { ...props, ...extra } })
+  component = mount(ChartPanel, { target, props: Object.defineProperties({ ...props }, Object.getOwnPropertyDescriptors(extra ?? {})) })
   return target
 }
 
@@ -82,6 +83,16 @@ function setValue(el, value) {
 const periodSelect = (target) => target.querySelector('#area-period-select')
 
 describe('ChartPanel.svelte', () => {
+  it('asks for its series again when the refresh stamp moves', async () => {
+    const stamp = new SvelteMap([['at', 1]])
+    render(Object.defineProperties({}, { stamp: { get: () => stamp.get('at'), enumerable: true } }))
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+    clearCache()
+    stamp.set('at', 2)
+    await vi.waitFor(() => expect(urls).toHaveLength(2))
+    expect(urls[1]).toBe(urls[0])
+  })
+
   // No sensor selected: the region chart mounts and asks for its own series.
   it('mounts and requests its series URL when nothing is selected', async () => {
     const target = render({ selected: false })
@@ -104,10 +115,30 @@ describe('ChartPanel.svelte', () => {
   it('offers one option per configured period, plus the custom range', () => {
     const target = render()
     const options = [...target.querySelectorAll('#area-period-select option')]
-    expect(options.map((o) => o.value)).toEqual(['24h', '7d', '30d', '1y', 'custom'])
+    expect(options.map((o) => o.value)).toEqual(['1h', '24h', '7d', '30d', '1y', 'custom'])
     expect(options.map((o) => o.textContent))
-      .toEqual(['24 hours', '7 days', '30 days', '1 year', 'Custom range'])
+      .toEqual(['1 hour', '24 hours', '7 days', '30 days', '1 year', 'Custom range'])
     expect(periodSelect(target).value).toBe('24h')
+  })
+
+  // 1 hour leads the list but the server's default stays 24 hours: the first
+  // option is not the selected one.
+  it('lists 1 hour first and still opens on 24 hours', async () => {
+    const target = render()
+    const select = periodSelect(target)
+    expect(select.options[0].value).toBe('1h')
+    expect(select.value).toBe('24h')
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+    expect(urls[0]).toContain('period=24h')
+  })
+
+  it('requests period=1h and relabels when 1 hour is picked', async () => {
+    const target = render()
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+    setValue(periodSelect(target), '1h')
+    await vi.waitFor(() => expect(urls).toHaveLength(2))
+    expect(urls[1]).toContain('period=1h')
+    expect(target.querySelector('.chart-caption').textContent).toContain('1 hour')
   })
 
   // The label is what tells a screen reader what the select is for.
