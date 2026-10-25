@@ -128,8 +128,11 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	lang, path := rr.cat.LangFromPath(r.URL.Path)
 	data := rr.newPageData(lang, path, snap.GeneratedAt)
 	data.Areas = rr.areaRows(snap, lang, "oblast")
-	data.HomeCities = rr.citiesBySensors(lang, homeCityCount)
-	data.HomeSofia = rr.hasSofiaHub()
+	// The big-cities block is the home page only, not /areas.
+	if path == "/" {
+		data.HomeBigCities = rr.bigCityRows(snap, lang)
+		data.HomeSofia = hasSofiaHub(snap)
+	}
 	// From 1024px the map's panel carries the open sensor; app.css hides the card under the map.
 	data.PanelHostClass = "place-host--docked"
 	// /areas shares this handler with / — same snapshot, same rows — but the
