@@ -56,8 +56,8 @@ func TestAboutDataPollenAndBathingSections(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	type want struct{ heading, pollenBody, bathingBody, sources string }
 	cases := map[string]want{
-		"/en/about-the-data": {"Pollen is a model forecast, not a count", "We do not measure pollen.", "Bathing sites and classes come from the EEA WISE", "Pollen forecast from CAMS (Copernicus Atmosphere Monitoring Service) via Open-Meteo.com (CC BY 4.0)."},
-		"/about-the-data":    {"Прашецът е прогноза от модел, а не преброяване", "Не измерваме прашец.", "Местата за къпане и техните класове идват", "Прогноза за прашец от CAMS"},
+		"/en/about-the-data": {"Pollen is a model forecast", "We do not measure pollen.", "Bathing sites and classes come from the EEA WISE", "Pollen forecast from CAMS (Copernicus Atmosphere Monitoring Service) via Open-Meteo.com (CC BY 4.0)."},
+		"/about-the-data":    {"Прашецът е прогноза от модел", "Не измерваме прашец.", "Местата за къпане и техните класове идват", "Прогноза за прашец от CAMS"},
 	}
 	for path, w := range cases {
 		body := fetch(t, rr, path).Body.String()

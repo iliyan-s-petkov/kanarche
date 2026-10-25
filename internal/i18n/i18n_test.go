@@ -73,6 +73,33 @@ func TestCopyHasNoSemicolonsOrDashes(t *testing.T) {
 	}
 }
 
+// Contrast slogans ("X, а не Y", "X, not Y") read as taglines. Say the fact,
+// then the negation as its own sentence.
+func TestCopyHasNoContrastSlogans(t *testing.T) {
+	c := loaded(t)
+	rules := map[string]*regexp.Regexp{
+		"bg": regexp.MustCompile(`, а не |\bне е [^.,]{1,60}, а |,\s*не (е|за) `),
+		"en": regexp.MustCompile(`, not |\brather than\b|\bnot [^.,]{1,40}, but\b|, never `),
+	}
+	// Plain numeric comparisons, not slogans.
+	allow := map[string]bool{
+		"bg about_faq.a5": true, // "не е подал данни 2 часа, а при официалните станции 12 часа"
+		// Reworded in the wind-pollen-faq PR. Remove these two entries once it lands.
+		"bg about.start.pollen.body": true,
+		"en about.start.pollen.body": true,
+	}
+	for lang, re := range rules {
+		for _, key := range c.Keys() {
+			if !c.Has(lang, key) || allow[lang+" "+key] {
+				continue
+			}
+			if m := re.FindString(c.T(lang, key)); m != "" {
+				t.Errorf("%s %q has contrast phrasing %q: %q", lang, key, m, c.T(lang, key))
+			}
+		}
+	}
+}
+
 // TestMissingKeyFallsBackVisibly: an unknown key must not render as an empty
 // string. An empty string produces a page with a blank where a label belongs and
 // nothing in the logs — the failure mode is a silently broken UI.
