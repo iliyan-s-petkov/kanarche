@@ -18,7 +18,7 @@ func TestLookupStationInfo(t *testing.T) {
 func TestLookupStationInfoKeepsTheSourceQuirks(t *testing.T) {
 	// The caller normalises these, so the lookup hands them over untouched.
 	got, _ := LookupStationInfo("BG0044A")
-	if got.Area != "промишлен " {
+	if got.Area != "промишлен " {
 		t.Errorf("BG0044A area = %q", got.Area)
 	}
 	got, _ = LookupStationInfo("BG0070A")
