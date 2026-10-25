@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -44,13 +46,15 @@ func faqVisible(t *testing.T, body string) []faqEntry {
 	return out
 }
 
-func TestFAQRendersSevenQuestionsInBothLanguages(t *testing.T) {
+// The area FAQ holds only area questions. The rank question needs the rank block, so
+// the fixture's small peer groups leave two.
+func TestAreaFAQHoldsOnlyAreaQuestions(t *testing.T) {
 	rr := renderer(t, eeaFixture(t))
 	for _, path := range []string{"/area/plovdiv", "/en/area/plovdiv", "/area/smolyan", "/en/area/smolyan-oblast", "/area/mladost"} {
 		body := fetch(t, rr, path).Body.String()
 		items := faqVisible(t, body)
-		if len(items) != 7 {
-			t.Fatalf("%s: %d FAQ entries, want 7", path, len(items))
+		if len(items) < 2 || len(items) > 3 {
+			t.Fatalf("%s: %d FAQ entries, want 2 or 3", path, len(items))
 		}
 		for i, it := range items {
 			if strings.TrimSpace(it.Q) == "" || strings.TrimSpace(it.A) == "" {
@@ -85,7 +89,7 @@ func TestFAQHeadingUsesBulgarianPreposition(t *testing.T) {
 		"/area/mladost":         "Въпроси за въздуха в район Младост",
 		"/area/smolyan-oblast":  "Въпроси за въздуха в област Смолян",
 		"/en/area/smolyan":      "Questions about the air in Smolyan",
-		"/en/area/mladost":      "Questions about the air in Mladost",
+		"/en/area/mladost":      "Questions about the air in Mladost district",
 		"/en/area/plovdiv":      "Questions about the air in Plovdiv",
 		"/area/sofiyska-oblast": "Въпроси за въздуха в Софийска област",
 	}
@@ -95,13 +99,14 @@ func TestFAQHeadingUsesBulgarianPreposition(t *testing.T) {
 			t.Errorf("%s: heading = %q, want %q", path, got, want)
 		}
 	}
-	// The BG questions that carry {area_in} take the same phrase.
+	// The BG questions take the same phrase.
 	items := faqVisible(t, fetch(t, rr, "/area/veliko-tarnovo").Body.String())
-	if want := "Какво е качеството на въздуха във Велико Търново сега?"; items[0].Q != want {
-		t.Errorf("q1 = %q, want %q", items[0].Q, want)
+	if want := "Има ли официална станция във Велико Търново?"; items[0].Q != want {
+		t.Errorf("q = %q, want %q", items[0].Q, want)
 	}
 }
 
+// The EAQI edges moved to the About page. They must still equal the scale.
 func TestFAQThresholdsEqualScaleEdges(t *testing.T) {
 	edges := map[string][]string{}
 	for _, s := range api.Scales() {
@@ -120,25 +125,25 @@ func TestFAQThresholdsEqualScaleEdges(t *testing.T) {
 	p2, p1 := edges["P2"], edges["P1"]
 	rr := renderer(t, eeaFixture(t))
 
-	en := faqVisible(t, fetch(t, rr, "/en/area/plovdiv").Body.String())[2].A
+	en := aboutFAQVisible(t, fetch(t, rr, "/en/about-the-data").Body.String())[3].A
 	wantEN := []string{
 		fmt.Sprintf("good is up to %s µg/m³, fair up to %s, moderate up to %s, poor up to %s, very poor up to %s,", p2[0], p2[1], p2[2], p2[3], p2[4]),
 		fmt.Sprintf("the same bands end at %s, %s, %s, %s and %s.", p1[0], p1[1], p1[2], p1[3], p1[4]),
 	}
 	for _, w := range wantEN {
 		if !strings.Contains(en, w) {
-			t.Errorf("en a3 = %q, want it to contain %q", en, w)
+			t.Errorf("en a4 = %q, want it to contain %q", en, w)
 		}
 	}
 
-	bg := faqVisible(t, fetch(t, rr, "/area/plovdiv").Body.String())[2].A
+	bg := aboutFAQVisible(t, fetch(t, rr, "/about-the-data").Body.String())[3].A
 	wantBG := []string{
 		fmt.Sprintf("доброто е до %s µg/m³, задоволителното до %s, умереното до %s, лошото до %s, много лошото до %s,", p2[0], p2[1], p2[2], p2[3], p2[4]),
 		fmt.Sprintf("завършват при %s, %s, %s, %s и %s.", p1[0], p1[1], p1[2], p1[3], p1[4]),
 	}
 	for _, w := range wantBG {
 		if !strings.Contains(bg, w) {
-			t.Errorf("bg a3 = %q, want it to contain %q", bg, w)
+			t.Errorf("bg a4 = %q, want it to contain %q", bg, w)
 		}
 	}
 }
@@ -150,58 +155,37 @@ func TestFAQMinutesMatchUpstreamPollInterval(t *testing.T) {
 	}
 	minutes := int(cfg.Upstream.PollInterval / time.Minute)
 	rr := renderer(t, eeaFixture(t))
-	en := faqVisible(t, fetch(t, rr, "/en/area/plovdiv").Body.String())[3].A
+	en := aboutFAQVisible(t, fetch(t, rr, "/en/about-the-data").Body.String())[1].A
 	if want := fmt.Sprintf("every %d minutes.", minutes); !strings.Contains(en, want) {
-		t.Errorf("en a4 = %q, want it to contain %q", en, want)
+		t.Errorf("en a2 = %q, want it to contain %q", en, want)
 	}
-	bg := faqVisible(t, fetch(t, rr, "/area/plovdiv").Body.String())[3].A
+	bg := aboutFAQVisible(t, fetch(t, rr, "/about-the-data").Body.String())[1].A
 	if want := fmt.Sprintf("на всеки %d минути.", minutes); !strings.Contains(bg, want) {
-		t.Errorf("bg a4 = %q, want it to contain %q", bg, want)
+		t.Errorf("bg a2 = %q, want it to contain %q", bg, want)
 	}
 }
 
-// The official-stations sentence follows the same hasEEA rule as the area description.
-func TestFAQOfficialSentenceOnlyWithEEAData(t *testing.T) {
+// The pointers under the FAQ follow the page language and reach live pages.
+func TestFAQPointersFollowLanguage(t *testing.T) {
 	rr := renderer(t, eeaFixture(t))
-	cases := []struct {
-		path string
-		want bool
-	}{
-		{"/en/area/plovdiv", true},
-		{"/en/area/smolyan-oblast", true},
-		{"/en/area/mladost", true},
-		{"/en/area/smolyan", false},
-		{"/en/area/veliko-tarnovo", false},
-		{"/en/area/krasna-polyana", false},
-		{"/area/plovdiv", true},
-		{"/area/smolyan", false},
+	cases := []struct{ path, general, explainer string }{
+		{"/area/plovdiv", `<a class="link" href="/about-the-data">За данните</a>`, `<a class="link" href="/air-pollution">Замърсяване на въздуха: обяснение</a>`},
+		{"/en/area/plovdiv", `<a class="link" href="/en/about-the-data">About the data</a>`, `<a class="link" href="/en/air-pollution">Air pollution explained</a>`},
 	}
 	for _, c := range cases {
-		a5 := faqVisible(t, fetch(t, rr, c.path).Body.String())[4].A
-		marker := "Official stations of the Executive Environment Agency"
-		if strings.HasPrefix(c.path, "/area") {
-			marker = "Показани са и официалните станции"
+		body := fetch(t, rr, c.path).Body.String()
+		for _, anchor := range []string{c.general, c.explainer} {
+			if !strings.Contains(body, anchor) {
+				t.Errorf("%s: page lacks %s", c.path, anchor)
+			}
 		}
-		if got := strings.Contains(a5, marker); got != c.want {
-			t.Errorf("%s: official sentence present = %v, want %v (a5 = %q)", c.path, got, c.want, a5)
+		if strings.ContainsAny(regexp.MustCompile(`<p class="faq__more">.*?</p>`).FindString(body), "{}") {
+			t.Errorf("%s: raw placeholder in a pointer line", c.path)
 		}
 	}
-}
-
-func TestFAQAboutLinkFollowsLanguage(t *testing.T) {
-	rr := renderer(t, eeaFixture(t))
-	cases := []struct{ path, href, label string }{
-		{"/area/plovdiv", "/about-the-data", "За данните"},
-		{"/en/area/plovdiv", "/en/about-the-data", "About the data"},
-	}
-	for _, c := range cases {
-		sec := faqSection(t, fetch(t, rr, c.path).Body.String())
-		links := regexp.MustCompile(`<a [^>]*href="([^"]*)"[^>]*>([^<]*)</a>`).FindAllStringSubmatch(sec, -1)
-		if len(links) != 1 || links[0][1] != c.href || links[0][2] != c.label {
-			t.Errorf("%s: FAQ links = %v, want one link %s labelled %q", c.path, links, c.href, c.label)
-		}
-		if rec := fetch(t, rr, c.href); rec.Code != 200 {
-			t.Errorf("%s: link target %s answers %d", c.path, c.href, rec.Code)
+	for _, href := range []string{"/about-the-data", "/en/about-the-data", "/air-pollution", "/en/air-pollution"} {
+		if rec := fetch(t, rr, href); rec.Code != 200 {
+			t.Errorf("link target %s answers %d", href, rec.Code)
 		}
 	}
 }
@@ -218,47 +202,30 @@ func TestFAQPageJSONLDMatchesVisibleText(t *testing.T) {
 		if err := json.Unmarshal([]byte(body[start:start+end]), &doc); err != nil {
 			t.Fatalf("%s: JSON-LD does not parse: %v", path, err)
 		}
-		var faq *struct {
-			Type       string `json:"@type"`
-			MainEntity []struct {
-				Type           string `json:"@type"`
-				Name           string `json:"name"`
-				AcceptedAnswer struct {
-					Type string `json:"@type"`
-					Text string `json:"text"`
-				} `json:"acceptedAnswer"`
-			} `json:"mainEntity"`
-		}
-		for _, raw := range doc.Graph {
-			var probe struct {
+		type question struct {
+			Type           string `json:"@type"`
+			Name           string `json:"name"`
+			AcceptedAnswer struct {
 				Type string `json:"@type"`
+				Text string `json:"text"`
+			} `json:"acceptedAnswer"`
+		}
+		var faq []question
+		for _, raw := range doc.Graph {
+			var node struct {
+				Type       string     `json:"@type"`
+				MainEntity []question `json:"mainEntity"`
 			}
-			if err := json.Unmarshal(raw, &probe); err != nil || probe.Type != "FAQPage" {
+			if err := json.Unmarshal(raw, &node); err != nil || node.Type != "FAQPage" {
 				continue
 			}
-			faq = new(struct {
-				Type       string `json:"@type"`
-				MainEntity []struct {
-					Type           string `json:"@type"`
-					Name           string `json:"name"`
-					AcceptedAnswer struct {
-						Type string `json:"@type"`
-						Text string `json:"text"`
-					} `json:"acceptedAnswer"`
-				} `json:"mainEntity"`
-			})
-			if err := json.Unmarshal(raw, faq); err != nil {
-				t.Fatalf("%s: FAQPage node: %v", path, err)
-			}
-		}
-		if faq == nil {
-			t.Fatalf("%s: no FAQPage node in the graph", path)
+			faq = node.MainEntity
 		}
 		visible := faqVisible(t, body)
-		if len(faq.MainEntity) != 7 || len(visible) != 7 {
-			t.Fatalf("%s: %d JSON-LD entries and %d visible, want 7 each", path, len(faq.MainEntity), len(visible))
+		if len(faq) == 0 || len(faq) != len(visible) {
+			t.Fatalf("%s: %d JSON-LD entries and %d visible", path, len(faq), len(visible))
 		}
-		for i, q := range faq.MainEntity {
+		for i, q := range faq {
 			if q.Type != "Question" || q.AcceptedAnswer.Type != "Answer" {
 				t.Errorf("%s: entry %d types = %q/%q", path, i+1, q.Type, q.AcceptedAnswer.Type)
 			}
@@ -270,14 +237,28 @@ func TestFAQPageJSONLDMatchesVisibleText(t *testing.T) {
 	}
 }
 
-func TestFAQAreaMidSentenceIsLowercaseOblast(t *testing.T) {
-	rr := renderer(t, eeaFixture(t))
-	items := faqVisible(t, fetch(t, rr, "/area/smolyan-oblast").Body.String())
-	if want := "Защо понякога няма стойност за област Смолян?"; items[6].Q != want {
-		t.Errorf("q7 = %q, want %q", items[6].Q, want)
-	}
-	items = faqVisible(t, fetch(t, rr, "/area/sofiyska-oblast").Body.String())
-	if want := "Защо понякога няма стойност за Софийска област?"; items[6].Q != want {
-		t.Errorf("q7 = %q, want %q", items[6].Q, want)
+// The generic questions left the area catalogue for good.
+func TestAreaFAQDropsTheGenericKeys(t *testing.T) {
+	for _, lang := range []string{"en", "bg"} {
+		raw, err := os.ReadFile(filepath.Join("..", "i18n", lang+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var cat map[string]string
+		if err := json.Unmarshal(raw, &cat); err != nil {
+			t.Fatal(err)
+		}
+		for n := 4; n <= 11; n++ {
+			for _, k := range []string{"faq.q" + strconv.Itoa(n), "faq.a" + strconv.Itoa(n)} {
+				if _, ok := cat[k]; ok {
+					t.Errorf("%s.json still has %s", lang, k)
+				}
+			}
+		}
+		for _, k := range []string{"faq.a5_official", "faq.air_pollution_link"} {
+			if _, ok := cat[k]; ok {
+				t.Errorf("%s.json still has %s", lang, k)
+			}
+		}
 	}
 }
