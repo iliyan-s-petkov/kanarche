@@ -1298,7 +1298,7 @@ html:has(> body.embed) { block-size: 100%; }
 .embed__attribution a:hover, .embed__reference a:hover { text-decoration: underline; }
 .embed__attribution a:focus-visible, .embed__reference a:focus-visible { box-shadow: var(--focus-ring); }
 .area-summary__note { margin: 0; font-size: var(--text-compact); color: var(--fg-2); }
-.area-health { margin-block-start: var(--space-3); max-inline-size: var(--prose-measure); }
+.area-health { margin-block: var(--space-3); max-inline-size: var(--prose-measure); }
 .area-health h2 { margin-block: 0 var(--space-2); font-size: var(--text-compact); }
 .area-health dt { font-size: var(--text-compact); color: var(--fg-2); margin-block-start: var(--space-2); }
 .area-health dd { margin: 0; }
