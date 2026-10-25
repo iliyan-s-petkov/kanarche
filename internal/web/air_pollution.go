@@ -10,7 +10,7 @@ import (
 )
 
 // airPollutionFAQCount is the number of air_pollution.faq.q/a pairs in the catalogue.
-const airPollutionFAQCount = 8
+const airPollutionFAQCount = 10
 
 // phLink is a {placeholder} in catalogue copy that renders as an anchor.
 type phLink struct{ Placeholder, Label, Href string }
