@@ -31,6 +31,24 @@ test('area FAQ prose is wider than 70ch and within 90ch at 1920', async ({ ctx }
   await page.close()
 })
 
+// Screenshots for review, written only when KANARCHE_MEASURE_SHOTS names a directory.
+const SHOTS = process.env.KANARCHE_MEASURE_SHOTS
+test('measure screenshots', async ({ ctx }) => {
+  test.skip(!SHOTS, 'set KANARCHE_MEASURE_SHOTS to write screenshots')
+  for (const path of ['/en/area/sofia', '/area/sofia', '/en/about', '/en/about-the-data', '/en/air-pollution', '/en/pm25', '/en/privacy', '/en/']) {
+    for (const w of [390, 768, 1280, 1440, 1920, 2560]) {
+      const page = await ctx.newPage()
+      await page.setViewportSize({ width: w, height: 900 })
+      await page.goto(path)
+      await page.waitForTimeout(500)
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(over, `${path} at ${w}`).toBeLessThanOrEqual(0)
+      await page.screenshot({ path: `${SHOTS}/after-${path.replace(/\//g, '_')}-${w}.png`, fullPage: true })
+      await page.close()
+    }
+  }
+})
+
 test('area page does not overflow horizontally at 390', async ({ ctx }) => {
   const page = await ctx.newPage()
   await page.setViewportSize({ width: 390, height: 800 })
