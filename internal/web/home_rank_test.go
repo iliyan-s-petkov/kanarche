@@ -2,7 +2,6 @@ package web_test
 
 import (
 	"fmt"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -153,32 +152,6 @@ func TestHomeRankNeverRepeatsAProvince(t *testing.T) {
 				t.Errorf("n=%d: %s listed twice", c.n, h)
 			}
 			seen[h] = true
-		}
-	}
-}
-
-func TestHomeCitiesLinkToLiveRoutes(t *testing.T) {
-	rr := renderer(t, rankFixture(8, false, time.Now()))
-	for _, pre := range []string{"", "/en"} {
-		sec := section(t, fetch(t, rr, pre+"/").Body.String(), "home-cities")
-		if !strings.Contains(sec, "<h2") {
-			t.Errorf("%q: cities block has no h2", pre)
-		}
-		hrefs := hrefsIn(sec)
-		// ten cities by sensor count (Sofia first), the Sofia hub, then all.
-		if len(hrefs) != 12 {
-			t.Fatalf("%q: %d links, want 12: %v", pre, len(hrefs), hrefs)
-		}
-		if hrefs[0] != pre+"/area/sofia" || hrefs[1] != pre+"/area/city01" || hrefs[9] != pre+"/area/city09" {
-			t.Errorf("%q: city order wrong: %v", pre, hrefs)
-		}
-		if hrefs[10] != pre+"/area/sofia" || hrefs[11] != pre+"/areas" {
-			t.Errorf("%q: tail links wrong: %v", pre, hrefs[10:])
-		}
-		for _, h := range hrefs {
-			if code := fetch(t, rr, h).Code; code != http.StatusOK {
-				t.Errorf("%s -> %d", h, code)
-			}
 		}
 	}
 }

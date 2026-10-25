@@ -11,9 +11,6 @@ import (
 // homeRankPerList is how many provinces each ranked list names.
 const homeRankPerList = 3
 
-// homeCityCount is how many city links the home block carries.
-const homeCityCount = 10
-
 // sofiaHubSlug is the Sofia city page, the hub its districts hang off.
 const sofiaHubSlug = "sofia"
 
@@ -43,16 +40,6 @@ func (rr *Renderer) citiesBySensors(lang string, limit int) []FooterArea {
 		out[i] = FooterArea{Slug: meta.Slug, Name: rr.rowFrom(meta, lang).Name}
 	}
 	return out
-}
-
-// hasSofiaHub reports whether the snapshot knows the Sofia city page.
-func (rr *Renderer) hasSofiaHub() bool {
-	snap := rr.holder.Load()
-	if snap == nil {
-		return false
-	}
-	meta, ok := snap.KnownSlugs[sofiaHubSlug]
-	return ok && meta.Kind == "city"
 }
 
 // rankedLists splits the valued provinces (sorted highest first) into the most
@@ -141,9 +128,4 @@ func (p PageData) HomeRankHTML() template.HTML {
 	}
 	b.WriteString(`</section>`)
 	return template.HTML(b.String())
-}
-
-// CityLinkText is the anchor text for a city link on the home page.
-func (p PageData) CityLinkText(name string) string {
-	return strings.ReplaceAll(p.T("home.cities.link"), "{name}", name)
 }

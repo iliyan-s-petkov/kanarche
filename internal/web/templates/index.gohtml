@@ -275,17 +275,6 @@
 {{/* Crawlable text under the map: province ranking and city links. */}}
 {{.HomeRankHTML}}
 {{.HomeBigCitiesHTML}}
-{{if .HomeCities}}
-<section class="home-cities" aria-labelledby="home-cities-h">
-<h2 id="home-cities-h">{{.T "home.cities.heading"}}</h2>
-<ul class="home-cities__list">
-{{range .HomeCities}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{$.CityLinkText .Name}}</a></li>
-{{end}}{{if .HomeSofia}}<li><a class="link" href="{{.Path "/area/sofia"}}">{{.T "home.cities.sofia"}}</a></li>
-{{end}}<li><a class="link" href="{{.Path "/areas"}}">{{.T "home.cities.all"}}</a></li>
-</ul>
-</section>
-{{end}}
-
 {{/* The map's description, named so aria-describedby can reach it. Prose only:
      a link inside a visually-hidden element still takes focus while clipped
      away. The visible Data table link sits under the map instead. */}}

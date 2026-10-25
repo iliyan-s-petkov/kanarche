@@ -66,16 +66,31 @@ func (p PageData) bigCityItem(a AreaRow) string {
 	).Replace(p.T("home.rank.item")) + `</li>`
 }
 
+// hasSofiaHub reports whether the snapshot knows the Sofia city page.
+func hasSofiaHub(snap *snapshot.Snapshot) bool {
+	meta, ok := snap.KnownSlugs[sofiaHubSlug]
+	return ok && meta.Kind == "city"
+}
+
 // HomeBigCitiesHTML is the crawlable big-cities block under the map.
 func (p PageData) HomeBigCitiesHTML() template.HTML {
 	if len(p.HomeBigCities) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString(`<section class="home-big-cities" aria-labelledby="home-big-cities-h"><h2 id="home-big-cities-h">` + htmlEscape(p.T("home.bigcities.heading")) + `</h2><ul class="home-big-cities__list">`)
+	b.WriteString(`<section class="home-big-cities" aria-labelledby="home-big-cities-h"><h2 id="home-big-cities-h">` + htmlEscape(p.T("home.bigcities.heading")) + `</h2>`)
+	// Same staleness rule and sentence as the province ranking.
+	if p.stale() {
+		b.WriteString(p.staleSentence())
+	}
+	b.WriteString(`<ul class="home-big-cities__list">`)
 	for _, a := range p.HomeBigCities {
 		b.WriteString(p.bigCityItem(a))
 	}
-	b.WriteString(`</ul></section>`)
+	b.WriteString(`</ul><ul class="home-big-cities__more">`)
+	if p.HomeSofia {
+		b.WriteString(`<li><a class="link" href="` + htmlEscape(p.Path("/area/"+sofiaHubSlug)) + `">` + htmlEscape(p.T("home.cities.sofia")) + `</a></li>`)
+	}
+	b.WriteString(`<li><a class="link" href="` + htmlEscape(p.Path("/areas")) + `">` + htmlEscape(p.T("home.cities.all")) + `</a></li></ul></section>`)
 	return template.HTML(b.String())
 }
