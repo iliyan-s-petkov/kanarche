@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -16,6 +17,18 @@ import (
 )
 
 const newsPath = "/news"
+
+// emptyFeedUpdated is the feed updated time while no post is public.
+var emptyFeedUpdated = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// relativeURLAttr matches a root-relative href or src in rendered post HTML.
+// goldmark always writes double quotes, and "//" is left alone.
+var relativeURLAttr = regexp.MustCompile(`\b(href|src)="/([^/])`)
+
+// absolutizeLinks makes root-relative links absolute, since a feed reader has no page to resolve them against.
+func absolutizeLinks(html, base string) string {
+	return relativeURLAttr.ReplaceAllString(html, `$1="`+base+`/$2`)
+}
 
 // loadEmbeddedNews reads the published posts compiled into the binary.
 func (rr *Renderer) loadEmbeddedNews() error {
@@ -233,15 +246,15 @@ func (rr *Renderer) handleNewsFeed(w http.ResponseWriter, r *http.Request) {
 		feed.Entries = append(feed.Entries, atomEntry{
 			ID: url, Title: p.Title, Link: atomLink{Rel: "alternate", Type: "text/html", Href: url},
 			Published: p.Date.Format(time.RFC3339), Updated: p.Updated.Format(time.RFC3339),
-			Author: author, Summary: p.Description, Content: atomText{Type: "html", Body: string(p.HTML)},
+			Author: author, Summary: p.Description, Content: atomText{Type: "html", Body: absolutizeLinks(string(p.HTML), data.BaseURL)},
 		})
 		if p.Updated.After(newest) {
 			newest = p.Updated
 		}
 	}
-	// A feed with no entries still needs an updated time.
+	// A feed with no entries still needs an updated time, and a fixed one keeps it cacheable.
 	if newest.IsZero() {
-		newest = now
+		newest = emptyFeedUpdated
 	}
 	feed.Updated = newest.Format(time.RFC3339)
 

@@ -277,10 +277,18 @@ func (s *Set) Visible(now time.Time) []Post {
 	var out []Post
 	for _, p := range s.posts {
 		if p.visible(now) {
-			out = append(out, p)
+			out = append(out, p.at(now))
 		}
 	}
 	return out
+}
+
+// at caps Updated at now, so an updated date in the future never reaches a page, feed or sitemap.
+func (p Post) at(now time.Time) Post {
+	if p.Updated.After(now) {
+		p.Updated = now.In(p.Updated.Location())
+	}
+	return p
 }
 
 func (p Post) visible(now time.Time) bool {
@@ -302,7 +310,7 @@ func (s *Set) ForLang(now time.Time, lang string) []Post {
 func (s *Set) Lookup(now time.Time, lang, slug string) (Post, bool) {
 	for _, p := range s.posts {
 		if p.Lang == lang && p.Slug == slug && p.visible(now) {
-			return p, true
+			return p.at(now), true
 		}
 	}
 	return Post{}, false

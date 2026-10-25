@@ -83,8 +83,14 @@ func (rr *Renderer) llmsTxt() string {
 		{"/about-the-data", "About the data", en("seo.about_data.description")},
 		{"/licences", "Licences", en("seo.licences.description")},
 		{"/privacy", "Privacy", en("seo.privacy.description")},
-		{"/news", "News (Bulgarian)", en("seo.news.description")},
-		{"/en/news", "News (English)", en("seo.news.description")},
+	}
+	// The news list is a page only in the languages that have a public post.
+	for _, lang := range rr.newsListLangs(rr.newsNow()) {
+		path := newsPath
+		if lang != i18n.DefaultLang {
+			path = "/" + lang + newsPath
+		}
+		pages = append(pages, struct{ path, title, desc string }{path, "News (" + englishLangName(lang) + ")", en("seo.news.description")})
 	}
 	for _, p := range pages {
 		fmt.Fprintf(&b, "- [%s](%s%s): %s\n", p.title, base, p.path, p.desc)
@@ -248,4 +254,15 @@ func (rr *Renderer) sitemapLinks(path string, langs []string) []sitemapLink {
 		}
 	}
 	return links
+}
+
+// englishLangName names a language for the English-only llms.txt.
+func englishLangName(lang string) string {
+	switch lang {
+	case "bg":
+		return "Bulgarian"
+	case "en":
+		return "English"
+	}
+	return lang
 }

@@ -309,8 +309,8 @@ func TestSitemapOmitsDraftAndFutureNewsAndUsesNewestPostForTheList(t *testing.T)
 	}
 }
 
-func TestLLMSTxtLinksTheNewsSectionInBothLanguages(t *testing.T) {
-	for name, rr := range map[string]*web.Renderer{"with posts": newsRenderer(t), "no posts": renderer(t, fixture(t))} {
+func TestLLMSTxtLinksTheNewsSectionInBothLanguagesWithPosts(t *testing.T) {
+	for name, rr := range map[string]*web.Renderer{"with posts": newsRenderer(t)} {
 		body := fetch(t, rr, "/llms.txt").Body.String()
 		for _, want := range []string{"(https://airbg.org/news)", "(https://airbg.org/en/news)"} {
 			if !strings.Contains(body, want) {
