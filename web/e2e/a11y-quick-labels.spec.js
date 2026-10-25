@@ -29,10 +29,12 @@ test('the scale dialog has a metric title, a unit line and two distinct close na
   for (const r of ranges) expect(r).not.toMatch(/[–—<>]/)
 })
 
-test('the refresh button name does not carry the timestamp', async ({ ctx }) => {
+// The time is visible beside the icon, so WCAG 2.5.3 puts it in the name after the word.
+test('the refresh button name is the word followed by the visible time', async ({ ctx }) => {
   const page = await visit(ctx)
   const trigger = page.locator('.data-refresh__btn--icon')
-  await expect(trigger).toHaveAttribute('aria-label', 'Refresh')
+  const time = (await trigger.locator('.data-refresh__time').textContent()).trim()
+  await expect(trigger).toHaveAttribute('aria-label', `Refresh ${time}`)
 })
 
 test('the legend band list is named once with its unit and each row speaks its range', async ({ ctx }) => {
