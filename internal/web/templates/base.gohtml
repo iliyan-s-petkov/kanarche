@@ -374,7 +374,7 @@
                 transform="rotate(-90 18 18)"></circle>
       </svg>
       <span class="gauge__figure">
-        <span class="readout__value">{{.Value}}</span>
+        <span class="readout__value{{if gt (len .Value) 5}} readout__value--long{{end}}">{{.Value}}</span>
         <span class="readout__unit"{{if .UnitSpoken}} aria-hidden="true"{{end}}>{{.Unit}}</span>{{with .UnitSpoken}}<span class="visually-hidden"> {{.}}</span>{{end}}
       </span>
     </span>

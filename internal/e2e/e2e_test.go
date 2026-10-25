@@ -253,6 +253,8 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	station := seedStation(t, st, lon, lat, "BG0050A", "София Дружба")
 	seedReading(t, st, station, "P1", 18, "ok", now)
 	seedReading(t, st, station, "O3", 40, "ok", now)
+	// A 6-glyph ring figure ("2190,0"), for readout-overflow.spec.js.
+	seedReading(t, st, station, "CO", 2190.04, "ok", now)
 
 	// One bathing site east of the sensors, for sea.spec.js.
 	sea := store.BathingData{
