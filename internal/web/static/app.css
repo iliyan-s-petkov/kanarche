@@ -175,9 +175,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 .faq__item:last-child { border-block-end: 1px solid var(--border-faint); }
 .faq__item > summary { display: flex; align-items: center; min-block-size: 44px; padding-block: var(--space-2); font-weight: var(--weight-emphasis); cursor: pointer; }
 .faq__item > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
-.faq__answer { color: var(--fg-2); padding-block-end: var(--space-3); max-inline-size: 70ch; }
+.faq__answer { color: var(--fg-2); padding-block-end: var(--space-3); max-inline-size: var(--prose-measure); }
 .faq__answer p { margin: 0; }
-.faq__more { margin-block-start: var(--space-3); max-inline-size: 70ch; }
+.faq__more { margin-block-start: var(--space-3); max-inline-size: var(--prose-measure); }
 /* Pollen forecast table and its toolbar chip; bar length follows the level. */
 .pollen { margin-block-start: var(--space-6); scroll-margin-block-start: calc(var(--masthead-h) + var(--space-2)); }
 .pollen h2 { font-size: var(--text-section); margin-block-end: var(--space-2); }
@@ -1959,6 +1959,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .measure.about-page { max-inline-size: 96rem; }
 /* Overrides the design-kit .page-head p 60ch cap: About text runs to the column edge. */
 .about-page .page-head > p { max-inline-size: none; }
+/* Replaces the design-kit .page-head p 60ch cap with the shared prose measure. */
+.page-head p { max-inline-size: var(--prose-measure); }
 .about-section { padding-block: var(--space-8) 0; }
 .about-section--first { padding-block-start: 0; }
 .about-section > h2 { margin: 0 0 var(--space-3); }
