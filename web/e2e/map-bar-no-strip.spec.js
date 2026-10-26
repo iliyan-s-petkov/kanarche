@@ -175,7 +175,14 @@ for (const path of ['/', '/area/sofia']) {
       await expect(page.locator('.map-window__btn')).toBeVisible()
       const { vw, sw, ...boxes } = await page.evaluate(rowProbe)
       if (!phonePins) { console.log('PIN ' + JSON.stringify({ key: `${w}x${h} ${path}`, boxes })); return }
-      expect(boxes).toEqual(phonePins[`${w}x${h} ${path}`])
+      // Text widths differ by a few px between this machine and CI fonts, so x and r get 4px, y and b 1px.
+      const pin = phonePins[`${w}x${h} ${path}`]
+      expect(Object.keys(boxes).sort()).toEqual(Object.keys(pin).sort())
+      for (const [k, want] of Object.entries(pin)) {
+        if (want === null) { expect(boxes[k], k).toBeNull(); continue }
+        for (const side of ['x', 'r']) expect(Math.abs(boxes[k][side] - want[side]), `${k}.${side}`).toBeLessThanOrEqual(4)
+        for (const side of ['y', 'b']) expect(Math.abs(boxes[k][side] - want[side]), `${k}.${side}`).toBeLessThanOrEqual(1)
+      }
       expect(sw).toBeLessThanOrEqual(vw)
       await page.close()
     })
