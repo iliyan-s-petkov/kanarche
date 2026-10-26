@@ -1547,6 +1547,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     margin: 0; background: none; box-shadow: none; padding: 0;
   }
 
+  /* Folded ramp gives way to a longer name (BG "ФПЧ2.5, µg/m³") so the content stays in the pill. */
+  .map-shell .scale--onmap:not([open]) { grid-template-columns: minmax(0, 1fr); }
+  .map-shell .scale--onmap:not([open]) .scale__toggle { max-inline-size: 100%; min-inline-size: 0; }
+  .map-shell .scale--onmap:not([open]) .scale__toggle::after { flex: 0 1 60px; min-inline-size: 20px; }
+  .map-shell .scale--onmap:not([open]) .scale__toggle-label { margin-inline: 2px; }
   /* In the bar, folded; the kit's phone rule would drop it below the frame. */
   .map-shell .scale--onmap {
     position: relative; inset-block-end: auto; inset-block-start: auto;

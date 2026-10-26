@@ -24,7 +24,7 @@ const mapSettled = (page) => page.waitForFunction(() => {
   return !!map?.isStyleLoaded?.() && !map.isMoving()
 })
 
-for (const path of ['/en/area/sofia', '/en']) {
+for (const path of ['/en/area/sofia', '/en', '/area/sofia', '/']) {
   test.describe(`phone foot bar on ${path}`, () => {
     for (const width of [390, 360]) {
     test(`attribution toggle at ${width}px is visible, inside the map, 44px, and on top`, async ({ phoneCtx }) => {
@@ -85,10 +85,19 @@ for (const path of ['/en/area/sofia', '/en']) {
           const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5
           const pill = el.closest('.scale--onmap').getBoundingClientRect()
           const time = document.querySelector('.map-bar .map-freshness').getBoundingClientRect()
-          return { h: el.getBoundingClientRect().height, lh, rects: el.getClientRects().length, pillEnd: pill.right, timeStart: time.left }
+          // Content (label + ramp swatch) must lie inside the pill's own box. The swatch is
+          // ::after, so measure the toggle's last child edge via a Range over its contents.
+          const range = document.createRange()
+          range.selectNodeContents(el.closest('.scale__toggle'))
+          const toggle = el.closest('.scale__toggle')
+          const tcs = getComputedStyle(toggle, '::after')
+          const contentEnd = Math.max(range.getBoundingClientRect().right, toggle.getBoundingClientRect().left + toggle.scrollWidth)
+          return { contentEnd, toggleScroll: toggle.scrollWidth, toggleClient: toggle.clientWidth, ramp: tcs.width, pillRight: pill.right, h: el.getBoundingClientRect().height, lh, rects: el.getClientRects().length, pillEnd: pill.right, timeStart: time.left }
         })
         expect(m.h, `label ${m.h}px tall at line-height ${m.lh}px`).toBeLessThan(m.lh * 1.5)
         expect(m.rects, 'label line boxes').toBe(1)
+        expect(m.toggleScroll, `legend content ${m.toggleScroll}px in a ${m.toggleClient}px toggle`).toBeLessThanOrEqual(m.toggleClient)
+        expect(m.contentEnd, 'legend content ends inside the pill').toBeLessThanOrEqual(m.pillRight + 0.5)
         expect(m.pillEnd, 'legend pill ends before the time controls').toBeLessThanOrEqual(m.timeStart + 0.5)
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
         await page.close()
