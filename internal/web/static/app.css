@@ -258,18 +258,20 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* .map__layers is its own z-index:3 stacking context and ties with .map-freshness;
    lift it above every map overlay while the panel is open. */
 .map__layers:has(.colmenu__panel:not([hidden])) { z-index: 7; }
-/* Bottom bar: only positions the pills (legend left, time controls right). It draws
+/* Bottom bar: only positions the pills (legend, then the time controls, from the start edge). It draws
    nothing and takes no clicks, so the map shows and pans between the pills. */
 .map-bar {
   position: absolute; z-index: 3;
   inset-inline: var(--space-2); inset-block-end: var(--space-2);
-  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-2);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: var(--space-2);
   padding: var(--space-1) 0;
   pointer-events: none;
 }
 .map-bar > :not(.map-freshness), .map-freshness > * { pointer-events: auto; }
 /* Above the rail and layers while one of its popovers is open. */
 .map-bar:has([aria-expanded="true"], .scale--onmap[open]) { z-index: 7; }
+/* Open, the legend is taller than the pills: they stay bottom-aligned beside it. */
+.map-bar:has(.scale--onmap[open]) { align-items: flex-end; }
 /* The unscaled-colours note is its own glass pill on a row above the others. The
    end margin overflows the line so the pills after it wrap onto the next row. */
 .map-bar__note {
@@ -1065,11 +1067,14 @@ strong, b { font-weight: var(--weight-emphasis); }
    control beside it. */
 .data-refresh__status { color: var(--meta); font-variant-numeric: tabular-nums; }
 
-/* Time controls: the right end of the bar. */
+/* Time controls: right after the legend. The phone rules push them to the end. */
 .map-freshness {
-  position: relative; margin-inline-start: auto;
+  position: relative; margin-inline-start: 0;
   display: flex; align-items: center; gap: var(--space-2);
 }
+/* The open replay row is too wide to sit beside the pills without reaching the bottom-centre
+   scroll cue, so it stands on its own line above them, same left edge. The phone rules put it back in the row. */
+.map-play--open { position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0; }
 /* Legend: the left end of the bar, folded in place; open, its card rises above the bar. */
 .map-shell .scale--onmap {
   position: relative; inset-block-end: auto; inset-inline-start: auto;
@@ -1085,7 +1090,7 @@ strong, b { font-weight: var(--weight-emphasis); }
    bands row layout below. The colour bar stays opaque. 100% is the bar inside
    the map less 1rem, so this is the map less 7rem. */
 .map-shell .scale--onmap[open] {
-  position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0;
+  /* In the bar row, so it grows up from the bottom anchor; the phone rules lift it above the bar. */
   inline-size: min(278px, calc(100% - 6rem)); max-inline-size: none; z-index: 4;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
@@ -1095,6 +1100,13 @@ strong, b { font-weight: var(--weight-emphasis); }
   max-block-size: 50vh;
   overflow-y: auto;
 }
+/* The toggle shares the title's row instead of taking one of its own. */
+.scale--onmap[open] { grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-1); }
+/* Chrome wraps a details' body in ::details-content, one grid item; unwrap it so the rows below place. */
+.scale--onmap[open]::details-content { display: contents; }
+.scale--onmap[open] > .scale__toggle { grid-column: 1; grid-row: 1; margin-block-end: 0; }
+.scale--onmap[open] > .scale__label { grid-column: 2; grid-row: 1; }
+.scale--onmap[open] > :not(.scale__toggle, .scale__label) { grid-column: 1 / -1; }
 /* Row instead of column, reversed: the DOM runs high to low, and the row
    reads low to high, left to right. */
 .scale--onmap .scale__bands--vertical {
@@ -1530,7 +1542,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 
 
   /* The bar's end keeps 44px plus gaps free for the attribution (i), which sits inside it. */
-  .map-bar { padding-inline-end: calc(44px + var(--space-1) * 2); flex-wrap: nowrap; gap: var(--space-2); }
+  .map-bar { padding-inline-end: calc(44px + var(--space-1) * 2); flex-wrap: nowrap; gap: var(--space-2); align-items: flex-end; }
   .map-bar:has(.map-bar__note:not([hidden])) { flex-wrap: wrap; }
   .map-freshness { margin: 0; margin-inline-start: auto; display: flex; align-items: center; gap: var(--space-1); flex: none; }
   /* Playing, the time row fills the bar beside the folded key; the window button stands down. */
@@ -1615,7 +1627,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-play:not(.map-play--open) > :not(.map-play__btn) { display: none; }
   /* Idle row is one 44px button, so the card stays 44px. Open bar (below) is unchanged. */
   .map-play:not(.map-play--open) { block-size: 44px; }
-  .map-play--open { block-size: 48px; flex: 1 1 auto; min-inline-size: 0; }
+  .map-play--open { position: static; block-size: 48px; flex: 1 1 auto; min-inline-size: 0; }
   .map-play--open .map-play__scrub { flex: 1 1 auto; inline-size: auto; min-inline-size: 0; }
   .map-play__note { max-inline-size: none; }
   /* The buttons themselves are the 44px tap targets (A04). */

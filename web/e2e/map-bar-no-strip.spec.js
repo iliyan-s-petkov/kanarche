@@ -104,3 +104,192 @@ for (const path of ['/', '/area/sofia']) {
     })
   }
 }
+
+// Time controls sit at the bottom-left, right after the legend. Boxes are measured
+// relative to the map shell so scroll position does not matter.
+const rowProbe = () => {
+  const shell = document.querySelector('.map-shell').getBoundingClientRect()
+  const rel = (el) => {
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return null
+    return { x: Math.round(r.left - shell.left), y: Math.round(r.top - shell.top), r: Math.round(r.right - shell.left), b: Math.round(r.bottom - shell.top) }
+  }
+  const q = (s) => document.querySelector(s)
+  return {
+    vw: document.documentElement.clientWidth, sw: document.documentElement.scrollWidth,
+    legend: rel(q('.map-shell .scale--onmap')),
+    group: rel(q('.map-freshness')),
+    refresh: rel(q('.map-freshness .data-refresh')),
+    window: rel(q('.map-window__btn')),
+    play: rel(q('.map-play')),
+    attrib: rel(q('.maplibregl-ctrl-attrib')),
+    attribBtn: rel(q('.maplibregl-ctrl-attrib-button')),
+  }
+}
+
+const overlaps = (a, b) => a && b && a.x < b.r && b.x < a.r && a.y < b.b && b.y < a.b
+
+for (const path of ['/', '/area/sofia', '/en', '/en/area/sofia']) {
+  for (const [w, h] of [[1280, 800], [1440, 900]]) {
+    test(`desktop ${w} ${path}: time controls follow the legend`, async ({ ctx }) => {
+      const page = await ctx.newPage()
+      await page.setViewportSize({ width: w, height: h })
+      await page.goto(path)
+      await mapSettled(page)
+      await expect(page.locator('.map-window__btn')).toBeVisible()
+      const m = await page.evaluate(rowProbe)
+      const label = `${w} ${path}`
+      const first = m.refresh || m.window
+      const gap = first.x - m.legend.r
+      expect(gap, `${label} gap legend to first time pill`).toBeGreaterThanOrEqual(8)
+      expect(gap, `${label} gap legend to first time pill`).toBeLessThanOrEqual(16)
+      const mid = (b) => (b.y + b.b) / 2
+      for (const k of ['refresh', 'window', 'play']) {
+        if (m[k]) expect(Math.abs(mid(m[k]) - mid(m.legend)), `${label} ${k} centre vs legend`).toBeLessThanOrEqual(2)
+      }
+      for (const k of ['group', 'refresh', 'window', 'play']) {
+        expect(overlaps(m[k], m.attrib), `${label} ${k} overlaps attribution`).toBeFalsy()
+        expect(overlaps(m[k], m.attribBtn), `${label} ${k} overlaps info button`).toBeFalsy()
+      }
+      expect(m.sw, `${label} horizontal overflow`).toBeLessThanOrEqual(m.vw)
+      await page.close()
+    })
+  }
+}
+
+// Phone positions as measured on master 6ff505a, pinned so the desktop rules cannot move them.
+const phonePins = {
+  "390x844 /": {"legend":{"x":8,"y":688,"r":192,"b":732},"group":{"x":214,"y":688,"r":330,"b":732},"refresh":null,"window":{"x":214,"y":688,"r":274,"b":732},"play":{"x":278,"y":688,"r":330,"b":732},"attrib":{"x":333,"y":687,"r":377,"b":731},"attribBtn":{"x":333,"y":687,"r":377,"b":731}},
+  "360x640 /": {"legend":{"x":8,"y":484,"r":176,"b":528},"group":{"x":184,"y":484,"r":300,"b":528},"refresh":null,"window":{"x":184,"y":484,"r":244,"b":528},"play":{"x":248,"y":484,"r":300,"b":528},"attrib":{"x":303,"y":483,"r":347,"b":527},"attribBtn":{"x":303,"y":483,"r":347,"b":527}},
+  "390x844 /area/sofia": {"legend":{"x":8,"y":464,"r":174,"b":508},"group":{"x":182,"y":464,"r":298,"b":508},"refresh":null,"window":{"x":182,"y":464,"r":242,"b":508},"play":{"x":246,"y":464,"r":298,"b":508},"attrib":{"x":301,"y":463,"r":345,"b":507},"attribBtn":{"x":301,"y":463,"r":345,"b":507}},
+  "360x640 /area/sofia": {"legend":{"x":8,"y":260,"r":144,"b":304},"group":{"x":152,"y":260,"r":268,"b":304},"refresh":null,"window":{"x":152,"y":260,"r":212,"b":304},"play":{"x":216,"y":260,"r":268,"b":304},"attrib":{"x":271,"y":259,"r":315,"b":303},"attribBtn":{"x":271,"y":259,"r":315,"b":303}},
+}
+for (const path of ['/', '/area/sofia']) {
+  for (const [w, h] of [[390, 844], [360, 640]]) {
+    test(`phone ${w}x${h} ${path}: bottom row unchanged`, async ({ phoneCtx }) => {
+      const page = await phoneCtx.newPage()
+      await page.setViewportSize({ width: w, height: h })
+      await page.goto(path)
+      await mapSettled(page)
+      await expect(page.locator('.map-window__btn')).toBeVisible()
+      const { vw, sw, ...boxes } = await page.evaluate(rowProbe)
+      if (!phonePins) { console.log('PIN ' + JSON.stringify({ key: `${w}x${h} ${path}`, boxes })); return }
+      expect(boxes).toEqual(phonePins[`${w}x${h} ${path}`])
+      expect(sw).toBeLessThanOrEqual(vw)
+      await page.close()
+    })
+  }
+}
+
+// Expanded legend: it grows up from the collapsed pill's bottom edge, with no gap below it,
+// the time controls stay bottom-aligned beside it, and it clears the map top and the rail.
+const mockWindOpen = (page) => page.route('**/api/v1/wind', (route) => route.fulfill({
+  status: 200,
+  contentType: 'application/json',
+  body: JSON.stringify({
+    generated_at: new Date().toISOString(),
+    valid_at: new Date().toISOString(),
+    model: 'Test Model',
+    model_resolution_deg: 0.25,
+    resolution_km: 25,
+    forecast: true,
+    vectors: [{ lon: 23.3, lat: 42.68, speed_ms: 3.2, direction_deg: 180 }],
+  }),
+}))
+
+const legendBoxes = () => {
+  const shell = document.querySelector('.map-shell').getBoundingClientRect()
+  const rel = (el) => {
+    const r = el.getBoundingClientRect()
+    return { x: r.left - shell.left, y: r.top - shell.top, r: r.right - shell.left, b: r.bottom - shell.top }
+  }
+  const rail = [...document.querySelectorAll('.map__layers, .map-zoom, .map__full, .map-locate, .map-table, .map-orient__btn, .map-metric')]
+    .filter((e) => e.getBoundingClientRect().width > 0).map(rel)
+  const pills = [...document.querySelectorAll('.map-freshness .data-refresh, .map-window__btn, .map-play')]
+    .filter((e) => e.getBoundingClientRect().width > 0).map(rel)
+  return { legend: rel(document.querySelector('.map-shell .scale--onmap')), rail, pills }
+}
+
+for (const path of ['/en', '/en/area/sofia']) {
+  for (const [w, h] of [[1280, 800], [1440, 900]]) {
+    for (const layers of [[], ['Wind', 'Bathing water']]) {
+      test(`desktop ${w}x${h} ${path} layers ${layers.length}: open legend grows up from the pill`, async ({ ctx }) => {
+        const page = await ctx.newPage()
+        await mockWindOpen(page)
+        await page.addInitScript(() => localStorage.setItem('kanarche:legend-open', 'false'))
+        await page.setViewportSize({ width: w, height: h })
+        await page.goto(path)
+        await mapSettled(page)
+        const legend = page.locator('.map-shell .scale--onmap')
+        if (layers.length) {
+          await page.locator('.map__layers .colmenu__btn').click()
+          for (const name of layers) await page.locator('.map__layers').getByLabel(name, { exact: true }).check()
+          await page.keyboard.press('Escape')
+        }
+        await expect(legend).not.toHaveAttribute('open', '')
+        const closed = await page.evaluate(legendBoxes)
+        await legend.locator('.scale__toggle').click()
+        await expect(legend).toHaveAttribute('open', '')
+        const open = await page.evaluate(legendBoxes)
+        const label = `${w} ${path} ${layers}`
+        expect(Math.abs(open.legend.b - closed.legend.b), `${label} open bottom vs collapsed bottom`).toBeLessThanOrEqual(2)
+        expect(open.legend.y, `${label} open legend top inside the map`).toBeGreaterThanOrEqual(0)
+        for (const p of open.pills) {
+          expect(p.x, `${label} time pill beside, not under, the legend`).toBeGreaterThanOrEqual(open.legend.r + 8 - 1)
+          expect(Math.abs(p.b - open.legend.b), `${label} time pill bottom-aligned with the legend`).toBeLessThanOrEqual(8)
+        }
+        for (const r of open.rail) {
+          expect(overlaps(open.legend, r), `${label} open legend overlaps the rail`).toBeFalsy()
+        }
+        await page.close()
+      })
+    }
+  }
+}
+
+test('desktop 1440 open legend: the toggle shares the title row', async ({ ctx }) => {
+  const page = await ctx.newPage()
+  await page.addInitScript(() => localStorage.setItem('kanarche:legend-open', 'true'))
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/en')
+  await mapSettled(page)
+  await expect(page.locator('.map-shell .scale--onmap')).toHaveAttribute('open', '')
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('.map-shell .scale__toggle').getBoundingClientRect()
+    const l = document.querySelector('.map-shell .scale__label').getBoundingClientRect()
+    const bands = document.querySelector('.map-shell .scale__bands--vertical').getBoundingClientRect()
+    return { tTop: t.top, tBottom: t.bottom, lTop: l.top, lBottom: l.bottom, bands: bands.width }
+  })
+  expect(r.lTop, 'title starts within the toggle row').toBeLessThan(r.tBottom - 4)
+  expect(r.tTop, 'toggle starts within the title row').toBeLessThan(r.lBottom - 4)
+  expect(r.bands, 'the colour rows keep the full card width').toBeGreaterThanOrEqual(250)
+  await page.close()
+})
+
+for (const w of [1280, 1440]) {
+  test(`desktop ${w} open replay row stays clear of the scroll cue`, async ({ ctx }) => {
+    const page = await ctx.newPage()
+    await page.setViewportSize({ width: w, height: 800 })
+    await page.goto('/en')
+    await mapSettled(page)
+    const play = page.locator('.map-play__btn[aria-pressed]')
+    await play.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    const boxes = () => page.evaluate(() => {
+      const box = (s) => { const e = document.querySelector(s); return e && e.getBoundingClientRect().toJSON() }
+      return { refresh: box('.map-freshness .data-refresh'), win: box('.map-window__btn'), play: box('.map-play'), cue: box('.scroll-cue') }
+    })
+    const closed = await boxes()
+    await play.click()
+    await expect(page.locator('.map-play--open')).toHaveCount(1)
+    const open = await boxes()
+    expect(open.cue, 'the scroll cue is on the home map').not.toBeNull()
+    // The pills stay where they were and the open row stands above them, same left edge.
+    expect(Math.abs(open.refresh.left - closed.refresh.left), 'time group left edge').toBeLessThanOrEqual(2)
+    expect(Math.abs(open.win.left - closed.win.left), 'window pill does not move').toBeLessThanOrEqual(2)
+    expect(Math.abs(open.play.left - closed.refresh.left), 'open row starts at the group left edge').toBeLessThanOrEqual(2)
+    expect(open.play.bottom, 'open row sits above the pills').toBeLessThanOrEqual(open.refresh.top)
+    expect(open.play.right, 'open row ends 8px before the scroll cue').toBeLessThanOrEqual(open.cue.left - 8)
+    await page.close()
+  })
+}
