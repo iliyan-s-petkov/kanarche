@@ -1694,7 +1694,10 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .toolbar--map .meta__short { display: inline; font-size: var(--text-caption); }
   .toolbar--map .colmenu__btn { white-space: nowrap; padding-inline: var(--space-3); }
   .toolbar--map [data-island="sensorbar"] { flex: none; }
-  .toolbar--map .pollen-chip { flex: 1 1 0; }
+  /* The pollen chip takes its own line at full width, so its label is not cut. */
+  .toolbar.toolbar--map { flex-wrap: wrap; }
+  .toolbar--map:has(.pollen-chip) { min-block-size: calc(2 * var(--control-height) + 2 * var(--space-2)); }
+  .toolbar--map .pollen-chip { flex: 1 1 100%; text-align: center; }
   /* Toolbar: one 48px row — metric value, finder stretches, icon-only refresh. */
   .toolbar { flex-wrap: nowrap; align-items: center; gap: var(--space-2); padding-block-end: var(--space-2); }
   .toolbar__spacer { display: none; }

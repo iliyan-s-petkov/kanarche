@@ -128,17 +128,32 @@ for (const width of [360, 390, 412]) {
       return {
         reserved: parseFloat(getComputedStyle(bar).minBlockSize),
         actual: bar.getBoundingClientRect().height,
+        chip: !!bar.querySelector('.pollen-chip'),
         scrollWidth: document.documentElement.scrollWidth,
       }
     })
     // Rendered above the reservation means the toolbar grows on hydrate.
-    expect(m.reserved, 'reserved toolbar height').toBe(56)
+    // A pollen chip adds a second line of one control height plus the row gap.
+    expect(m.reserved, 'reserved toolbar height').toBe(m.chip ? 112 : 56)
     expect(m.actual, 'toolbar height').toBeLessThanOrEqual(m.reserved + 1)
     expect(m.reserved - m.actual, 'toolbar over-reservation').toBeLessThan(8)
     expect(m.scrollWidth, 'horizontal scroll').toBeLessThanOrEqual(width)
     await context.close()
   })
 }
+
+// The pollen chip shows its full label on a phone: it takes its own line, so the label is not ellipsised.
+test('pollen chip label is not truncated at 390px touch', async ({ browser }) => {
+  const context = await browser.newContext({ ...phone, viewport: { width: 390, height: 844 } })
+  const page = await context.newPage()
+  await page.goto('/area/sofia')
+  await expect(page.locator('.toolbar--map [data-island="sensorbar"] .sensor-bar')).toBeVisible()
+  const chip = page.locator('.toolbar--map .pollen-chip')
+  await expect(chip).toBeVisible()
+  const m = await chip.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }))
+  expect(m.scroll, 'chip scrollWidth').toBeLessThanOrEqual(m.client)
+  await context.close()
+})
 
 test('area map toolbar reservation covers its rendered height on desktop', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
