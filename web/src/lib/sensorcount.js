@@ -47,9 +47,16 @@ export function countSensors(responseBody, metric, { showFaulty = true } = {}) {
 // answers the question the filter just raised. The silent tail stays on every
 // status: it is the coverage fact, and it does not stop being true when the
 // reader hides the silent sensors.
-export function sensorCountLine(texts, counts, status) {
+function shownCount(counts, status) {
   // Drawn faulty rings show under every status, so they count as shown.
-  const shown =
-    status === 'active' ? counts.active + (counts.faulty ?? 0) : status === 'inactive' ? counts.silent : counts.total
-  return `${texts.shown} ${shown} ${texts.of} ${counts.total} ${texts.sensors}, ${counts.silent} ${texts.silent}`
+  return status === 'active' ? counts.active + (counts.faulty ?? 0) : status === 'inactive' ? counts.silent : counts.total
+}
+
+export function sensorCountLine(texts, counts, status) {
+  return `${texts.shown} ${shownCount(counts, status)} ${texts.of} ${counts.total} ${texts.sensors}, ${counts.silent} ${texts.silent}`
+}
+
+// "8 of 10": the phone toolbar has one row, so the count drops its words and its silent tail.
+export function sensorShortLine(texts, counts, status) {
+  return `${shownCount(counts, status)} ${texts.of} ${counts.total}`
 }

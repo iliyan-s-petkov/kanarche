@@ -59,30 +59,19 @@
 {{.AreaHealthHTML}}
 </div>
 
-{{/* Same toolbar as the map home, so the two screens put their controls in the
-     same place. No spacer: this screen has nothing to sit opposite yet. */}}
-<h2 id="area-map-h" class="visually-hidden">{{.T "map.label"}}</h2>
-<div class="toolbar">
+{{/* One toolbar row above the map: metric picker, status filter, count, and the pollen chip last.
+     The sensor bar is covered areas only: with no recent readings every sensor is silent and the
+     filter would offer a choice between everything and nothing. Not server-rendered, the counts
+     come from the sensor payload the map fetches. */}}
+<h2 id="area-map-h" class="area-map-h">{{.T "map.label"}}</h2>
+<div class="toolbar toolbar--map">
 <div data-island="switcher"
      data-metrics="{{.MetricsAttr}}"
      data-metric-labels="{{.MetricLabelsAttr}}"
      data-metric="{{.DefaultMetric}}"
      data-t-legend="{{.T "metric.legend"}}"></div>
-{{with .AreaPollen}}{{if .Chip}}<a class="pollen-chip" href="#pollen">{{.Chip}}</a>{{end}}{{end}}
-</div>
-
 {{if .Area.Covered}}
-  {{/* The kit's sensor bar: which sensors the map draws, and how many there
-       are. Not server-rendered — the counts come from the sensor payload the
-       map fetches, and a filter with no JS is three radios that do nothing.
-
-       Covered areas only: on an area with no recent readings every sensor is
-       silent, so the filter's two other positions would offer the reader a
-       choice between everything and nothing.
-
-       The kit also puts a place-name search here. Left out: the sensors
-       endpoint carries ids and coordinates, no place names. */}}
-  <div data-island="sensorbar"
+<div data-island="sensorbar"
        data-metrics="{{.MetricsAttr}}"
        data-metric="{{.DefaultMetric}}"
        data-t-legend="{{.T "sensor.legend"}}"
@@ -94,6 +83,8 @@
        data-t-sensors="{{.T "sensor.meta.sensors"}}"
        data-t-silent="{{.T "sensor.meta.silent"}}"></div>
 {{end}}
+{{with .AreaPollen}}{{if .Chip}}<a class="pollen-chip" href="#pollen">{{.Chip}}</a>{{end}}{{end}}
+</div>
 
 {{/* The shell is the positioning context for the on-map key, and it is a
      wrapper rather than the map itself because below 672px the kit moves the

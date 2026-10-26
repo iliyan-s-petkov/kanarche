@@ -41,7 +41,7 @@ function render(metric = 'P2') {
   return host
 }
 
-const line = (el) => el.querySelector('.meta').textContent
+const line = (el) => el.querySelector('.meta__full').textContent
 const radio = (el, value) => el.querySelector(`input[value="${value}"]`)
 
 describe('SensorBar', () => {
@@ -95,5 +95,36 @@ describe('SensorBar', () => {
   it('announces the count as a status region', () => {
     const el = render()
     expect(el.querySelector('.meta').getAttribute('role')).toBe('status')
+  })
+
+  // A phone toolbar is one row, so the three pills become a menu button like the metric picker.
+  describe('on a phone width', () => {
+    afterEach(() => { delete globalThis.matchMedia })
+
+    function phone() {
+      globalThis.matchMedia = (q) => ({ matches: true, media: q, addEventListener() {}, removeEventListener() {} })
+    }
+
+    it('shows one menu button naming the filter instead of three pills', () => {
+      phone()
+      const el = render()
+      expect(el.querySelector('.switcher__set')).toBeNull()
+      const btn = el.querySelector('.colmenu__btn, .colmenu > button')
+      expect(btn.getAttribute('aria-label')).toBe('Show: With data')
+    })
+
+    it('still sets the status when the reader picks from the menu', () => {
+      phone()
+      const el = render()
+      radio(el, 'active').click()
+      flushSync()
+      expect(getSensorStatus()).toBe('active')
+    })
+  })
+
+  it('keeps the pills when the width is not a phone', () => {
+    const el = render()
+    expect(el.querySelectorAll('.switcher__opt')).toHaveLength(3)
+    expect(el.querySelector('.colmenu')).toBeNull()
   })
 })

@@ -95,7 +95,7 @@ func TestAreaSectionsAreLabelledWithHeadings(t *testing.T) {
 		`<section class="area-chart" aria-labelledby="chart-heading">`,
 		`<section class="area-sensors-sec" aria-labelledby="sensors-h">`,
 		`<h2 id="sensors-h">Sensors</h2>`,
-		`<h2 id="area-map-h" class="visually-hidden">`,
+		`<h2 id="area-map-h"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("the area page lacks %q", want)

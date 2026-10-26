@@ -116,22 +116,39 @@ test('area page layout shift stays under 0.05 at 390x844', async ({ browser }) =
   await context.close()
 })
 
+// The map toolbar is one row (picker, filter, count): its reservation is the control height plus 8px padding.
 for (const width of [360, 390, 412]) {
-  test(`area sensorbar reservation covers its rendered height at ${width}px touch`, async ({ browser }) => {
+  test(`area map toolbar reservation covers its rendered height at ${width}px touch`, async ({ browser }) => {
     const context = await browser.newContext({ ...phone, viewport: { width, height: 844 } })
     const page = await context.newPage()
     await page.goto('/area/sofia')
-    await expect(page.locator('[data-island="sensorbar"] .sensor-bar')).toBeVisible()
+    await expect(page.locator('.toolbar--map [data-island="sensorbar"] .sensor-bar')).toBeVisible()
     const m = await page.evaluate(() => {
-      const bar = document.querySelector('[data-island="sensorbar"]')
+      const bar = document.querySelector('.toolbar--map')
       return {
         reserved: parseFloat(getComputedStyle(bar).minBlockSize),
         actual: bar.getBoundingClientRect().height,
+        scrollWidth: document.documentElement.scrollWidth,
       }
     })
-    // Rendered above the reservation means the island grows on hydrate.
-    expect(m.actual, 'sensorbar height').toBeLessThanOrEqual(m.reserved + 1)
-    expect(m.reserved - m.actual, 'sensorbar over-reservation').toBeLessThan(8)
+    // Rendered above the reservation means the toolbar grows on hydrate.
+    expect(m.reserved, 'reserved toolbar height').toBe(56)
+    expect(m.actual, 'toolbar height').toBeLessThanOrEqual(m.reserved + 1)
+    expect(m.reserved - m.actual, 'toolbar over-reservation').toBeLessThan(8)
+    expect(m.scrollWidth, 'horizontal scroll').toBeLessThanOrEqual(width)
     await context.close()
   })
 }
+
+test('area map toolbar reservation covers its rendered height on desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/area/sofia')
+  await expect(page.locator('.toolbar--map [data-island="sensorbar"] .sensor-bar')).toBeVisible()
+  const m = await page.evaluate(() => {
+    const bar = document.querySelector('.toolbar--map')
+    return { reserved: parseFloat(getComputedStyle(bar).minBlockSize), actual: bar.getBoundingClientRect().height }
+  })
+  expect(m.reserved, 'reserved toolbar height').toBe(56)
+  expect(m.actual).toBeLessThanOrEqual(m.reserved + 1)
+  expect(m.reserved - m.actual).toBeLessThan(8)
+})
