@@ -256,22 +256,25 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* .map__layers is its own z-index:3 stacking context and ties with .map-freshness;
    lift it above every map overlay while the panel is open. */
 .map__layers:has(.colmenu__panel:not([hidden])) { z-index: 7; }
-/* Bottom bar: one glass strip, the legend on the left and the time controls on the right. */
+/* Bottom bar: only positions the pills (legend left, time controls right). It draws
+   nothing and takes no clicks, so the map shows and pans between the pills. */
 .map-bar {
   position: absolute; z-index: 3;
   inset-inline: var(--space-2); inset-block-end: var(--space-2);
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-1) 0;
+  pointer-events: none;
+}
+.map-bar > :not(.map-freshness), .map-freshness > * { pointer-events: auto; }
+/* Above the rail and layers while one of its popovers is open. */
+.map-bar:has([aria-expanded="true"], .scale--onmap[open]) { z-index: 7; }
+/* The unscaled-colours note is its own glass pill on a row above the others. The
+   end margin overflows the line so the pills after it wrap onto the next row. */
+.map-bar__note {
+  flex: none; order: -1; margin: 0 100% 0 0; max-inline-size: 100%; box-sizing: border-box;
   padding: var(--space-1) var(--space-2); border-radius: var(--radius);
   background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border); box-shadow: var(--elev-raised);
-  pointer-events: none;
-}
-.map-bar > * { pointer-events: auto; }
-/* Above the rail and layers while one of its popovers is open. */
-.map-bar:has([aria-expanded="true"], .scale--onmap[open]) { z-index: 7; }
-/* The unscaled-colours note is a caption row across the top of the bar. */
-.map-bar__note {
-  flex-basis: 100%; order: -1; margin: 0;
   font-size: var(--text-caption); letter-spacing: var(--track-caption); color: var(--muted);
 }
 .map-bar__note[hidden] { display: none; }
@@ -1078,10 +1081,10 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* Open: frosted glass (issue 578), a fixed card width (278px is what a 390px
    phone gets) so it is never stretched across a wide map, and the vertical
    bands row layout below. The colour bar stays opaque. 100% is the bar inside
-   its 1px border, the map less 1rem and 2px, so this is the map less 7rem. */
+   the map less 1rem, so this is the map less 7rem. */
 .map-shell .scale--onmap[open] {
   position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0;
-  inline-size: min(278px, calc(100% + 2px - 6rem)); max-inline-size: none; z-index: 4;
+  inline-size: min(278px, calc(100% - 6rem)); max-inline-size: none; z-index: 4;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -1297,7 +1300,7 @@ html:has(> body.embed) { block-size: 100%; }
 .embed .map-locate { display: none; }
 .embed .maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: 0; }
 /* The footline owns the frame's foot, so the bar holds only the legend, above it. */
-.embed .map-bar { inset-block-end: 3.5rem; inset-inline-end: auto; padding-inline-end: var(--space-2); }
+.embed .map-bar { inset-block-end: 3.5rem; inset-inline-end: auto; }
 /* The panel opens over the map rather than under it: in a frame there is no
    "under". Capped so the map it describes stays the larger half. */
 .embed__panel {
@@ -1520,15 +1523,10 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* The bar's end keeps 44px plus gaps free for the attribution (i), which sits inside it. */
   .map-bar { padding-inline-end: calc(44px + var(--space-1) * 2); flex-wrap: nowrap; gap: var(--space-1); }
   .map-bar:has(.map-bar__note:not([hidden])) { flex-wrap: wrap; }
-  .map-freshness { margin: 0; margin-inline-start: auto; display: flex; align-items: center; gap: 0; flex: none; }
+  .map-freshness { margin: 0; margin-inline-start: auto; display: flex; align-items: center; gap: var(--space-1); flex: none; }
   /* Playing, the time row fills the bar beside the folded key; the window button stands down. */
   .map-freshness:has(.map-play--open) { flex: 1 1 auto; min-inline-size: 0; margin-inline-start: 0; }
   .map-freshness:has(.map-play--open) .map-window { display: none; }
-  /* One shared card (.map-freshness above) instead of a card per button — the
-     window toggle and the idle play button used to draw two overlapping
-     white pills. */
-  .map-window__btn { background: none; box-shadow: none; }
-  .map-play:not(.map-play--open) { background: none; box-shadow: none; padding: 0; }
   /* The phone's home for the refresh controls: chrome.js moves them in here so
      the corner holds one control instead of two. */
   .map-window__footer {
@@ -1800,13 +1798,13 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 
 /* Solid fallbacks for the issue-578 glass: no backdrop-filter, or reduced transparency. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn, .map-bar {
+  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn, .map-bar__note {
     background: var(--bg);
   }
   .map-locate-hint::after { background: var(--bg); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn, .map-bar {
+  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn, .map-bar__note {
     background: var(--bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
