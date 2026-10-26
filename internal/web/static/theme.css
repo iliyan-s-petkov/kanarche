@@ -79,6 +79,13 @@
   --text-section: 2rem;
   --text-page: 2.63rem;
 
+  /* Area page type scale: phone values here, desktop in the min-width block. */
+  --text-h1: 1.5rem;
+  --text-h2: 1.25rem;
+  --text-h3: 1rem;
+  --text-value: 2rem;
+  --section-gap: 24px;
+
   /* Tracking exists only below 16px. Display type gets none. */
   --track-compact: .16px;
   --track-caption: .32px;
@@ -159,7 +166,14 @@
 }
 
 @media (min-width: 672px) {
-  :root { --gutter: 24px; }
+  :root {
+    --gutter: 24px;
+    --text-h1: 2rem;
+    --text-h2: 1.5rem;
+    --text-h3: 1.25rem;
+    --text-value: 2.5rem;
+    --section-gap: 32px;
+  }
 }
 
 @media (min-width: 1056px) {

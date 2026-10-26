@@ -33,6 +33,10 @@ export function mount(el, doc = document) {
     areaSensors: d.tAreaSensors || '', sensorsOnly: d.tSensorsOnly || '',
     sourceRow: d.tSourceRow || '', sourceRowOne: d.tSourceRowOne || '',
     sourceCommunity: d.tSourceCommunity || '', sourceOfficial: d.tSourceOfficial || '',
+    band: {
+      good: d.tBandGood || '', fair: d.tBandFair || '', moderate: d.tBandModerate || '',
+      poor: d.tBandPoor || '', veryPoor: d.tBandVeryPoor || '', extremelyPoor: d.tBandExtremelyPoor || '',
+    },
   }
 
   // The server's strip is the first child; the sensor row goes above it.

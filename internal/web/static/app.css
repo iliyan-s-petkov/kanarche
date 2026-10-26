@@ -164,17 +164,25 @@ strong, b { font-weight: var(--weight-emphasis); }
   .frame:has(> .area-summary) > #below-map { order: 2; }
 }
 .area-day { color: var(--fg-2); }
+/* The area page title and its value chip row. */
+.frame:has(> .area-summary) > .page-head:not(.page-head--compact) h1 { font-size: var(--text-h1); font-weight: var(--weight-display); line-height: 1.19; }
+.area-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-block-start: var(--space-2); }
+.area-chips__value { font-size: var(--text-value); font-weight: var(--weight-display); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.area-chips__metric, .area-chips__unit { font-size: var(--text-compact); color: var(--fg-2); }
+.chip { display: inline-flex; align-items: center; gap: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 2px var(--space-3) 2px var(--space-2); background: var(--bg); font-size: var(--text-compact); font-weight: var(--weight-emphasis); }
+.chip__dot { inline-size: 14px; block-size: 14px; flex: none; }
 /* Parent/children/nearest link blocks, after the readouts island. */
-.area-links { margin-block-start: var(--space-6); }
+.chart-heading { margin-block: var(--section-gap) var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); line-height: 1.25; }
+.area-links { margin-block-start: var(--section-gap); }
 .area-links__block { margin-block-end: var(--space-4); }
-.area-links__block h2 { font-size: var(--text-compact); color: var(--fg-2); margin-block-end: var(--space-1); }
+.area-links__block h2 { font-size: var(--text-h2); margin-block-end: var(--space-2); }
 .area-links__block ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
 /* Area FAQ: native details, summary is a 44px tap target. */
-.area-facts { margin-block-start: var(--space-6); }
-.area-facts h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
+.area-facts { margin-block-start: var(--section-gap); }
+.area-facts h2 { font-size: var(--text-h2); margin-block-end: var(--space-2); }
 .area-facts p { margin-block: 0 var(--space-3); max-inline-size: var(--prose-measure); }
-.faq { margin-block-start: var(--space-6); }
-.faq h2 { font-size: var(--text-card); margin-block-end: var(--space-2); }
+.faq { margin-block-start: var(--section-gap); }
+.faq h2 { font-size: var(--text-h2); margin-block-end: var(--space-2); }
 .faq__item { border-block-start: 1px solid var(--border-faint); }
 .faq__item:last-child { border-block-end: 1px solid var(--border-faint); }
 .faq__item > summary { display: flex; align-items: center; min-block-size: 44px; padding-block: var(--space-2); font-weight: var(--weight-emphasis); cursor: pointer; }
@@ -183,8 +191,8 @@ strong, b { font-weight: var(--weight-emphasis); }
 .faq__answer p { margin: 0; }
 .faq__more { margin-block-start: var(--space-3); max-inline-size: var(--prose-measure); }
 /* Pollen forecast table and its toolbar chip; bar length follows the level. */
-.pollen { margin-block-start: var(--space-6); scroll-margin-block-start: calc(var(--masthead-h) + var(--space-2)); }
-.pollen h2 { font-size: var(--text-section); margin-block-end: var(--space-2); }
+.pollen { margin-block-start: var(--section-gap); scroll-margin-block-start: calc(var(--masthead-h) + var(--space-2)); }
+.pollen h2 { font-size: var(--text-h2); margin-block-end: var(--space-2); }
 .pollen-scroll { overflow-x: auto; }
 .pollen-table { border-collapse: collapse; inline-size: 100%; font-size: var(--text-compact); }
 .pollen-table th, .pollen-table td { padding: var(--space-1) var(--space-2); text-align: start; border-block-end: 1px solid var(--border-faint); vertical-align: top; }
@@ -1206,45 +1214,28 @@ strong, b { font-weight: var(--weight-emphasis); }
   .pager-slot { min-block-size: 69px; }
 }
 
-/* Separate cards rather than the kit's hairline-divided strip, each one centred
-   on its own figure so the four line up whatever their labels wrap to. */
-.readouts { gap: var(--space-3); background: none; border-radius: 0; overflow: visible; box-shadow: none; }
+/* Cards: label, figure, band word, then a 6px band bar flush to the card foot. No ring. */
+.readouts { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-3); background: none; border-radius: 0; overflow: visible; box-shadow: none; }
 /* The open sensor's row sits above the area's own; the island stacks them. */
 [data-island="readouts"] > div:not([hidden]) + .readouts { margin-top: var(--space-3); }
+.readouts__heading { margin: var(--space-4) 0 var(--space-2); font-size: var(--text-h3); font-weight: var(--weight-emphasis); line-height: 1.3; }
+.readouts__title { margin: 0 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); line-height: 1.25; }
+.readouts__sub { margin: 0; color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); }
 .readout.card {
-  display: grid; grid-template-rows: auto 1fr auto; justify-items: center; text-align: center;
-  gap: var(--space-2); padding: var(--space-4); align-content: start;
+  display: flex; flex-direction: column; align-items: flex-start; text-align: start; position: relative; overflow: hidden;
+  gap: var(--space-1); padding: var(--space-3) var(--space-4); min-inline-size: 0;
 }
-/* A breakdown card has a fourth child, so it needs a fourth track or the 1fr
-   lands on the label instead of the figure. */
-.readout.card:has(.readout__group) { grid-template-rows: auto auto 1fr auto; }
-.readout.card .readout__value { display: inline-flex; align-items: baseline; gap: var(--space-1); }
-/* Which network a breakdown card counts, above its label and quieter than it. */
-.readout__group { color: var(--fg-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); }
-/* A bare figure (no ring) is centred in the 1fr track between caption and footer, on the
-   ring's own centre line, and sized from the card's width: 5 tabular glyphs ("1 234") fit. */
-.readout.card { container-type: inline-size; }
-.readout.card > .readout__value {
-  align-self: center; white-space: nowrap; line-height: 1; font-variant-numeric: tabular-nums;
-  font-size: clamp(2rem, 33cqi, 5.5rem);
+.readout.card:has(.readout__bar) { padding-block-end: calc(var(--space-3) + 6px); }
+.readout__label, .readout__group, .readout__band, .readout__tier { font-size: var(--text-compact); letter-spacing: var(--track-compact); }
+.readout__label, .readout__group, .readout__tier { color: var(--fg-2); }
+.readout__band { font-weight: var(--weight-emphasis); }
+/* Fixed size: the unit may drop to a second line on a narrow card, the figure never does. */
+.readout.card .readout__value {
+  display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); max-inline-size: 100%;
+  font-size: var(--text-value); font-weight: var(--weight-display); line-height: 1.1; font-variant-numeric: tabular-nums;
 }
-/* A wide figure ("944,0 hPa") may drop its unit onto a second line instead of
-   pushing the page sideways. */
-.readout.card > .readout__value { flex-wrap: wrap; justify-content: center; max-inline-size: 100%; }
-.readout.card > .readout__value .readout__unit { font-size: 0.4em; font-weight: var(--weight-body); color: var(--fg-2); }
-
-/* The arc is drawn with SVG presentation attributes (see base.gohtml): style-src
-   forbids the inline custom properties this would otherwise use. */
-.gauge { position: relative; display: grid; place-items: center; inline-size: 108px; block-size: 108px; }
-.gauge__dial { inline-size: 100%; block-size: 100%; }
-.gauge__track { stroke: var(--border-faint); stroke-width: 3; }
-.gauge__arc { stroke-width: 3; stroke-linecap: round; }
-.gauge__figure { position: absolute; display: grid; justify-items: center; gap: 0; }
-.gauge__figure .readout__value { line-height: 1; }
-/* Six glyphs ("2190,0") are scaled to stay inside the ring's inner circle. */
-.gauge__figure .readout__value--long { font-size: 0.9em; }
-/* Halo in the card colour: a wide value (47.6 on a phone) runs over the arc. */
-.gauge__figure .readout__value { paint-order: stroke fill; -webkit-text-stroke: 4px var(--bg); }
+.readout.card .readout__unit { font-size: var(--text-compact); font-weight: var(--weight-body); color: var(--muted); }
+.readout__bar { position: absolute; inset-inline: 0; inset-block-end: 0; inline-size: 100%; block-size: 6px; display: block; }
 
 /* Available to a screen reader, absent from the screen. Used for the map's
    text alternative, which aria-describedby points at: the sighted reader
@@ -1307,9 +1298,9 @@ html:has(> body.embed) { block-size: 100%; }
 .embed__attribution a:hover, .embed__reference a:hover { text-decoration: underline; }
 .embed__attribution a:focus-visible, .embed__reference a:focus-visible { box-shadow: var(--focus-ring); }
 .area-summary__note { margin: 0; font-size: var(--text-compact); color: var(--fg-2); }
-.area-health { margin-block: var(--space-3) var(--space-6); }
+.area-health { margin-block: var(--section-gap); }
 .area-health dl, .area-health__source { max-inline-size: var(--prose-measure); }
-.area-health h2 { margin-block: 0 var(--space-2); font-size: var(--text-card); }
+.area-health h2 { margin-block: 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); }
 .area-health dt { font-size: var(--text-compact); color: var(--fg-2); margin-block-start: var(--space-2); }
 .area-health dd { margin: 0; }
 .area-health__source { margin: var(--space-2) 0 0; font-size: var(--text-compact); color: var(--fg-2); }
@@ -1527,6 +1518,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     .map--wide {
       block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: 50svh;
     }
+    /* The header value chip row is 2.5rem the reservation above did not count. */
+    .frame:has(.area-chips) .map--wide { block-size: calc(100svh - var(--phone-chrome-area) - 2.5rem - 28px); min-block-size: calc(50svh - 2.5rem); }
   }
   /* Portrait touch phones: a one-column grid so .area-summary can move below the map. */
   @media (hover: none) {
@@ -1698,9 +1691,9 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      footnote either side of the ring. The prefix drops, the footnote clamps
      to one line, and the ring shrinks so the card fits ~170px. */
   .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-  .readout.card { padding: var(--space-2); }
-  .readout .gauge, .sensor-panel .gauges .gauge { max-inline-size: 80px; }
-  .readout .gauge { inline-size: 80px; block-size: 80px; }
+  .readout.card { padding: var(--space-2) var(--space-3); }
+  .readout.card:has(.readout__bar) { padding-block-end: calc(var(--space-2) + 6px); }
+  .sensor-panel .gauges .gauge { max-inline-size: 80px; }
   /* Visually hidden, not display:none — same convention as .visually-hidden
      above, so a screen reader still gets the pollutant the figure is for. */
   .readout__metric {
@@ -1708,7 +1701,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
   }
   .readout__label, .readout__tier {
-    font-size: var(--text-caption); max-inline-size: 100%;
+    max-inline-size: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); }

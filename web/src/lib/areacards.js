@@ -1,26 +1,28 @@
 // The four readout cards an open sensor puts in place of the national ones.
 //
 // Same shape as the server's Readout (internal/web/render.go) — label, value,
-// unit, tier and an optional gauge — so one component renders either set and
+// unit, tier and an optional band — so one component renders either set and
 // the swap cannot change how a card looks, only what it says.
 
-const GAUGE_UNIT = 'µg/m³'
+// The catalogue key under t.band for each api.Scales band label, mirroring
+// bandLabelKeys in internal/web/colour.go.
+const BAND_KEY = {
+  Good: 'good', Fair: 'fair', Moderate: 'moderate', Poor: 'poor',
+  'Very poor': 'veryPoor', 'Extremely poor': 'extremelyPoor',
+}
 
-// The arc's ceiling is the scale's DRAWN ceiling, the same top the map ramp and
-// the legend stop at, mirroring gaugePercent in internal/web/colour.go. A
-// metric counted in anything else gets no arc: 944 hPa is an ordinary day, and
-// a ring at 97% would invent an alarm out of an axis.
-export function gaugeFor(scale, value) {
-  if (!scale || scale.unit !== GAUGE_UNIT) return null
-  const bands = scale.bands ?? []
-  const ceiling = scale.ceiling > 0
-    ? scale.ceiling
-    : bands.reduce((top, b) => (typeof b.upper === 'number' && b.upper > top ? b.upper : top), 0)
-  if (!(ceiling > 0)) return null
-  return {
-    percent: Math.max(0, Math.min(100, Math.round((value / ceiling) * 100))),
-    colour: bandColour(bands, value),
+// The health class a reading falls in, for the bar and word under a card.
+// Only the EAQI tables are health classes: benzene and CO carry an axis, so
+// they get no bar, mirroring healthBand in internal/web/colour.go.
+export function bandFor(scale, value, t) {
+  if (!scale || scale.name !== 'eaqi') return null
+  for (const band of scale.bands ?? []) {
+    if (band.upper == null || value <= band.upper) {
+      const word = t?.band?.[BAND_KEY[band.label]]
+      return word ? { colour: band.colour, word } : null
+    }
   }
+  return null
 }
 
 // Upper is inclusive, so a value exactly on a boundary belongs to the lower
@@ -58,7 +60,7 @@ export function areaCards(stats, { metric, metricLabel, scale, area, lang, t }) 
     value: number(value, lang),
     unit,
     tier: where,
-    gauge: gaugeFor(scale, value),
+    band: bandFor(scale, value, t),
   })
 
   const cards = [
@@ -77,7 +79,7 @@ export function areaCards(stats, { metric, metricLabel, scale, area, lang, t }) 
       value: String(stats.rank),
       unit: fill(t.ofTotal, { total: stats.total }),
       tier: above > 0 ? t.aboveMedian : above < 0 ? t.belowMedian : t.atMedian,
-      gauge: null,
+      band: null,
     })
   }
   return cards
@@ -106,7 +108,7 @@ export function areaSourceCards(rows, { metricLabel, scale, lang, t }) {
       value: number(row.median, lang),
       unit,
       tier,
-      gauge: gaugeFor(scale, row.median),
+      band: bandFor(scale, row.median, t),
       group,
     }
   })

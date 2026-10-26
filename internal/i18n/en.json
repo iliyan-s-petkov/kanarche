@@ -1065,5 +1065,8 @@
   "health.very_poor.general": "Consider reducing intense activities outdoors, if you experience symptoms such as sore eyes, a cough or sore throat.",
   "health.very_poor.sensitive": "Reduce physical activities, particularly outdoors, especially if you experience symptoms.",
   "health.extremely_poor.general": "Reduce physical activities outdoors.",
-  "health.extremely_poor.sensitive": "Avoid physical activities outdoors."
+  "health.extremely_poor.sensitive": "Avoid physical activities outdoors.",
+  "area.heading.pollutants": "Pollutants",
+  "area.heading.weather": "Weather",
+  "area.heading.sensors": "Sensors"
 }

@@ -61,65 +61,6 @@ func eaqiEdges(metric string) [5]string {
 // An empty string, not a colour, when there is no band table for the metric or
 // no value: a swatch drawn anyway would assert a class the scale does not
 // claim. The caller renders the chip without a swatch instead.
-// gaugeUnit is the only unit an arc is drawn for. A particulate reading starts
-// at zero and gets worse, so the share of the scale it has used up is a fact
-// about the air. Pressure, temperature and noise do not work that way — 1013
-// hPa is an ordinary day, not 97% of a danger — and an arc there would invent
-// an alarm out of a scale that only ever meant to bound an axis.
-const gaugeUnit = "µg/m³"
-
-// gaugePercent places a reading on its metric's published scale, 0-100, for the
-// arc a readout card draws. The ceiling is the scale's DRAWN ceiling — the same
-// top the map ramp and the legend stop at — so a full ring means the top of the
-// key, not merely past the last guideline band. Scaled to the top band bound
-// instead, every Bulgarian winter inversion drew an identical full ring: 51 and
-// 500 looked the same. Falls back to the highest finite band for a scale that
-// states no ceiling.
-//
-// ok is false for a metric counted in anything but gaugeUnit, and for one with
-// no bands at all, so the card renders a plain figure instead.
-func gaugePercent(metric string, value float64) (int, bool) {
-	ceiling, found := 0.0, false
-	for _, scale := range api.Scales() {
-		if scale.Metric != metric {
-			continue
-		}
-		if scale.Unit != gaugeUnit {
-			return 0, false
-		}
-		if scale.Ceiling != nil && *scale.Ceiling > 0 {
-			ceiling, found = *scale.Ceiling, true
-		} else {
-			ceiling, found = finiteCeiling(scale.Bands)
-		}
-		break
-	}
-	if !found || ceiling <= 0 {
-		return 0, false
-	}
-	pct := int(value / ceiling * 100)
-	if pct < 0 {
-		pct = 0
-	}
-	if pct > 100 {
-		pct = 100
-	}
-	return pct, true
-}
-
-// finiteCeiling is the highest bound in the table, not the last one: nothing
-// requires a published scale to arrive in ascending order, and taking the last
-// would put the arc against whichever bound happened to be written at the end.
-func finiteCeiling(bands []api.Band) (float64, bool) {
-	top, found := 0.0, false
-	for _, band := range bands {
-		if band.Upper != nil && *band.Upper > top {
-			top, found = *band.Upper, true
-		}
-	}
-	return top, found
-}
-
 // bandLabelKeys maps api.Scales' English band labels to the catalogue key
 // suffix under "band." — the words themselves live in bg.json/en.json (§4 of
 // the SEO6 plan), not in LabelBG, so a third language is a catalogue file and
@@ -186,4 +127,27 @@ func bandColour(metric string, value float64) string {
 		return ""
 	}
 	return ""
+}
+
+// healthBand is the colour and the catalogue key suffix of the health class a
+// reading falls in, for the bar and the word under a readout card. Only the
+// EAQI tables are health classes: benzene and CO carry an axis, weather and
+// noise carry their own word lists, and a bar there would claim a class no
+// index publishes. Both results are empty for those, and for an unknown metric.
+func healthBand(metric string, value float64) (colour, key string) {
+	for _, scale := range api.Scales() {
+		if scale.Metric != metric {
+			continue
+		}
+		if scale.Name != "eaqi" {
+			return "", ""
+		}
+		for _, band := range scale.Bands {
+			if band.Upper == nil || value <= *band.Upper {
+				return band.Colour, bandLabelKeys[band.Label]
+			}
+		}
+		return "", ""
+	}
+	return "", ""
 }

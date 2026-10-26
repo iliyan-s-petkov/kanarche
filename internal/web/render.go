@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"math"
 	"net/http"
 	"net/url"
 	"slices"
@@ -419,12 +418,15 @@ type Readout struct {
 	// is already speakable or the cell has no unit.
 	UnitSpoken string
 	Tier       string
-	// Gauge draws the figure inside an arc of Percent, filled in Colour — the
-	// two µg/m³ cells, where a number alone says nothing about how bad it is.
-	// A count has no scale to be a fraction of, so it stays a plain figure.
-	Gauge   bool
-	Percent int
-	Colour  string
+	// Band is the health class word under the figure and BandColour the bar
+	// beneath it. Both are empty for a metric with no health band and for a
+	// count, so no bar claims a class that no index publishes.
+	Band       string
+	BandColour string
+	// Weather puts the card in the weather group, and Heading, on the first
+	// card of a group only, names that group for the H3 above it.
+	Weather bool
+	Heading string
 }
 
 // readoutMetricSep joins a metric name to the rest of a Readout's Label (see
@@ -433,6 +435,7 @@ const readoutMetricSep = " · "
 
 // templateFuncs are helpers available to every page template.
 var templateFuncs = template.FuncMap{
+	"readoutGroups": readoutGroups,
 	// readoutMetric and readoutRest split a Readout's Label back into its
 	// metric prefix and the rest, so the template can wrap the prefix in its
 	// own span without a new field on Readout or a second copy of the i18n
@@ -451,14 +454,14 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
-// gauge turns the cell into an arc, or leaves it a plain figure when the metric
-// publishes no scale to be a fraction of.
-func (r *Readout) gauge(metric string, value float64) {
-	pct, ok := gaugePercent(metric, value)
-	if !ok {
+// band sets the card's health class word and bar colour, and leaves a metric
+// with no health band bare.
+func (r *Readout) band(p PageData, metric string, value float64) {
+	colour, key := healthBand(metric, value)
+	if colour == "" || key == "" {
 		return
 	}
-	r.Gauge, r.Percent, r.Colour = true, pct, bandColour(metric, value)
+	r.BandColour, r.Band = colour, p.T("band."+key)
 }
 
 // Readouts summarises the province list the page already renders rather than
@@ -512,8 +515,8 @@ func (p PageData) Readouts() []Readout {
 		highest.Tier = top + " · " + p.T("areas.tier")
 		median.Value, median.Unit = formatValue(medianValue, p.Lang), unit
 		median.UnitSpoken = p.readoutUnitSpoken(p.DefaultMetric)
-		highest.gauge(p.DefaultMetric, topValue)
-		median.gauge(p.DefaultMetric, medianValue)
+		highest.band(p, p.DefaultMetric, topValue)
+		median.band(p, p.DefaultMetric, medianValue)
 	}
 	median.Tier = strconv.Itoa(len(values)) + " " + p.T("home.tier_covered")
 
@@ -523,7 +526,7 @@ func (p PageData) Readouts() []Readout {
 		highest,
 		median,
 		{Label: p.T("read.sensors"), Value: strconv.Itoa(sensors), Tier: p.T("home.tier_sensors")},
-		silentReadout(p.T("read.no_data"), silent, len(p.Areas), p.NoDataColour, p.T("read.of_total")),
+		silentReadout(p.T("read.no_data"), silent, len(p.Areas), p.T("read.of_total")),
 	}
 }
 
@@ -547,31 +550,28 @@ func (p PageData) SensorReadoutRow() bool {
 	return p.Area == nil
 }
 
-// AreaReadouts is the strip at the top of one area's page: what this area is
-// currently measuring, one cell per metric, then how many sensors the figures
-// come from.
+// weatherMetrics are the metrics the Weather group holds: the meteo scale tables.
+// Everything else the area reports is a pollutant, noise included.
+var weatherMetrics = map[string]bool{"temperature": true, "humidity": true, "pressure": true}
+
+// AreaReadouts is the card grid at the top of one area's page: one card per
+// metric the area actually reports, pollutants first and weather second.
 //
-// One cell per metric the area actually reports, rather than a fixed four:
-// which instruments an area carries is a property of the area, and a cell
-// reading nothing would claim the site looked and found the air unmeasurable
-// when in fact no sensor there carries that instrument. The cells follow the
-// site's canonical metric order so the strip is byte-identical between two
-// requests — a map's iteration order is not an order.
+// One card per metric the area reports, rather than a fixed set: which
+// instruments an area carries is a property of the area, and an empty card
+// would claim the site looked and found the air unmeasurable when no sensor
+// there carries that instrument. The cards follow the site's canonical metric
+// order so the page is byte-identical between two requests, with the default
+// metric first. No tier line per card: AreaReadoutsSub says it once.
 //
 // Nil for an uncovered area. It publishes no average at all, and the page
-// already says so in a sentence; a strip of cells beside that notice would
-// contradict it.
+// already says so in a sentence; cards beside that notice would contradict it.
 func (p PageData) AreaReadouts() []Readout {
 	if p.Area == nil || !p.Area.Covered {
 		return nil
 	}
 
-	// The tier line is the whole point of the cell: without it the figure is a
-	// number on a page about a place, and a reader cannot tell whether it is one
-	// sensor's reading or the average of two hundred.
-	tier := p.AreaTier()
-
-	out := make([]Readout, 0, len(p.Metrics)+1)
+	var pollutants, weather []Readout
 	cell := func(m string) {
 		v, ok := p.Area.Values[m]
 		if !ok {
@@ -581,18 +581,20 @@ func (p PageData) AreaReadouts() []Readout {
 			Label:      p.T("metric." + m),
 			Value:      formatValue(v, p.Lang),
 			Unit:       p.T("unit." + m),
-			Tier:       tier,
 			UnitSpoken: p.readoutUnitSpoken(m),
+			Weather:    weatherMetrics[m],
 		}
-		c.gauge(m, v)
-		out = append(out, c)
+		c.band(p, m, v)
+		if c.Weather {
+			weather = append(weather, c)
+		} else {
+			pollutants = append(pollutants, c)
+		}
 	}
 
 	// The default metric leads, then the rest in canonical order. Canonical
-	// order is alphabetical, which would put PM10 in the first cell while the
-	// chart, the map and the province list on the same site are all showing
-	// PM2.5 — the strip would open by answering a question the page is not
-	// asking.
+	// order is alphabetical, which would put PM10 in the first card while the
+	// chart, the map and the province list on the same site show PM2.5.
 	cell(p.DefaultMetric)
 	for _, m := range p.Metrics {
 		if m != p.DefaultMetric {
@@ -600,37 +602,65 @@ func (p PageData) AreaReadouts() []Readout {
 		}
 	}
 
-	// Always last and always present, even when nothing is reporting: the count
-	// is a fact about the network rather than a measurement, and on a silent
-	// night it is the number that explains the silence.
-	//
-	// Labelled from the table's column rather than read.sensors: that key reads
-	// "Sensors in the network", which is the country figure on the home page and
-	// would be a false claim about one province here.
-	out = append(out, Readout{
-		Label: p.T("table.col.sensors"),
-		Value: strconv.Itoa(p.Area.SensorCount),
-		Tier:  p.T("area.tier_sensors"),
-	})
-	return out
+	if len(pollutants) > 0 {
+		pollutants[0].Heading = p.T("area.heading.pollutants")
+	}
+	if len(weather) > 0 {
+		weather[0].Heading = p.T("area.heading.weather")
+	}
+	return append(pollutants, weather...)
 }
 
-// silentReadout draws the silent count as a share of every province there is —
-// a count with a known total is a fraction, and 9 of 28 says something 9 alone
-// does not. Painted in the map's own no-data colour so the ring and the grey
-// provinces under it are visibly the same statement.
-func silentReadout(label string, silent, total int, colour, tier string) Readout {
-	r := Readout{Label: label, Value: strconv.Itoa(silent), Tier: tier}
-	if total <= 0 || colour == "" {
-		return r
+// AreaChip is the header's value and band chip for the default metric, or nil
+// when the area is uncovered, stale or reports no such value. A chip with no
+// band keeps the figure and drops the word.
+func (p PageData) AreaChip() *Readout {
+	if p.Area == nil || !p.Area.Covered || p.stale() {
+		return nil
 	}
-	// With a total to state, the tier line states it. "No recent readings" only
-	// repeated the card's own label in other words; "of 28 provinces in all" is
-	// the denominator the ring is drawn against, which is the one thing the
-	// figure alone cannot say.
-	r.Tier = strings.ReplaceAll(tier, "{total}", strconv.Itoa(total))
-	pct := int(math.Round(float64(silent) / float64(total) * 100))
-	r.Gauge, r.Percent, r.Colour = true, pct, colour
+	v, ok := p.Area.Values[p.DefaultMetric]
+	if !ok {
+		return nil
+	}
+	c := Readout{
+		Label:      p.T("metric." + p.DefaultMetric),
+		Value:      formatValue(v, p.Lang),
+		Unit:       p.T("unit." + p.DefaultMetric),
+		UnitSpoken: p.readoutUnitSpoken(p.DefaultMetric),
+	}
+	c.band(p, p.DefaultMetric, v)
+	return &c
+}
+
+// AreaReadoutsSub is the one line under the section heading that says what every
+// card covers and how many sensors it comes from.
+func (p PageData) AreaReadoutsSub() string {
+	if p.Area == nil {
+		return ""
+	}
+	return p.AreaTier() + " · " + p.sensorsText(p.Area.SensorCount)
+}
+
+// readoutGroups splits cards at each one that carries a Heading, so the template
+// draws one grid per group with its H3 above it. A strip with no headings is one group.
+func readoutGroups(cards []Readout) [][]Readout {
+	var groups [][]Readout
+	for _, c := range cards {
+		if c.Heading != "" || len(groups) == 0 {
+			groups = append(groups, nil)
+		}
+		groups[len(groups)-1] = append(groups[len(groups)-1], c)
+	}
+	return groups
+}
+
+// silentReadout states the silent count against every province there is: 9 of
+// 28 says something 9 alone does not, so the tier line carries the denominator.
+func silentReadout(label string, silent, total int, tier string) Readout {
+	r := Readout{Label: label, Value: strconv.Itoa(silent), Tier: tier}
+	if total > 0 {
+		r.Tier = strings.ReplaceAll(tier, "{total}", strconv.Itoa(total))
+	}
 	return r
 }
 

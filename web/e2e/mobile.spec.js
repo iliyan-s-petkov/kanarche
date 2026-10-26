@@ -353,9 +353,9 @@ test.describe('phone layout does not widen the viewport', () => {
     const [inner, raw] = await Promise.all([label.innerText(), label.evaluate((el) => el.textContent)])
     expect(inner.replace(/\s+/g, ' ').trim()).toBe(raw.replace(/\s+/g, ' ').trim())
 
-    // The caption is one line at the same size as the footnote, not the
-    // body-text default that would wrap a two-line label.
-    await expect(label).toHaveCSS('font-size', '12px')
+    // The caption is one line at the meta size, not the body-text default
+    // that would wrap a two-line label.
+    await expect(label).toHaveCSS('font-size', '14px')
     await expect(label).toHaveCSS('white-space', 'nowrap')
 
     const footerLink = page.locator('.footer a').first()

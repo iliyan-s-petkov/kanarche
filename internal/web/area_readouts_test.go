@@ -30,6 +30,20 @@ func areaReadoutsFor(t *testing.T, lang string, area AreaRow) []Readout {
 	return p.AreaReadouts()
 }
 
+// areaPage is the PageData areaReadoutsFor builds, for the tests that ask it
+// something besides the cards.
+func areaPage(t *testing.T, lang string, a AreaRow) PageData {
+	t.Helper()
+	cat, err := i18n.Load()
+	if err != nil {
+		t.Fatalf("i18n.Load: %v", err)
+	}
+	return PageData{
+		Lang: lang, Area: &a, DefaultMetric: "P2", cat: cat,
+		Metrics: []string{"P2", "P1", "temperature", "humidity", "pressure", "noise_LAeq", "noise_LA_max"},
+	}
+}
+
 // area is the shorthand these cases are written in.
 func area(kind string, sensors int, values map[string]float64) AreaRow {
 	return AreaRow{Name: "Пловдив", Kind: kind, Covered: true, SensorCount: sensors, Values: values}
@@ -39,19 +53,15 @@ func TestAreaReadoutsGiveOneCellPerMeasuredMetric(t *testing.T) {
 	got := areaReadoutsFor(t, "bg", area("oblast", 111, map[string]float64{
 		"P2": 3.22, "P1": 7.7, "temperature": 14.0,
 	}))
-	// Three metrics measured plus the sensor count.
-	if len(got) != 4 {
-		t.Fatalf("got %d cells, want 4: three measured metrics and the sensor count", len(got))
+	// One card per measured metric. The sensor count lives in the section sub-line.
+	if len(got) != 3 {
+		t.Fatalf("got %d cells, want 3: one per measured metric", len(got))
 	}
 	if got[0].Value != "3,2" || got[0].Unit != "µg/m³" {
 		t.Errorf("first cell = %q %q, want the default metric 3,2 µg/m³", got[0].Value, got[0].Unit)
 	}
 	if got[2].Unit != "°C" {
 		t.Errorf("temperature unit = %q, want °C — each metric carries its own", got[2].Unit)
-	}
-	// No unit on the count: its label already says what was counted.
-	if got[3].Value != "111" || got[3].Unit != "" {
-		t.Errorf("sensor cell = %q %q, want a bare 111", got[3].Value, got[3].Unit)
 	}
 }
 
@@ -90,8 +100,8 @@ func TestAreaReadoutsOpenOnThePageDefaultMetric(t *testing.T) {
 // prints the site's headline metric twice.
 func TestAreaReadoutsDoNotRepeatTheDefaultMetric(t *testing.T) {
 	got := areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{"P2": 3.2, "P1": 7.7}))
-	if len(got) != 3 {
-		t.Fatalf("got %d cells, want 3: two metrics and the sensor count", len(got))
+	if len(got) != 2 {
+		t.Fatalf("got %d cells, want 2: two metrics", len(got))
 	}
 }
 
@@ -100,8 +110,8 @@ func TestAreaReadoutsDoNotRepeatTheDefaultMetric(t *testing.T) {
 // no sensor carrying that instrument.
 func TestAreaReadoutsSkipMetricsWithNoReading(t *testing.T) {
 	got := areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{"P2": 3.2}))
-	if len(got) != 2 {
-		t.Fatalf("got %d cells, want 2: one measured metric and the sensor count", len(got))
+	if len(got) != 1 {
+		t.Fatalf("got %d cells, want 1: one measured metric", len(got))
 	}
 }
 
@@ -109,30 +119,39 @@ func TestAreaReadoutsSkipMetricsWithNoReading(t *testing.T) {
 // the cell on the cleanest night of the year.
 func TestAreaReadoutsTreatZeroAsAReading(t *testing.T) {
 	got := areaReadoutsFor(t, "bg", area("oblast", 4, map[string]float64{"P2": 0}))
-	if len(got) != 2 || got[0].Value != "0,0" {
+	if len(got) != 1 || got[0].Value != "0,0" {
 		t.Fatalf("got %d cells, first %q — want a cell reading 0,0", len(got), got[0].Value)
 	}
 }
 
-// The tier line is what stops a bare number claiming to be a place. A province
-// page reports a province; a city page reports a city, and saying "province
-// median" on Пловдив-град would be false.
-func TestAreaReadoutsNameTheTierTheySummarise(t *testing.T) {
-	oblast := areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{"P2": 3.2}))
-	city := areaReadoutsFor(t, "en", area("city", 4, map[string]float64{"P2": 3.2}))
-	if oblast[0].Tier != "province median" {
-		t.Errorf("oblast tier = %q, want the province wording", oblast[0].Tier)
+// The card carries no tier line: the section sub-line says once what every
+// figure covers and how many sensors it comes from.
+func TestAreaReadoutsCarryNoTierLine(t *testing.T) {
+	got := areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{"P2": 3.2, "temperature": 14}))
+	for i, r := range got {
+		if r.Tier != "" {
+			t.Errorf("cell %d tier = %q, want none", i, r.Tier)
+		}
 	}
-	if city[0].Tier != "city median" {
-		t.Errorf("city tier = %q, want the city wording", city[0].Tier)
+}
+
+// What the figures cover, said once. A province page reports a province and a
+// city page a city, and "province median" over Пловдив-град would be false.
+func TestAreaReadoutsSubLineNamesTierAndSensorCount(t *testing.T) {
+	cases := []struct {
+		lang, kind string
+		sensors    int
+		want       string
+	}{
+		{"en", "oblast", 4, "province median · 4 sensors"},
+		{"en", "city", 1, "city median · 1 sensor"},
+		{"bg", "oblast", 10, "медиана за областта · 10 сензора"},
 	}
-	if oblast[1].Tier == "" || city[1].Tier == "" {
-		t.Error("the sensor cell has no tier line: a bare count does not say what it counts")
-	}
-	// The home page's "Sensors in the network" is the country total. Borrowing
-	// that label here would put a national claim over one province's count.
-	if oblast[1].Label != "Sensors" {
-		t.Errorf("sensor label = %q, want the plain column label, not the network-wide one", oblast[1].Label)
+	for _, c := range cases {
+		p := areaPage(t, c.lang, area(c.kind, c.sensors, map[string]float64{"P2": 3.2}))
+		if got := p.AreaReadoutsSub(); got != c.want {
+			t.Errorf("%s %s sub-line = %q, want %q", c.lang, c.kind, got, c.want)
+		}
 	}
 }
 
@@ -147,12 +166,11 @@ func TestAreaReadoutsAreAbsentWithoutCoverage(t *testing.T) {
 	}
 }
 
-// A covered area with every sensor silent still counts its sensors: that is a
-// fact about the network, and it is the number that explains the silence.
-func TestAreaReadoutsStillCountSensorsWithNoReadings(t *testing.T) {
-	got := areaReadoutsFor(t, "bg", area("oblast", 9, nil))
-	if len(got) != 1 || got[0].Value != "9" {
-		t.Fatalf("got %v, want a single cell counting 9 sensors", got)
+// A covered area with every sensor silent has no cards at all. The sentence
+// above already says how many sensors there are and that none reports.
+func TestAreaReadoutsAreEmptyWithNoReadings(t *testing.T) {
+	if got := areaReadoutsFor(t, "bg", area("oblast", 9, nil)); len(got) != 0 {
+		t.Fatalf("got %v, want no cards", got)
 	}
 }
 
@@ -180,20 +198,102 @@ func TestAreaReadoutsWriteTheDecimalTheLanguageWrites(t *testing.T) {
 	}
 }
 
-// Every cell is labelled, valued and tiered in both languages. An empty label
-// is what an invented catalogue key looks like — the startup key check cannot
-// see a key this file made up and never added.
-func TestEveryAreaReadoutIsLabelledAndTiered(t *testing.T) {
+// Every cell is labelled and valued in both languages. An empty label is what
+// an invented catalogue key looks like, which the startup key check cannot see.
+func TestEveryAreaReadoutIsLabelledAndValued(t *testing.T) {
 	for _, lang := range []string{"bg", "en"} {
 		got := areaReadoutsFor(t, lang, area("oblast", 4, map[string]float64{"P2": 3.2, "noise_LAeq": 51}))
-		if len(got) != 3 {
-			t.Fatalf("%s: got %d cells, want 3", lang, len(got))
+		if len(got) != 2 {
+			t.Fatalf("%s: got %d cells, want 2", lang, len(got))
 		}
 		for i, r := range got {
-			if r.Label == "" || r.Tier == "" || r.Value == "" {
+			if r.Label == "" || r.Value == "" {
 				t.Errorf("%s: cell %d is incomplete: %+v", lang, i, r)
 			}
 		}
+	}
+}
+
+// Health metrics carry the band colour and word. Benzene, CO and the weather
+// metrics have no health band, so they get neither: a bar there would claim a class.
+func TestAreaReadoutsCarryBandOnlyWhereAHealthBandExists(t *testing.T) {
+	got := areaReadoutsFor(t, "bg", area("oblast", 4, map[string]float64{
+		"P2": 19.6, "P1": 29.6, "temperature": 11.6, "humidity": 100, "pressure": 1003.5,
+	}))
+	if got[0].Band != "умерено" || got[0].BandColour != "#f0e641" {
+		t.Errorf("PM2.5 band = %q %q, want умерено #f0e641", got[0].Band, got[0].BandColour)
+	}
+	if got[1].Band != "задоволително" || got[1].BandColour == "" {
+		t.Errorf("PM10 band = %q %q, want задоволително with a colour", got[1].Band, got[1].BandColour)
+	}
+	for _, r := range got[2:] {
+		if r.Band != "" || r.BandColour != "" {
+			t.Errorf("%s has band %q %q, want none", r.Label, r.Band, r.BandColour)
+		}
+	}
+}
+
+// Benzene and CO are pollutants without a health band: they sit with the
+// pollutants and show no bar. In the card order the canonical list gives them.
+func TestAreaReadoutsAxisOnlyPollutantsHaveNoBand(t *testing.T) {
+	cat, err := i18n.Load()
+	if err != nil {
+		t.Fatalf("i18n.Load: %v", err)
+	}
+	p := PageData{
+		Lang: "bg", Area: &AreaRow{Covered: true, Kind: "oblast", SensorCount: 3, Values: map[string]float64{"P2": 3, "C6H6": 1.4, "CO": 2190}},
+		DefaultMetric: "P2", Metrics: []string{"P2", "C6H6", "CO"}, cat: cat,
+	}
+	got := p.AreaReadouts()
+	if len(got) != 3 {
+		t.Fatalf("got %d cells, want 3", len(got))
+	}
+	for _, r := range got[1:] {
+		if r.BandColour != "" || r.Band != "" || r.Weather {
+			t.Errorf("%s = %+v, want a pollutant card with no band", r.Label, r)
+		}
+	}
+}
+
+// The cards split into two groups under an H3 each. The heading rides on the
+// first card of its group, and weather cards are the three meteo metrics.
+func TestAreaReadoutsSplitIntoPollutantsAndWeather(t *testing.T) {
+	got := areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{
+		"P2": 3.2, "P1": 7.7, "temperature": 14, "humidity": 60, "pressure": 1003.5, "noise_LAeq": 51,
+	}))
+	var headings []string
+	for _, r := range got {
+		if r.Heading != "" {
+			headings = append(headings, r.Heading)
+		}
+	}
+	if len(headings) != 2 || headings[0] != "Pollutants" || headings[1] != "Weather" {
+		t.Fatalf("headings = %v, want [Pollutants Weather]", headings)
+	}
+	wantWeather := map[string]bool{"Temperature": true, "Humidity": true, "Pressure": true}
+	seenWeather := false
+	for _, r := range got {
+		if r.Weather {
+			seenWeather = true
+		}
+		if seenWeather && !r.Weather {
+			t.Errorf("%s follows a weather card but is not weather: the groups must be contiguous", r.Label)
+		}
+		if r.Weather != wantWeather[r.Label] {
+			t.Errorf("%s weather = %v", r.Label, r.Weather)
+		}
+	}
+}
+
+// With no weather metric there is no weather heading, and vice versa.
+func TestAreaReadoutsOmitAnEmptyGroupHeading(t *testing.T) {
+	got := areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{"P2": 3.2}))
+	if len(got) != 1 || got[0].Heading != "Pollutants" {
+		t.Fatalf("got %+v, want one pollutant card carrying the heading", got)
+	}
+	got = areaReadoutsFor(t, "en", area("oblast", 4, map[string]float64{"temperature": 14}))
+	if len(got) != 1 || got[0].Heading != "Weather" {
+		t.Fatalf("got %+v, want one weather card carrying the heading", got)
 	}
 }
 
@@ -208,8 +308,8 @@ func TestAreaReadoutsHaveNoPerNetworkRows(t *testing.T) {
 	}
 	got := areaReadoutsFor(t, "en", a)
 
-	// 2 metrics + 1 sensor count = 3 cells total; no per-network rows.
-	if len(got) != 3 {
-		t.Fatalf("got %d readouts, want 3 (2 metrics + 1 sensor count)", len(got))
+	// One cell per metric, no per-network rows.
+	if len(got) != 2 {
+		t.Fatalf("got %d readouts, want 2", len(got))
 	}
 }

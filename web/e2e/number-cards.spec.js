@@ -1,25 +1,27 @@
 import { test, expect } from './fixtures.js'
 
-// A readout card with a bare number (no gauge ring) must centre the figure in
-// the space between its caption and its footer and fill that space.
+// A readout card draws its figure under the caption, inside the card, at the
+// value size, with no ring around it.
 const widths = [390, 1024, 1440]
 
 async function measure(page) {
   return page.evaluate(() => {
     const cards = [...document.querySelectorAll('.readouts .readout.card')]
-      .filter((c) => !c.querySelector('.gauge') && c.offsetParent !== null)
+      .filter((c) => c.offsetParent !== null)
     return cards.map((c) => {
       const card = c.getBoundingClientRect()
       const top = c.querySelector('.readout__label').getBoundingClientRect().bottom
-      const bottom = c.querySelector('.readout__tier').getBoundingClientRect().top
       const v = c.querySelector('.readout__value')
       const range = document.createRange()
-      range.selectNodeContents(v)
+      // The figure's own text node: the spoken unit beside it is visually hidden.
+      range.selectNodeContents(v.firstChild.nodeType === 3 ? v.firstChild : v)
       const r = range.getBoundingClientRect()
       return {
         text: v.textContent.trim(),
         card: { l: card.left, r: card.right },
-        free: { top, bottom, h: bottom - top },
+        free: { top },
+        ring: !!c.querySelector('.gauge'),
+        size: parseFloat(getComputedStyle(v).fontSize),
         value: { l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height },
         overflow: v.scrollWidth > v.clientWidth + 1,
       }
@@ -29,7 +31,7 @@ async function measure(page) {
 
 for (const path of ['/en/', '/en/areas']) {
   for (const width of widths) {
-    test(`number cards fill and centre their space: ${path} @${width}`, async ({ ctx }) => {
+    test(`number cards sit inside their card: ${path} @${width}`, async ({ ctx }) => {
       const page = await ctx.newPage()
       await page.setViewportSize({ width, height: 900 })
       await page.goto(path)
@@ -37,14 +39,11 @@ for (const path of ['/en/', '/en/areas']) {
       const cards = await measure(page)
       if (path === '/en/') expect(cards.length).toBeGreaterThan(0)
       for (const c of cards) {
-        const mid = (c.free.top + c.free.bottom) / 2
-        const vmid = (c.value.t + c.value.b) / 2
-        expect(Math.abs(vmid - mid), `${c.text} centred`).toBeLessThanOrEqual(4)
-        expect(c.value.h / c.free.h, `${c.text} fills the free height`).toBeGreaterThanOrEqual(0.6)
+        expect(c.ring, `${c.text} has no ring`).toBe(false)
+        expect(c.size, `${c.text} value size`).toBeGreaterThanOrEqual(32)
         expect(c.value.l, `${c.text} inside card`).toBeGreaterThanOrEqual(c.card.l)
         expect(c.value.r, `${c.text} inside card`).toBeLessThanOrEqual(c.card.r)
-        expect(c.value.t).toBeGreaterThanOrEqual(c.free.top - 1)
-        expect(c.value.b).toBeLessThanOrEqual(c.free.bottom + 1)
+        expect(c.value.t, `${c.text} under its caption`).toBeGreaterThanOrEqual(c.free.top - 1)
         expect(c.overflow).toBe(false)
       }
       await page.close()
