@@ -38,6 +38,7 @@ const probe = () => {
     boxes[k] = { x: r.x, y: r.y, r: r.right, b: r.bottom }
     backgrounds[k] = getComputedStyle(el).backgroundColor
   }
+  const legendBg = getComputedStyle(document.querySelector('.map-shell .scale--onmap')).backgroundColor
   const group = fresh.getBoundingClientRect()
   const y = (Math.max(legend.top, group.top) + Math.min(legend.bottom, group.bottom)) / 2
   // Near the legend rather than the midpoint: the home page's scroll cue sits mid-map.
@@ -52,21 +53,28 @@ const probe = () => {
   }
   return {
     bg: cs.backgroundColor, filt: cs.backdropFilter || 'none', shadow: cs.boxShadow, border: cs.borderTopWidth,
-    backgrounds, gaps, room: group.left - legend.right,
+    backgrounds, legendBg, gaps, room: group.left - legend.right,
     hit: hit ? `${hit.tagName}.${hit.className}` : 'none', hitIsMap: onMap(hit),
   }
 }
 
-const check = (r, label) => {
+// Alpha of a computed colour: rgb(), rgba() or color(srgb r g b / a).
+const alpha = (c) => {
+  const m = c.match(/\/\s*([\d.]+)\)$/) || c.match(/^rgba\(.*,\s*([\d.]+)\)$/)
+  return m ? Number(m[1]) : 1
+}
+
+const check = (r, label, minRoom = 4) => {
   expect(['rgba(0, 0, 0, 0)', 'transparent'], `${label} bar background ${r.bg}`).toContain(r.bg)
   expect(r.filt, `${label} bar backdrop-filter`).toBe('none')
   expect(r.shadow, `${label} bar box-shadow`).toBe('none')
   expect(r.border, `${label} bar border`).toBe('0px')
-  expect(r.room, `${label} room between legend and time group`).toBeGreaterThanOrEqual(4)
+  expect(r.room, `${label} room between legend and time group`).toBeGreaterThanOrEqual(minRoom)
   expect(r.hitIsMap, `${label} point between legend and time group hits ${r.hit}`).toBe(true)
   expect(Object.keys(r.backgrounds), `${label} window and play pills`).toEqual(expect.arrayContaining(['window', 'play']))
   for (const [k, bg] of Object.entries(r.backgrounds)) {
     expect(bg, `${label} ${k} pill has its own background`).not.toBe('rgba(0, 0, 0, 0)')
+    expect(alpha(bg), `${label} ${k} pill is as opaque as the legend pill`).toBeGreaterThanOrEqual(Math.min(alpha(r.legendBg), 0.95))
   }
   for (const g of r.gaps) {
     expect(g.gap, `${label} visible gap between pills`).toBeGreaterThanOrEqual(4)
@@ -84,12 +92,15 @@ for (const path of ['/', '/area/sofia']) {
     check(await page.evaluate(probe), `desktop ${path}`)
     await page.close()
   })
-  test(`phone 390 touch ${path}: no strip, separate pills`, async ({ phoneCtx }) => {
-    const page = await phoneCtx.newPage()
-    await page.goto(path)
-    await mapSettled(page)
-    await expect(page.locator('.map-window__btn')).toBeVisible()
-    check(await page.evaluate(probe), `phone ${path}`)
-    await page.close()
-  })
+  for (const width of [390, 360]) {
+    test(`phone ${width} touch ${path}: no strip, separate pills`, async ({ phoneCtx }) => {
+      const page = await phoneCtx.newPage()
+      await page.setViewportSize({ width, height: 844 })
+      await page.goto(path)
+      await mapSettled(page)
+      await expect(page.locator('.map-window__btn')).toBeVisible()
+      check(await page.evaluate(probe), `phone ${width} ${path}`, 8)
+      await page.close()
+    })
+  }
 }
