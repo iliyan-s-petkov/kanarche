@@ -56,4 +56,15 @@ describe('the sensor bar island', () => {
     flushSync()
     expect(el.querySelector('.meta').textContent).toContain('0 with no recent readings')
   })
+
+  // The phone toolbar is one row, so it shows "N of M" and hides the long line from sight only.
+  it('offers a short count for the one-row toolbar without duplicating it for screen readers', () => {
+    const el = render()
+    setSensors(body)
+    flushSync()
+    const short = el.querySelector('.meta__short')
+    expect(short.textContent).toBe('2 of 2')
+    expect(short.getAttribute('aria-hidden')).toBe('true')
+    expect(el.querySelector('.meta__full').textContent).toContain('Showing 2 of 2 sensors')
+  })
 })
