@@ -234,6 +234,11 @@ describe('ChartPanel.svelte', () => {
     expect(target.querySelectorAll('.chart-controls select')).toHaveLength(1)
   })
 
+  it('gives the h2 the id the area section is labelled by', () => {
+    const target = render()
+    expect(target.querySelector('h2').id).toBe('chart-heading')
+  })
+
   it('titles the section with an h2 from the server heading', () => {
     const target = render()
     expect(target.querySelector('h2').textContent).toBe('History')

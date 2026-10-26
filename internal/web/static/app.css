@@ -158,10 +158,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 .breadcrumb li + li::before { content: "›"; content: "›" / ""; color: var(--muted); padding-inline: var(--space-1); }
 /* The air-now and 24h sentences sit under the h1, above the readouts. */
 .area-now, .area-day { margin-block: var(--space-2) 0; }
-/* Touch phones: summary and no-coverage notice after the map, before #below-map (reordered in the .frame grid). */
+/* Touch phones: summary and no-coverage notice after the map, before the sections (reordered in the .frame grid). */
 @media (hover: none) {
-  .frame > .area-summary, .frame > .notice { order: 1; }
-  .frame:has(> .area-summary) > #below-map { order: 2; }
+  .frame > .area-summary, .frame > .notice, .frame > .area-now-block, .frame > .area-rest { order: 1; }
 }
 .area-day { color: var(--fg-2); }
 /* The area page title and its value chip row. */
@@ -1755,7 +1754,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      row count and stacks every child on its own row — the four header items
      get an explicit row 1 cell each instead, and everything else keeps the
      default row-flow, one auto row per child, under it.
-     #below-map wraps .place-host, the chart and the readouts, so it is the
+     .area-rest wraps .place-host, the chart and the sensors, so it is the
      direct child that spans; they stack inside it. */
   .frame:has(> [data-island="sensorbar"]), .frame:has(> .page-head:not(.page-head--compact)) {
     display: grid; grid-template-columns: max-content fit-content(12rem) minmax(0, 1fr) minmax(0, 1fr);
@@ -1830,6 +1829,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .frame:has(> .page-head:not(.page-head--compact)) > .map-shell,
   .frame:has(> .page-head:not(.page-head--compact)) > .scroll-cue,
   .frame:has(> .page-head:not(.page-head--compact)) > #below-map,
+  .frame:has(> .page-head:not(.page-head--compact)) > .area-now-block,
+  .frame:has(> .page-head:not(.page-head--compact)) > .area-rest,
   .frame:has(> .page-head:not(.page-head--compact)) > [id$="-alt"],
   .frame:has(> .page-head:not(.page-head--compact)) > .area-summary { grid-column: 1 / -1; }
   .page-head:not(.page-head--compact) { padding-block: 0; }
@@ -2234,3 +2235,9 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 }
 .sea-chart__toggle:hover { background: var(--surface); }
 .sea-chart__toggle:focus-visible { box-shadow: var(--focus-ring); }
+
+/* Area page sections: Сега above the map, sensors section after the chart. */
+.area-now-section { margin-block-start: var(--section-gap); }
+.area-sensors-sec { margin-block-start: var(--section-gap); }
+.area-sensors-sec > h2 { margin: 0 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); line-height: 1.25; }
+.sensors-h3 { margin: 0; font-size: var(--text-h3); font-weight: var(--weight-emphasis); line-height: 1.25; }

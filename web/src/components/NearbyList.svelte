@@ -5,7 +5,7 @@
 </script>
 
 <details class="nearby">
-  <summary>{title} ({total})</summary>
+  <summary><h3 class="sensors-h3">{title} ({total})</h3></summary>
   {#if items.length}
     <ul class="nearby__list">
       {#each items as item (item.id)}

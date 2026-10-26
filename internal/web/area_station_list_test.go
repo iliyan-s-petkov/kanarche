@@ -51,6 +51,18 @@ func TestAreaStationListInRawHTML(t *testing.T) {
 	}
 }
 
+// The list is the sensors section's H3: a heading inside the summary, after the H2.
+func TestAreaStationListSummaryIsAnH3UnderTheSensorsHeading(t *testing.T) {
+	list := stationList(t, "/en/area/sofia")
+	if !strings.Contains(list, `<summary><h3 class="sensors-h3">All sensors in this area (3)</h3></summary>`) {
+		t.Errorf("the summary is not an H3:\n%s", list)
+	}
+	body := fetch(t, renderer(t, stationListFixture(t)), "/en/area/sofia").Body.String()
+	if h2, h3 := strings.Index(body, `id="sensors-h"`), strings.Index(body, `area-sensors--static`); h2 < 0 || h3 < h2 {
+		t.Errorf("the list is not under the sensors heading: h2=%d list=%d", h2, h3)
+	}
+}
+
 func TestAreaStationListBulgarianUsesComma(t *testing.T) {
 	if list := stationList(t, "/area/sofia"); !strings.Contains(list, `<td class="num">11,0</td>`) {
 		t.Errorf("BG list does not use the decimal comma:\n%s", list)

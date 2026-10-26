@@ -40,7 +40,6 @@
 {{.AreaNowHTML}}
 <p class="area-summary__note">{{.T "area.indicative"}}</p>
 {{.AreaDayHTML}}
-{{.AreaHealthHTML}}
 </div>
 
 {{if not .Area.Covered}}
@@ -50,8 +49,19 @@
   </div>
 {{end}}
 
+{{/* Desktop DOM order: readings and health guidance come before the map. Phones lift the map above them (app.css). */}}
+<div class="area-now-block">
+{{if .AreaReadouts}}<section class="area-now-section" aria-labelledby="area-now-h">
+<h2 id="area-now-h" class="readouts__title">{{.T "period.now"}}</h2>
+<p class="readouts__sub">{{.AreaReadoutsSub}}</p>
+{{template "readouts-island" .}}
+</section>{{else}}{{template "readouts-island" .}}{{end}}
+{{.AreaHealthHTML}}
+</div>
+
 {{/* Same toolbar as the map home, so the two screens put their controls in the
      same place. No spacer: this screen has nothing to sit opposite yet. */}}
+<h2 id="area-map-h" class="visually-hidden">{{.T "map.label"}}</h2>
 <div class="toolbar">
 <div data-island="switcher"
      data-metrics="{{.MetricsAttr}}"
@@ -276,78 +286,16 @@
 <p class="legend__tier map-tier">{{.InitialTier}}</p>
 <p id="area-map-alt" class="visually-hidden">{{.T "map.text_alternative"}}</p>
 
-{{/* The scroll cue's target: everything after the map. */}}
-<div id="below-map">
+{{/* The scroll cue's target, an empty marker: on phones it stays directly under the map (order 0) while the sections below are lifted behind it. */}}
+<div id="below-map"></div>
 
-{{/* #sensor= is honoured only here, never on index.gohtml: resolving it
-     needs the sensor already loaded through the map island above (the
-     registry in web/src/lib/sensors.svelte.js), and there is no
-     /api/v1/sensor/{id} metadata endpoint to resolve one the map has not.
-     On an area page the map's own slug is fixed (see the map island's data-
-     slug above), so the sensor tier — and therefore this container's data —
-     is reachable without a click, unlike on /. */}}
+{{/* Everything after the map: sensor card, chart, sensors, pollen, links, facts, FAQ. */}}
+<div class="area-rest">
+
 {{template "sensorCardHost" .}}
-{{template "nearbyList" .}}
 
-{{/* Every sensor in the area as a table, the map's text alternative and keyboard route to
-     each sensor. Filled by the map island (web/src/lib/mapareasensors.js). The static list
-     inside is what crawlers and no-JS readers get, the island swaps it out once it is ready. */}}
-{{if .Area.Covered}}
-<div class="area-sensors-host" data-area-sensors{{if not .AreaStations}} hidden{{end}}
-     data-area="{{.Area.Name}}"
-     {{with .AreaSensorDistricts}}data-districts="{{.}}"
-     data-t-col-district="{{$.T "area.sensors.col.district"}}"{{end}}
-     data-t-summary="{{.T "area.sensors.summary"}}"
-     data-t-summary-one="{{.T "area.sensors.summary_one"}}"
-     data-t-caption="{{.T "area.sensors.caption"}}"
-     data-t-col-sensor="{{.T "area.sensors.col.sensor"}}"
-     data-t-col-value="{{.T "area.sensors.col.value"}}"
-     data-t-col-band="{{.T "map.legend.title"}}"
-     data-t-col-updated="{{.T "area.updated"}}"
-     data-t-open="{{.T "area.sensors.open"}}"
-     data-t-filter="{{.T "area.sensors.filter.label"}}"
-     data-t-filter-placeholder="{{.T "area.sensors.filter.placeholder"}}"
-     data-t-filter-hint="{{.T "area.sensors.filter.hint"}}"
-     data-t-status="{{.T "area.sensors.status"}}"
-     data-t-empty="{{.T "area.sensors.empty"}}"
-     data-t-none="{{.T "area.sensors.none"}}"
-     data-t-range-one="{{.T "area.sensors.range_one"}}"
-     data-t-no-value="{{.T "panel.no_value"}}"
-     data-t-page="{{.T "table.page"}}"
-     data-t-page-of="{{.T "table.page.of"}}"
-     data-t-page-first="{{.T "table.page.first"}}"
-     data-t-page-prev="{{.T "table.page.prev"}}"
-     data-t-page-next="{{.T "table.page.next"}}"
-     data-t-page-last="{{.T "table.page.last"}}"
-     data-t-pager-label="{{.T "table.pager.label"}}"
-     data-t-per-page="{{.T "table.perpage"}}"
-     data-t-per-page-all="{{.T "table.perpage.all"}}"
-     data-t-p2="{{.T "metric.P2"}}"
-     data-t-p1="{{.T "metric.P1"}}"
-     data-t-unit-p2="{{.T "unit.P2"}}"
-     data-t-unit-p1="{{.T "unit.P1"}}"
-     {{template "bandLabels" .}}>
-{{with .AreaStations}}<details class="area-sensors area-sensors--static" data-area-sensors-static>
-  <summary>{{.Summary $}}</summary>
-  <div class="area-sensors__scroll">
-    <table class="table area-sensors__table">
-      <caption>{{.Caption $}}</caption>
-      <thead><tr>
-        <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
-        <th scope="col" class="num">{{$.T "metric.P2"}}, {{$.T "unit.P2"}}</th>
-        <th scope="col" class="num">{{$.T "metric.P1"}}, {{$.T "unit.P1"}}</th>
-        <th scope="col">{{$.T "area.updated"}}</th>
-      </tr></thead>
-      <tbody>{{range .Rows}}
-        <tr><th scope="row">{{.ID}}</th><td class="num">{{.P2}}</td><td class="num">{{.P1}}</td><td>{{.Updated}}</td></tr>{{end}}
-      </tbody>
-    </table>
-  </div>
-  {{with .Capped $}}<p class="meta">{{.}}</p>{{end}}
-</details>{{end}}</div>
-{{end}}
-
-{{if .Area.Covered}}
+{{/* The chart: its own H2 ("История") is drawn by the island, which renders nothing while a sensor card is open. */}}
+{{if .Area.Covered}}<section class="area-chart" aria-labelledby="chart-heading">
   {{/* The chart island, after the map and the card the map opens, before the
        gauges. The kit reads top-down from "where" to "how much, over time" to
        the gauges that summarise it, and a chart printed above the map answers
@@ -413,20 +361,71 @@
             a second key would have to be translated, kept in parity across
             both catalogues, and would say the same thing. */}}
        data-t-unavailable="{{.T "map.error.unavailable"}}"></div>
+</section>{{end}}
+
+{{/* Sensors: the in-view list and the full table, each a details whose summary is an H3. */}}
+{{if .Area.Covered}}<section class="area-sensors-sec" aria-labelledby="sensors-h">
+<h2 id="sensors-h">{{.T "area.heading.sensors"}}</h2>
+{{template "nearbyList" .}}
+
+{{/* Every sensor in the area as a table, the map's text alternative and keyboard route to
+     each sensor. Filled by the map island (web/src/lib/mapareasensors.js). The static list
+     inside is what crawlers and no-JS readers get, the island swaps it out once it is ready. */}}
+<div class="area-sensors-host" data-area-sensors{{if not .AreaStations}} hidden{{end}}
+     data-area="{{.Area.Name}}"
+     {{with .AreaSensorDistricts}}data-districts="{{.}}"
+     data-t-col-district="{{$.T "area.sensors.col.district"}}"{{end}}
+     data-t-summary="{{.T "area.sensors.summary"}}"
+     data-t-summary-one="{{.T "area.sensors.summary_one"}}"
+     data-t-caption="{{.T "area.sensors.caption"}}"
+     data-t-col-sensor="{{.T "area.sensors.col.sensor"}}"
+     data-t-col-value="{{.T "area.sensors.col.value"}}"
+     data-t-col-band="{{.T "map.legend.title"}}"
+     data-t-col-updated="{{.T "area.updated"}}"
+     data-t-open="{{.T "area.sensors.open"}}"
+     data-t-filter="{{.T "area.sensors.filter.label"}}"
+     data-t-filter-placeholder="{{.T "area.sensors.filter.placeholder"}}"
+     data-t-filter-hint="{{.T "area.sensors.filter.hint"}}"
+     data-t-status="{{.T "area.sensors.status"}}"
+     data-t-empty="{{.T "area.sensors.empty"}}"
+     data-t-none="{{.T "area.sensors.none"}}"
+     data-t-range-one="{{.T "area.sensors.range_one"}}"
+     data-t-no-value="{{.T "panel.no_value"}}"
+     data-t-page="{{.T "table.page"}}"
+     data-t-page-of="{{.T "table.page.of"}}"
+     data-t-page-first="{{.T "table.page.first"}}"
+     data-t-page-prev="{{.T "table.page.prev"}}"
+     data-t-page-next="{{.T "table.page.next"}}"
+     data-t-page-last="{{.T "table.page.last"}}"
+     data-t-pager-label="{{.T "table.pager.label"}}"
+     data-t-per-page="{{.T "table.perpage"}}"
+     data-t-per-page-all="{{.T "table.perpage.all"}}"
+     data-t-p2="{{.T "metric.P2"}}"
+     data-t-p1="{{.T "metric.P1"}}"
+     data-t-unit-p2="{{.T "unit.P2"}}"
+     data-t-unit-p1="{{.T "unit.P1"}}"
+     {{template "bandLabels" .}}>
+{{with .AreaStations}}<details class="area-sensors area-sensors--static" data-area-sensors-static>
+  <summary><h3 class="sensors-h3">{{.Summary $}}</h3></summary>
+  <div class="area-sensors__scroll">
+    <table class="table area-sensors__table">
+      <caption>{{.Caption $}}</caption>
+      <thead><tr>
+        <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
+        <th scope="col" class="num">{{$.T "metric.P2"}}, {{$.T "unit.P2"}}</th>
+        <th scope="col" class="num">{{$.T "metric.P1"}}, {{$.T "unit.P1"}}</th>
+        <th scope="col">{{$.T "area.updated"}}</th>
+      </tr></thead>
+      <tbody>{{range .Rows}}
+        <tr><th scope="row">{{.ID}}</th><td class="num">{{.P2}}</td><td class="num">{{.P1}}</td><td>{{.Updated}}</td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
+  {{with .Capped $}}<p class="meta">{{.}}</p>{{end}}
+</details>{{end}}</div>
+</section>{{else}}
+{{template "nearbyList" .}}
 {{end}}
-
-{{/* What this area is measuring right now — one cell per metric it reports,
-     then the sensors behind them (PageData.AreaReadouts). Last on the page:
-     the kit reads top-down from "where" to "how much, over time" to the
-     gauges that summarise it.
-
-     The kit prints the sensor count twice, once as an intro sentence under the
-     title and again as the fourth cell. Only the cell survives here: it is the
-     same number, and the cell carries a tier line saying what the sensors are
-     counted in, which the bare sentence did not. */}}
-{{if .AreaReadouts}}<h2 class="readouts__title">{{.T "period.now"}}</h2>
-<p class="readouts__sub">{{.AreaReadoutsSub}}</p>
-{{end}}{{template "readouts-island" .}}
 
 {{/* Pollen forecast per species and local day (PageData.AreaPollen). */}}
 {{with .AreaPollen}}

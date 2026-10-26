@@ -39,26 +39,71 @@ func TestSensorPanelComesAfterTheMapAndItsFreshnessOverlay(t *testing.T) {
 	}
 }
 
-// The kit reads top-down: where (map), then which sensor (the card), then how
-// much over time (the chart), then the gauges last. The chart used to be
-// printed above the toolbar and the map — an answer before its question, and
-// a metric switcher below the first thing that metric governs. The card sits
+// Desktop reads top-down: the readings, then where (map), then which sensor (the
+// card), then how much over time (the chart), then the sensors. The card sits
 // right above the chart: with a sensor open the chart renders nothing and the
 // card is the view, so the two stay adjacent.
-func TestChartComesAfterThePanelAndBeforeTheReadouts(t *testing.T) {
+func TestReadoutsComeBeforeTheMapAndTheChartComesLast(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
 	body := fetch(t, rr, "/en/area/high").Body.String()
 
+	readoutAt := strings.Index(body, `data-island="readouts"`)
 	mapAt := strings.Index(body, `id="area-map"`)
 	panelAt := strings.Index(body, `class="place-host"`)
 	chartAt := strings.Index(body, `id="chart"`)
-	readoutAt := strings.Index(body, `data-island="readouts"`)
 
 	if mapAt < 0 || panelAt < 0 || chartAt < 0 || readoutAt < 0 {
-		t.Fatalf("the area page is missing one of its parts: map=%d panel=%d chart=%d readouts=%d", mapAt, panelAt, chartAt, readoutAt)
+		t.Fatalf("the area page is missing one of its parts: readouts=%d map=%d panel=%d chart=%d", readoutAt, mapAt, panelAt, chartAt)
 	}
-	if !(mapAt < panelAt && panelAt < chartAt && chartAt < readoutAt) {
-		t.Errorf("the area page order is wrong: map=%d panel=%d chart=%d readouts=%d", mapAt, panelAt, chartAt, readoutAt)
+	if !(readoutAt < mapAt && mapAt < panelAt && panelAt < chartAt) {
+		t.Errorf("the area page order is wrong: readouts=%d map=%d panel=%d chart=%d", readoutAt, mapAt, panelAt, chartAt)
+	}
+}
+
+// The section order of the redesign: header, Now, health, map, history, sensors,
+// then the rest. Each is found by its heading id so a reordered template fails here.
+func TestAreaSectionsFollowTheDesignOrder(t *testing.T) {
+	rr := renderer(t, rankingSnapshot())
+	body := fetch(t, rr, "/en/area/high").Body.String()
+
+	ids := []string{`id="area-now-h"`, `id="area-health-h"`, `id="area-map-h"`, `id="chart"`, `id="sensors-h"`}
+	prev := -1
+	for _, id := range ids {
+		at := strings.Index(body, id)
+		if at < 0 {
+			t.Fatalf("the area page lost %s", id)
+		}
+		if at < prev {
+			t.Errorf("%s is out of order (at %d, previous section at %d)", id, at, prev)
+		}
+		prev = at
+	}
+	if at := strings.Index(body, `class="area-summary"`); at < 0 || at > strings.Index(body, `id="area-now-h"`) {
+		t.Error("the lead summary does not come before the Now section")
+	}
+}
+
+// Every section on the page is a labelled section with an H2, and the sensors
+// section holds the two lists as H3 summaries.
+func TestAreaSectionsAreLabelledWithHeadings(t *testing.T) {
+	rr := renderer(t, rankingSnapshot())
+	body := fetch(t, rr, "/en/area/high").Body.String()
+
+	for _, want := range []string{
+		`<section class="area-now-section" aria-labelledby="area-now-h">`,
+		`<h2 id="area-now-h"`,
+		`<section class="area-chart" aria-labelledby="chart-heading">`,
+		`<section class="area-sensors-sec" aria-labelledby="sensors-h">`,
+		`<h2 id="sensors-h">Sensors</h2>`,
+		`<h2 id="area-map-h" class="visually-hidden">`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the area page lacks %q", want)
+		}
+	}
+	sec := body[strings.Index(body, `id="sensors-h"`):]
+	if !strings.Contains(sec, `data-nearby`) || !strings.Contains(sec, `data-area-sensors`) {
+		t.Error("the sensors section does not hold both lists")
 	}
 }
 
@@ -90,10 +135,9 @@ func TestNoCoverageNoticeStaysAboveTheMap(t *testing.T) {
 	}
 }
 
-// The map shell comes before the readouts strip so the reader sees where first,
-// then which sensors are there. The strip would answer a question the map has
-// not yet posed.
-func TestMapComesBeforeTheReadoutsStrip(t *testing.T) {
+// The readings strip comes before the map shell on desktop: the reader sees
+// how much first, then where. Phones lift the map above it with CSS order.
+func TestReadoutsStripComesBeforeTheMap(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
 	body := fetch(t, rr, "/en/area/high").Body.String()
 
@@ -106,7 +150,7 @@ func TestMapComesBeforeTheReadoutsStrip(t *testing.T) {
 	if readoutAt < 0 {
 		t.Fatal("the area page lost its readouts strip")
 	}
-	if mapAt > readoutAt {
-		t.Errorf("the map comes after the readouts strip: map=%d readouts=%d", mapAt, readoutAt)
+	if readoutAt > mapAt {
+		t.Errorf("the readouts strip comes after the map: readouts=%d map=%d", readoutAt, mapAt)
 	}
 }
