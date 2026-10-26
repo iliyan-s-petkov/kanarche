@@ -368,7 +368,7 @@ describe('the on-map legend and the refresh cluster', () => {
     const cluster = /\n\.map-freshness \{([^}]*)\}/.exec(css)
     expect(cluster, '.map-freshness rule missing').not.toBeNull()
     expect(cluster[1]).not.toMatch(/position:\s*absolute/)
-    expect(cluster[1]).toMatch(/margin-inline-start:\s*auto/)
+    expect(cluster[1]).toMatch(/margin-inline-start:\s*0/)
   })
 })
 
