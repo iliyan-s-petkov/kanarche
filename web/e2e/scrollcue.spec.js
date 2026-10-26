@@ -11,11 +11,15 @@ const VIEWPORTS = [
 
 const PAGES = ['/', '/area/sofia']
 
-// sofia is a city (boundary note, tallest chrome); sofia-oblast has no note.
-const FOLD_PAGES = ['/', '/area/sofia', '/area/sofia-oblast']
+// sofia is a city (boundary note, pollen chip); sofia-oblast has no note; mladost has the longest h1.
+const FOLD_PAGES = ['/', '/area/sofia', '/area/sofia-oblast', '/area/mladost']
 const FOLD_VIEWPORTS = [
   { name: '393x873', width: 393, height: 873 },
   { name: '873x393', width: 873, height: 393 },
+  { name: '360x640', width: 360, height: 640 },
+  { name: '375x667', width: 375, height: 667 },
+  { name: '390x844', width: 390, height: 844 },
+  { name: '412x915', width: 412, height: 915 },
 ]
 
 const phoneCtx = (browser, vp) =>
@@ -162,23 +166,63 @@ for (const vp of FOLD_VIEWPORTS) {
           return summary.y > box.y
         }).toBe(true)
       }
-      // The fixture's chrome is shorter than prod's, so also pin the area shrink rule itself,
-      // made uncovered: sensor bar removed, no-coverage notice added where area.gohtml puts it.
+      const portrait = vp.height > vp.width
+      // Portrait: only breadcrumb, h1, chips and toolbar above the map; the scope note follows the map.
+      if (path.includes('/area/') && portrait) {
+        await expect.poll(() => page.evaluate(() => {
+          const cue = document.querySelector('a.scroll-cue').getBoundingClientRect()
+          const map = document.querySelector('.map--wide').getBoundingClientRect()
+          const note = document.querySelector('.notice-inline')
+          const above = ['.breadcrumb', '.page-head h1', '.toolbar--map']
+            .every((s) => document.querySelector(s).getBoundingClientRect().bottom <= map.top + 1)
+          return above && (!note || note.getBoundingClientRect().top >= cue.bottom)
+        })).toBe(true)
+        // The map fills the screen: under the tab, at most the line a one-line h1 leaves spare.
+        await expect.poll(() => page.evaluate(() => {
+          const h1 = document.querySelector('.page-head h1')
+          const lh = parseFloat(getComputedStyle(h1).lineHeight)
+          const spare = Math.round(h1.getBoundingClientRect().height / lh) >= 2 ? 0 : lh
+          const unused = innerHeight - document.querySelector('a.scroll-cue').getBoundingClientRect().bottom
+          return unused >= 0 && unused <= spare + 16
+        })).toBe(true)
+        // Same without the pollen line: the fixture area has pollen, prod areas mostly do not.
+        const unused = await page.evaluate(() => {
+          document.querySelector('.toolbar--map .pollen-chip')?.remove()
+          const h1 = document.querySelector('.page-head h1')
+          const lh = parseFloat(getComputedStyle(h1).lineHeight)
+          const spare = Math.round(h1.getBoundingClientRect().height / lh) >= 2 ? 0 : lh
+          return [innerHeight - document.querySelector('a.scroll-cue').getBoundingClientRect().bottom, spare]
+        })
+        expect(unused[0]).toBeGreaterThanOrEqual(0)
+        expect(unused[0]).toBeLessThanOrEqual(unused[1] + 16)
+      }
+      // Worst case on the fixture: a two-line h1, the pollen line, no sensor bar, a no-coverage notice.
       if (path.includes('/area/')) {
-        const { h, cap, noticeTop, mapBottom } = await page.evaluate((portrait) => {
+        const { cueBottom, noticeTop, mapBottom, mapH } = await page.evaluate(() => {
           document.querySelector('[data-island="sensorbar"]')?.remove()
+          const toolbar = document.querySelector('.frame > .toolbar')
+          if (!toolbar.querySelector('.pollen-chip')) {
+            const chip = document.createElement('a')
+            chip.className = 'pollen-chip'
+            chip.href = '#pollen'
+            chip.textContent = 'Pollen'
+            toolbar.append(chip)
+          }
+          const h1 = document.querySelector('.page-head h1')
+          const lh = parseFloat(getComputedStyle(h1).lineHeight)
+          while (h1.getBoundingClientRect().height < 1.5 * lh) h1.textContent += ' Long'
           const notice = document.createElement('div')
           notice.className = 'notice'
           notice.innerHTML = '<p><strong>No coverage</strong></p><p>Two lines of detail.</p>'
-          document.querySelector('.frame > .toolbar').before(notice)
-          const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+          toolbar.before(notice)
           const map = document.querySelector('.map--wide').getBoundingClientRect()
-          const cap = portrait
-            ? Math.max(innerHeight - 22 * rem - 28, innerHeight * 0.55)
-            : Math.max(innerHeight - 7 * rem - 28, 12 * rem)
-          return { h: map.height, cap, noticeTop: notice.getBoundingClientRect().top, mapBottom: map.bottom }
-        }, vp.height > vp.width)
-        expect(h).toBeLessThanOrEqual(cap + 1)
+          return {
+            cueBottom: document.querySelector('a.scroll-cue').getBoundingClientRect().bottom,
+            noticeTop: notice.getBoundingClientRect().top, mapBottom: map.bottom, mapH: map.height,
+          }
+        })
+        expect(cueBottom).toBeLessThanOrEqual(vp.height)
+        expect(mapH).toBeGreaterThanOrEqual(portrait ? 240 : 190)
         // The notice moves below the map on touch phones rather than pushing it down.
         expect(noticeTop).toBeGreaterThanOrEqual(mapBottom)
       }
