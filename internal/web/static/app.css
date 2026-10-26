@@ -256,20 +256,31 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* .map__layers is its own z-index:3 stacking context and ties with .map-freshness;
    lift it above every map overlay while the panel is open. */
 .map__layers:has(.colmenu__panel:not([hidden])) { z-index: 7; }
-/* The note is site-only, so it keeps the top-left corner and is offset past the
-   layers menu rather than sharing it. The kit gives the frame's top-left to
-   .map__layers — a 32px button inset 12px, so it owns 12px..44px on both
-   axes — and the note used to start at 8px, straight underneath it. It moves
-   right by the button plus a gutter instead of moving corner: the top-left is
-   where a reader looks for a message about the map, and the other three corners
-   are the key, the attribution and the zoom stack. 12px is the layers button's
-   own inset, so the two share a top edge and read as a row. */
-.map-note {
-  position: absolute; z-index: 1; inset-inline-start: calc(12px + 32px + var(--space-2)); top: 12px;
-  background: var(--overlay-bg); border: 0; border-radius: var(--radius); box-shadow: var(--elev-raised);
-  padding: var(--space-1) var(--space-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); color: var(--muted);
+/* Bottom bar: one glass strip, the legend on the left and the time controls on the right. */
+.map-bar {
+  position: absolute; z-index: 3;
+  inset-inline: var(--space-2); inset-block-end: var(--space-2);
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-1) var(--space-2); border-radius: var(--radius);
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border); box-shadow: var(--elev-raised);
+  pointer-events: none;
 }
-.map-note[hidden] { display: none; }
+.map-bar > * { pointer-events: auto; }
+/* Above the rail and layers while one of its popovers is open. */
+.map-bar:has([aria-expanded="true"], .scale--onmap[open]) { z-index: 7; }
+/* The unscaled-colours note is a caption row across the top of the bar. */
+.map-bar__note {
+  flex-basis: 100%; order: -1; margin: 0;
+  font-size: var(--text-caption); letter-spacing: var(--track-caption); color: var(--muted);
+}
+.map-bar__note[hidden] { display: none; }
+/* The forecast disclosure sits at the foot of the layers panel. */
+.map-layers__wind {
+  margin: var(--space-2) 0 0; max-inline-size: 18rem;
+  font-size: var(--text-caption); letter-spacing: var(--track-caption); color: var(--fg-2);
+}
+.map-layers__wind[hidden] { display: none; }
 /* Beside the refresh button in the bottom-left cluster, not across the top of
    the map: the top centre is where the reader is looking at the MAP, and a
    control parked there is furniture over the thing it describes.
@@ -295,7 +306,7 @@ strong, b { font-weight: var(--weight-emphasis); }
    each. Capped so it cannot outgrow a phone. */
 .map-window__panel {
   inset-block-start: auto; inset-block-end: calc(100% + var(--space-2));
-  inset-inline-end: auto; inset-inline-start: 0;
+  inset-inline-start: auto; inset-inline-end: 0;
   inline-size: max-content; max-inline-size: calc(100vw - var(--space-6));
   padding: var(--space-3);
 }
@@ -487,24 +498,26 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* The visible route to the data table; the link keeps a 24px target. */
 .map-data-link { margin: var(--space-1) 0 0; padding-inline: var(--gutter); }
 .map-data-link .link { display: inline-block; min-block-size: 24px; line-height: 24px; }
-/* Bottom-right, same overlay idiom as .map-legend/.map-hint/.map-note above
-   (absolute within #map/#area-map): the left edge is already legend/note
-   (top) and hint (bottom), and the top-right corner belongs to the kit's
-   full-screen button and zoom stack — bottom-right is the one spot nothing
-   else claims. */
-.map-locate {
-  position: absolute; z-index: 3; bottom: var(--space-2); inset-inline-end: var(--space-2);
-  display: inline-flex; align-items: center; justify-content: center;
-  inline-size: 2rem; block-size: 2rem;
-  background: var(--overlay-bg); border: 0; border-radius: 999px; box-shadow: var(--elev-raised);
-  padding: 0; color: var(--fg); cursor: pointer;
+/* Top-right rail: zoom in/out, compass, full screen, table, locate. */
+.map-rail {
+  position: absolute; z-index: 3;
+  inset-block-start: var(--space-2); inset-inline-end: var(--space-2);
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
 }
-.map-locate:hover { background: var(--surface); }
-.map-locate:focus-visible { box-shadow: var(--focus-ring); }
-/* First-visit tip over the locate button; arrow points down at it. One axis anchored each way. */
+.map-rail:has(.map-orient__panel:not([hidden])) { z-index: 7; }
+.map-rail > .map__full, .map-rail > .map-zoom { position: static; }
+.map-locate, .map-table {
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 40px; block-size: 40px;
+  background: var(--bg); border: 0; border-radius: var(--radius); box-shadow: var(--elev-raised);
+  padding: 0; color: var(--fg); cursor: pointer; text-decoration: none;
+}
+.map-locate:hover, .map-table:hover { background: var(--surface); }
+.map-locate:focus-visible, .map-table:focus-visible { box-shadow: var(--focus-ring); }
+/* First-visit tip left of the locate button, the rail's last item; arrow points right at it. */
 .map-locate-hint {
-  position: absolute; z-index: 3; inset-block-end: var(--locate-hint-lift); inset-inline-end: var(--space-2);
-  max-inline-size: min(16rem, calc(100% - 2 * var(--space-2)));
+  position: absolute; z-index: 3; inset-block-end: 0; inset-inline-end: calc(100% + var(--space-2));
+  inline-size: max-content; max-inline-size: min(16rem, 60vw);
 }
 .map-locate-hint__btn {
   display: block; inline-size: 100%; padding: var(--space-1) var(--space-3); border-radius: var(--radius);
@@ -514,45 +527,17 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 .map-locate-hint__btn:focus-visible { box-shadow: var(--focus-ring); }
 .map-locate-hint::after {
-  content: ""; position: absolute; inset-block-start: 100%; inset-inline-end: var(--locate-hint-arrow-inset);
-  inline-size: 14px; block-size: 7px; background: var(--glass-bg);
-  clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none;
-}
-@media (prefers-reduced-motion: no-preference) {
+  content: ""; position: absolute; inset-inline-start: 100%; inset-block-end: 13px;
+  inline-size: 7px; block-size: 14px; background: var(--glass-bg);
+  clip-path: polygon(0 0, 100% 50%, 0 100%); pointer-events: none;
+}@media (prefers-reduced-motion: no-preference) {
   .map-locate-hint { animation: locate-hint-in 200ms ease-out; }
 }
 @keyframes locate-hint-in { from { opacity: 0; } to { opacity: 1; } }
-/* MapLibre pins its attribution to this same corner, and its compact form is a
-   round (i) the same size as the button above. Left unmoved the two sat on top
-   of each other: one control to look at, two to click. The margin is the
-   button's width plus its gutter, so the (i) ends up beside it — info on the
-   left, find-me on the right — rather than under it. */
-.maplibregl-ctrl-bottom-right { margin-inline-end: 2.5rem; }
+/* Attribution (i): bottom-right, lifted clear of the bar. */
+.maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: calc(var(--map-bar-h) + var(--space-2)); }
 /* Attribution links sit in running text: underline them (axe link-in-text-block). Two classes beat the stock none. */
 .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner a { text-decoration: underline; }
-/* The forecast disclosure. Never behind a control and never a tooltip: it is
-   the whole reason the layer is allowed on a map of measurements. Its control
-   is a checkbox in the layers menu, so this corner holds only .map-locate. */
-.map-wind-label {
-  position: absolute; z-index: 1; bottom: 3.5rem; inset-inline-end: var(--space-2); max-inline-size: 18rem;
-  background: var(--overlay-bg); border: 0; border-radius: var(--radius); box-shadow: var(--elev-raised);
-  padding: var(--space-1) var(--space-2); font-size: var(--text-caption); letter-spacing: var(--track-caption); color: var(--fg-2);
-}
-.map-wind-label[hidden] { display: none; }
-/* Folded by default (see mountChrome): unrolled, the note is two sentences and
-   a model name over the map, which on a phone is most of the screen the arrows
-   are drawn on. The summary is the line that keeps it honest while folded. */
-.map-wind-label__toggle { cursor: pointer; list-style: none; color: var(--fg); }
-/* A flex box so the 24px minimum applies; a bare summary ignores it (WCAG 2.5.8). */
-.map-wind-label__toggle { display: flex; align-items: center; min-inline-size: 24px; min-block-size: 24px; }
-.map-wind-label__toggle::-webkit-details-marker { display: none; }
-.map-wind-label__toggle::before { content: 'ⓘ'; margin-inline-end: var(--space-1); }
-.map-wind-label__toggle:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius); }
-.map-wind-label__text:not(:empty) { margin-block-start: var(--space-1); }
-/* While the locate hint is up, the folded note sits above it instead of under it. */
-:has(> .map-locate-hint) > .map-wind-label:not([open]) {
-  inset-block-end: calc(var(--locate-hint-lift) + var(--locate-hint-clear));
-}
 /* The bathing-site card (lib/seapanel.svelte.js): right, under the search and clear of the control column and
    the legend on desktop; a bottom sheet on phones. */
 .map-sea {
@@ -958,16 +943,12 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-dock__more[hidden] { display: none; }
 .map-dock__more-ico { inline-size: 16px; block-size: 16px; flex: none; }
 .map-dock--folded .map-dock__more { justify-self: end; }
-/* The bottom controls clear the panel, open or folded; --map-panel-h is 0 (unset) with none. */
-.map-shell--docked .map-freshness { bottom: calc(12px + var(--map-panel-h, 0px)); }
-.map-shell.map-shell--docked .scale--onmap, .map-shell--docked .map-wind-label { inset-block-end: calc(3.5rem + var(--map-panel-h, 0px)); }
-.map-shell--docked .map-locate { bottom: calc(var(--space-2) + var(--map-panel-h, 0px)); }
+/* The bar and attribution clear the panel, open or folded; --map-panel-h is 0 (unset) with none. */
+.map-shell--docked .map-bar { inset-block-end: calc(var(--space-2) + var(--map-panel-h, 0px)); }
 .map-shell--docked .maplibregl-ctrl-bottom-right, .map-shell--docked .maplibregl-ctrl-bottom-left { bottom: var(--map-panel-h, 0px); }
-/* Too little map above the panel for the right-hand column and locate (lib/sidedock.svelte.js): the panel
-   stops short of the column, locate drops to the column's foot and the wind note moves off it. */
-.map-shell--crowded .map-dock { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
-.map-shell--docked.map-shell--crowded .map-locate { bottom: var(--space-2); inset-inline-end: calc(var(--space-2) + 4px); }
-.map-shell--docked.map-shell--crowded .map-wind-label { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+/* Too little map above the panel for the rail (lib/sidedock.svelte.js): crowded, the panel stops short of it; tight, the bar and attribution do. */
+.map-shell--crowded .map-dock, .map-shell--tight .map-bar { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+.map-shell--tight .maplibregl-ctrl-bottom-right { margin-inline-end: calc(var(--space-2) + 40px); }
 @media (hover: none) {
   .map-dock__fold, .map-dock__close, .map-dock .panel-info, .map-dock__more { min-block-size: 44px; min-inline-size: 44px; }
   .map-dock .panel-chart__tools .btn, .map-dock .chart-field__control, .map-dock .chart-range input, .map-dock .panel-more { min-block-size: 44px; }
@@ -1079,18 +1060,15 @@ strong, b { font-weight: var(--weight-emphasis); }
    control beside it. */
 .data-refresh__status { color: var(--meta); font-variant-numeric: tabular-nums; }
 
-/* On the map rather than under it. The overlay sits inside .map-shell, which is
-   the positioned ancestor; the kit's margins are the standalone line's and would
-   push it off the corner here. */
+/* Time controls: the right end of the bar. */
 .map-freshness {
-  position: absolute; z-index: 3; inset-inline-start: 12px; bottom: 12px;
+  position: relative; margin-inline-start: auto;
   display: flex; align-items: center; gap: var(--space-2);
 }
-/* Above the cluster, not beside it. Both sit in the same corner and the cluster
-   wins on z-index, so a folded legend — its summary alone, 16px off the bottom —
-   vanished underneath and could not be unfolded again. */
+/* Legend: the left end of the bar, folded in place; open, its card rises above the bar. */
 .map-shell .scale--onmap {
-  inset-block-end: 3.5rem;
+  position: relative; inset-block-end: auto; inset-inline-start: auto;
+  min-inline-size: 0; flex: 0 1 auto;
   max-inline-size: calc(100% - 7rem);
   /* Solid surface instead of the kit text halo. No --radius-md token; overlay buttons use --radius. */
   background: var(--bg); box-shadow: var(--elev-raised);
@@ -1099,15 +1077,17 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 /* Open: frosted glass (issue 578), a fixed card width (278px is what a 390px
    phone gets) so it is never stretched across a wide map, and the vertical
-   bands row layout below. The colour bar stays opaque. */
+   bands row layout below. The colour bar stays opaque. 100% is the bar inside
+   its 1px border, the map less 1rem and 2px, so this is the map less 7rem. */
 .map-shell .scale--onmap[open] {
-  inline-size: min(278px, calc(100% - 7rem)); z-index: 4;
+  position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0;
+  inline-size: min(278px, calc(100% + 2px - 6rem)); max-inline-size: none; z-index: 4;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--elev-float);
-  max-block-size: calc(100% - 3.5rem - 12px - 32px - var(--space-2));
+  max-block-size: 50vh;
   overflow-y: auto;
 }
 /* Row instead of column, reversed: the DOM runs high to low, and the row
@@ -1148,14 +1128,14 @@ strong, b { font-weight: var(--weight-emphasis); }
 .scale--onmap:not([open]) .scale__toggle {
   min-block-size: 44px; inline-size: auto; padding-inline: var(--space-1); margin-block-end: 0;
 }
-/* Folded, the toggle is the metric name plus a ramp swatch. */
+/* Folded, the toggle is the metric name on one line plus a ramp swatch. */
 .scale--onmap:not([open]) .scale__toggle::after {
   content: ''; inline-size: 60px; block-size: 8px; border-radius: var(--radius-sm);
   background-image: var(--ramp-h, none);
 }
 .scale--onmap:not([open]) .scale__toggle-label {
   position: static; inline-size: auto; block-size: auto; overflow: visible;
-  clip-path: none; white-space: normal;
+  clip-path: none; white-space: nowrap; flex: none;
   display: inline; margin-inline: var(--space-1); font-size: var(--text-compact);
 }
 /* Touch: the kit's 24px square is too small to tap, open or folded. */
@@ -1192,7 +1172,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* Opens upward like the window panel: there is only map above the corner. */
 .data-refresh__panel {
   inset-block-start: auto; inset-block-end: calc(100% + var(--space-2));
-  inset-inline-end: auto; inset-inline-start: 0;
+  inset-inline-start: auto; inset-inline-end: 0;
   inline-size: max-content; max-inline-size: calc(100vw - var(--space-6));
   min-inline-size: 0; padding: var(--space-3);
   display: flex; flex-direction: column; gap: var(--space-2);
@@ -1268,9 +1248,10 @@ html:has(> body.embed) { block-size: 100%; }
 /* The phone and landscape .map--hero rules size the map for a page; a frame has no page. */
 .embed .map-shell:has(.map--hero) { block-size: 100%; max-block-size: none; }
 .embed .map.map--hero { block-size: 100%; min-block-size: 0; max-block-size: none; }
-/* Phone: the folded key owns the bottom-left corner, so the footline rides above it. */
+/* Phone: the footline wraps to several lines, so the bar takes the foot and the footline sits on it. */
 @media (max-width: 480px) {
-  .embed .embed__footline { inset-block-end: calc(44px + var(--space-2) + var(--space-2)); }
+  .embed .map-shell .map-bar { inset-block-end: var(--space-2); }
+  .embed .embed__footline { inset-block-end: calc(var(--map-bar-h) + var(--space-2) + var(--space-2)); }
   .embed .scale--onmap[open] { z-index: 5; }
 }
 /* The metric switcher moves onto the map. On the site it sits in a toolbar
@@ -1282,7 +1263,6 @@ html:has(> body.embed) { block-size: 100%; }
   background: var(--overlay-bg); border-radius: var(--radius); box-shadow: var(--elev-raised);
   padding: var(--space-1) var(--space-2);
 }
-.embed .map-note { inset-inline-start: auto; inset-inline-end: calc(2rem + var(--space-2) + var(--space-2)); }
 /* Whose map this is, whose data it is, and the only way out of the frame.
    Bottom-left, because the other three corners are the switcher row, the zoom
    stack and MapLibre's own attribution. Capped at 70% and wrapping so a long
@@ -1315,7 +1295,9 @@ html:has(> body.embed) { block-size: 100%; }
 /* Geolocation is denied by Permissions-Policy and a cross-origin frame needs
    its own allow= besides, so the button could only ever fail here. */
 .embed .map-locate { display: none; }
-.embed .maplibregl-ctrl-bottom-right { margin-inline-end: 0; }
+.embed .maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: 0; }
+/* The footline owns the frame's foot, so the bar holds only the legend, above it. */
+.embed .map-bar { inset-block-end: 3.5rem; inset-inline-end: auto; padding-inline-end: var(--space-2); }
 /* The panel opens over the map rather than under it: in a frame there is no
    "under". Capped so the map it describes stays the larger half. */
 .embed__panel {
@@ -1479,8 +1461,6 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap; border: 0;
 }
-/* The transient map note drops under the controls row instead of sharing it. */
-.map-shell:has(.map-controls) .map-note { inset-inline-start: 12px; top: calc(var(--space-2) + 40px + var(--space-2)); }
 @media (min-width: 672px) {
   .map-shell:has(> .map--hero) { max-inline-size: none; block-size: auto; max-block-size: none; }
   .map--hero { aspect-ratio: auto; block-size: calc(100svh - var(--masthead-h)); min-block-size: 22rem; max-block-size: none; }
@@ -1537,24 +1517,12 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   }
 
 
-  /* Back on the map: an overlay again, stacked above the locate/zoom row.
-     One card for both children (see below), so the offset is measured off
-     the folded pill's own 44px floor, not a guess. */
-  .map-freshness {
-    position: absolute; inset-inline-start: var(--space-2);
-    inset-block-end: calc(44px + var(--space-3) + var(--space-2));
-    margin: 0; display: flex; align-items: center; gap: var(--space-2);
-    background: var(--overlay-bg); border-radius: var(--radius); box-shadow: var(--elev-raised);
-    /* The 44px buttons fill the card's height; vertical padding would make it 52px. */
-    padding: 0 var(--space-1);
-  }
-  /* Playing, the corner row IS the replay bar and spans the map; the window
-     button and the key stand down rather than share the width. .map-play--open
-     is already its own full card (see below), so the wrapper drops its own to
-     avoid a card inside a card. */
-  .map-freshness:has(.map-play--open) {
-    inset-inline-end: var(--space-2); background: none; box-shadow: none; padding: 0;
-  }
+  /* The bar's end keeps 44px plus gaps free for the attribution (i), which sits inside it. */
+  .map-bar { padding-inline-end: calc(44px + var(--space-1) * 2); flex-wrap: nowrap; gap: var(--space-1); }
+  .map-bar:has(.map-bar__note:not([hidden])) { flex-wrap: wrap; }
+  .map-freshness { margin: 0; margin-inline-start: auto; display: flex; align-items: center; gap: 0; flex: none; }
+  /* Playing, the time row fills the bar beside the folded key; the window button stands down. */
+  .map-freshness:has(.map-play--open) { flex: 1 1 auto; min-inline-size: 0; margin-inline-start: 0; }
   .map-freshness:has(.map-play--open) .map-window { display: none; }
   /* One shared card (.map-freshness above) instead of a card per button — the
      window toggle and the idle play button used to draw two overlapping
@@ -1579,15 +1547,15 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     margin: 0; background: none; box-shadow: none; padding: 0;
   }
 
-  /* Overrides the desktop 3.5rem offset; both axes stated so the co-anchor
-     guard passes. Surface, width and fold look are global, further up. */
+  /* In the bar, folded; the kit's phone rule would drop it below the frame. */
   .map-shell .scale--onmap {
-    position: absolute; inset-block-end: var(--space-2); inset-block-start: auto;
-    inset-inline-start: var(--space-2); inset-inline-end: auto; z-index: 2;
+    position: relative; inset-block-end: auto; inset-block-start: auto;
+    inset-inline-start: auto; inset-inline-end: auto; z-index: 2;
   }
+  .map-shell .scale--onmap[open] { position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0; }
 
   /* Every overlay button is a real touch target, not the kit's 32px square. */
-  .map__layers, .map__full, .map-locate, .map-zoom button, .map-wind-label__toggle {
+  .map__layers, .map__full, .map-locate, .map-table, .map-orient__btn, .map-zoom button {
     inline-size: 44px; block-size: 44px; min-block-size: 44px;
   }
   /* 24px glyph, 44px target. */
@@ -1599,12 +1567,16 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     /* The (i) is a 24px background-image; grown to 44px it tiled 2x2. */
     background-repeat: no-repeat; background-position: center;
   }
-  /* The container is always just the 44px button. The text opens as its own
-     card above the bottom control row, so it covers neither the legend nor the
-     locate and wind buttons. Its width stops short of the playback card at the
-     start edge, and the text wraps inside it. The (i) is a glyph in --fg
-     because the stock icon is black-only. */
-  .maplibregl-ctrl-bottom-right { margin-inline-end: calc(var(--space-2) + 44px + var(--space-2)); margin-block-end: var(--space-2); }
+  /* The (i) sits inside the bar's end (bar inset, border, padding); its text opens as a card above the bar.
+     The (i) is a glyph in --fg because the stock icon is black-only.
+     .map-shell outranks maplibre-gl.css (z-index 2, loaded later); below the bar's 3 the glass covered it. */
+  .map-shell .maplibregl-ctrl-bottom-right {
+    z-index: 4;
+  }
+  .maplibregl-ctrl-bottom-right {
+    margin-inline-end: calc(var(--space-2) + 1px + var(--space-1));
+    margin-block-end: calc(var(--space-2) + 1px + var(--space-1));
+  }
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact {
     position: relative; margin: 0; padding: 0; inline-size: 44px; block-size: 44px;
     min-block-size: 44px; background: none; box-sizing: border-box;
@@ -1622,40 +1594,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     border-radius: var(--radius); color: var(--fg); padding: 0; text-align: center; line-height: 44px;
   }
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button::before { content: '©'; font-size: 1.25rem; }
-  /* Task 7c: closed card was fit-content sizing plus tap-target padding
-     stacking (see task-7c-report.md); icon-only now, above .map-locate. */
-  .map-wind-label {
-    bottom: auto; inset-block-end: calc(var(--space-2) + 44px + var(--space-2));
-    inset-inline-end: var(--space-2);
-  }
-  .map-wind-label:not([open]) {
-    inline-size: fit-content; max-inline-size: none;
-    background: none; box-shadow: none; border: 0; padding: 0;
-  }
-  /* The toggle is a 44px box; centre the glyph instead of the kit's top-left. */
-  .map-wind-label__toggle::before { font-size: 1.25rem; }
-  .map-wind-label:not([open]) .map-wind-label__toggle {
-    display: flex; align-items: center; justify-content: center;
-    background: var(--bg); box-shadow: var(--elev-raised); border-radius: var(--radius);
-  }
-  /* Opaque, and raised above the playback card (up to 56px) and the 44px
-     button row so it never covers the playback bar. z-index 4 matches the
-     open legend key's tier above the freshness card. */
-  .map-wind-label[open] {
-    z-index: 4; inset-inline-end: var(--space-2); inset-block-end: calc(var(--space-2) * 3 + 44px + 56px);
-    max-inline-size: min(18rem, calc(100% - 4rem)); background: var(--bg);
-  }
-  /* The toggle keeps only the ::before (i) on a phone; the sentence it names
-     is what the disclosure itself already unrolls into. */
-  .map-wind-label__toggle .map-wind-label__text-label {
-    position: absolute; inline-size: 1px; block-size: 1px; padding: 0; margin: -1px;
-    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
-  }
-  .map-note { inset-inline-start: calc(12px + 44px + var(--space-2)); }
-  /* The same card as the other map buttons: a bare glyph vanished on the map. */
-  .map-locate { bottom: var(--space-2); background: var(--bg); border-radius: var(--radius); }
-  /* The phone button is 44px, so the bubble sits higher and the arrow is centred on it. */
-  .map-locate-hint { --locate-hint-lift: 4rem; --locate-hint-arrow-inset: 15px; }
+  /* The arrow centres on the 44px locate button. */
+  .map-locate-hint::after { inset-block-end: 15px; }
   /* One button until there is something to play: the row unfolds across the
      map only while a timelapse is loaded. The speed and exit buttons carry
      .map-play__btn too, so only the scrubber, clock and note fold away. */
@@ -1684,7 +1624,6 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-controls { inset-inline-start: calc(12px + 44px + var(--space-2)); inset-inline-end: calc(var(--space-2) + 44px + var(--space-2)); }
   .map-controls__metric .btn { block-size: 44px; min-block-size: 44px; }
   .map-controls__find .input { min-block-size: 44px; }
-  .map-shell:has(.map-controls) .map-note { top: calc(var(--space-2) + 44px + var(--space-2)); }
 
   /* Map toolbar on a phone: the long count is read, not seen, and "8 of 10" stands in; the heading is for AT only. */
   .area-map-h { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
@@ -1816,34 +1755,18 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   }
   /* Keeps the metric switcher box off the masthead border. */
   [data-island="switcher"] .colmenu { margin-block-start: var(--space-1); }
-  /* Anchors the open legend inside the short landscape map, not the
-     desktop offset used above 520px tall. */
-  .map-shell .scale--onmap { inset-block-end: var(--space-2); }
-  /* Open legend scrolls, and its top stops below the layers button (12px + 44px + gap). */
-  .map-shell .scale--onmap[open] {
-    max-block-size: calc(100% - var(--space-2) - 12px - 44px - var(--space-2));
-    overflow-y: auto;
+  /* The open legend scrolls inside the short landscape map, below the layers button:
+     the map height above less 60px for the button row and the bar with its two gaps under it. */
+  .map-shell .scale--onmap[open] { overflow-y: auto; }
+  .map-shell:has(.map--hero) .scale--onmap[open] {
+    max-block-size: calc(100svh - 40px - 1.5rem - 28px - 60px - var(--map-bar-h) - var(--space-2) * 2);
   }
-  /* Wind note, restated from the @672px block: landscape never collapsed it
-     to the icon-only form portrait shows. */
-  .map-wind-label:not([open]) {
-    inline-size: fit-content; max-inline-size: none;
-    background: none; box-shadow: none; border: 0; padding: 0;
+  .map-shell:has(.map--wide) .scale--onmap[open] {
+    max-block-size: calc(100svh - 7rem - 28px - 60px - var(--map-bar-h) - var(--space-2) * 2);
   }
-  .map-wind-label__toggle::before { font-size: 1.25rem; }
-  .map-wind-label:not([open]) .map-wind-label__toggle {
-    display: flex; align-items: center; justify-content: center;
-    inline-size: 44px; block-size: 44px;
-    background: var(--bg); box-shadow: var(--elev-raised); border-radius: var(--radius);
-  }
-  .map-wind-label[open] {
-    z-index: 4; max-inline-size: min(18rem, calc(100% - 4rem)); background: var(--bg);
-    inset-block-end: calc(var(--space-2) * 3 + 44px + 56px);
-  }
-  .map-wind-label__toggle .map-wind-label__text-label {
-    position: absolute; inline-size: 1px; block-size: 1px; padding: 0; margin: -1px;
-    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
-  }
+  /* Six 44px controls do not fit the short map: pinch replaces zoom in and out here. */
+  .map-rail { gap: var(--space-1); }
+  .map-rail > .map-zoom { display: none; }
   .frame:has(> .page-head:not(.page-head--compact)) > .notice,
   .frame:has(> .page-head:not(.page-head--compact)) > .map-shell,
   .frame:has(> .page-head:not(.page-head--compact)) > .scroll-cue,
@@ -1858,11 +1781,6 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      fit the one-row header and is not part of the §4.2 wireframe. */
   .page-head:not(.page-head--compact) p { display: none; }
 
-  /* Restated (not merged with the 672px block below): the phone corner cluster
-     is width-gated and does not fire at 844px wide, but the freshness card's
-     default 12px inline-start collides with the wider play/window pill here. */
-  .map-freshness { inset-block-end: var(--space-2); inset-inline-start: calc(var(--space-2) + 14rem); }
-
   /* Cards four across, same as the phone F1 shot; the 672px block's 2-column
      override does not apply here (this query is height-, not width-gated). */
   .readouts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -1875,20 +1793,15 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .gauges { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Pinch replaces the zoom pair on touch; the reset/grid button stays. */
-@media (hover: none) and (pointer: coarse) {
-  .map-zoom__btn[data-act="in"], .map-zoom__btn[data-act="out"] { display: none; }
-}
-
 /* Solid fallbacks for the issue-578 glass: no backdrop-filter, or reduced transparency. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn {
+  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn, .map-bar {
     background: var(--bg);
   }
   .map-locate-hint::after { background: var(--bg); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn {
+  .map__layers .colmenu__panel, .map-shell .scale--onmap[open], .map-locate-hint__btn, .map-bar {
     background: var(--bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -2163,17 +2076,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .footer__bar a { min-block-size: 44px; }
 }
 
-/* Orientation control: compass button under the zoom stack, popover opening to its left. */
-.map-orient {
-  position: absolute; z-index: 3; inset-inline-end: var(--space-2);
-  inset-block-start: calc(var(--space-2) * 2 + 48px + 122px);
-}
-@media (max-width: 672px) {
-  .map-orient { inset-block-start: calc(var(--space-2) * 2 + 48px + 134px); }
-}
-@media (hover: none) and (pointer: coarse) {
-  .map-orient { inset-block-start: calc(var(--space-2) * 2 + 48px + 44px); }
-}
+/* Orientation control: compass button in the rail, popover opening to its left. */
+.map-orient { position: relative; }
 .map-orient__btn {
   display: grid; place-items: center; inline-size: 40px; block-size: 40px; padding: 0;
   border: 0; border-radius: var(--radius); background: var(--bg); color: var(--fg);
@@ -2181,7 +2085,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 }
 @media (max-width: 672px) { .map-orient__btn { inline-size: 44px; block-size: 44px; } }
 .map-orient__btn:hover { background: var(--surface-2); }
-.map-orient__btn:focus-visible, .map-orient__close:focus-visible, .map-orient__north-btn:focus-visible,
+.map-orient__btn:focus-visible, .map-orient__close:focus-visible, .map-orient__north-btn:focus-visible, .map-orient__reset:focus-visible,
 .map-orient__row input:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 .map-orient__north { fill: var(--danger); }
 .map-orient__south { fill: currentColor; opacity: .55; }
@@ -2202,14 +2106,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .map-orient__close:hover { color: var(--fg); }
 .map-orient__row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-2); font-size: var(--text-compact); }
 .map-orient__row input { grid-column: 1 / -1; inline-size: 100%; margin: 0; accent-color: var(--accent); }
-.map-orient__north-btn {
+.map-orient__north-btn, .map-orient__reset {
   justify-self: start; padding: var(--space-1) var(--space-3); border: 1px solid var(--border);
   border-radius: var(--radius-sm); background: var(--bg); color: var(--fg); font: inherit;
   font-size: var(--text-compact); cursor: pointer;
 }
-.map-orient__north-btn:hover { background: var(--surface-2); }
+.map-orient__north-btn:hover, .map-orient__reset:hover { background: var(--surface-2); }
 @media (hover: none) {
-  .map-orient__close, .map-orient__north-btn { min-block-size: 44px; min-inline-size: 44px; }
+  .map-orient__close, .map-orient__north-btn, .map-orient__reset { min-block-size: 44px; min-inline-size: 44px; }
 }
 
 /* Address search in the finder: the OSM credit line and the searched-address pin. */

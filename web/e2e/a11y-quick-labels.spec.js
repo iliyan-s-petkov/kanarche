@@ -55,19 +55,25 @@ test('the finder announces the result count as the reader types', async ({ ctx }
   await expect(status).toHaveText(/areas? found|No area by that name/)
 })
 
-test('the Data table link is visible, and takes a visible focus', async ({ ctx }) => {
+// Two links: the toolbar one and the rail one on the map.
+test('the Data table links are visible, and take a visible focus', async ({ ctx }) => {
   const page = await visit(ctx)
-  const link = page.getByRole('link', { name: 'Data table', exact: true })
-  await expect(link).toBeVisible()
-  const box = await link.boundingBox()
-  expect(box.width).toBeGreaterThan(8)
-  expect(box.height).toBeGreaterThanOrEqual(24)
-  await link.focus()
-  const ring = await link.evaluate((a) => {
-    const s = getComputedStyle(a)
-    return (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none'
-  })
-  expect(ring).toBe(true)
-  await link.click()
+  const links = page.getByRole('link', { name: 'Data table', exact: true })
+  await expect(links).toHaveCount(2)
+  await expect(page.locator('.map-rail .map-table')).toHaveAccessibleName('Data table')
+  for (const link of await links.all()) {
+    await expect(link).toBeVisible()
+    const box = await link.boundingBox()
+    expect(box.width).toBeGreaterThan(8)
+    expect(box.height).toBeGreaterThanOrEqual(24)
+    await link.focus()
+    const ring = await link.evaluate((a) => {
+      const s = getComputedStyle(a)
+      return (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none'
+    })
+    expect(ring).toBe(true)
+    await expect(link).toHaveAttribute('href', /\/en\/areas$/)
+  }
+  await links.first().click()
   await expect(page).toHaveURL(/\/en\/areas$/)
 })

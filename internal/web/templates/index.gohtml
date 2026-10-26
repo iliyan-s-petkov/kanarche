@@ -108,6 +108,8 @@
      data-t-unavailable="{{.T "map.error.unavailable"}}"
      data-t-unscaled="{{.T "metric.unscaled"}}"
      data-t-locate-button="{{.T "locate.button"}}"
+     data-t-table-link="{{.T "map.data_table_link"}}"
+     data-table-href="{{.Path "/areas"}}"
      data-t-locate-hint="{{.T "locate.hint"}}"
      data-t-locate-denied="{{.T "locate.denied"}}"
      data-t-locate-failed="{{.T "locate.failed"}}"
@@ -226,7 +228,7 @@
 </div>
 {{/* On the map, not under it: the one refresh control, which also says how old
      what you are looking at is (dataFreshness). */}}
-<div class="map-freshness">{{template "dataFreshness" .}}</div>
+<div class="map-bar"><div class="map-freshness">{{template "dataFreshness" .}}</div></div>
 {{template "scrollCue" .}}
 </div>
 {{/* Server-rendered LCP element; mountChrome adopts it (PageData.InitialTier). */}}

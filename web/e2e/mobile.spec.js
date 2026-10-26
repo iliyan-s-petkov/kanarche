@@ -45,16 +45,6 @@ const mapSettled = (page) => page.waitForFunction(() => {
   return !!map?.isStyleLoaded?.() && !map.isMoving()
 })
 
-// Unhides the wind note and measures it in ONE page-side call: /api/v1/wind's
-// 503 hides it again, so a separate boundingBox() round trip can see it hidden.
-const windNoteBox = (page) => page.evaluate(() => {
-  const el = document.querySelector('.map-wind-label')
-  if (!el) return null
-  el.hidden = false
-  const r = el.getBoundingClientRect()
-  return r.width > 0 && r.height > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : null
-})
-
 test.describe('phone layout does not widen the viewport', () => {
   for (const path of ['/en', '/en/area/sofia#sensor=101']) {
     test(`${path} stays at 390px wide`, async ({ mobileCtx }) => {
@@ -81,9 +71,9 @@ test.describe('phone layout does not widen the viewport', () => {
     await page.close()
   })
 
-  // The on-map chrome: the legend pill sits on the map, every overlay is a
-  // real touch target, and the zoom pair yields to pinch on a coarse pointer.
-  test('/en on-map chrome: legend on the map, 44px targets, zoom hidden', async ({ mobileCtx }) => {
+  // The on-map chrome: the legend pill sits on the map and every overlay,
+  // the rail's zoom pair included, is a real touch target.
+  test('/en on-map chrome: legend on the map, 44px targets, zoom in the rail', async ({ mobileCtx }) => {
     const page = await mobileCtx.newPage()
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/en')
@@ -95,13 +85,12 @@ test.describe('phone layout does not widen the viewport', () => {
     expect(scale.y).toBeGreaterThanOrEqual(map.y)
     expect(scale.x + scale.width).toBeLessThanOrEqual(map.x + map.width)
     expect(scale.y + scale.height).toBeLessThanOrEqual(map.y + map.height)
-    for (const sel of ['.map__layers', '.map-locate', '.map__full']) {
+    for (const sel of ['.map__layers', '.map-locate', '.map__full', '.map-table', '.map-orient__btn',
+      '.map-zoom__btn[data-act="in"]', '.map-zoom__btn[data-act="out"]']) {
       const box = await page.locator(sel).boundingBox()
-      expect(box.width).toBeGreaterThanOrEqual(44)
-      expect(box.height).toBeGreaterThanOrEqual(44)
+      expect(box.width, sel).toBeGreaterThanOrEqual(44)
+      expect(box.height, sel).toBeGreaterThanOrEqual(44)
     }
-    await expect(page.locator('.map-zoom__btn[data-act="in"]')).toBeHidden()
-    await expect(page.locator('.map-zoom__btn[data-act="out"]')).toBeHidden()
     await page.close()
   })
 
@@ -125,21 +114,14 @@ test.describe('phone layout does not widen the viewport', () => {
     const repeat = await page.locator('.maplibregl-ctrl-attrib-button')
       .evaluate((el) => getComputedStyle(el).backgroundRepeat)
     expect(repeat).toBe('no-repeat')
-    // The wind note stays hidden without a seeded forecast (/api/v1/wind
-    // 503s in this fixture) — force it open the same way chrome.showWind(true, …)
-    // does, so the phone rules below get a real element to measure.
-    await page.evaluate(() => { document.querySelector('.map-wind-label').hidden = false })
-    const label = page.locator('.map-wind-label__text-label')
-    if (await label.count()) {
-      const labelBox = await label.boundingBox()
-      expect(labelBox.width).toBeLessThanOrEqual(1)
-    }
-    const toggle = page.locator('.map-wind-label__toggle')
-    if (await toggle.isVisible()) {
-      const mapBox = await page.locator('#map').boundingBox()
-      const toggleBox = await toggle.boundingBox()
-      expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(mapBox.y + mapBox.height - 44)
-    }
+    // On a phone the (i) sits inside the bar's end, clear of the time controls.
+    const bar = await page.locator('.map-bar').boundingBox()
+    const fresh = await page.locator('.map-freshness').boundingBox()
+    expect(box.x).toBeGreaterThanOrEqual(bar.x)
+    expect(box.x + box.width).toBeLessThanOrEqual(bar.x + bar.width)
+    expect(box.y).toBeGreaterThanOrEqual(bar.y)
+    expect(box.y + box.height).toBeLessThanOrEqual(bar.y + bar.height)
+    expect(fresh.x + fresh.width).toBeLessThanOrEqual(box.x)
     await page.close()
   })
 
@@ -203,96 +185,13 @@ test.describe('phone layout does not widen the viewport', () => {
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
     expect(labelSize).toBeLessThanOrEqual(15)
 
+    // Same bar row as the time controls: the pill ends before the cluster starts.
     await expect.poll(async () => {
       const pillBox = await scale.boundingBox()
       const freshBox = await page.locator('.map-freshness').boundingBox()
       if (!pillBox || !freshBox) return null
-      return pillBox.y - (freshBox.y + freshBox.height)
-    }).toBeGreaterThanOrEqual(8)
-    await page.close()
-  })
-
-  // Collapsed, the wind note is an icon, not a card with empty space beside it.
-  test('/en collapsed wind note is icon-sized, no empty box', async ({ mobileCtx }) => {
-    const page = await mobileCtx.newPage()
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/en')
-    await mapSettled(page)
-    // No seeded forecast in this fixture (/api/v1/wind 503s), so force the
-    // note visible and closed the same way the attribution test does. Waited
-    // for first: chrome.js mounts it once the map island loads, and evaluate
-    // ran ahead of that mount without this.
-    // A debounced repaint (moveend, once the opening jumpTo settles) can
-    // replace the note between two round trips (see the legend spec above),
-    // reverting `hidden` — so this re-sets it on every poll instead of once.
-    const note = page.locator('.map-wind-label')
-    await expect.poll(async () => (await windNoteBox(page))?.width ?? 999).toBeLessThanOrEqual(48)
-    await expect(note).not.toHaveAttribute('open', '')
-    await page.close()
-  })
-
-  // Owner feedback (Task 7c): the collapsed note used to draw as an ~80px
-  // white card. Icon only now, no fill, parked in the bottom-right column
-  // above the locate button rather than floating in empty map.
-  test('/en collapsed wind note: icon only, transparent, stacked above locate', async ({ mobileCtx }) => {
-    const page = await mobileCtx.newPage()
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/en')
-    await mapSettled(page)
-    const note = page.locator('.map-wind-label')
-    const map = page.locator('#map')
-    await expect.poll(async () => {
-      const box = await windNoteBox(page)
-      return box ? Math.max(box.width, box.height) : 999
-    }).toBeLessThanOrEqual(44)
-    const bg = await note.evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(bg).toBe('rgba(0, 0, 0, 0)')
-    // Unhide and measure in one page-side call: the unmocked /api/v1/wind 503
-    // can flip `hidden` back between two round trips, and a separate
-    // boundingBox() call is a second round trip.
-    const noteBox = await note.evaluate((el) => {
-      el.hidden = false
-      const r = el.getBoundingClientRect()
-      return { x: r.x, y: r.y, width: r.width, height: r.height }
-    })
-    const mapBox = await map.boundingBox()
-    expect(mapBox.x + mapBox.width - (noteBox.x + noteBox.width)).toBeLessThanOrEqual(8)
-    const locateBox = await page.locator('.map-locate').boundingBox()
-    expect(noteBox.y + noteBox.height).toBeLessThanOrEqual(locateBox.y)
-    await page.close()
-  })
-
-  // Review round 1 (Task 7c): the open note's z-index (1) lost to the
-  // freshness card (3) and the open legend key (2) in the same corner —
-  // a click on the note's own text hit whichever card was drawn on top.
-  test('/en open wind note rides above the freshness card, clear of the map edge', async ({ mobileCtx }) => {
-    const page = await mobileCtx.newPage()
-    // Wind defaults on for a phone; mocked so the note opens on real text.
-    await mockWind(page)
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/en')
-    await page.waitForSelector('.map-wind-label', { state: 'attached' })
-    await expect.poll(async () => page.locator('.map-wind-label').evaluate((el) => el.hidden)).toBe(false)
-    await page.evaluate(() => {
-      const el = document.querySelector('.map-wind-label')
-      el.querySelector('.map-wind-label__text').textContent =
-        'Forecast wind arrows are modelled, not measured, and may diverge from the sensors below. Source: a placeholder weather model used for this test.'
-    })
-    await page.locator('.map-wind-label__toggle').click()
-    const note = page.locator('.map-wind-label')
-    await expect(note).toHaveAttribute('open', '')
-
-    const map = await page.locator('#map').boundingBox()
-    await expect.poll(async () => {
-      const box = await note.boundingBox()
-      return box ? box.x + box.width : 999
-    }).toBeLessThanOrEqual(map.x + map.width)
-
-    // It rides above the playback bar (audit U02), so the freshness card's
-    // text stays reachable and nothing of it is covered.
-    const noteBox = await note.boundingBox()
-    const bar = await page.locator('.map-freshness').boundingBox()
-    expect(noteBox.y + noteBox.height).toBeLessThanOrEqual(bar.y)
+      return freshBox.x - (pillBox.x + pillBox.width)
+    }).toBeGreaterThanOrEqual(4)
     await page.close()
   })
 
@@ -443,7 +342,7 @@ test.describe('defaults: values and wind on, legend folded', () => {
     const wind = page.locator('[data-layer-key="view:wind"]')
     await expect(values).toBeChecked()
     await expect(wind).toBeChecked()
-    await expect(page.locator('.map-wind-label')).toBeVisible()
+    await expect(page.locator('.map-layers__wind')).toBeVisible()
   }
 
   test('390x844 portrait: values and wind on, wind note visible', async ({ mobileCtx }) => {
@@ -711,23 +610,6 @@ test.describe('landscape phone keeps the map', () => {
       .evaluate((el) => getComputedStyle(el).overflowY)
     expect(overflowY).not.toBe('visible')
 
-    await page.close()
-  })
-
-  // The pill/icon-only fold styling is now restated in the landscape media
-  // block too, not just portrait; these two guard that.
-  test('844x390 landscape: collapsed wind note is icon-sized, no wide card', async ({ mobileCtx }) => {
-    const page = await mobileCtx.newPage()
-    await new Promise((r) => setTimeout(r, 2000))
-    await page.setViewportSize({ width: 844, height: 390 })
-    await page.goto('/en')
-    await mapSettled(page)
-    const note = page.locator('.map-wind-label')
-    await expect.poll(async () => {
-      const box = await windNoteBox(page)
-      return box ? Math.max(box.width, box.height) : 999
-    }).toBeLessThanOrEqual(44)
-    await expect(note).not.toHaveAttribute('open', '')
     await page.close()
   })
 

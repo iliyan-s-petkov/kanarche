@@ -281,10 +281,6 @@ export function mount(el) {
   map.on('mouseenter', SEA_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', SEA_LAYER_ID, () => { map.getCanvas().style.cursor = '' })
 
-  // MapLibre fires click only for a click, not the end of a drag, so a pan
-  // leaves the wind note open. Runs alongside the marker and cell handlers.
-  map.on('click', () => chrome.foldWind())
-
   // A click that opens neither a marker nor a named cell closes the open panel.
   // Registered after the layer handlers, which claim clicks that open something.
   map.on('click', (e) => {

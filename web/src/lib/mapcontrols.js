@@ -30,6 +30,8 @@ const GLYPHS = {
   in: ['M8 3.25v9.5', 'M3.25 8h9.5'],
   out: ['M3.25 8h9.5'],
   reset: ['M1.75 3.25h12.5v9.5H1.75z', 'M8 3.25v9.5', 'M1.75 8h12.5'],
+  // A table: a header rule and a first column.
+  table: ['M1.75 3.25h12.5v9.5H1.75z', 'M1.75 6.5h12.5', 'M1.75 9.75h12.5', 'M5.75 3.25v9.5'],
   // The crosshair every map uses for "where am I": a ring with four ticks
   // breaking out of it. Not a pin — a pin is a place someone chose, and this
   // button is about the reader's own position.
@@ -140,11 +142,13 @@ export function mountFullscreen(frame, { label, exitLabel, onChange }, doc = doc
 // Three buttons, not two. Plus and minus are obvious; the third is the way
 // back. Reconstructing the opening view by clicking minus the right number of
 // times is not a way back, it is a guess the reader has to make.
-export function mountZoom(frame, { inLabel, outLabel, resetLabel }) {
+// reset: false leaves the third out; the rail carries it in the compass panel.
+export function mountZoom(frame, { inLabel, outLabel, resetLabel, reset = true }) {
   const el = document.createElement('div')
   el.className = 'map-zoom'
   const buttons = {}
-  const spec = [['in', inLabel], ['out', outLabel], ['reset', resetLabel]]
+  const spec = [['in', inLabel], ['out', outLabel]]
+  if (reset) spec.push(['reset', resetLabel])
   for (const [act, name] of spec) {
     const button = document.createElement('button')
     button.type = 'button'
@@ -179,6 +183,19 @@ export function mountLocate(frame, { label }) {
   return button
 }
 
+// mountTable builds the rail's link to the numbers behind the map. No href, no link.
+export function mountTable(frame, { label, href }) {
+  if (!href) return null
+  const a = document.createElement('a')
+  a.className = 'map-table'
+  a.href = href
+  a.setAttribute('aria-label', label)
+  a.setAttribute('title', label)
+  a.appendChild(icon(GLYPHS.table, 'map-table__ico'))
+  frame.appendChild(a)
+  return a
+}
+
 // installZoom connects the stack to a camera.
 //
 // The buttons own no arithmetic and hold no copy of the zoom: they call
@@ -208,7 +225,7 @@ export function installZoom(map, buttons, home) {
   // flyTo, not jumpTo: this one IS a deliberate click, so the flight explains
   // where the reader was taken. locateVisitor's jump is the opposite case — a
   // move nobody asked for. Pitch and bearing return too: north-up and flat.
-  buttons.reset.addEventListener('click', () =>
+  buttons.reset?.addEventListener('click', () =>
     map.flyTo(motion({ center: home.centre, zoom: home.zoom, pitch: 0, bearing: 0 }), USER_MOVE))
 
   // 'zoom', not 'zoomend': the buttons must go dead at the limit during the
@@ -299,10 +316,21 @@ export function mountOrientation(frame, labels) {
   north.className = 'map-orient__north-btn'
   north.textContent = labels.northLabel
 
+  // Reset view, wired by installZoom like the stack's old third button.
+  let reset = null
+  if (labels.resetLabel) {
+    reset = document.createElement('button')
+    reset.type = 'button'
+    reset.className = 'map-orient__reset'
+    reset.setAttribute('data-act', 'reset')
+    reset.textContent = labels.resetLabel
+  }
+
   panel.append(head, tilt.wrap, heading.wrap, north)
+  if (reset) panel.append(reset)
   el.append(button, panel)
   frame.appendChild(el)
-  return { el, button, panel, close, tilt, heading, north, needle }
+  return { el, button, panel, close, tilt, heading, north, reset, needle }
 }
 
 // installOrientation wires the compass to the camera and keeps the needle and

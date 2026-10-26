@@ -6,7 +6,7 @@ import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows
 import { createScaleDialog } from './scaledialog.js'
 import { fillSlots } from './sea.js'
 import { createInfoDialog, pollenInfoContent, seaInfoContent } from './infodialog.js'
-import { mountFullscreen, mountZoom, mountLocate, mountOrientation } from './mapcontrols.js'
+import { mountFullscreen, mountZoom, mountLocate, mountOrientation, mountTable } from './mapcontrols.js'
 import { mountLayers, styleMeta } from './maplayers.js'
 import { setSensorStatus } from './sensorfilter.svelte.js'
 import { readFlag, writeFlag, safeStorage } from './storage.js'
@@ -154,7 +154,15 @@ export function mountChrome(el, cfg) {
       layers.open(false)
     }
   })
-  shell.appendChild(legend)
+  // The bottom bar: legend on the left, the time controls on the right. The
+  // templates render it around .map-freshness; the embed has none, so build one.
+  let bar = shell.querySelector(':scope > .map-bar')
+  if (!bar) {
+    bar = document.createElement('div')
+    bar.className = 'map-bar'
+    shell.appendChild(bar)
+  }
+  bar.prepend(legend)
 
   // #580: a tap anywhere on the open legend folds it, same as the triangle —
   // except its interactive children, which keep their own behaviour.
@@ -230,9 +238,8 @@ export function mountChrome(el, cfg) {
   // the same element on both sides of the trip.
   // The open sensor's gauges ride along too, in a sheet (lib/sensorsheet.svelte.js).
   let fullButton = null
-  // The overlay rows (top controls, bottom-left refresh/window/play) ride along too: real fullscreen paints only the frame.
-  const rows = ['.map-controls', '.map-freshness']
-    .map((sel) => el.closest('.map-shell')?.querySelector(sel))
+  // The overlay rows (top controls, the bottom bar) ride along too: real fullscreen paints only the frame.
+  const rows = [el.closest('.map-shell')?.querySelector('.map-controls'), shell === el ? null : bar]
     .filter(Boolean)
     .map((node) => {
       // A marker, not the next sibling: that sibling may be a row that is itself away in the frame.
@@ -260,7 +267,6 @@ export function mountChrome(el, cfg) {
     label: cfg.t.fullscreen,
     exitLabel: cfg.t.fullscreenExit,
     onChange: (full) => {
-      (full ? el : shell).appendChild(legend)
       for (const { node, home } of rows) {
         if (full) el.appendChild(node)
         else home.before(node)
@@ -269,10 +275,11 @@ export function mountChrome(el, cfg) {
       if (full) { dock.setFull(true); sheet.setFull(true) } else { sheet.setFull(false); dock.setFull(false) }
     },
   })
+  // Reset view lives in the compass panel, so the stack is in and out only.
   const zoom = mountZoom(el, {
     inLabel: cfg.t.zoomIn,
     outLabel: cfg.t.zoomOut,
-    resetLabel: cfg.t.zoomReset,
+    reset: false,
   })
   const orient = mountOrientation(el, {
     label: cfg.t.orientLabel,
@@ -280,8 +287,20 @@ export function mountChrome(el, cfg) {
     tiltLabel: cfg.t.orientTilt,
     headingLabel: cfg.t.orientHeading,
     northLabel: cfg.t.orientNorth,
+    resetLabel: cfg.t.zoomReset,
     closeLabel: cfg.t.close,
   })
+  const table = mountTable(el, { label: cfg.t.tableLink, href: cfg.tableHref })
+
+  // The find-me button: precise, user-initiated geolocation. mount() wires the
+  // click, since the area list and the camera do not exist yet.
+  const locateButton = mountLocate(el, { label: cfg.t.locateButton })
+
+  // One column top-right: zoom, compass, fullscreen, table, locate.
+  const rail = document.createElement('div')
+  rail.className = 'map-rail'
+  rail.append(...[zoom.el, orient.el, fullButton, table, locateButton].filter(Boolean))
+  el.appendChild(rail)
 
   // The averaging window. Built with the chrome and wired by mount(), which
   // owns what a pick costs — see lib/mapwindow.js on why it is a menu in the
@@ -408,63 +427,18 @@ export function mountChrome(el, cfg) {
   // not routine (it does not come and go with the viewport) and it is not an
   // error (nothing failed). Conflating it with hint/error would either let a
   // real error hide the note or let the note block a real error from showing.
-  const note = document.createElement('div')
-  note.className = 'map-note'
+  // A caption line in the bottom bar, shown only for an unscaled metric.
+  const note = document.createElement('p')
+  note.className = 'map-bar__note'
   note.hidden = true
-  el.appendChild(note)
+  bar.appendChild(note)
 
-  // The find-me button: precise, user-initiated geolocation (see locateMe in
-  // this file). The click handler is wired by mount(), which is where `state`
-  // (the loaded area list locateMe reads) and the real `map` first exist;
-  // mountChrome only owns the DOM.
-  const locateButton = mountLocate(el, { label: cfg.t.locateButton })
-
-  // The wind overlay's disclosure. Its control is a checkbox in the layers
-  // menu, with the other overlays — it was a button of its own in the corner,
-  // which said the layer was a different kind of thing from the rest of what
-  // the map draws when it is not. The checkbox's own checked state is what
-  // announces the layer is on, since a screen reader cannot see the arrows.
-  //
-  // The disclosure stays a sibling of the map rather than anything inside that
-  // menu: it must remain visible while the layer is, and the menu closes.
-  //
-  // Folded, and folded again every time the layer comes back: unrolled it is
-  // two sentences and a model name over the map, which on a phone is most of
-  // the screen the arrows are drawn on. The summary keeps it a line that says
-  // what it is, so nothing is hidden — only rolled up.
-  const windNote = document.createElement('details')
-  windNote.className = 'map-wind-label'
+  // The wind layer's disclosure (forecast, model, credit), at the foot of the
+  // layers panel under the checkbox that turns the layer on.
+  const windNote = document.createElement('p')
+  windNote.className = 'map-layers__wind'
   windNote.hidden = true
-  const windSummary = document.createElement('summary')
-  windSummary.className = 'map-wind-label__toggle'
-  // Wrapped so the phone rule below can hide the text and keep only the
-  // ::before (i), the same idiom the layers/locate buttons already use.
-  const windSummaryText = document.createElement('span')
-  windSummaryText.className = 'map-wind-label__text-label'
-  windSummaryText.textContent = cfg.t.windAbout || cfg.t.windToggle
-  windSummary.appendChild(windSummaryText)
-  const windText = document.createElement('div')
-  windText.className = 'map-wind-label__text'
-  windNote.append(windSummary, windText)
-  el.appendChild(windNote)
-
-  // Folds on a click on the note body (links still navigate) and on Escape.
-  // A map click calls foldWind from the map island. aria-expanded mirrors open.
-  const syncWindExpanded = () => windSummary.setAttribute('aria-expanded', String(windNote.open))
-  const foldWind = () => {
-    windNote.open = false
-    syncWindExpanded()
-  }
-  syncWindExpanded()
-  windNote.addEventListener('toggle', syncWindExpanded)
-  windNote.addEventListener('click', (event) => {
-    if (windNote.open && !windSummary.contains(event.target)) foldWind()
-  })
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || !windNote.open) return
-    foldWind()
-    windSummary.focus()
-  }, { signal: live.signal })
+  layers.panel.appendChild(windNote)
 
   // The precedence rule lives in hintController; this is only the wiring from
   // its decision to the banner. textContent, never innerHTML.
@@ -542,9 +516,8 @@ export function mountChrome(el, cfg) {
       note.hidden = !text
     },
     showLegend,
-    foldWind,
     dock,
-    zoomButtons: zoom.buttons,
+    zoomButtons: { ...zoom.buttons, reset: orient.reset },
     orient,
     windowMenu,
     player,
@@ -572,9 +545,8 @@ export function mountChrome(el, cfg) {
     },
     showWind(on, text, mode = 'streaks') {
       setWindRow(windRow, { on, mode })
-      windText.textContent = on ? text : ''
+      windNote.textContent = on ? text : ''
       windNote.hidden = !on || !text
-      if (!on) windNote.open = false
     },
   }
 }

@@ -1,6 +1,7 @@
 import { test, expect } from './fixtures.js'
 
-// The wind note folds on a click on the map or on the note, and on Escape.
+// The wind note lives at the foot of the layers panel: off the map until the
+// layers button opens it, then shown as the panel's last item.
 
 const mockWind = (page) => page.route('**/api/v1/wind', (route) => route.fulfill({
   status: 200,
@@ -19,93 +20,46 @@ const mockWind = (page) => page.route('**/api/v1/wind', (route) => route.fulfill
 const sizes = [{ width: 1440, height: 900 }, { width: 393, height: 873 }]
 
 for (const size of sizes) {
-  test.describe(`wind note fold at ${size.width}x${size.height}`, () => {
+  test.describe(`wind note in the layers panel at ${size.width}x${size.height}`, () => {
     const open = async (ctx) => {
       const page = await ctx.newPage()
       await mockWind(page)
       await page.setViewportSize(size)
       await page.goto('/en')
-      await page.waitForSelector('.map-wind-label', { state: 'attached' })
-      await expect.poll(async () => page.locator('.map-wind-label').evaluate((el) => el.hidden)).toBe(false)
+      await page.waitForSelector('.map-layers__wind', { state: 'attached' })
+      await expect.poll(async () => page.locator('.map-layers__wind').evaluate((el) => el.hidden)).toBe(false)
       await page.waitForFunction(() => {
         const map = document.querySelector('[data-island="map"]')?.__map
         return !!map?.isStyleLoaded?.() && !map.isMoving()
       })
-      const note = page.locator('.map-wind-label')
-      const toggle = page.locator('.map-wind-label__toggle')
-      await toggle.click()
-      await expect(note).toHaveAttribute('open', '')
-      return { page, note, toggle }
+      return page
     }
 
-    // A point on the map clear of the note, the controls and the panels.
-    const emptySpot = async (page) => {
-      // The map can be taller than the viewport; aim inside the part on screen.
-      const box = await page.locator('#map').boundingBox()
-      const view = page.viewportSize()
-      const top = Math.max(box.y, 0)
-      const bottom = Math.min(box.y + box.height, view.height)
-      const p = { x: box.x + box.width * 0.5, y: top + (bottom - top) * 0.35 }
-      const hit = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('.maplibregl-canvas') !== null, [p.x, p.y])
-      expect(hit, 'the click point must land on the map canvas').toBe(true)
-      return p
-    }
-
-    test('the folded toggle is at least 24x24 CSS px', async ({ ctx }) => {
-      const { page, note, toggle } = await open(ctx)
-      await toggle.click()
-      await expect(note).not.toHaveAttribute('open', '')
-      const box = await toggle.boundingBox()
-      expect(box.width).toBeGreaterThanOrEqual(24)
-      expect(box.height).toBeGreaterThanOrEqual(24)
+    test('the note is not on the map while the panel is closed', async ({ ctx }) => {
+      const page = await open(ctx)
+      await expect(page.locator('.map-layers__wind')).toBeHidden()
+      await expect(page.locator('.map-wind-label')).toHaveCount(0)
       await page.close()
     })
 
-    test('a click on the note folds it', async ({ ctx }) => {
-      const { page, note, toggle } = await open(ctx)
-      await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-      await page.locator('.map-wind-label__text').click()
-      await expect(note).not.toHaveAttribute('open', '')
-      await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    test('opening the layers button shows the note as the panel foot', async ({ ctx }) => {
+      const page = await open(ctx)
+      await page.locator('.map__layers .colmenu__btn').click()
+      const note = page.locator('.map__layers .colmenu__panel > .map-layers__wind')
+      await expect(note).toBeVisible()
+      expect((await note.textContent()).trim().length).toBeGreaterThan(0)
+      const last = await page.locator('.map__layers .colmenu__panel').evaluate((p) => p.lastElementChild?.className)
+      expect(last).toBe('map-layers__wind')
       await page.close()
     })
 
-    test('a click on the map folds it', async ({ ctx }) => {
-      const { page, note, toggle } = await open(ctx)
-      const p = await emptySpot(page)
-      await page.mouse.click(p.x, p.y)
-      await expect(note).not.toHaveAttribute('open', '')
-      await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-      await page.close()
-    })
-
-    test('a drag on the map leaves it open', async ({ ctx }) => {
-      const { page, note } = await open(ctx)
-      const p = await emptySpot(page)
-      await page.mouse.move(p.x, p.y)
-      await page.mouse.down()
-      await page.mouse.move(p.x + 60, p.y + 40, { steps: 8 })
-      await page.mouse.up()
-      await page.waitForTimeout(300)
-      await expect(note).toHaveAttribute('open', '')
-      await page.close()
-    })
-
-    test('Escape folds it and returns focus to the toggle', async ({ ctx }) => {
-      const { page, note, toggle } = await open(ctx)
-      await page.keyboard.press('Escape')
-      await expect(note).not.toHaveAttribute('open', '')
-      await expect(toggle).toBeFocused()
-      await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-      await page.close()
-    })
-
-    test('the toggle still toggles', async ({ ctx }) => {
-      const { page, note, toggle } = await open(ctx)
-      await toggle.click()
-      await expect(note).not.toHaveAttribute('open', '')
-      await toggle.click()
-      await expect(note).toHaveAttribute('open', '')
+    test('the layers button closes the panel and the note with it', async ({ ctx }) => {
+      const page = await open(ctx)
+      const btn = page.locator('.map__layers .colmenu__btn')
+      await btn.click()
+      await expect(page.locator('.map-layers__wind')).toBeVisible()
+      await btn.click()
+      await expect(page.locator('.map-layers__wind')).toBeHidden()
       await page.close()
     })
   })

@@ -383,19 +383,18 @@ const uncovered = (locator) => locator.evaluate((el) => {
   })
 })
 
-test('1440: the orientation control and wind note stay clear of the panel, open or folded', async ({ browser }, testInfo) => {
+test('1440: the orientation control and the rail stay clear of the panel, open or folded', async ({ browser }, testInfo) => {
   testInfo.setTimeout(90000)
   const context = await browser.newContext({ viewport: WIDE })
   const page = await context.newPage()
   await mockWind(page)
   await prepareMap(page)
-  await expect.poll(() => page.locator('.map-wind-label').evaluate((el) => el.hidden)).toBe(false)
   await tapHex(page)
   await expect(page.locator(PANEL)).toBeVisible()
   const check = async (when) => {
     await page.waitForTimeout(700)
     const p = await box(page.locator(PANEL))
-    for (const sel of ['.map-orient__btn', '.map-wind-label', '.map-wind-label__toggle', '.map-locate']) {
+    for (const sel of ['.map-orient__btn', '.map__full', '.map-table', '.map-locate']) {
       const c = page.locator(sel).first()
       expect(overlaps(p, await box(c)), `${sel} sits under the panel (${when})`).toBe(false)
       expect(await hittable(c), `${sel} is covered (${when})`).toBe(true)

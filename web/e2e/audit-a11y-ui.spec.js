@@ -112,11 +112,10 @@ test.describe('U01: the phone bottom-right corner', () => {
       expect(geometry.box.height).toBeLessThanOrEqual(geometry.btn.height + 1)
       expect(geometry.boxBg).toBe('rgba(0, 0, 0, 0)')
 
-      // Locate, (i) wind note and attribution all carry an opaque card.
-      await page.evaluate(() => { document.querySelector('.map-wind-label').hidden = false })
+      // Locate, table link and attribution all carry an opaque card.
       const fills = await page.evaluate(() => {
         const alpha = (c) => { const m = c.match(/[\d.]+/g); return m.length > 3 ? Number(m[3]) : 1 }
-        return ['.map-locate', '.map-wind-label__toggle', '.maplibregl-ctrl-attrib-button'].map((s) => {
+        return ['.map-locate', '.map-table', '.maplibregl-ctrl-attrib-button'].map((s) => {
           const bg = getComputedStyle(document.querySelector(s)).backgroundColor
           return { s, alpha: alpha(bg) }
         })
@@ -162,7 +161,7 @@ test.describe('U01: the open attribution card overlaps nothing', () => {
         const rects = await page.evaluate(() => {
           const r = (el) => { const b = el.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height } }
           const card = document.querySelector('.maplibregl-ctrl-attrib-inner')
-          const others = ['.scale--onmap', '.map-freshness', '.map-play', '.map-locate', '.map-wind-label__toggle', '.maplibregl-ctrl-attrib-button']
+          const others = ['.scale--onmap', '.map-freshness', '.map-play', '.map-locate', '.map-table', '.maplibregl-ctrl-attrib-button']
           const found = {}
           for (const s of others) {
             const el = document.querySelector(s)
@@ -191,14 +190,21 @@ test.describe('U02: the open wind note on a phone', () => {
     await mockWind(page)
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/en')
-    await page.waitForSelector('.map-wind-label', { state: 'attached' })
-    await expect.poll(async () => page.locator('.map-wind-label').evaluate((el) => el.hidden)).toBe(false)
-    await page.locator('.map-wind-label__toggle').click()
-    const note = page.locator('.map-wind-label')
-    await expect(note).toHaveAttribute('open', '')
+    await page.waitForSelector('.map-layers__wind', { state: 'attached' })
+    await expect.poll(async () => page.locator('.map-layers__wind').evaluate((el) => el.hidden)).toBe(false)
+    await page.locator('.map__layers .colmenu__btn').click()
+    const note = page.locator('.map__layers .colmenu__panel > .map-layers__wind')
+    await expect(note).toBeVisible()
 
-    const bg = await note.evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(bg.startsWith('rgb(') || /,\s*1\)$/.test(bg), bg).toBe(true)
+    // The note sits on the layers panel's frosted card: near-opaque fill plus blur.
+    const card = await page.locator('.map__layers .colmenu__panel').evaluate((el) => {
+      const s = getComputedStyle(el)
+      const m = s.backgroundColor.match(/[\d.]+/g)
+      const alpha = s.backgroundColor.includes('/') || m.length > 3 ? Number(m[m.length - 1]) : 1
+      return { bg: s.backgroundColor, alpha, blur: (s.backdropFilter || s.webkitBackdropFilter || '').includes('blur') }
+    })
+    expect(card.alpha, card.bg).toBeGreaterThanOrEqual(0.75)
+    expect(card.alpha === 1 || card.blur, JSON.stringify(card)).toBe(true)
 
     await expect.poll(async () => {
       const [n, bar] = await Promise.all([note.boundingBox(), page.locator('.map-freshness').boundingBox()])

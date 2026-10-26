@@ -53,13 +53,13 @@ test('1440: dragging the handle resizes the panel live, moves the controls and p
   await expect(grip).toBeVisible()
   expect(await grip.evaluate((el) => getComputedStyle(el).cursor)).toBe('ns-resize')
   const before = await panelHeight(page)
-  const locateBefore = (await box(page.locator('.map-locate'))).y
+  const barBefore = (await box(page.locator('.map-bar'))).y
 
   await drag(page, -150)
   await expect.poll(() => panelHeight(page)).toBe(before + 150)
   await expect.poll(async () => (await covered(page)).padding).toBe((await covered(page)).css)
   expect((await covered(page)).css).toBeGreaterThanOrEqual(before + 150)
-  expect((await box(page.locator('.map-locate'))).y).toBeLessThan(locateBefore - 140)
+  expect((await box(page.locator('.map-bar'))).y).toBeLessThan(barBefore - 140)
   expect(await page.evaluate(() => localStorage.getItem('kanarche:panel-height'))).toBe(String(before + 150))
   // The chart follows the panel's height.
   const plot = await box(page.locator(`${PANEL} .chart-frame`))
@@ -153,8 +153,8 @@ test('below 1024 there is no panel and no handle', async ({ browser }, testInfo)
   await context.close()
 })
 
-// Every visible right-hand control, the attribution's (i) and the panel: no two may overlap.
-const RIGHT = ['.map__full', '.map-zoom', '.map-orient__btn', '.map-locate', '.maplibregl-ctrl-attrib-button']
+// Every visible right-hand control, the attribution's (i), the bar and the panel: no two may overlap.
+const RIGHT = ['.map__full', '.map-zoom', '.map-orient__btn', '.map-table', '.map-locate', '.maplibregl-ctrl-attrib-button', '.map-bar']
 
 async function assertClear(page, when) {
   await page.waitForTimeout(400)
@@ -201,8 +201,8 @@ test('the right-hand map controls never overlap each other or the panel (1024, 1
   }
 })
 
-// The left stack (layers, legend, freshness card, wind note) at the tallest panel on a short map.
-const LEFT = ['.map__layers', '.scale--onmap', '.map-freshness', '.map-wind-label', '.map-note']
+// The left stack (layers, bar, legend, freshness card) at the tallest panel on a short map.
+const LEFT = ['.map__layers', '.map-bar', '.scale--onmap', '.map-freshness']
 
 test('at the tallest panel on a short map the left stack stays above the panel and on the map (1024x768, home and area)', async ({ browser }, testInfo) => {
   testInfo.setTimeout(120000)
@@ -233,7 +233,7 @@ test('at the tallest panel on a short map the left stack stays above the panel a
 })
 
 // Pairwise: the stack must not collide with itself, whichever way the legend is folded (the panel's max rides it up).
-const STACK = ['.map__layers', '.map-controls__metric', '.map-note', '.scale--onmap', '.map-freshness', '.map-wind-label']
+const STACK = ['.map__layers', '.map-controls__metric', '.scale--onmap', '.map-freshness']
 const NAMES = { en: '/en/', bg: '/' }
 
 test('at the tallest panel the left stack does not overlap itself (1024x768 and 1440x900; BG and EN; legend folded and open)', async ({ browser }, testInfo) => {

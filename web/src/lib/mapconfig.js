@@ -115,6 +115,8 @@ export function readConfig(el) {
     // Home map only: the pollen layer and the CAMS credit link it carries.
     pollenLayer: d.pollenLayer === 'true',
     pollenCreditURL: d.pollenCreditUrl || '',
+    // The rail's table link; empty (embed, uncovered area) omits it.
+    tableHref: d.tableHref || '',
     // One positional list, in WINDOW_CHOICES order — the same idiom as
     // data-metric-labels, and for the same reason a per-window attribute cannot
     // work: data-t-window-24h arrives in the dataset as tWindow-24h.
@@ -216,6 +218,7 @@ export function readConfig(el) {
       unavailable: d.tUnavailable || '',
       unscaled: d.tUnscaled || '',
       locateButton: d.tLocateButton || '',
+      tableLink: d.tTableLink || '',
       locateHint: d.tLocateHint || '',
       locateDenied: d.tLocateDenied || '',
       locateFailed: d.tLocateFailed || '',

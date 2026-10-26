@@ -237,6 +237,20 @@ describe('renderLegend', () => {
     expect(el.querySelectorAll('summary')).toHaveLength(1)
   })
 
+  // A repaint must not detach the focused toggle: a detached node drops focus to body.
+  it('keeps keyboard focus on the toggle across a repaint', () => {
+    const el = draw()
+    document.body.appendChild(el)
+    const toggle = el.querySelector(':scope > .scale__toggle')
+    toggle.tabIndex = 0
+    toggle.focus()
+    expect(document.activeElement).toBe(toggle)
+    renderLegend(el, { title: 'x', toggleLabel: 'y', ...legendRows(BANDS, OPTS) })
+    expect(el.firstElementChild).toBe(toggle)
+    expect(document.activeElement).toBe(toggle)
+    el.remove()
+  })
+
   // A reader who folded the key away must not have it reopened under them by
   // the next refresh. The state lives on the <details>, which the renderer does
   // not touch — this is the assertion that keeps it that way.
@@ -336,30 +350,25 @@ describe('the scale info button', () => {
 })
 
 
-// The legend and the refresh cluster both sit in the map's bottom-left corner.
-// The cluster wins on z-index, so collapsed — when the legend is only its
-// summary, 16px off the bottom — the fold control disappeared underneath it and
-// there was no way left to open the legend again. The legend clears the cluster
-// instead of sharing its band.
+// The legend and the refresh cluster share the bottom bar. Stacked absolutely in
+// one corner, the folded legend once vanished under the cluster; in the bar's
+// flex row they sit side by side instead.
 describe('the on-map legend and the refresh cluster', () => {
   const appCSS = () => {
     const here = dirname(fileURLToPath(import.meta.url))
     return readFileSync(join(here, '..', '..', '..', '..', 'internal', 'web', 'static', 'app.css'), 'utf8')
   }
 
-  // The cluster's own height, read from the sheet rather than restated: a
-  // button grown taller than this rule allows would swallow the legend again.
-  it('lifts the legend above the full height of the refresh cluster', () => {
+  it('lays the folded legend and the cluster out in the bar row, not stacked', () => {
     const css = appCSS()
-
-    const lift = /\.map-shell \.scale--onmap \{[^}]*inset-block-end:\s*([\d.]+)rem/.exec(css)
-    expect(lift, '.map-shell .scale--onmap sets no inset-block-end').not.toBeNull()
-
-    const btn = /\.data-refresh__btn--icon \{[^}]*block-size:\s*([\d.]+)rem/.exec(css)
-    expect(btn, 'refresh button height is no longer declared in rem').not.toBeNull()
-
-    expect(Number(lift[1]), 'legend still overlaps the refresh cluster')
-      .toBeGreaterThan(Number(btn[1]))
+    expect(css).toMatch(/\.map-bar \{[^}]*display:\s*flex/)
+    const legend = /\n\.map-shell \.scale--onmap \{([^}]*)\}/.exec(css)
+    expect(legend, '.map-shell .scale--onmap rule missing').not.toBeNull()
+    expect(legend[1]).toMatch(/position:\s*relative/)
+    const cluster = /\n\.map-freshness \{([^}]*)\}/.exec(css)
+    expect(cluster, '.map-freshness rule missing').not.toBeNull()
+    expect(cluster[1]).not.toMatch(/position:\s*absolute/)
+    expect(cluster[1]).toMatch(/margin-inline-start:\s*auto/)
   })
 })
 
