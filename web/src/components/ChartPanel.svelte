@@ -68,7 +68,7 @@
      template level, leaves that $state untouched, so closing the card
      restores the same window without a save/restore dance. -->
 {#if !selected}
-<h2 class="chart-heading">{heading}</h2>
+<h2 id="chart-heading" class="chart-heading">{heading}</h2>
 {#if metricMeasured}
 <div class="chart-controls">
   <PeriodPicker

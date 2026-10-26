@@ -57,7 +57,7 @@
 
 {#if body}
 <details class="area-sensors">
-  <summary>{summaryText(texts, all.length)}</summary>
+  <summary><h3 class="sensors-h3">{summaryText(texts, all.length)}</h3></summary>
 
   <div class="area-sensors__controls">
     <div class="field field--search">

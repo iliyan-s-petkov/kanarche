@@ -89,6 +89,13 @@ describe('AreaSensors', () => {
     expect(details.querySelector('summary').textContent.trim()).toBe('All sensors in this area (3)')
   })
 
+  it('puts the count in an h3 inside the summary', () => {
+    setScales(scales)
+    setSensors(bodyOf(3), 'sofia')
+    const el = render()
+    expect(el.querySelector('summary > h3').textContent).toBe('All sensors in this area (3)')
+  })
+
   it('is a real data table with a caption and column headers', () => {
     setScales(scales)
     setSensors(bodyOf(3), 'sofia')

@@ -77,7 +77,7 @@ func TestAreaCardsSayTheirTierOnceInTheSubLine(t *testing.T) {
 
 func TestAreaHeaderChipRowShowsDefaultMetricValueAndBand(t *testing.T) {
 	body := fetch(t, renderer(t, cardsSnapshot()), "/area/pleven").Body.String()
-	head := body[strings.Index(body, `<div class="page-head">`):strings.Index(body, `<div class="area-summary">`)]
+	head := body[strings.Index(body, `<div class="page-head">`):strings.Index(body, `<div class="area-summary"`)]
 	for _, want := range []string{
 		`<h1 class="t-title">`,
 		`<div class="area-chips">`,
