@@ -534,8 +534,8 @@ strong, b { font-weight: var(--weight-emphasis); }
   .map-locate-hint { animation: locate-hint-in 200ms ease-out; }
 }
 @keyframes locate-hint-in { from { opacity: 0; } to { opacity: 1; } }
-/* Attribution (i): bottom-right, lifted clear of the bar (bar height about 52px plus gaps). */
-.maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: calc(52px + var(--space-2)); }
+/* Attribution (i): bottom-right, lifted clear of the bar. */
+.maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: calc(var(--map-bar-h) + var(--space-2)); }
 /* Attribution links sit in running text: underline them (axe link-in-text-block). Two classes beat the stock none. */
 .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner a { text-decoration: underline; }
 /* The bathing-site card (lib/seapanel.svelte.js): right, under the search and clear of the control column and
@@ -1128,14 +1128,14 @@ strong, b { font-weight: var(--weight-emphasis); }
 .scale--onmap:not([open]) .scale__toggle {
   min-block-size: 44px; inline-size: auto; padding-inline: var(--space-1); margin-block-end: 0;
 }
-/* Folded, the toggle is the metric name plus a ramp swatch. */
+/* Folded, the toggle is the metric name on one line plus a ramp swatch. */
 .scale--onmap:not([open]) .scale__toggle::after {
   content: ''; inline-size: 60px; block-size: 8px; border-radius: var(--radius-sm);
   background-image: var(--ramp-h, none);
 }
 .scale--onmap:not([open]) .scale__toggle-label {
   position: static; inline-size: auto; block-size: auto; overflow: visible;
-  clip-path: none; white-space: normal;
+  clip-path: none; white-space: nowrap; flex: none;
   display: inline; margin-inline: var(--space-1); font-size: var(--text-compact);
 }
 /* Touch: the kit's 24px square is too small to tap, open or folded. */
@@ -1248,10 +1248,10 @@ html:has(> body.embed) { block-size: 100%; }
 /* The phone and landscape .map--hero rules size the map for a page; a frame has no page. */
 .embed .map-shell:has(.map--hero) { block-size: 100%; max-block-size: none; }
 .embed .map.map--hero { block-size: 100%; min-block-size: 0; max-block-size: none; }
-/* Phone: the footline wraps to several lines, so the bar takes the foot and the footline sits on it (52px bar). */
+/* Phone: the footline wraps to several lines, so the bar takes the foot and the footline sits on it. */
 @media (max-width: 480px) {
   .embed .map-shell .map-bar { inset-block-end: var(--space-2); }
-  .embed .embed__footline { inset-block-end: calc(52px + var(--space-2) + var(--space-2)); }
+  .embed .embed__footline { inset-block-end: calc(var(--map-bar-h) + var(--space-2) + var(--space-2)); }
   .embed .scale--onmap[open] { z-index: 5; }
 }
 /* The metric switcher moves onto the map. On the site it sits in a toolbar
@@ -1568,9 +1568,12 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     background-repeat: no-repeat; background-position: center;
   }
   /* The (i) sits inside the bar's end (bar inset, border, padding); its text opens as a card above the bar.
-     The (i) is a glyph in --fg because the stock icon is black-only. */
-  .maplibregl-ctrl-bottom-right {
+     The (i) is a glyph in --fg because the stock icon is black-only.
+     .map-shell outranks maplibre-gl.css (z-index 2, loaded later); below the bar's 3 the glass covered it. */
+  .map-shell .maplibregl-ctrl-bottom-right {
     z-index: 4;
+  }
+  .maplibregl-ctrl-bottom-right {
     margin-inline-end: calc(var(--space-2) + 1px + var(--space-1));
     margin-block-end: calc(var(--space-2) + 1px + var(--space-1));
   }
@@ -1753,10 +1756,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* Keeps the metric switcher box off the masthead border. */
   [data-island="switcher"] .colmenu { margin-block-start: var(--space-1); }
   /* The open legend scrolls inside the short landscape map, below the layers button:
-     the map height above less 60px for the button row and 68px for the bar under it. */
+     the map height above less 60px for the button row and the bar with its two gaps under it. */
   .map-shell .scale--onmap[open] { overflow-y: auto; }
-  .map-shell:has(.map--hero) .scale--onmap[open] { max-block-size: calc(100svh - 40px - 1.5rem - 28px - 128px); }
-  .map-shell:has(.map--wide) .scale--onmap[open] { max-block-size: calc(100svh - 7rem - 28px - 128px); }
+  .map-shell:has(.map--hero) .scale--onmap[open] {
+    max-block-size: calc(100svh - 40px - 1.5rem - 28px - 60px - var(--map-bar-h) - var(--space-2) * 2);
+  }
+  .map-shell:has(.map--wide) .scale--onmap[open] {
+    max-block-size: calc(100svh - 7rem - 28px - 60px - var(--map-bar-h) - var(--space-2) * 2);
+  }
   /* Six 44px controls do not fit the short map: pinch replaces zoom in and out here. */
   .map-rail { gap: var(--space-1); }
   .map-rail > .map-zoom { display: none; }

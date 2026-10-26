@@ -60,6 +60,8 @@
   --phone-chrome-area: 25.5rem;
   /* Phone masthead height; app.css drops it to 40px in landscape. */
   --masthead-h: 48px;
+  /* Map foot bar height (44px controls, padding, border); what sits above it clears this. */
+  --map-bar-h: 52px;
   /* Horizontal scale ramp; legend.js sets it at runtime from /api/v1/scales. */
   --ramp-h: none;
   /* Outline weight per air-quality class, best first (A11Y-05). Same ladder as CLASS_OUTLINE_PX in classoutline.js. */
