@@ -31,6 +31,7 @@ const headerBoxes = () => {
     toolbarFits: [...document.querySelectorAll('.frame > .toolbar > *')].filter((e) => e.getBoundingClientRect().width > 2).every((e) => e.scrollWidth <= e.clientWidth + 1 && e.getBoundingClientRect().right <= tb.right + 0.5),
     toolbarApart: !overlap(tb, h1) && !overlap(tb, crumb),
     noOverflow: document.documentElement.scrollWidth <= innerWidth,
+    crumbEllipsis: getComputedStyle(document.querySelector('.breadcrumb ol')).textOverflow === 'ellipsis',
   }
 }
 
@@ -50,7 +51,7 @@ for (const lang of ['bg', 'en']) {
         const page = await ctx.newPage()
         await page.goto(lang === 'en' ? `/en/area/${area}` : `/area/${area}`)
         await mapSettled(page)
-        const ok = { belowMasthead: true, inRow: true, apart: true, toolbarInRow: true, toolbarFits: true, toolbarApart: true, noOverflow: true }
+        const ok = { belowMasthead: true, inRow: true, apart: true, toolbarInRow: true, toolbarFits: true, toolbarApart: true, noOverflow: true, crumbEllipsis: true }
         await expect.poll(() => page.evaluate(headerBoxes)).toEqual(ok)
         // The same page with the title forced onto two lines.
         if (process.env.KANARCHE_SHOT_DIR && lang === 'bg' && area === 'sofia') await page.screenshot({ path: `${process.env.KANARCHE_SHOT_DIR}/after-land-sofia-${w}.png` })
