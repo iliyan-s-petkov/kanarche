@@ -1255,18 +1255,39 @@ describe('the sensor status filter', () => {
 
   const drawn = (source) => source.setData.mock.calls.at(-1)[0].features
 
+  // Every island mounted here is stopped afterwards. An island left running keeps its
+  // subscriptions and its in-flight fetch, and its late answer lands in the shared sensor
+  // store while the next test is waiting on it.
+  const mounted = []
+  function mountTracked() {
+    const island = mountSensorTierMap()
+    mounted.push(island.stop)
+    return island
+  }
+
+  // Mounts, then waits for this island's own first paint. findSensor alone is not that
+  // signal: the store is shared, so another island's answer satisfies it before this
+  // island holds its payload, and a filter change then repaints nothing.
+  async function mountPainted() {
+    const island = mountTracked()
+    const source = withStableSource(island.map)
+    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled(), { timeout: 4000 })
+    return { ...island, source }
+  }
+
   beforeEach(() => { clearCache(); resetViewStateForTests(); setSensors(null); resetSensorFilterForTests(); resetSourceFilterForTests() })
-  afterEach(() => { resetViewStateForTests(); setSensors(null); resetSensorFilterForTests(); resetSourceFilterForTests() })
+  afterEach(() => {
+    mounted.splice(0).forEach((stop) => stop())
+    resetViewStateForTests(); setSensors(null); resetSensorFilterForTests(); resetSourceFilterForTests()
+  })
 
   // The store opens on the kit's default, "with data", so the FIRST paint is
   // already filtered — the silent sensor never reaches the map until asked for.
   it('opens on the sensors with data, before the reader touches anything', async () => {
     vi.stubGlobal('fetch', stubMixedSensorFetch())
-    const { map } = mountSensorTierMap()
-    const source = withStableSource(map)
+    const { source } = await mountPainted()
 
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
-    await vi.waitFor(() => expect(source.setData).toHaveBeenCalled(), { timeout: 4000 })
+    expect(findSensor(42)).not.toBeNull()
     expect(drawn(source).map((f) => f.properties.id)).toEqual([42])
   })
 
@@ -1276,8 +1297,7 @@ describe('the sensor status filter', () => {
   it('repaints from the payload it already has, with no second request', async () => {
     const fetchSpy = stubMixedSensorFetch()
     vi.stubGlobal('fetch', fetchSpy)
-    mountSensorTierMap()
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
+    await mountPainted()
 
     const before = fetchSpy.mock.calls.length
     setSensorStatus('all')
@@ -1286,9 +1306,7 @@ describe('the sensor status filter', () => {
 
   it('brings the silent sensors back when the reader asks for all of them', async () => {
     vi.stubGlobal('fetch', stubMixedSensorFetch())
-    const { map } = mountSensorTierMap()
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
-    const source = withStableSource(map)
+    const { source } = await mountPainted()
 
     setSensorStatus('all')
 
@@ -1297,9 +1315,7 @@ describe('the sensor status filter', () => {
 
   it('keeps only the silent ones on the other side of the filter', async () => {
     vi.stubGlobal('fetch', stubMixedSensorFetch())
-    const { map } = mountSensorTierMap()
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
-    const source = withStableSource(map)
+    const { source } = await mountPainted()
 
     setSensorStatus('inactive')
 
@@ -1311,8 +1327,7 @@ describe('the sensor status filter', () => {
   // alone rather than repaint the last sensor payload over them.
   it('does not repaint once the map has left the sensor tier', async () => {
     vi.stubGlobal('fetch', stubMixedSensorFetch())
-    const { map } = mountSensorTierMap()
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
+    const { map } = await mountPainted()
 
     // Aggregate tier: a lower zoom, and an area marker click to drive the
     // refresh synchronously rather than through the debounced moveend.
@@ -1335,8 +1350,7 @@ describe('the sensor status filter', () => {
   // the hint without a refresh behind it.
   it('explains the blank map as soon as both networks are unticked', async () => {
     vi.stubGlobal('fetch', stubMixedSensorFetch())
-    const { el } = mountSensorTierMap()
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
+    const { el } = await mountPainted()
     const banner = el.querySelector('.map-hint')
 
     setSourceEnabled('sensor.community', false)
@@ -1350,9 +1364,8 @@ describe('the sensor status filter', () => {
   // next status change.
   it('stops listening once the island is stopped', async () => {
     vi.stubGlobal('fetch', stubMixedSensorFetch())
-    const { map, stop } = mountSensorTierMap()
-    await vi.waitFor(() => expect(findSensor(42)).not.toBeNull())
-    withStableSource(map)
+    const { map, stop } = await mountPainted()
+    map.getSource.mockClear()
 
     stop()
     setSensorStatus('active')

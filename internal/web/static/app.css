@@ -1515,7 +1515,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     .frame:has(.area-chips):has(.pollen-chip) .map--wide {
       block-size: calc(100svh - var(--phone-chrome-area) - var(--phone-chips-h) - var(--control-height) - var(--space-2) - 28px);
     }
-    /* Header children join the grid so the scope note can follow the map. */
+    /* Six 44px controls stacked need a map 369px tall to clear the bottom pills and the attribution (i).
+     Shorter phones (the pollen line costs the map 56px) lay the zoom pair side by side and tighten
+     the gap: the rail drops from 297px to 236px and keeps every control. */
+  @media (max-height: 700px) {
+    .map-rail { gap: var(--space-1); align-items: flex-end; }
+    .map-rail > .map-zoom { grid-auto-flow: column; }
+  }
+  /* Header children join the grid so the scope note can follow the map. */
     .frame:has(> .area-summary) > .page-head:not(.page-head--compact) { display: contents; }
     .frame:has(> .area-summary) > .page-head > h1 { margin-block-start: var(--space-2); }
     .frame:has(> .area-summary) > .page-head > :is(h1, .area-chips):not(:has(+ .area-chips)) { margin-block-end: var(--space-1); }
@@ -1727,14 +1734,17 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
      .area-rest wraps .place-host, the chart and the sensors, so it is the
      direct child that spans; they stack inside it. */
   .frame:has(> [data-island="sensorbar"]), .frame:has(> .page-head:not(.page-head--compact)) {
-    display: grid; grid-template-columns: max-content fit-content(12rem) minmax(0, 1fr) minmax(0, 1fr);
+    display: grid; grid-template-columns: fit-content(14rem) fit-content(12rem) minmax(0, 1fr) minmax(0, 1fr);
+    /* The breadcrumb column is capped (it scrolls inside): a district trail at max-content took
+       450px of 667 and crushed the toolbar to 12px. */
     /* Row 1 pinned: an auto row here measured taller than any header cell's
        own content (a nested flex formatting context inside a grid track,
        sized inflated) — every header cell's real content is under 48px. */
     grid-template-rows: 48px auto;
     align-items: center; column-gap: var(--space-3); row-gap: var(--space-2);
   }
-  .frame:has(> .page-head:not(.page-head--compact)) > nav { grid-row: 1; grid-column: 1; }
+  /* The 672px+ breadcrumb top margin pushed it 12px below the centre of the 48px row. */
+  .frame:has(> .page-head:not(.page-head--compact)) > nav { grid-row: 1; grid-column: 1; margin-block-start: 0; }
   .frame:has(> .page-head:not(.page-head--compact)) > .page-head:not(.page-head--compact) { grid-row: 1; grid-column: 2; }
   .frame:has(> .page-head:not(.page-head--compact)) > .toolbar { grid-row: 1; grid-column: 3 / 5; min-block-size: 0; padding-block-end: 0; }
   .area-map-h { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
@@ -1792,6 +1802,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* The city boundary note is a sentence, not a header-row label; it does not
      fit the one-row header and is not part of the §4.2 wireframe. */
   .page-head:not(.page-head--compact) p { display: none; }
+  /* The area h1 rule (specificity 0,4,1) beats the line above, so the title kept its
+     24-32px size and overflowed the 48px row. Same selector here, body size, and the
+     chip row leaves the flow (the summary under the map carries the value). */
+  .frame:has(> .area-summary) > .page-head:not(.page-head--compact) h1 { font-size: var(--text-body); line-height: 1.25; }
+  .frame:has(> .area-summary) > .page-head > .area-chips {
+    position: absolute; inline-size: 1px; block-size: 1px; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
 
   /* Cards four across, same as the phone F1 shot; the 672px block's 2-column
      override does not apply here (this query is height-, not width-gated). */
