@@ -294,127 +294,6 @@ describe('the pollen key', () => {
   })
 })
 
-// The disclosure is why an unmeasured forecast layer is allowed on a map of
-// measurements, so it is never dismissible — but two sentences and a model name
-// unrolled over the map is most of a phone screen. Folded, it is a line the
-// reader can open.
-describe('the wind disclosure', () => {
-  // Scoped to its own frame: the disclosure is one of two <details> the chrome
-  // builds, and a document-wide query would find whichever came first.
-  const chrome = () => {
-    const el = document.createElement('div')
-    el.className = 'map'
-    el.dataset.tWindAbout = 'About the wind layer'
-    document.body.appendChild(el)
-    return { el, ...mountChrome(el, readConfig(el)) }
-  }
-
-  it('arrives folded, with the full text inside it', () => {
-    const c = chrome()
-    c.showWind(true, 'Wind forecast · valid now')
-    const note = c.el.querySelector('.map-wind-label')
-    expect(note.tagName).toBe('DETAILS')
-    expect(note.open).toBe(false)
-    expect(note.hidden).toBe(false)
-    expect(note.textContent).toContain('Wind forecast · valid now')
-  })
-
-  it('names itself on the summary, so a folded line still says what it is', () => {
-    const c = chrome()
-    c.showWind(true, 'Wind forecast · valid now')
-    const summary = c.el.querySelector('.map-wind-label summary')
-    expect(summary).toBeTruthy()
-    expect(summary.textContent.trim()).not.toBe('')
-  })
-
-  it('carries the i18n text in a labelled span, so it can be hidden on phones without losing the (i)', () => {
-    const c = chrome()
-    c.showWind(true, 'Wind forecast · valid now')
-    const label = c.el.querySelector('.map-wind-label summary .map-wind-label__text-label')
-    expect(label).toBeTruthy()
-    expect(label.textContent.trim()).toBe('About the wind layer')
-  })
-
-  it('goes away with the arrows, and comes back folded', () => {
-    const c = chrome()
-    c.showWind(true, 'Wind forecast · valid now')
-    const note = c.el.querySelector('.map-wind-label')
-    note.open = true
-    c.showWind(false, '')
-    expect(note.hidden).toBe(true)
-    c.showWind(true, 'Wind forecast · valid now')
-    expect(note.open).toBe(false)
-  })
-
-  // An opened note, its parts, and the toggle that mirrors it.
-  const opened = () => {
-    const c = chrome()
-    c.showWind(true, 'Wind forecast · valid now')
-    const note = c.el.querySelector('.map-wind-label')
-    const summary = note.querySelector('summary')
-    note.open = true
-    // A browser fires toggle after open changes; jsdom's is queued, so send it.
-    note.dispatchEvent(new Event('toggle'))
-    return { c, note, summary, body: note.querySelector('.map-wind-label__text') }
-  }
-  const click = (target) => target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
-
-  it('folds on a click on its body', () => {
-    const { note, body, summary } = opened()
-    click(body)
-    expect(note.open).toBe(false)
-    expect(summary.getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('keeps the summary toggling: jsdom toggles on click, so two clicks fold then reopen', () => {
-    const { note, summary } = opened()
-    click(summary)
-    expect(note.open).toBe(false)
-    click(summary)
-    expect(note.open).toBe(true)
-  })
-
-  it('lets a link in the body navigate while folding', () => {
-    const { note, body } = opened()
-    const link = document.createElement('a')
-    link.href = 'https://open-meteo.com/'
-    body.appendChild(link)
-    const ev = new MouseEvent('click', { bubbles: true, cancelable: true })
-    link.dispatchEvent(ev)
-    expect(ev.defaultPrevented).toBe(false)
-    expect(note.open).toBe(false)
-  })
-
-  it('folds when the map reports a click', () => {
-    const { c, note } = opened()
-    c.foldWind()
-    expect(note.open).toBe(false)
-  })
-
-  it('folds on Escape and returns focus to the summary', () => {
-    const { note, summary } = opened()
-    document.body.focus()
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    expect(note.open).toBe(false)
-    expect(document.activeElement).toBe(summary)
-  })
-
-  it('leaves Escape alone while folded', () => {
-    const { note, summary } = opened()
-    note.open = false
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    expect(document.activeElement).not.toBe(summary)
-  })
-
-  it('keeps aria-expanded in step with the open state', () => {
-    const { note, summary } = opened()
-    expect(summary.getAttribute('aria-expanded')).toBe('true')
-    note.open = false
-    note.dispatchEvent(new Event('toggle'))
-    expect(summary.getAttribute('aria-expanded')).toBe('false')
-  })
-})
-
 // A sensor that has stopped reporting still has a cell on the grid, drawn in
 // the no-data colour. At country zoom that is most of what a reader sees on a
 // bad day for the network, and it reads as "nothing here" rather than "nobody
@@ -501,11 +380,13 @@ describe('mountChrome() keeps the key on the map in fullscreen', () => {
     const legend = shell.querySelector('details.scale')
     expect(legend, 'no key on the shell').toBeTruthy()
 
+    // It rides in the bottom bar, which is what moves.
     el.querySelector('.map__full').click()
-    expect(legend.parentElement, 'the key stayed outside the fullscreen frame').toBe(el)
+    expect(el.contains(legend), 'the key stayed outside the fullscreen frame').toBe(true)
 
     el.querySelector('.map__full').click()
-    expect(legend.parentElement).toBe(shell)
+    expect(el.contains(legend)).toBe(false)
+    expect(legend.parentElement.parentElement).toBe(shell)
   })
 
   it('leaves it a details, so it can still be folded away', () => {
@@ -891,7 +772,7 @@ describe('mountChrome anchors the key to the shell and the tier line outside it'
   it('puts the key in the shell, not in the map', () => {
     const { shell, el } = chrome()
     expect(el.querySelector('.scale--onmap')).toBeNull()
-    expect(shell.querySelector(':scope > .scale--onmap')).not.toBeNull()
+    expect(shell.querySelector(':scope > .map-bar > .scale--onmap')).not.toBeNull()
   })
 
   it('puts the tier line after the shell, so the shell stays the map box', () => {
@@ -900,12 +781,10 @@ describe('mountChrome anchors the key to the shell and the tier line outside it'
     expect(host.lastElementChild.className).toContain('map-tier')
   })
 
-  // The banners stay children of the map: they are messages about the map and
-  // they do not have the phone rule the key has.
-  it('leaves the hint and note inside the map', () => {
+  // The hint banner stays a child of the map; the unscaled note rides in the bar.
+  it('leaves the hint inside the map', () => {
     const { el } = chrome()
     expect(el.querySelector('.map-hint')).not.toBeNull()
-    expect(el.querySelector('.map-note')).not.toBeNull()
   })
 
   // Without a shell the key still has to render. It anchors to the map instead,

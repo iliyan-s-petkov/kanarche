@@ -164,6 +164,8 @@
      data-t-unavailable="{{.T "map.error.unavailable"}}"
      data-t-unscaled="{{.T "metric.unscaled"}}"
      data-t-locate-button="{{.T "locate.button"}}"
+     data-t-table-link="{{.T "map.data_table_link"}}"
+     data-table-href="{{if .Area.Covered}}#sensors-h{{end}}"
      data-t-locate-hint="{{.T "locate.hint"}}"
      data-t-locate-denied="{{.T "locate.denied"}}"
      data-t-locate-failed="{{.T "locate.failed"}}"
@@ -270,7 +272,7 @@
      data-t-sea-sources-info-label="{{.T "sea.sources.info_label"}}"></div>
 {{/* Same overlay as the home page's: the age of the data belongs beside the
      data, and this page's partial carries the reload button too. */}}
-<div class="map-freshness">{{template "dataFreshness" .}}</div>
+<div class="map-bar"><div class="map-freshness">{{template "dataFreshness" .}}</div></div>
 {{template "scrollCue" .}}
 </div>
 {{/* Server-rendered LCP element; mountChrome adopts it (PageData.InitialTier). */}}

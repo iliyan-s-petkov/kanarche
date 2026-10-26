@@ -15,12 +15,12 @@ const WIDE = '(min-width: 1024px)'
 const TITLE_ID = 'map-dock-title'
 const FOLD_KEY = 'kanarche:panel-folded'
 const SVG_NS = 'http://www.w3.org/2000/svg'
-// The right-hand control column; when it and the locate button do not fit above the panel, the panel clears the column.
-const COLUMN = '.map__full, .map-zoom, .map-orient'
+// The right-hand control rail; when it does not fit above the panel, the panel clears the rail.
+const COLUMN = '.map-rail'
 const GAP = 8
-// The left stack: the top row, and the controls that ride up with the panel (legend, freshness card).
-const TOP_ROW = '.map__layers, .map-controls, .map-note'
-const RIDERS = '.scale--onmap, .map-freshness'
+// The top row, and the bottom bar that rides up with the panel.
+const TOP_ROW = '.map__layers, .map-controls'
+const RIDERS = '.map-bar'
 
 function icon(doc, cls, d) {
   const svg = doc.createElementNS(SVG_NS, 'svg')
@@ -193,8 +193,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   function crowded() {
     const top = frame.getBoundingClientRect().top
     const lowest = Math.max(0, ...[...(shell ?? frame).querySelectorAll(COLUMN)].map((n) => n.getBoundingClientRect().bottom - top))
-    const locate = (shell ?? frame).querySelector('.map-locate')?.offsetHeight ?? 0
-    return el.getBoundingClientRect().top - top < lowest + locate + 2 * GAP
+    return el.getBoundingClientRect().top - top < lowest + 2 * GAP
   }
   const watcher = typeof win?.ResizeObserver === 'function' ? new win.ResizeObserver(measure) : null
 

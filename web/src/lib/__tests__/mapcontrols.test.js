@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mountFullscreen, mountZoom, mountLocate, installZoom, mountOrientation, installOrientation } from '../mapcontrols.js'
+import { mountFullscreen, mountZoom, mountLocate, mountTable, installZoom, mountOrientation, installOrientation } from '../mapcontrols.js'
 
 const frame = () => {
   const el = document.createElement('div')
@@ -416,5 +416,49 @@ describe('orientation control', () => {
     parts.button.click()
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     expect(parts.panel.hidden).toBe(true)
+  })
+})
+
+describe('mountTable', () => {
+  it('is an icon link to the numbers, named for a screen reader', () => {
+    const el = frame()
+    const a = mountTable(el, { label: 'Data table', href: '#sensors-h' })
+    expect(a.tagName).toBe('A')
+    expect(a.className).toBe('map-table')
+    expect(a.getAttribute('href')).toBe('#sensors-h')
+    expect(a.getAttribute('aria-label')).toBe('Data table')
+    expect(a.getAttribute('title')).toBe('Data table')
+    expect(a.querySelector('svg').getAttribute('aria-hidden')).toBe('true')
+    expect(a.parentElement).toBe(el)
+  })
+
+  it('is not built without a target', () => {
+    const el = frame()
+    expect(mountTable(el, { label: 'Data table', href: '' })).toBeNull()
+    expect(el.querySelector('.map-table')).toBeNull()
+  })
+})
+
+// The rail folds reset into the compass: the zoom stack drops it, the panel carries it.
+describe('reset view in the compass panel', () => {
+  it('mountZoom leaves reset out when asked', () => {
+    const { el: bar, buttons } = mountZoom(frame(), { inLabel: 'In', outLabel: 'Out', reset: false })
+    expect([...bar.children].map((b) => b.getAttribute('data-act'))).toEqual(['in', 'out'])
+    expect(buttons.reset).toBeUndefined()
+  })
+
+  it('mountOrientation puts a named reset button beside north', () => {
+    const parts = mountOrientation(frame(), { label: 'Orientation', northLabel: 'North', resetLabel: 'Reset view', closeLabel: 'Close' })
+    expect(parts.reset.getAttribute('data-act')).toBe('reset')
+    expect(parts.reset.textContent).toBe('Reset view')
+    expect(parts.reset.type).toBe('button')
+    expect(parts.panel.contains(parts.reset)).toBe(true)
+    expect(parts.north.nextElementSibling).toBe(parts.reset)
+  })
+
+  it('mountOrientation builds no reset without a label', () => {
+    const parts = mountOrientation(frame(), { label: 'Orientation', northLabel: 'North', closeLabel: 'Close' })
+    expect(parts.reset).toBeNull()
+    expect(parts.panel.querySelector('[data-act="reset"]')).toBeNull()
   })
 })
