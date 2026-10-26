@@ -160,7 +160,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 .area-now, .area-day { margin-block: var(--space-2) 0; }
 /* Touch phones: summary and no-coverage notice after the map, before the sections (reordered in the .frame grid). */
 @media (hover: none) {
-  .frame > .area-summary, .frame > .notice, .frame > .area-now-block, .frame > .area-rest { order: 1; }
+  .frame > .area-summary { order: 1; }
+  .frame > .notice, .frame > .page-head > .notice-inline { order: 2; }
+  .frame > .area-now-block, .frame > .area-rest { order: 3; }
 }
 .area-day { color: var(--fg-2); }
 /* The area page title and its value chip row. */
@@ -1504,13 +1506,20 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     min-block-size: 20rem; max-block-size: none;
   }
   .map--wide { block-size: calc(100svh - 15rem); min-block-size: 18rem; }
-  /* Area pages, covered or not: shrink so the pull tab stays above the fold on touch phones. */
-  @media (hover: none) {
-    .map--wide {
-      block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: 50svh;
+  /* Portrait touch phones: the area map fills the first screen down to the 28px pull tab.
+     --phone-chrome-area is everything above the map; the chip row and pollen line add to it. */
+  @media (hover: none) and (orientation: portrait) {
+    .map--wide { block-size: calc(100svh - var(--phone-chrome-area) - 28px); min-block-size: var(--phone-map-min); }
+    .frame:has(.area-chips) .map--wide { block-size: calc(100svh - var(--phone-chrome-area) - var(--phone-chips-h) - 28px); }
+    .frame:has(.pollen-chip) .map--wide { block-size: calc(100svh - var(--phone-chrome-area) - var(--control-height) - var(--space-2) - 28px); }
+    .frame:has(.area-chips):has(.pollen-chip) .map--wide {
+      block-size: calc(100svh - var(--phone-chrome-area) - var(--phone-chips-h) - var(--control-height) - var(--space-2) - 28px);
     }
-    /* The header value chip row is 2.5rem the reservation above did not count. */
-    .frame:has(.area-chips) .map--wide { block-size: calc(100svh - var(--phone-chrome-area) - 2.5rem - 28px); min-block-size: calc(50svh - 2.5rem); }
+    /* Header children join the grid so the scope note can follow the map. */
+    .frame:has(> .area-summary) > .page-head:not(.page-head--compact) { display: contents; }
+    .frame:has(> .area-summary) > .page-head > h1 { margin-block-start: var(--space-2); }
+    .frame:has(> .area-summary) > .page-head > :is(h1, .area-chips):not(:has(+ .area-chips)) { margin-block-end: var(--space-1); }
+    .frame:has(> .area-summary) > .page-head > .notice-inline { margin-block: var(--space-2) 0; }
   }
   /* Portrait touch phones: a one-column grid so .area-summary can move below the map. */
   @media (hover: none) {

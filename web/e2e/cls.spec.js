@@ -98,8 +98,9 @@ for (const width of widths) {
 // touch context is needed to reproduce it; 390x844 is the Lighthouse mobile size.
 const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }
 
-test('area page layout shift stays under 0.05 at 390x844', async ({ browser }) => {
-  const context = await browser.newContext(phone)
+// 360x640 too: the map there is sized by the short-screen budget.
+for (const [w, h] of [[390, 844], [360, 640]]) test(`area page layout shift stays under 0.05 at ${w}x${h}`, async ({ browser }) => {
+  const context = await browser.newContext({ ...phone, viewport: { width: w, height: h } })
   const page = await context.newPage()
   await page.addInitScript(() => {
     window.__cls = 0

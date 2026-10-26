@@ -53,8 +53,12 @@
      pixel value: 926:382 is a maximum aspect, so a wider box crops the country
      top and bottom while a taller one is always safe. */
   --map-cap: 78vh;
-  /* Phone chrome above an area page's map, worst case: city note plus a two-line h1 (the area h1 names the air quality, so a long city name wraps at 393px). Measured 374px on the fixture with the two-line h1 (349px before), plus one wrapped line when the city note grew; was 24rem. */
-  --phone-chrome-area: 25.5rem;
+  /* Phone chrome above an area page's map (masthead, breadcrumb, two-line h1, one toolbar row); the scope note sits below the map. */
+  --phone-chrome-area: 12.5rem;
+  /* The area value chip row and its gap. */
+  --phone-chips-h: 2.5rem;
+  /* Floor for the phone area map on short screens. */
+  --phone-map-min: 15rem;
   /* Phone masthead height; app.css drops it to 40px in landscape. */
   --masthead-h: 48px;
   /* Map foot bar height (44px controls, padding, border); what sits above it clears this. */
