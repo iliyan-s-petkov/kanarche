@@ -321,7 +321,7 @@ export function mountOrientation(frame, labels) {
   if (labels.resetLabel) {
     reset = document.createElement('button')
     reset.type = 'button'
-    reset.className = 'map-orient__north-btn map-orient__reset'
+    reset.className = 'map-orient__reset'
     reset.setAttribute('data-act', 'reset')
     reset.textContent = labels.resetLabel
   }

@@ -101,9 +101,9 @@ export function legendRows(bands, { noDataColour, noDataLabel, lang, words }) {
 // opens an empty dialog is worse than no (i) at all.
 export function renderLegend(el, { title, toggleLabel, bands, noData, info, bandsLabel }) {
   // Reuse the toggle across moveend refreshes so focus and in-flight clicks keep their target.
+  // It stays attached: removing a focused node drops focus to body.
   let toggle = el.querySelector(':scope > .scale__toggle')
-  if (toggle) toggle.remove()
-  el.replaceChildren()
+  for (const n of [...el.childNodes]) if (n !== toggle) n.remove()
 
   // The progressive bar replaces the stacked blocks, which is what makes the
   // key small enough to sit ON the map: six named rows are a panel, one 20px
@@ -135,7 +135,7 @@ export function renderLegend(el, { title, toggleLabel, bands, noData, info, band
   }
   // Accessible name: visible text (title) is sufficient; aria-label would conflict (WCAG 2.5.3).
   toggle.querySelector('.scale__toggle-label').textContent = title
-  el.appendChild(toggle)
+  if (toggle.parentNode !== el) el.appendChild(toggle)
 
   const label = document.createElement('span')
   label.className = 'scale__label'

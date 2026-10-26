@@ -946,8 +946,9 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* The bar and attribution clear the panel, open or folded; --map-panel-h is 0 (unset) with none. */
 .map-shell--docked .map-bar { inset-block-end: calc(var(--space-2) + var(--map-panel-h, 0px)); }
 .map-shell--docked .maplibregl-ctrl-bottom-right, .map-shell--docked .maplibregl-ctrl-bottom-left { bottom: var(--map-panel-h, 0px); }
-/* Too little map above the panel for the rail (lib/sidedock.svelte.js): the panel stops short of it. */
-.map-shell--crowded .map-dock { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+/* Too little map above the panel for the rail (lib/sidedock.svelte.js): crowded, the panel stops short of it; tight, the bar and attribution do. */
+.map-shell--crowded .map-dock, .map-shell--tight .map-bar { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+.map-shell--tight .maplibregl-ctrl-bottom-right { margin-inline-end: calc(var(--space-2) + 40px); }
 @media (hover: none) {
   .map-dock__fold, .map-dock__close, .map-dock .panel-info, .map-dock__more { min-block-size: 44px; min-inline-size: 44px; }
   .map-dock .panel-chart__tools .btn, .map-dock .chart-field__control, .map-dock .chart-range input, .map-dock .panel-more { min-block-size: 44px; }
@@ -1076,10 +1077,11 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 /* Open: frosted glass (issue 578), a fixed card width (278px is what a 390px
    phone gets) so it is never stretched across a wide map, and the vertical
-   bands row layout below. The colour bar stays opaque. */
+   bands row layout below. The colour bar stays opaque. 100% is the bar inside
+   its 1px border, the map less 1rem and 2px, so this is the map less 7rem. */
 .map-shell .scale--onmap[open] {
   position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0;
-  inline-size: min(278px, calc(100% - 7rem)); z-index: 4;
+  inline-size: min(278px, calc(100% + 2px - 6rem)); max-inline-size: none; z-index: 4;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -1246,9 +1248,10 @@ html:has(> body.embed) { block-size: 100%; }
 /* The phone and landscape .map--hero rules size the map for a page; a frame has no page. */
 .embed .map-shell:has(.map--hero) { block-size: 100%; max-block-size: none; }
 .embed .map.map--hero { block-size: 100%; min-block-size: 0; max-block-size: none; }
-/* Phone: the footline may wrap to two lines, so the bar rides higher. */
+/* Phone: the footline wraps to several lines, so the bar takes the foot and the footline sits on it (52px bar). */
 @media (max-width: 480px) {
-  .embed .map-bar { inset-block-end: 5rem; }
+  .embed .map-shell .map-bar { inset-block-end: var(--space-2); }
+  .embed .embed__footline { inset-block-end: calc(52px + var(--space-2) + var(--space-2)); }
   .embed .scale--onmap[open] { z-index: 5; }
 }
 /* The metric switcher moves onto the map. On the site it sits in a toolbar
@@ -1294,7 +1297,7 @@ html:has(> body.embed) { block-size: 100%; }
 .embed .map-locate { display: none; }
 .embed .maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: 0; }
 /* The footline owns the frame's foot, so the bar holds only the legend, above it. */
-.embed .map-bar { inset-block-end: 3.5rem; inset-inline-end: auto; }
+.embed .map-bar { inset-block-end: 3.5rem; inset-inline-end: auto; padding-inline-end: var(--space-2); }
 /* The panel opens over the map rather than under it: in a frame there is no
    "under". Capped so the map it describes stays the larger half. */
 .embed__panel {
@@ -1518,10 +1521,9 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-bar { padding-inline-end: calc(44px + var(--space-1) * 2); flex-wrap: nowrap; gap: var(--space-1); }
   .map-bar:has(.map-bar__note:not([hidden])) { flex-wrap: wrap; }
   .map-freshness { margin: 0; margin-inline-start: auto; display: flex; align-items: center; gap: 0; flex: none; }
-  /* Playing, the time row IS the replay bar and spans the bar; the window button and the key stand down. */
+  /* Playing, the time row fills the bar beside the folded key; the window button stands down. */
   .map-freshness:has(.map-play--open) { flex: 1 1 auto; min-inline-size: 0; margin-inline-start: 0; }
   .map-freshness:has(.map-play--open) .map-window { display: none; }
-  .map-bar:has(.map-play--open) > .scale--onmap { display: none; }
   /* One shared card (.map-freshness above) instead of a card per button — the
      window toggle and the idle play button used to draw two overlapping
      white pills. */
@@ -1750,11 +1752,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   }
   /* Keeps the metric switcher box off the masthead border. */
   [data-island="switcher"] .colmenu { margin-block-start: var(--space-1); }
-  /* The open legend scrolls inside the short landscape map, below the layers button. */
-  .map-shell .scale--onmap[open] {
-    max-block-size: calc(100vh - 2 * var(--space-2) - 12px - 44px - var(--space-2) - 56px);
-    overflow-y: auto;
-  }
+  /* The open legend scrolls inside the short landscape map, below the layers button:
+     the map height above less 60px for the button row and 68px for the bar under it. */
+  .map-shell .scale--onmap[open] { overflow-y: auto; }
+  .map-shell:has(.map--hero) .scale--onmap[open] { max-block-size: calc(100svh - 40px - 1.5rem - 28px - 128px); }
+  .map-shell:has(.map--wide) .scale--onmap[open] { max-block-size: calc(100svh - 7rem - 28px - 128px); }
   /* Six 44px controls do not fit the short map: pinch replaces zoom in and out here. */
   .map-rail { gap: var(--space-1); }
   .map-rail > .map-zoom { display: none; }
@@ -2076,7 +2078,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 }
 @media (max-width: 672px) { .map-orient__btn { inline-size: 44px; block-size: 44px; } }
 .map-orient__btn:hover { background: var(--surface-2); }
-.map-orient__btn:focus-visible, .map-orient__close:focus-visible, .map-orient__north-btn:focus-visible,
+.map-orient__btn:focus-visible, .map-orient__close:focus-visible, .map-orient__north-btn:focus-visible, .map-orient__reset:focus-visible,
 .map-orient__row input:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 .map-orient__north { fill: var(--danger); }
 .map-orient__south { fill: currentColor; opacity: .55; }
@@ -2097,14 +2099,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .map-orient__close:hover { color: var(--fg); }
 .map-orient__row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-2); font-size: var(--text-compact); }
 .map-orient__row input { grid-column: 1 / -1; inline-size: 100%; margin: 0; accent-color: var(--accent); }
-.map-orient__north-btn {
+.map-orient__north-btn, .map-orient__reset {
   justify-self: start; padding: var(--space-1) var(--space-3); border: 1px solid var(--border);
   border-radius: var(--radius-sm); background: var(--bg); color: var(--fg); font: inherit;
   font-size: var(--text-compact); cursor: pointer;
 }
-.map-orient__north-btn:hover { background: var(--surface-2); }
+.map-orient__north-btn:hover, .map-orient__reset:hover { background: var(--surface-2); }
 @media (hover: none) {
-  .map-orient__close, .map-orient__north-btn { min-block-size: 44px; min-inline-size: 44px; }
+  .map-orient__close, .map-orient__north-btn, .map-orient__reset { min-block-size: 44px; min-inline-size: 44px; }
 }
 
 /* Address search in the finder: the OSM credit line and the searched-address pin. */

@@ -36,11 +36,11 @@ for (const [name, size] of Object.entries(sizes)) {
     expect(h.x).toBeGreaterThanOrEqual(map.x)
     expect(h.x + h.width).toBeLessThanOrEqual(map.x + map.width)
     const locate = await box(page.locator('.map-locate'))
-    // Above the button, its right edge on the button's, so the arrow points down at it.
-    expect(h.y + h.height).toBeLessThanOrEqual(locate.y)
-    expect(locate.y - (h.y + h.height)).toBeLessThan(20)
-    expect(Math.abs(h.x + h.width - (locate.x + locate.width))).toBeLessThan(2)
-    for (const b of await page.locator('.map-zoom button, .map__full').all()) {
+    // Left of the button in the rail, bottoms level, so the arrow points right at it.
+    expect(h.x + h.width).toBeLessThanOrEqual(locate.x)
+    expect(locate.x - (h.x + h.width)).toBeLessThan(20)
+    expect(Math.abs(h.y + h.height - (locate.y + locate.height))).toBeLessThan(2)
+    for (const b of await page.locator('.map-zoom button, .map__full, .map-table, .map-orient__btn').all()) {
       if (await b.isVisible()) expect(overlaps(h, await box(b))).toBe(false)
     }
     await shot(page, `locatehint-${name}`)
@@ -48,7 +48,7 @@ for (const [name, size] of Object.entries(sizes)) {
   })
 }
 
-test('1440 with the map docked: the tip still sits over the locate button', async ({ browser }) => {
+test('1440 with the map docked: the tip still sits beside the locate button', async ({ browser }) => {
   const { context, page } = await visit(browser, sizes.desktop)
   await expect(hint(page)).toBeVisible()
   // The docked class must not move the hint off the button.
@@ -58,7 +58,7 @@ test('1440 with the map docked: the tip still sits over the locate button', asyn
     const h = await hint(page).boundingBox()
     const locate = await page.locator('.map-locate').boundingBox()
     if (!h || !locate) return null
-    return h.x >= 0 && Math.abs(h.x + h.width - (locate.x + locate.width)) < 2
+    return h.x >= 0 && h.x + h.width <= locate.x && Math.abs(h.y + h.height - (locate.y + locate.height)) < 2
   }).toBe(true)
   await shot(page, 'locatehint-docked')
   await context.close()

@@ -18,9 +18,9 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 // The right-hand control rail; when it does not fit above the panel, the panel clears the rail.
 const COLUMN = '.map-rail'
 const GAP = 8
-// The top row, and the bottom bar that rides up with the panel.
+// The top row, and the bottom bar that rides up with the panel; the open legend stands above the bar.
 const TOP_ROW = '.map__layers, .map-controls'
-const RIDERS = '.map-bar'
+const RIDERS = '.map-bar, .map-bar > .scale--onmap'
 
 function icon(doc, cls, d) {
   const svg = doc.createElementNS(SVG_NS, 'svg')
@@ -182,7 +182,10 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     // The legend folding or the map resizing moves the cap; the saved choice is only clamped, never rewritten.
     if (mounted()) applyHeight()
     const h = mounted() ? Math.max(0, Math.round(frame.getBoundingClientRect().bottom - el.getBoundingClientRect().top)) : 0
-    shell?.classList.toggle('map-shell--crowded', mounted() && crowded())
+    const room = mounted() ? railRoom() : Infinity
+    // Crowded: the panel itself reaches the rail. Tight: only the bar and attribution above it do.
+    shell?.classList.toggle('map-shell--crowded', room < 0)
+    shell?.classList.toggle('map-shell--tight', room < above())
     if (h !== lastHeight) {
       if (h > 0) shell?.style.setProperty('--map-panel-h', `${h}px`)
       else shell?.style.removeProperty('--map-panel-h')
@@ -190,10 +193,16 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     }
     listeners.forEach((fn) => fn(h))
   }
-  function crowded() {
+  // Space between the rail's foot (plus two gaps) and the panel's top; negative when they meet.
+  function railRoom() {
     const top = frame.getBoundingClientRect().top
     const lowest = Math.max(0, ...[...(shell ?? frame).querySelectorAll(COLUMN)].map((n) => n.getBoundingClientRect().bottom - top))
-    return el.getBoundingClientRect().top - top < lowest + 2 * GAP
+    return el.getBoundingClientRect().top - top - (lowest + 2 * GAP)
+  }
+  // The bar rides GAP above the panel and the attribution stands on the bar.
+  function above() {
+    const h = (sel) => (shell ?? frame).querySelector(sel)?.getBoundingClientRect().height ?? 0
+    return h('.map-bar') + h('.maplibregl-ctrl-bottom-right') + GAP
   }
   const watcher = typeof win?.ResizeObserver === 'function' ? new win.ResizeObserver(measure) : null
 

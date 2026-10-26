@@ -237,6 +237,20 @@ describe('renderLegend', () => {
     expect(el.querySelectorAll('summary')).toHaveLength(1)
   })
 
+  // A repaint must not detach the focused toggle: a detached node drops focus to body.
+  it('keeps keyboard focus on the toggle across a repaint', () => {
+    const el = draw()
+    document.body.appendChild(el)
+    const toggle = el.querySelector(':scope > .scale__toggle')
+    toggle.tabIndex = 0
+    toggle.focus()
+    expect(document.activeElement).toBe(toggle)
+    renderLegend(el, { title: 'x', toggleLabel: 'y', ...legendRows(BANDS, OPTS) })
+    expect(el.firstElementChild).toBe(toggle)
+    expect(document.activeElement).toBe(toggle)
+    el.remove()
+  })
+
   // A reader who folded the key away must not have it reopened under them by
   // the next refresh. The state lives on the <details>, which the renderer does
   // not touch — this is the assertion that keeps it that way.
