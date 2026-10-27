@@ -589,8 +589,9 @@ test.describe('landscape phone keeps the map', () => {
     // .breadcrumb, not the aria-label: SEO6 made the label a translated
     // string (area.breadcrumb.label) and the trail can hold more than one
     // link, so .last() is the one crumb nearest the wrap boundary.
+    // Distinct tops, not rect count: the ellipsis splits a clipped link into several rects on one line.
     const navLines = await page.locator('nav.breadcrumb a').last().evaluate(
-      (el) => el.getClientRects().length
+      (el) => new Set([...el.getClientRects()].map((r) => Math.round(r.top))).size
     )
     expect(navLines).toBe(1)
 
