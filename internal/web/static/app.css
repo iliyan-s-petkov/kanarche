@@ -2220,3 +2220,43 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 .area-sensors-sec { margin-block-start: var(--section-gap); }
 .area-sensors-sec > h2 { margin: 0 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); line-height: 1.25; }
 .sensors-h3 { margin: 0; font-size: var(--text-h3); font-weight: var(--weight-emphasis); line-height: 1.25; }
+
+/* Touch hit areas, 44px minimum. A control that is smaller keeps its look: an ::after grows only
+   the hit box, by half the shortfall on each side. Lists of links get real height instead,
+   because stacked hit boxes would overlap. Pinned by web/e2e/touch-targets.spec.js. */
+@media (hover: none) {
+  :is(.masthead__brand, .langpick__btn, .colmenu__btn, .chart-reset, .map-locate-hint__btn, .map-play__btn,
+    .map-window__btn, .data-refresh__btn--icon, .map-data-link .link, .about-back a, .about-step__extra p > a) {
+    position: relative;
+  }
+  :is(.masthead__brand, .langpick__btn, .colmenu__btn, .chart-reset, .map-locate-hint__btn, .map-play__btn,
+    .map-window__btn, .data-refresh__btn--icon, .about-code__copy, .map-data-link .link, .about-back a,
+    .about-step__extra p > a)::after {
+    content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
+  }
+  /* The rail and the attribution button stay 44px past the 672px phone cut-off (landscape phones). */
+  .map__layers, .map__full, .map-locate, .map-table, .map-orient__btn, .map-zoom button,
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button {
+    inline-size: 44px; block-size: 44px; min-block-size: 44px;
+    background-repeat: no-repeat; background-position: center;
+  }
+  .skip { display: inline-flex; align-items: center; min-block-size: 44px; }
+  .masthead__link { min-inline-size: 44px; min-block-size: 44px; justify-content: center; }
+  .footer__col li > a, .area-links li > a, .home-big-cities li > a, .areas-directory li > a, .about-toc a,
+  .pollen-credit .link {
+    display: inline-flex; align-items: center; min-block-size: 44px; min-inline-size: 44px;
+  }
+  /* The trail keeps its one 16px line: padding gives the links room, the negative margin takes it back.
+     The masthead sits right above, so the hit box grows mostly downward. */
+  .breadcrumb { position: relative; z-index: 1; padding: 4px 6px 24px; margin: -4px -6px -24px; }
+  .breadcrumb a { position: relative; display: inline-block; }
+  .breadcrumb a::after { content: ''; position: absolute; inset-block: -4px -24px; inset-inline: min(0px, calc((100% - 44px) / 2)); }
+}
+/* In the 48px header row of a landscape phone the trail's line is 44px tall, so its links are. */
+@media (orientation: landscape) and (max-height: 520px) and (hover: none) {
+  .breadcrumb { padding-block: 0; margin-block: 0; }
+  .frame:has(> .page-head:not(.page-head--compact)) > nav.breadcrumb ol { line-height: 44px; }
+  /* The ol clips at its edges, so a short link is widened rather than extended. */
+  .breadcrumb a { min-inline-size: 44px; text-align: center; }
+  .breadcrumb a::after { inset: 0; }
+}
