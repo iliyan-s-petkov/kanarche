@@ -63,6 +63,8 @@
   --masthead-h: 48px;
   /* Map foot bar height (44px controls, padding, border); what sits above it clears this. */
   --map-bar-h: 52px;
+  /* Width of the map rail; the finder stops 8px short of it. app.css widens it where the rail does. */
+  --rail-w: 40px;
   /* Horizontal scale ramp; legend.js sets it at runtime from /api/v1/scales. */
   --ramp-h: none;
   /* Outline weight per air-quality class, best first (A11Y-05). Same ladder as CLASS_OUTLINE_PX in classoutline.js. */
