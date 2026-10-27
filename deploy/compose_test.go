@@ -38,6 +38,7 @@ type composeService struct {
 	Environment []string                 `yaml:"environment"`
 	Volumes     []string                 `yaml:"volumes"`
 	NetworkMode string                   `yaml:"network_mode"`
+	DNSSearch   []string                 `yaml:"dns_search"`
 	ReadOnly    bool                     `yaml:"read_only"`
 	Tmpfs       []string                 `yaml:"tmpfs"`
 	MemLimit    string                   `yaml:"mem_limit"`
@@ -1417,6 +1418,17 @@ func TestExampleEnvUsesKanarchePrefix(t *testing.T) {
 		line = strings.TrimPrefix(line, "# ")
 		if strings.HasPrefix(line, "AIRBG_") && !strings.HasPrefix(line, "AIRBG_IMAGE_TAG=") {
 			t.Errorf(".env.example still names %q, want the KANARCHE_ prefix", line)
+		}
+	}
+}
+
+// A host search domain must never apply to the stack's own names. When Docker's
+// embedded DNS timed out, "app" and "db" fell through to the host search
+// domain and resolved to a public host.
+func TestNoServiceInheritsAHostSearchDomain(t *testing.T) {
+	for name, svc := range loadCompose(t).Services {
+		if len(svc.DNSSearch) != 1 || svc.DNSSearch[0] != "." {
+			t.Errorf("service %s dns_search = %v, want [\".\"]", name, svc.DNSSearch)
 		}
 	}
 }
