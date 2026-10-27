@@ -2277,7 +2277,9 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
      grows up, the one by the samples heading grows down, and the last one, with the Details button
      right above it, grows down into extra card padding. */
   .sea-panel__badge .sea-panel__info::after { inset: -20px -10px 0; }
-  .sea-panel__h-row .sea-panel__info::after, .sea-panel__sources .sea-panel__info::after { inset: 0 -10px -20px; }
+  .sea-panel__h-row .sea-panel__info::after { inset: 0 -10px -20px; }
+  /* The card must not scroll at 390px, so the last one takes 12px down into its padding and 8px up. */
+  .sea-panel__sources .sea-panel__info::after { inset: -8px -10px -12px; }
   .sea-panel__sources { padding-block-end: 12px; }
   /* The kit's option rows are 40px; the label carries the tap for its checkbox or radio. */
   .colmenu__opt { min-block-size: 44px; }
