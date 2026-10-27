@@ -18,6 +18,7 @@ const MIN = 44
 const offenders = ({ min, root }) => {
   const sel = 'a[href], button, [role=button], summary, input:not([type=hidden]), select, textarea, [role=tab], [role=switch], [role=checkbox], [role=radio]'
   const out = []
+  const controls = new Set()
   // With a root, only the controls inside it (or the root itself) are swept.
   const scope = root ? [...document.querySelectorAll(root)] : [document]
   for (const node of scope.flatMap((n) => [...(n.matches?.(sel) ? [n] : []), ...n.querySelectorAll(sel)])) {
@@ -34,6 +35,7 @@ const offenders = ({ min, root }) => {
     }
     // A checkbox or radio inside its label is tapped through the label: the label is the target.
     if ((el.type === 'checkbox' || el.type === 'radio') && el.closest('label')) el = el.closest('label')
+    controls.add(el)
     el.scrollIntoView({ block: 'center', inline: 'center' })
     const r = el.getBoundingClientRect()
     let ok = r.width >= min - 0.5 && r.height >= min - 0.5
@@ -73,6 +75,37 @@ const offenders = ({ min, root }) => {
       const name = (el.getAttribute('aria-label') || el.textContent || el.id || '').trim().replace(/\s+/g, ' ').slice(0, 30)
       const tag = (n) => n.tagName.toLowerCase() + (typeof n.className === 'string' && n.className ? '.' + n.className.trim().split(/\s+/).join('.') : '')
       out.push(`${tag(el)} "${name}" ${Math.round(r.width)}x${Math.round(r.height)} in ${tag(el.parentElement)} < ${el.parentElement.parentElement ? tag(el.parentElement.parentElement) : ''}${blocker ? ` blocked by ${blocker}` : ''}`)
+    }
+  }
+  // In the open states no two hit boxes may intersect, unless one control holds the other.
+  // A hit box is the bounding box of the points near a control that resolve to it, so extenders count.
+  if (root) {
+    const hitBox = (el) => {
+      const r = el.getBoundingClientRect()
+      let box = null
+      for (let x = Math.max(0, Math.floor(r.left) - 24); x <= Math.min(innerWidth - 1, r.right + 24); x += 2) {
+        for (let y = Math.max(0, Math.floor(r.top) - 24); y <= Math.min(innerHeight - 1, r.bottom + 24); y += 2) {
+          const hit = document.elementFromPoint(x, y)
+          if (!(hit && (hit === el || el.contains(hit)))) continue
+          box = box ? { l: Math.min(box.l, x), t: Math.min(box.t, y), r: Math.max(box.r, x), b: Math.max(box.b, y) } : { l: x, t: y, r: x, b: y }
+        }
+      }
+      return box
+    }
+    const name = (el) => `${el.tagName.toLowerCase()}.${el.className} "${(el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 24)}"`
+    const list = [...controls]
+    for (const a of list) {
+      a.scrollIntoView({ block: 'center', inline: 'center' })
+      const ba = hitBox(a)
+      if (!ba) continue
+      for (const b of list) {
+        if (a === b || a.contains(b) || b.contains(a)) continue
+        const bb = hitBox(b)
+        if (!bb) continue
+        if (Math.min(ba.r, bb.r) - Math.max(ba.l, bb.l) > 1 && Math.min(ba.b, bb.b) - Math.max(ba.t, bb.t) > 1 && list.indexOf(a) < list.indexOf(b)) {
+          out.push(`hit boxes overlap: ${name(a)} [${ba.l},${ba.t} ${ba.r},${ba.b}] and ${name(b)} [${bb.l},${bb.t} ${bb.r},${bb.b}]`)
+        }
+      }
     }
   }
   return out
