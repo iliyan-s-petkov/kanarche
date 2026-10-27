@@ -1758,7 +1758,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* The capped trail ends in an ellipsis; the text stays whole in the DOM for screen readers. */
   .frame:has(> .page-head:not(.page-head--compact)) > nav.breadcrumb ol { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-inline-size: 0; }
   /* The 672px+ breadcrumb top margin pushed it 12px below the centre of the 48px row. */
-  .frame:has(> .page-head:not(.page-head--compact)) > nav { grid-row: 1; grid-column: 1; margin-block-start: 0; }
+  .frame:has(> .page-head:not(.page-head--compact)) > nav { grid-row: 1; grid-column: 1; margin-block-start: 0; min-inline-size: 0; }
   .frame:has(> .page-head:not(.page-head--compact)) > .page-head:not(.page-head--compact) { grid-row: 1; grid-column: 2; }
   .frame:has(> .page-head:not(.page-head--compact)) > .toolbar { grid-row: 1; grid-column: 3 / 5; min-block-size: 0; padding-block-end: 0; }
   /* The phone rule wraps the map toolbar (specificity 0,2,0) and stacked it over the masthead.
@@ -2248,15 +2248,43 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
   }
   /* The trail keeps its one 16px line: padding gives the links room, the negative margin takes it back.
      The masthead sits right above, so the hit box grows mostly downward. */
-  .breadcrumb { position: relative; z-index: 1; padding: 4px 6px 24px; margin: -4px -6px -24px; }
+  .breadcrumb { position: relative; z-index: 1; overflow: visible; }
+  /* The ol clips the trail to one line with an ellipsis, so the padding that holds the extenders sits on it. */
+  .breadcrumb ol { overflow: hidden; text-overflow: ellipsis; padding: 4px 6px 24px; margin: -4px -6px -24px; }
   .breadcrumb a { position: relative; display: inline-block; }
   .breadcrumb a::after { content: ''; position: absolute; inset-block: -4px -24px; inset-inline: min(0px, calc((100% - 44px) / 2)); }
 }
 /* In the 48px header row of a landscape phone the trail's line is 44px tall, so its links are. */
 @media (orientation: landscape) and (max-height: 520px) and (hover: none) {
-  .breadcrumb { padding-block: 0; margin-block: 0; }
+  .breadcrumb ol { padding: 0; margin: 0; }
   .frame:has(> .page-head:not(.page-head--compact)) > nav.breadcrumb ol { line-height: 44px; }
   /* The ol clips at its edges, so a short link is widened rather than extended. */
   .breadcrumb a { min-inline-size: 44px; text-align: center; }
   .breadcrumb a::after { inset: 0; }
+}
+/* The landscape rail is 140px wide and 92px tall; the bathing card starts below the search, under it. */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 673px) and (hover: none) {
+  .map-sea { inset-inline-end: calc(140px + var(--space-2) * 2); }
+}
+
+/* Touch hit areas of the open states (menus, legend, sensor panel, sea card). Pinned by touch-targets.spec.js. */
+@media (hover: none) {
+  /* The open legend scrolls and clips, and its (i) sits in the top corner: the extender grows down,
+     and the right padding leaves the 10px it needs sideways. */
+  .scale--onmap[open] { padding-inline-end: 12px; }
+  .scale--onmap .scale__info::after { inset: 0 -10px -20px; }
+  /* Bathing card (i) buttons are 16px to 40px apart, so none can grow both ways. The one by the badge
+     grows up, the one by the samples heading grows down, and the last one, with the Details button
+     right above it, grows down into extra card padding. */
+  .sea-panel__badge .sea-panel__info::after { inset: -20px -10px 0; }
+  .sea-panel__h-row .sea-panel__info::after, .sea-panel__sources .sea-panel__info::after { inset: 0 -10px -20px; }
+  .sea-panel__sources { padding-block-end: 12px; }
+  /* The kit's option rows are 40px; the label carries the tap for its checkbox or radio. */
+  .colmenu__opt { min-block-size: 44px; }
+  .period-seg button { position: relative; }
+  .period-seg button::after { content: ''; position: absolute; inset-block: -3px; inset-inline: 0; }
+  .panel-details > summary { min-block-size: 44px; }
+  /* Real 44px boxes, pulled back by their margins so the card layout keeps its 32px and 24px slots. */
+  .sea-panel__close { min-inline-size: 44px; min-block-size: 44px; margin: -6px; }
+  .sea-panel__info { z-index: 1; }
 }
