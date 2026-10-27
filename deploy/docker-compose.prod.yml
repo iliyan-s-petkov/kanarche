@@ -15,6 +15,8 @@ services:
   # is public. See Caddyfile.
   caddy:
     image: caddy:2.10-alpine
+    # Internal names must not fall back to the host search domain.
+    dns_search: ["."]
     restart: unless-stopped
     ports:
       - "80:80"
@@ -49,6 +51,7 @@ services:
 
   app:
     image: airbg:${AIRBG_IMAGE_TAG}
+    dns_search: ["."]
     restart: unless-stopped
     env_file: [.env]
     # Binding 0.0.0.0 inside this container is correct AND safe: nothing is
@@ -89,6 +92,7 @@ services:
 
   db:
     image: timescale/timescaledb-ha:pg18
+    dns_search: ["."]
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -114,6 +118,7 @@ services:
   # compose_test.go fails if it happens.
   socket-proxy:
     image: tecnativa/docker-socket-proxy:0.3.0
+    dns_search: ["."]
     restart: unless-stopped
     environment:
       # The image otherwise binds [::]:2375, which cannot start on a host
@@ -145,6 +150,7 @@ services:
   # daemon.
   ofelia:
     image: mcuadros/ofelia:0.3.20
+    dns_search: ["."]
     restart: unless-stopped
     command: ["daemon", "--config=/etc/ofelia/config.ini"]
     environment:
