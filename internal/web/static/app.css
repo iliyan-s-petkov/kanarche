@@ -2280,7 +2280,8 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
   .sea-panel__h-row .sea-panel__info::after { inset: 0 -10px -20px; }
   /* The card must not scroll at 390px, so the last one takes 12px down into its padding and 8px up. */
   .sea-panel__sources .sea-panel__info::after { inset: -8px -10px -12px; }
-  .sea-panel__sources { padding-block-end: 12px; }
+  /* The 8px inline padding keeps the last (i) off the card's rounded bottom corner on a full-width sheet. */
+  .sea-panel__sources { padding-block-end: 12px; padding-inline-end: 8px; }
   /* The kit's option rows are 40px; the label carries the tap for its checkbox or radio. */
   .colmenu__opt { min-block-size: 44px; }
   .period-seg button { position: relative; }
