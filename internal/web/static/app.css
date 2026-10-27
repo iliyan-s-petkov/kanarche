@@ -2256,5 +2256,7 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 @media (orientation: landscape) and (max-height: 520px) and (hover: none) {
   .breadcrumb { padding-block: 0; margin-block: 0; }
   .frame:has(> .page-head:not(.page-head--compact)) > nav.breadcrumb ol { line-height: 44px; }
-  .breadcrumb a::after { inset-block: 0; }
+  /* The ol clips at its edges, so a short link is widened rather than extended. */
+  .breadcrumb a { min-inline-size: 44px; text-align: center; }
+  .breadcrumb a::after { inset: 0; }
 }
