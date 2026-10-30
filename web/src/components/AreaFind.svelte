@@ -10,6 +10,7 @@
   // screen-reader hint both describe arrow keys and an active descendant, so
   // that contract is what is built here rather than the shorter thing the
   // mockup happens to do.
+  import { tick } from 'svelte'
   import { matchAreas, exactMatch, splitMark, areaGroup } from '../lib/find.js'
   import { fillSlots } from '../lib/sea.js'
 
@@ -17,7 +18,29 @@
   // { search(q) -> Promise<rows>, onpick, onclear, row, loading, none, busy,
   //   error, credit, creditHref }. The request runs only on Enter or a click
   // on that row, never while typing.
-  let { areas, lang = 'bg', label, placeholder, hint, empty, onpick, address = null, groups = null, id = 'area-find', status = null } = $props()
+  // `collapsible` (map tab only): on a narrow touch screen the field shows as a
+  // magnifier button and opens on a tap. app.css hides and shows the parts at
+  // the same media query as COMPACT.
+  let { areas, lang = 'bg', label, placeholder, hint, empty, onpick, address = null, groups = null, id = 'area-find', status = null, collapsible = false } = $props()
+
+  const COMPACT = '(max-width: 399px) and (hover: none)'
+  const compact = () => collapsible && typeof matchMedia === 'function' && matchMedia(COMPACT).matches
+  let expanded = $state(false)
+  let inputEl
+  let toggleEl
+
+  async function openField() {
+    expanded = true
+    await tick()
+    inputEl.focus()
+  }
+  // refocus: Escape and a pick hand focus back to the button; a blur leaves it where the reader put it.
+  async function closeField(refocus) {
+    expanded = false
+    if (!refocus) return
+    await tick()
+    toggleEl.focus()
+  }
 
   let query = $state('')
   let open = $state(false)
@@ -93,6 +116,7 @@
   function pickAddress(row) {
     query = row.label
     hide()
+    if (compact()) closeField(true)
     address.onpick?.(row)
   }
 
@@ -118,6 +142,7 @@
     said = 'centred'
     pickedName = match.name
     hide()
+    if (compact()) closeField(true)
     onpick(match)
   }
 
@@ -173,6 +198,13 @@
       }
       case 'Escape':
         address?.onclear?.()
+        // The icon form has no second stage: Escape puts the field away.
+        if (compact()) {
+          e.preventDefault()
+          hide()
+          closeField(true)
+          return
+        }
         // Two stages: the list goes first, the text second. One Escape that
         // did both would throw away a query the reader only wanted to see
         // past.
@@ -205,7 +237,12 @@
   ><span class="combobox__text">{parts.before}<mark>{parts.hit}</mark>{parts.after}</span></li>
 {/snippet}
 
-<div class="field field--search combobox toolbar__find">
+<div class="field field--search combobox toolbar__find" class:find--collapsible={collapsible} class:find--open={expanded}>
+  {#if collapsible}
+    <button type="button" class="find-toggle" bind:this={toggleEl} aria-label={label} aria-expanded={expanded} aria-controls={id} onclick={openField}>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  {/if}
   <label class="field__label" for={id}>{label}</label>
   <input
     class="input"
@@ -220,10 +257,15 @@
     aria-describedby="{id}-hint"
     {placeholder}
     bind:value={query}
+    bind:this={inputEl}
     {oninput}
     onfocus={show}
     onkeydown={onkeydown}
-    onblur={() => setTimeout(hide, 0)}
+    onblur={() => setTimeout(() => {
+      hide()
+      // Away from an empty field in the icon form: back to the icon.
+      if (compact() && !query.trim()) expanded = false
+    }, 0)}
   >
   <!-- Announced, never painted: a sighted reader infers arrow keys from the
        open list, a screen-reader user does not, and a visible line of

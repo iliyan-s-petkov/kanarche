@@ -27,6 +27,8 @@ for (const path of ['/', '/en']) {
       await page.goto(path)
       await mapSettled(page)
       await page.evaluate(() => document.fonts.ready)
+      // Under 400px the finder is an icon until tapped; the rule is about the open field.
+      if (w < 400) await page.locator('.map-controls__find .find-toggle').tap()
       await shot(page, `finder-${w}x${h}${path.replace(/\//g, '_')}`)
       const res = await page.evaluate(() => {
         const box = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width } }
