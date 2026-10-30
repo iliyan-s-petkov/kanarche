@@ -113,6 +113,11 @@ vi.mock('maplibre-gl', () => {
   return { Map: FakeMap, addProtocol: vi.fn() }
 })
 
+// Every island this file mounts, stopped after each test. An island left running keeps its
+// store subscriptions and timers, so each later test pays for every earlier one.
+const liveIslands = []
+afterEach(() => { liveIslands.splice(0).forEach((stop) => stop()) })
+
 // The minimum harness this task needs: mount a map island against a fresh
 // container and fresh viewstate singleton, fire the 'load' handler mount()
 // registers (which is where the metric-follow subscription is wired — see
@@ -158,7 +163,8 @@ function mountTestMap({ metric, styleLayers = [], dataset = {}, load = true }) {
   wrapper.appendChild(el)
   document.body.appendChild(wrapper)
 
-  const { map, chrome } = mount(el)
+  const { map, chrome, stop } = mount(el)
+  liveIslands.push(stop)
   // Fired, not awaited: mount()'s 'load' handler registers the metric
   // subscription SYNCHRONOUSLY, before its first `await` (see map.js's own
   // comment on why) — so by the time this call returns to mountTestMap, the
@@ -328,7 +334,7 @@ describe('mount() follows the store metric', () => {
 // map layer, and a click on a sensor marker must open it — through the same
 // viewstate singleton the switcher already shares, never by the map
 // rendering a panel of its own (see islands/panel.js).
-function mountSensorTierMap({ metric = 'P2' } = {}) {
+function mountSensorTierMap({ metric = 'P2', beforeLoad = null } = {}) {
   resetViewStateForTests()
   history.replaceState(null, '', '/')
 
@@ -351,11 +357,14 @@ function mountSensorTierMap({ metric = 'P2' } = {}) {
   el.dataset.tNoSources = 'No networks are shown'
 
   const { map, chrome, stop } = mount(el)
+  liveIslands.push(stop)
   // FakeMap.getZoom is hardcoded to 7 (see the vi.mock at the top of this
   // file) — every other test in this file relies on that fixed value, so it
   // is overridden here rather than in the mock itself, to reach the sensors
   // tier without disturbing them.
   map.getZoom = () => 12
+  // Before load, so no paint can land on a source the test cannot see.
+  beforeLoad?.(map)
   map.handlers.load()
   return { map, chrome, stop, el }
 }
@@ -458,7 +467,8 @@ describe('mount() wires the locate button to a real click', () => {
     // pass from some OTHER hint text (e.g. the tier hint) is not possible.
     el.dataset.tLocateDenied = 'LOCATE DENIED MARKER'
 
-    const { map, chrome } = mount(el)
+    const { map, chrome, stop } = mount(el)
+    liveIslands.push(stop)
     map.handlers.load()
     await vi.waitFor(() => expect(map.setPaintProperty).toHaveBeenCalled())
 
@@ -1255,29 +1265,18 @@ describe('the sensor status filter', () => {
 
   const drawn = (source) => source.setData.mock.calls.at(-1)[0].features
 
-  // Every island mounted here is stopped afterwards. An island left running keeps its
-  // subscriptions and its in-flight fetch, and its late answer lands in the shared sensor
-  // store while the next test is waiting on it.
-  const mounted = []
-  function mountTracked() {
-    const island = mountSensorTierMap()
-    mounted.push(island.stop)
-    return island
-  }
-
   // Mounts, then waits for this island's own first paint. findSensor alone is not that
   // signal: the store is shared, so another island's answer satisfies it before this
   // island holds its payload, and a filter change then repaints nothing.
   async function mountPainted() {
-    const island = mountTracked()
-    const source = withStableSource(island.map)
+    let source
+    const island = mountSensorTierMap({ beforeLoad: (map) => { source = withStableSource(map) } })
     await vi.waitFor(() => expect(source.setData).toHaveBeenCalled(), { timeout: 4000 })
     return { ...island, source }
   }
 
   beforeEach(() => { clearCache(); resetViewStateForTests(); setSensors(null); resetSensorFilterForTests(); resetSourceFilterForTests() })
   afterEach(() => {
-    mounted.splice(0).forEach((stop) => stop())
     resetViewStateForTests(); setSensors(null); resetSensorFilterForTests(); resetSourceFilterForTests()
   })
 
