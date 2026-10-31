@@ -6,7 +6,7 @@ import { LEGEND_CLASSES, buildPollenRows, buildSeaRows, buildWindRow, legendRows
 import { createScaleDialog } from './scaledialog.js'
 import { fillSlots } from './sea.js'
 import { createInfoDialog, pollenInfoContent, seaInfoContent } from './infodialog.js'
-import { mountFullscreen, mountZoom, mountLocate, mountOrientation, mountTable } from './mapcontrols.js'
+import { mountFullscreen, mountZoom, mountLocate, mountOrientation, mountReset } from './mapcontrols.js'
 import { mountLayers, styleMeta } from './maplayers.js'
 import { setSensorStatus } from './sensorfilter.svelte.js'
 import { readFlag, writeFlag, safeStorage } from './storage.js'
@@ -275,11 +275,9 @@ export function mountChrome(el, cfg) {
       if (full) { dock.setFull(true); sheet.setFull(true) } else { sheet.setFull(false); dock.setFull(false) }
     },
   })
-  // Reset view lives in the compass panel, so the stack is in and out only.
   const zoom = mountZoom(el, {
     inLabel: cfg.t.zoomIn,
     outLabel: cfg.t.zoomOut,
-    reset: false,
   })
   const orient = mountOrientation(el, {
     label: cfg.t.orientLabel,
@@ -287,19 +285,18 @@ export function mountChrome(el, cfg) {
     tiltLabel: cfg.t.orientTilt,
     headingLabel: cfg.t.orientHeading,
     northLabel: cfg.t.orientNorth,
-    resetLabel: cfg.t.zoomReset,
     closeLabel: cfg.t.close,
   })
-  const table = mountTable(el, { label: cfg.t.tableLink, href: cfg.tableHref })
+  const resetButton = mountReset(el, { label: cfg.t.zoomReset })
 
   // The find-me button: precise, user-initiated geolocation. mount() wires the
   // click, since the area list and the camera do not exist yet.
   const locateButton = mountLocate(el, { label: cfg.t.locateButton })
 
-  // One column top-right: zoom, compass, fullscreen, table, locate.
+  // One column top-right: zoom, compass, fullscreen, reset view, locate.
   const rail = document.createElement('div')
   rail.className = 'map-rail'
-  rail.append(...[zoom.el, orient.el, fullButton, table, locateButton].filter(Boolean))
+  rail.append(...[zoom.el, orient.el, fullButton, resetButton, locateButton].filter(Boolean))
   el.appendChild(rail)
 
   // The averaging window. Built with the chrome and wired by mount(), which
@@ -517,7 +514,7 @@ export function mountChrome(el, cfg) {
     },
     showLegend,
     dock,
-    zoomButtons: { ...zoom.buttons, reset: orient.reset },
+    zoomButtons: { ...zoom.buttons, reset: resetButton },
     orient,
     windowMenu,
     player,

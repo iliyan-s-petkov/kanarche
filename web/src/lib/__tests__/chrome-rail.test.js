@@ -51,12 +51,12 @@ const page = ({ bar = true } = {}) => {
 const kind = (n) => n.className.split(' ')[0]
 
 describe('the control rail', () => {
-  it('stacks zoom, compass, fullscreen, table and locate in that order', () => {
+  it('stacks zoom, compass, fullscreen, reset view and locate in that order', () => {
     const { el } = page()
     mountChrome(el, cfg())
     const rail = el.querySelector(':scope > .map-rail')
     expect(rail, 'no rail on the frame').toBeTruthy()
-    expect([...rail.children].map(kind)).toEqual(['map-zoom', 'map-orient', 'map__full', 'map-table', 'map-locate'])
+    expect([...rail.children].map(kind)).toEqual(['map-zoom', 'map-orient', 'map__full', 'map-reset', 'map-locate'])
   })
 
   it('keeps only zoom in and out in the stack', () => {
@@ -66,22 +66,28 @@ describe('the control rail', () => {
     expect(acts).toEqual(['in', 'out'])
   })
 
-  it('puts reset view in the compass panel and hands it to the camera wiring', () => {
+  it('makes reset view a rail button of its own and hands it to the camera wiring', () => {
     const { el } = page()
     const c = mountChrome(el, cfg())
-    const reset = c.orient.panel.querySelector('[data-act="reset"]')
-    expect(reset?.textContent).toBe('Reset view')
+    const reset = el.querySelector('.map-rail > .map-reset')
+    expect(reset.tagName).toBe('BUTTON')
+    expect(reset.getAttribute('aria-label')).toBe('Reset view')
+    expect(reset.getAttribute('title')).toBe('Reset view')
     expect(c.zoomButtons.reset).toBe(reset)
     expect(Object.keys(c.zoomButtons).sort()).toEqual(['in', 'out', 'reset'])
   })
 
-  it('links the table to the configured target and leaves it out without one', () => {
-    const a = page()
-    mountChrome(a.el, cfg())
-    expect(a.el.querySelector('.map-rail .map-table').getAttribute('href')).toBe('#sensors-h')
-    const b = page()
-    mountChrome(b.el, cfg({ tableHref: '' }))
-    expect(b.el.querySelector('.map-table')).toBeNull()
+  it('does not repeat reset view in the compass panel', () => {
+    const { el } = page()
+    const c = mountChrome(el, cfg())
+    expect(c.orient.panel.querySelector('[data-act="reset"]')).toBeNull()
+  })
+
+  it('has no data table link in the rail, whatever the page passes', () => {
+    const { el } = page()
+    mountChrome(el, cfg())
+    expect(el.querySelector('.map-table')).toBeNull()
+    expect(el.querySelector('.map-rail a')).toBeNull()
   })
 })
 

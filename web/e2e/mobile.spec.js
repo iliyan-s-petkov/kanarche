@@ -85,7 +85,7 @@ test.describe('phone layout does not widen the viewport', () => {
     expect(scale.y).toBeGreaterThanOrEqual(map.y)
     expect(scale.x + scale.width).toBeLessThanOrEqual(map.x + map.width)
     expect(scale.y + scale.height).toBeLessThanOrEqual(map.y + map.height)
-    for (const sel of ['.map__layers', '.map-locate', '.map__full', '.map-table', '.map-orient__btn',
+    for (const sel of ['.map__layers', '.map-locate', '.map__full', '.map-reset', '.map-orient__btn',
       '.map-zoom__btn[data-act="in"]', '.map-zoom__btn[data-act="out"]']) {
       const box = await page.locator(sel).boundingBox()
       expect(box.width, sel).toBeGreaterThanOrEqual(44)
@@ -114,13 +114,11 @@ test.describe('phone layout does not widen the viewport', () => {
     const repeat = await page.locator('.maplibregl-ctrl-attrib-button')
       .evaluate((el) => getComputedStyle(el).backgroundRepeat)
     expect(repeat).toBe('no-repeat')
-    // On a phone the (i) sits inside the bar's end, clear of the time controls.
-    const bar = await page.locator('.map-bar').boundingBox()
+    // On a phone the (i) sits in the map's corner, clear of the time controls.
+    const shell = await page.locator('.map-shell').boundingBox()
     const fresh = await page.locator('.map-freshness').boundingBox()
-    expect(box.x).toBeGreaterThanOrEqual(bar.x)
-    expect(box.x + box.width).toBeLessThanOrEqual(bar.x + bar.width)
-    expect(box.y).toBeGreaterThanOrEqual(bar.y)
-    expect(box.y + box.height).toBeLessThanOrEqual(bar.y + bar.height)
+    expect(shell.x + shell.width - (box.x + box.width)).toBeLessThanOrEqual(16)
+    expect(shell.y + shell.height - (box.y + box.height)).toBeLessThanOrEqual(16)
     expect(fresh.x + fresh.width).toBeLessThanOrEqual(box.x)
     await page.close()
   })

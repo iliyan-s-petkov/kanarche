@@ -258,11 +258,12 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* .map__layers is its own z-index:3 stacking context and ties with .map-freshness;
    lift it above every map overlay while the panel is open. */
 .map__layers:has(.colmenu__panel:not([hidden])) { z-index: 7; }
-/* Bottom bar: only positions the pills (legend, then the time controls, from the start edge). It draws
+/* Bottom bar: only positions the pills (legend, then the time controls, from the start edge), its end
+   stopping short of the attribution (i) in the corner. It draws
    nothing and takes no clicks, so the map shows and pans between the pills. */
 .map-bar {
   position: absolute; z-index: 3;
-  inset-inline: var(--space-2); inset-block-end: var(--space-2);
+  inset-inline: var(--space-2) calc(var(--space-2) * 2 + 44px); inset-block-end: var(--space-2);
   display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: var(--space-2);
   padding: var(--space-1) 0;
   pointer-events: none;
@@ -505,7 +506,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 /* The visible route to the data table; the link keeps a 24px target. */
 .map-data-link { margin: var(--space-1) 0 0; padding-inline: var(--gutter); }
 .map-data-link .link { display: inline-block; min-block-size: 24px; line-height: 24px; }
-/* Top-right rail: zoom in/out, compass, full screen, table, locate. */
+/* Top-right rail: zoom in/out, compass, full screen, reset view, locate. */
 .map-rail {
   position: absolute; z-index: 3;
   inset-block-start: var(--space-2); inset-inline-end: var(--space-2);
@@ -513,14 +514,14 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 .map-rail:has(.map-orient__panel:not([hidden])) { z-index: 7; }
 .map-rail > .map__full, .map-rail > .map-zoom { position: static; }
-.map-locate, .map-table {
+.map-locate, .map-reset {
   display: inline-flex; align-items: center; justify-content: center;
   inline-size: 40px; block-size: 40px;
   background: var(--bg); border: 0; border-radius: var(--radius); box-shadow: var(--elev-raised);
   padding: 0; color: var(--fg); cursor: pointer; text-decoration: none;
 }
-.map-locate:hover, .map-table:hover { background: var(--surface); }
-.map-locate:focus-visible, .map-table:focus-visible { box-shadow: var(--focus-ring); }
+.map-locate:hover, .map-reset:hover { background: var(--surface); }
+.map-locate:focus-visible, .map-reset:focus-visible { box-shadow: var(--focus-ring); }
 /* First-visit tip left of the locate button, the rail's last item; arrow points right at it. */
 .map-locate-hint {
   position: absolute; z-index: 3; inset-block-end: 0; inset-inline-end: calc(100% + var(--space-2));
@@ -541,8 +542,8 @@ strong, b { font-weight: var(--weight-emphasis); }
   .map-locate-hint { animation: locate-hint-in 200ms ease-out; }
 }
 @keyframes locate-hint-in { from { opacity: 0; } to { opacity: 1; } }
-/* Attribution (i): bottom-right, lifted clear of the bar. */
-.maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: calc(var(--map-bar-h) + var(--space-2)); }
+/* Attribution (i): the map's bottom-right corner, kept 10px in by MapLibre's own control margin. */
+.maplibregl-ctrl-bottom-right { margin-inline-end: 0; margin-block-end: 0; }
 /* Attribution links sit in running text: underline them (axe link-in-text-block). Two classes beat the stock none. */
 .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner a { text-decoration: underline; }
 /* The bathing-site card (lib/seapanel.svelte.js): right, under the search and clear of the control column and
@@ -954,7 +955,8 @@ strong, b { font-weight: var(--weight-emphasis); }
 .map-shell--docked .map-bar { inset-block-end: calc(var(--space-2) + var(--map-panel-h, 0px)); }
 .map-shell--docked .maplibregl-ctrl-bottom-right, .map-shell--docked .maplibregl-ctrl-bottom-left { bottom: var(--map-panel-h, 0px); }
 /* Too little map above the panel for the rail (lib/sidedock.svelte.js): crowded, the panel stops short of it; tight, the bar and attribution do. */
-.map-shell--crowded .map-dock, .map-shell--tight .map-bar { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+.map-shell--crowded .map-dock { inset-inline-end: calc(var(--space-2) * 2 + 40px); }
+.map-shell--tight .map-bar { inset-inline-end: calc(var(--space-2) * 3 + 40px + 44px); }
 .map-shell--tight .maplibregl-ctrl-bottom-right { margin-inline-end: calc(var(--space-2) + 40px); }
 @media (hover: none) {
   .map-dock__fold, .map-dock__close, .map-dock .panel-info, .map-dock__more { min-block-size: 44px; min-inline-size: 44px; }
@@ -1576,8 +1578,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   }
 
 
-  /* The bar's end keeps 44px plus gaps free for the attribution (i), which sits inside it. */
-  .map-bar { padding-inline-end: calc(44px + var(--space-1) * 2); flex-wrap: nowrap; gap: var(--space-2); align-items: flex-end; }
+  /* Full width, its end padded clear of the (i): the open legend card is sized from this box. */
+  .map-bar {
+    inset-inline-end: var(--space-2); padding-inline-end: calc(44px + var(--space-1) * 2);
+    flex-wrap: nowrap; gap: var(--space-2); align-items: flex-end;
+  }
   .map-bar:has(.map-bar__note:not([hidden])) { flex-wrap: wrap; }
   .map-freshness { margin: 0; margin-inline-start: auto; display: flex; align-items: center; gap: var(--space-1); flex: none; }
   /* Playing, the time row fills the bar beside the folded key; the window button stands down. */
@@ -1614,45 +1619,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   .map-shell .scale--onmap[open] { position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0; }
 
   /* Every overlay button is a real touch target, not the kit's 32px square. */
-  .map__layers, .map__full, .map-locate, .map-table, .map-orient__btn, .map-zoom button {
+  .map__layers, .map__full, .map-locate, .map-reset, .map-orient__btn, .map-zoom button {
     inline-size: 44px; block-size: 44px; min-block-size: 44px;
   }
   /* 24px glyph, 44px target. */
   .scale__info::after { inset: -10px; }
-  /* Two classes: app.css loads before maplibre-gl.css, so a bare class loses.
-     Matches the control's real corner. */
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button {
-    inline-size: 44px; block-size: 44px; min-block-size: 44px;
-    /* The (i) is a 24px background-image; grown to 44px it tiled 2x2. */
-    background-repeat: no-repeat; background-position: center;
-  }
-  /* The (i) sits inside the bar's end (bar inset, border, padding); its text opens as a card above the bar.
-     The (i) is a glyph in --fg because the stock icon is black-only.
-     .map-shell outranks maplibre-gl.css (z-index 2, loaded later); below the bar's 3 the glass covered it. */
-  .map-shell .maplibregl-ctrl-bottom-right {
-    z-index: 4;
-  }
-  .maplibregl-ctrl-bottom-right {
-    margin-inline-end: calc(var(--space-2) + 1px + var(--space-1));
-    margin-block-end: calc(var(--space-2) + 1px + var(--space-1));
-  }
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact {
-    position: relative; margin: 0; padding: 0; inline-size: 44px; block-size: 44px;
-    min-block-size: 44px; background: none; box-sizing: border-box;
-  }
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
-    position: absolute; inset-inline-end: 0; inset-block-end: calc(100% + var(--space-2));
-    inline-size: max-content; max-inline-size: max(9rem, calc(100vw - 7.5rem - 120px));
-    padding: var(--space-2) var(--space-3); line-height: 1.3; text-align: start;
-    background: var(--bg); color: var(--fg); border-radius: var(--radius); box-shadow: var(--elev-raised);
-  }
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib a { color: var(--fg-2); }
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button,
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
-    background-image: none; background-color: var(--bg); box-shadow: var(--elev-raised);
-    border-radius: var(--radius); color: var(--fg); padding: 0; text-align: center; line-height: 44px;
-  }
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button::before { content: '©'; font-size: 1.25rem; }
   /* The arrow centres on the 44px locate button. */
   .map-locate-hint::after { inset-block-end: 15px; }
   /* One button until there is something to play: the row unfolds across the
@@ -1739,6 +1710,43 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 
 /* Landscape phone: the kit's width-derived budget goes negative under 416px
    of height and the shell collapses to 0. Height-led instead, chrome on top. */
+/* The (i) is a 44px button in the corner on phones and on any touch screen, landscape included. */
+@media (max-width: 672px), (hover: none) {
+  /* Two classes: app.css loads before maplibre-gl.css, so a bare class loses.
+     Matches the control's real corner. */
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button {
+    inline-size: 44px; block-size: 44px; min-block-size: 44px;
+    /* The (i) is a 24px background-image; grown to 44px it tiled 2x2. */
+    background-repeat: no-repeat; background-position: center;
+  }
+  /* The (i) sits inside the bar's end (bar inset, border, padding); its text opens as a card above the bar.
+     The (i) is a glyph in --fg because the stock icon is black-only.
+     .map-shell outranks maplibre-gl.css (z-index 2, loaded later); below the bar's 3 the glass covered it. */
+  .map-shell .maplibregl-ctrl-bottom-right {
+    z-index: 4;
+  }
+  .maplibregl-ctrl-bottom-right {
+    margin-inline-end: calc(var(--space-2) + 1px + var(--space-1));
+    margin-block-end: calc(var(--space-2) + 1px + var(--space-1));
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact {
+    position: relative; margin: 0; padding: 0; inline-size: 44px; block-size: 44px;
+    min-block-size: 44px; background: none; box-sizing: border-box;
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+    position: absolute; inset-inline-end: 0; inset-block-end: calc(100% + var(--space-2));
+    inline-size: max-content; max-inline-size: max(9rem, calc(100vw - 7.5rem - 120px));
+    padding: var(--space-2) var(--space-3); line-height: 1.3; text-align: start;
+    background: var(--bg); color: var(--fg); border-radius: var(--radius); box-shadow: var(--elev-raised);
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib a { color: var(--fg-2); }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button,
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+    background-image: none; background-color: var(--bg); box-shadow: var(--elev-raised);
+    border-radius: var(--radius); color: var(--fg); padding: 0; text-align: center; line-height: 44px;
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button::before { content: '©'; font-size: 1.25rem; }
+}
 @media (orientation: landscape) and (max-height: 520px) and (hover: none) {
   .map-shell:has(.map--hero) { max-inline-size: none; block-size: auto; max-block-size: none; }
   /* 40px masthead, the 1.5rem tier caption and the 28px pull tab. */
@@ -2170,7 +2178,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 }
 @media (max-width: 672px) { .map-orient__btn { inline-size: 44px; block-size: 44px; } }
 .map-orient__btn:hover { background: var(--surface-2); }
-.map-orient__btn:focus-visible, .map-orient__close:focus-visible, .map-orient__north-btn:focus-visible, .map-orient__reset:focus-visible,
+.map-orient__btn:focus-visible, .map-orient__close:focus-visible, .map-orient__north-btn:focus-visible,
 .map-orient__row input:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 .map-orient__north { fill: var(--danger); }
 .map-orient__south { fill: currentColor; opacity: .55; }
@@ -2191,14 +2199,14 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .map-orient__close:hover { color: var(--fg); }
 .map-orient__row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-2); font-size: var(--text-compact); }
 .map-orient__row input { grid-column: 1 / -1; inline-size: 100%; margin: 0; accent-color: var(--accent); }
-.map-orient__north-btn, .map-orient__reset {
+.map-orient__north-btn {
   justify-self: start; padding: var(--space-1) var(--space-3); border: 1px solid var(--border);
   border-radius: var(--radius-sm); background: var(--bg); color: var(--fg); font: inherit;
   font-size: var(--text-compact); cursor: pointer;
 }
-.map-orient__north-btn:hover, .map-orient__reset:hover { background: var(--surface-2); }
+.map-orient__north-btn:hover { background: var(--surface-2); }
 @media (hover: none) {
-  .map-orient__close, .map-orient__north-btn, .map-orient__reset { min-block-size: 44px; min-inline-size: 44px; }
+  .map-orient__close, .map-orient__north-btn { min-block-size: 44px; min-inline-size: 44px; }
 }
 
 /* Address search in the finder: the OSM credit line and the searched-address pin. */
@@ -2264,7 +2272,7 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
     content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
   }
   /* The rail and the attribution button stay 44px past the 672px phone cut-off (landscape phones). */
-  .map__layers, .map__full, .map-locate, .map-table, .map-orient__btn, .map-zoom button,
+  .map__layers, .map__full, .map-locate, .map-reset, .map-orient__btn, .map-zoom button,
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button {
     inline-size: 44px; block-size: 44px; min-block-size: 44px;
     background-repeat: no-repeat; background-position: center;
