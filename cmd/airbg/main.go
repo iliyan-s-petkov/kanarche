@@ -387,8 +387,12 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// Build once at startup so the first visitor is not met with a 503 for a
 	// whole poll interval. A failure here is logged, not fatal: the process
 	// still serves "data is not ready yet" and the next cycle fixes it.
+	// On a host reboot the database can still be starting; the retry below runs
+	// in the background until the first snapshot exists.
+	needRetry := false
 	if err := pub.Publish(ctx, time.Now().UTC()); err != nil {
 		log.Error("initial snapshot build failed; starting with no data", "error", err)
+		needRetry = true
 	}
 
 	// One line, so a developer who ran `go run ./cmd/airbg` without building the
@@ -434,6 +438,20 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	// database but could never swap the pointer this server reads.
 	pollCtx, stopPolling := context.WithCancel(ctx)
 	defer stopPolling()
+
+	retryDone := make(chan struct{})
+	if needRetry {
+		go func() {
+			defer close(retryDone)
+			server.RetryInitialPublish(pollCtx, server.RetryConfig{
+				Publish: pub.Publish,
+				Loaded:  func() bool { return holder.Load() != nil },
+				Log:     log,
+			})
+		}()
+	} else {
+		close(retryDone)
+	}
 
 	polled := make(chan struct{})
 	go func() {
@@ -546,6 +564,7 @@ func runServe(ctx context.Context, cfg config.Config, apiPool, collectorPool *pg
 	<-polled
 	<-windDone
 	<-pollenDone
+	<-retryDone
 	<-eeaDone
 	<-cfDone
 	<-seaDone

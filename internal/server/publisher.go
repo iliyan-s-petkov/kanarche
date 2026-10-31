@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"kanarche.eu/internal/metrics"
@@ -22,14 +23,24 @@ type Publisher struct {
 	store  *store.Store
 	holder *snapshot.Holder
 	log    *slog.Logger
+	// mu serialises builds: the startup retry and the ingest cycle can both
+	// publish, and an older build must not finish after and replace a newer one.
+	mu    sync.Mutex
+	build func(ctx context.Context, now time.Time) (*snapshot.Snapshot, error)
 }
 
 func NewPublisher(st *store.Store, h *snapshot.Holder, log *slog.Logger) *Publisher {
-	return &Publisher{store: st, holder: h, log: log}
+	p := &Publisher{store: st, holder: h, log: log}
+	p.build = func(ctx context.Context, now time.Time) (*snapshot.Snapshot, error) {
+		return snapshot.Build(ctx, p.store, p.holder, now)
+	}
+	return p
 }
 
 func (p *Publisher) Publish(ctx context.Context, now time.Time) error {
-	snap, err := snapshot.Build(ctx, p.store, p.holder, now)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	snap, err := p.build(ctx, now)
 	if err != nil {
 		snapshotFailures.Inc()
 		return err
