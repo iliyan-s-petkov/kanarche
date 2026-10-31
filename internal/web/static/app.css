@@ -2121,6 +2121,18 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .about-links__go { position: absolute; inset-block-start: var(--space-3); inset-inline-end: var(--space-4); color: var(--accent); line-height: 1; }
 .about-links strong { font-weight: var(--weight-emphasis); color: var(--accent); }
 .about-links span:not(.about-links__go) { color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); }
+/* Hosting credit: caption over a centred logo; theme picks which logo shows. */
+.about-hosting { margin-block-start: var(--space-8); padding-block-start: var(--space-6); border-block-start: 1px solid var(--border-faint); text-align: center; }
+.about-hosting__caption { margin: 0 0 var(--space-3); color: var(--fg-2); }
+.about-hosting__link { display: inline-flex; align-items: center; justify-content: center; min-block-size: 44px; }
+.about-hosting .about-hosting__logo { display: block; block-size: 2rem; inline-size: auto; max-inline-size: 100%; }
+.about-hosting .about-hosting__logo--dark { display: none; }
+:root[data-theme="dark"] .about-hosting .about-hosting__logo--light { display: none; }
+:root[data-theme="dark"] .about-hosting .about-hosting__logo--dark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .about-hosting .about-hosting__logo--light { display: none; }
+  :root:not([data-theme="light"]) .about-hosting .about-hosting__logo--dark { display: block; }
+}
 .about-back { margin-block-start: var(--space-8); }
 @media (max-width: 671px) {
   .about-values { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
