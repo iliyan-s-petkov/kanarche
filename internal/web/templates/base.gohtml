@@ -6,7 +6,8 @@
 <meta name="spoken-units" content="{{.SpokenUnitsAttr}}">
 <title>{{.Title}}</title>
 <meta name="description" content="{{.MetaDescription}}">
-{{if .NoIndex}}<meta name="robots" content="noindex">
+{{with .RefreshSeconds}}<meta http-equiv="refresh" content="{{.}}">
+{{end}}{{if .NoIndex}}<meta name="robots" content="noindex">
 {{else}}<link rel="canonical" href="{{.CanonicalURL}}">
 {{range .Alternates}}<link rel="alternate" hreflang="{{.Lang}}" href="{{.URL}}">
 {{end}}{{with .XDefaultURL}}<link rel="alternate" hreflang="x-default" href="{{.}}">
