@@ -2,7 +2,6 @@ package web_test
 
 import (
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -19,15 +18,15 @@ func TestMapBarWrapsTheFreshnessOverlay(t *testing.T) {
 	}
 }
 
-// The bar height is one token: the attribution lift, the embed footline and the
-// landscape legend cap all read --map-bar-h, so a taller bar moves all three.
+// The bar height is one token: the embed footline and the landscape legend caps
+// read --map-bar-h, so a taller bar moves all of them.
 func TestMapBarHeightIsOneToken(t *testing.T) {
 	css, err := os.ReadFile("static/app.css")
 	if err != nil {
 		t.Fatalf("ReadFile app.css error = %v", err)
 	}
-	if n := strings.Count(string(css), "var(--map-bar-h)"); n < 4 {
-		t.Errorf("app.css reads --map-bar-h %d times, want at least 4 (attribution, embed footline, two landscape caps)", n)
+	if n := strings.Count(string(css), "var(--map-bar-h)"); n < 3 {
+		t.Errorf("app.css reads --map-bar-h %d times, want at least 3 (embed footline, two landscape caps)", n)
 	}
 	if strings.Contains(string(css), "52px") {
 		t.Error("app.css still hard-codes the 52px bar height; use var(--map-bar-h)")
@@ -46,19 +45,16 @@ func TestMapBarHeightIsOneToken(t *testing.T) {
 	}
 }
 
-// The rail's table link: the area page jumps to its own sensors section,
-// the home page to the areas table.
-func TestMapTableLinkTargets(t *testing.T) {
+// The rail carries reset view, not a table link: the pages hand the map no table target.
+func TestMapRailHasNoTableLink(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
-	cases := map[string]string{"/en/area/high": "#sensors-h", "/en/": "/en/areas"}
-	for path, want := range cases {
+	for _, path := range []string{"/en/area/high", "/en/"} {
 		body := fetch(t, rr, path).Body.String()
-		m := regexp.MustCompile(`data-table-href="([^"]*)"`).FindStringSubmatch(body)
-		if m == nil || m[1] != want {
-			t.Errorf("%s: data-table-href = %v, want %q", path, m, want)
+		if strings.Contains(body, "data-table-href") || strings.Contains(body, "data-t-table-link") {
+			t.Errorf("%s: the map still gets a table link for the rail", path)
 		}
-		if !strings.Contains(body, `data-t-table-link="Data table"`) {
-			t.Errorf("%s: the table link has no label", path)
+		if !strings.Contains(body, `data-t-zoom-reset="`) {
+			t.Errorf("%s: the reset view label is missing", path)
 		}
 	}
 }

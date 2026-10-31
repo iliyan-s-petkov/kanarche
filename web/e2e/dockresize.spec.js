@@ -154,7 +154,7 @@ test('below 1024 there is no panel and no handle', async ({ browser }, testInfo)
 })
 
 // Every visible right-hand control, the attribution's (i), the bar and the panel: no two may overlap.
-const RIGHT = ['.map__full', '.map-zoom', '.map-orient__btn', '.map-table', '.map-locate', '.maplibregl-ctrl-attrib-button', '.map-bar']
+const RIGHT = ['.map__full', '.map-zoom', '.map-orient__btn', '.map-reset', '.map-locate', '.maplibregl-ctrl-attrib-button', '.map-bar']
 
 async function assertClear(page, when) {
   await page.waitForTimeout(400)

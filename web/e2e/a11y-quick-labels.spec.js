@@ -55,12 +55,12 @@ test('the finder announces the result count as the reader types', async ({ ctx }
   await expect(status).toHaveText(/areas? found|No area by that name/)
 })
 
-// Two links: the toolbar one and the rail one on the map.
+// One link: the toolbar one; the map rail carries reset view instead.
 test('the Data table links are visible, and take a visible focus', async ({ ctx }) => {
   const page = await visit(ctx)
   const links = page.getByRole('link', { name: 'Data table', exact: true })
-  await expect(links).toHaveCount(2)
-  await expect(page.locator('.map-rail .map-table')).toHaveAccessibleName('Data table')
+  await expect(links).toHaveCount(1)
+  await expect(page.locator('.map-rail .map-table')).toHaveCount(0)
   for (const link of await links.all()) {
     await expect(link).toBeVisible()
     const box = await link.boundingBox()

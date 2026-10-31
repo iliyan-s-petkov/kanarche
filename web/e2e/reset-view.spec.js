@@ -20,9 +20,8 @@ for (const [name, size] of VIEWPORTS) {
       return { pitch: m.getPitch(), bearing: m.getBearing() }
     })
     expect(await camera()).toEqual({ pitch: 45, bearing: 30 })
-    // Reset view lives in the compass panel.
-    await page.locator('.map-orient__btn').click()
-    await page.locator('.map-orient__panel [data-act="reset"]').click()
+    // Reset view is a rail button.
+    await page.locator('.map-rail .map-reset').click()
     await expect.poll(camera, { timeout: 15_000 }).toEqual({ pitch: 0, bearing: 0 })
   })
 }

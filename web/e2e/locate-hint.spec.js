@@ -40,7 +40,7 @@ for (const [name, size] of Object.entries(sizes)) {
     expect(h.x + h.width).toBeLessThanOrEqual(locate.x)
     expect(locate.x - (h.x + h.width)).toBeLessThan(20)
     expect(Math.abs(h.y + h.height - (locate.y + locate.height))).toBeLessThan(2)
-    for (const b of await page.locator('.map-zoom button, .map__full, .map-table, .map-orient__btn').all()) {
+    for (const b of await page.locator('.map-zoom button, .map__full, .map-reset, .map-orient__btn').all()) {
       if (await b.isVisible()) expect(overlaps(h, await box(b))).toBe(false)
     }
     await shot(page, `locatehint-${name}`)

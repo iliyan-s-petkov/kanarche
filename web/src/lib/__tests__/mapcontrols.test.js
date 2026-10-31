@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mountFullscreen, mountZoom, mountLocate, mountTable, installZoom, mountOrientation, installOrientation } from '../mapcontrols.js'
+import { mountFullscreen, mountZoom, mountLocate, mountReset, installZoom, mountOrientation, installOrientation } from '../mapcontrols.js'
 
 const frame = () => {
   const el = document.createElement('div')
@@ -138,16 +138,16 @@ describe('mountFullscreen', () => {
 })
 
 describe('mountZoom', () => {
-  it('builds the kit stack: three named buttons, in the kit order', () => {
+  it('builds the kit stack: two named buttons, in and out', () => {
     const el = frame()
-    const { el: bar, buttons } = mountZoom(el, { inLabel: 'In', outLabel: 'Out', resetLabel: 'Reset' })
+    const { el: bar, buttons } = mountZoom(el, { inLabel: 'In', outLabel: 'Out' })
 
     expect(bar.parentElement).toBe(el)
     expect(bar.className).toBe('map-zoom')
-    expect([...bar.children].map((b) => b.getAttribute('data-act'))).toEqual(['in', 'out', 'reset'])
-    expect([...bar.children].map((b) => b.getAttribute('aria-label'))).toEqual(['In', 'Out', 'Reset'])
+    expect([...bar.children].map((b) => b.getAttribute('data-act'))).toEqual(['in', 'out'])
+    expect([...bar.children].map((b) => b.getAttribute('aria-label'))).toEqual(['In', 'Out'])
     // Icon-only, so title carries the same name for a pointer reader.
-    expect([...bar.children].map((b) => b.getAttribute('title'))).toEqual(['In', 'Out', 'Reset'])
+    expect([...bar.children].map((b) => b.getAttribute('title'))).toEqual(['In', 'Out'])
     for (const b of Object.values(buttons)) {
       expect(b.className).toBe('map-zoom__btn')
       expect(b.type).toBe('button')
@@ -157,14 +157,11 @@ describe('mountZoom', () => {
 
   it('gives each button its own glyph', () => {
     const el = frame()
-    const { buttons } = mountZoom(el, { inLabel: 'In', outLabel: 'Out', resetLabel: 'Reset' })
+    const { buttons } = mountZoom(el, { inLabel: 'In', outLabel: 'Out' })
     const paths = (b) => [...b.querySelectorAll('path')].map((p) => p.getAttribute('d'))
-    // Plus is minus with a stroke added, and reset is neither — the marks have
-    // to differ, because three identical squares in a column is one control.
+    // Plus is minus with a stroke added.
     expect(paths(buttons.in)).toHaveLength(2)
     expect(paths(buttons.out)).toHaveLength(1)
-    expect(paths(buttons.reset)).toHaveLength(3)
-    expect(new Set([...paths(buttons.in), ...paths(buttons.reset)]).size).toBe(4)
   })
 })
 
@@ -186,7 +183,7 @@ describe('mountLocate', () => {
 
   it('draws a crosshair, not one of the zoom stack marks', () => {
     const el = frame()
-    const zoom = mountZoom(el, { inLabel: 'In', outLabel: 'Out', resetLabel: 'Reset' })
+    const zoom = mountZoom(el, { inLabel: 'In', outLabel: 'Out' })
     const button = mountLocate(el, { label: 'Locate' })
     const paths = (b) => [...b.querySelectorAll('path')].map((p) => p.getAttribute('d'))
 
@@ -214,9 +211,10 @@ describe('installZoom', () => {
   }
 
   const wire = (map) => {
-    const { buttons } = mountZoom(frame(), { inLabel: 'In', outLabel: 'Out', resetLabel: 'Reset' })
-    installZoom(map, buttons, { centre: [25.4858, 42.7339], zoom: 7 })
-    return buttons
+    const { buttons } = mountZoom(frame(), { inLabel: 'In', outLabel: 'Out' })
+    const reset = mountReset(frame(), { label: 'Reset' })
+    installZoom(map, { ...buttons, reset }, { centre: [25.4858, 42.7339], zoom: 7 })
+    return { ...buttons, reset }
   }
 
   it('drives the camera rather than holding its own zoom', () => {
@@ -303,7 +301,7 @@ it('writes only classes the kit defines', () => {
   const css = readFileSync(join(here, '..', '..', '..', '..', 'design-kit', 'components.css'), 'utf8')
   const el = frame()
   mountFullscreen(el, { label: 'a', exitLabel: 'b' }, fakeDoc())
-  mountZoom(el, { inLabel: 'a', outLabel: 'b', resetLabel: 'c' })
+  mountZoom(el, { inLabel: 'a', outLabel: 'b' })
 
   const used = new Set()
   for (const node of el.querySelectorAll('*')) {
@@ -419,46 +417,24 @@ describe('orientation control', () => {
   })
 })
 
-describe('mountTable', () => {
-  it('is an icon link to the numbers, named for a screen reader', () => {
+describe('mountReset', () => {
+  it('is an icon button named for a screen reader', () => {
     const el = frame()
-    const a = mountTable(el, { label: 'Data table', href: '#sensors-h' })
-    expect(a.tagName).toBe('A')
-    expect(a.className).toBe('map-table')
-    expect(a.getAttribute('href')).toBe('#sensors-h')
-    expect(a.getAttribute('aria-label')).toBe('Data table')
-    expect(a.getAttribute('title')).toBe('Data table')
-    expect(a.querySelector('svg').getAttribute('aria-hidden')).toBe('true')
-    expect(a.parentElement).toBe(el)
-  })
-
-  it('is not built without a target', () => {
-    const el = frame()
-    expect(mountTable(el, { label: 'Data table', href: '' })).toBeNull()
-    expect(el.querySelector('.map-table')).toBeNull()
+    const b = mountReset(el, { label: 'Reset view' })
+    expect(b.tagName).toBe('BUTTON')
+    expect(b.type).toBe('button')
+    expect(b.className).toBe('map-reset')
+    expect(b.getAttribute('aria-label')).toBe('Reset view')
+    expect(b.getAttribute('title')).toBe('Reset view')
+    expect(b.querySelector('svg').getAttribute('aria-hidden')).toBe('true')
+    expect(b.parentElement).toBe(el)
   })
 })
 
-// The rail folds reset into the compass: the zoom stack drops it, the panel carries it.
-describe('reset view in the compass panel', () => {
-  it('mountZoom leaves reset out when asked', () => {
-    const { el: bar, buttons } = mountZoom(frame(), { inLabel: 'In', outLabel: 'Out', reset: false })
-    expect([...bar.children].map((b) => b.getAttribute('data-act'))).toEqual(['in', 'out'])
-    expect(buttons.reset).toBeUndefined()
-  })
-
-  it('mountOrientation puts a named reset button beside north', () => {
-    const parts = mountOrientation(frame(), { label: 'Orientation', northLabel: 'North', resetLabel: 'Reset view', closeLabel: 'Close' })
-    expect(parts.reset.getAttribute('data-act')).toBe('reset')
-    expect(parts.reset.textContent).toBe('Reset view')
-    expect(parts.reset.type).toBe('button')
-    expect(parts.panel.contains(parts.reset)).toBe(true)
-    expect(parts.north.nextElementSibling).toBe(parts.reset)
-  })
-
-  it('mountOrientation builds no reset without a label', () => {
+describe('mountOrientation without a reset', () => {
+  it('builds no reset button in the panel', () => {
     const parts = mountOrientation(frame(), { label: 'Orientation', northLabel: 'North', closeLabel: 'Close' })
-    expect(parts.reset).toBeNull()
+    expect(parts.reset).toBeUndefined()
     expect(parts.panel.querySelector('[data-act="reset"]')).toBeNull()
   })
 })

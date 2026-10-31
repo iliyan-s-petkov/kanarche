@@ -211,7 +211,7 @@ const legendBoxes = () => {
     const r = el.getBoundingClientRect()
     return { x: r.left - shell.left, y: r.top - shell.top, r: r.right - shell.left, b: r.bottom - shell.top }
   }
-  const rail = [...document.querySelectorAll('.map__layers, .map-zoom, .map__full, .map-locate, .map-table, .map-orient__btn, .map-metric')]
+  const rail = [...document.querySelectorAll('.map__layers, .map-zoom, .map__full, .map-locate, .map-reset, .map-orient__btn, .map-metric')]
     .filter((e) => e.getBoundingClientRect().width > 0).map(rel)
   const pills = [...document.querySelectorAll('.map-freshness .data-refresh, .map-window__btn, .map-play')]
     .filter((e) => e.getBoundingClientRect().width > 0).map(rel)

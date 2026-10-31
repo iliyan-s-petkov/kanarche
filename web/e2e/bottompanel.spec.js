@@ -394,7 +394,7 @@ test('1440: the orientation control and the rail stay clear of the panel, open o
   const check = async (when) => {
     await page.waitForTimeout(700)
     const p = await box(page.locator(PANEL))
-    for (const sel of ['.map-orient__btn', '.map__full', '.map-table', '.map-locate']) {
+    for (const sel of ['.map-orient__btn', '.map__full', '.map-reset', '.map-locate']) {
       const c = page.locator(sel).first()
       expect(overlaps(p, await box(c)), `${sel} sits under the panel (${when})`).toBe(false)
       expect(await hittable(c), `${sel} is covered (${when})`).toBe(true)

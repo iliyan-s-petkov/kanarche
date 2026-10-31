@@ -112,10 +112,10 @@ test.describe('U01: the phone bottom-right corner', () => {
       expect(geometry.box.height).toBeLessThanOrEqual(geometry.btn.height + 1)
       expect(geometry.boxBg).toBe('rgba(0, 0, 0, 0)')
 
-      // Locate, table link and attribution all carry an opaque card.
+      // Locate, reset view and attribution all carry an opaque card.
       const fills = await page.evaluate(() => {
         const alpha = (c) => { const m = c.match(/[\d.]+/g); return m.length > 3 ? Number(m[3]) : 1 }
-        return ['.map-locate', '.map-table', '.maplibregl-ctrl-attrib-button'].map((s) => {
+        return ['.map-locate', '.map-reset', '.maplibregl-ctrl-attrib-button'].map((s) => {
           const bg = getComputedStyle(document.querySelector(s)).backgroundColor
           return { s, alpha: alpha(bg) }
         })
@@ -161,7 +161,7 @@ test.describe('U01: the open attribution card overlaps nothing', () => {
         const rects = await page.evaluate(() => {
           const r = (el) => { const b = el.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height } }
           const card = document.querySelector('.maplibregl-ctrl-attrib-inner')
-          const others = ['.scale--onmap', '.map-freshness', '.map-play', '.map-locate', '.map-table', '.maplibregl-ctrl-attrib-button']
+          const others = ['.scale--onmap', '.map-freshness', '.map-play', '.map-locate', '.map-reset', '.maplibregl-ctrl-attrib-button']
           const found = {}
           for (const s of others) {
             const el = document.querySelector(s)
