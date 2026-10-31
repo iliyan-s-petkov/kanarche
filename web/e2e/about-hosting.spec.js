@@ -25,14 +25,14 @@ for (const lang of ['', '/en']) {
           return {
             over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
             linkHeight: document.querySelector('#hosting a').getBoundingClientRect().height,
-            visibleSrcs: visible.map((i) => i.currentSrc),
+            visibleSrcs: visible.map((i) => i.src),
             hostingTop: document.querySelector('#hosting').getBoundingClientRect().top,
             moreBottom: more.bottom,
           }
         })
         expect(m.over).toBeLessThanOrEqual(0)
         expect(m.linkHeight).toBeGreaterThanOrEqual(44)
-        // One logo shows, and it is the one named for the active theme.
+        // src, not currentSrc: a lazy image has no currentSrc until it loads. One logo shows, and it is the one named for the active theme.
         expect(m.visibleSrcs).toHaveLength(1)
         expect(m.visibleSrcs[0]).toContain(`host-hostellation-${theme}`)
         expect(m.hostingTop).toBeGreaterThanOrEqual(m.moreBottom)
