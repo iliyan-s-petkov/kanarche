@@ -47,10 +47,20 @@ func TestTheHostingCreditIsSafeAndNamed(t *testing.T) {
 		t.Fatalf("no link to %s", hostingURL)
 	}
 	anchor := body[strings.LastIndex(body[:start], "<a ") : start+200]
-	if !strings.Contains(anchor, `rel="noopener`) {
-		t.Errorf("hosting link does not sever the opener: %s", anchor)
+	// Only the opening tag carries the attributes under test.
+	tag := anchor[:strings.Index(anchor, ">")+1]
+
+	// rel is a space-separated token list, so check for each token, not a prefix.
+	rel := map[string]bool{}
+	if m := regexp.MustCompile(`rel="([^"]*)"`).FindStringSubmatch(tag); m != nil {
+		for _, tok := range strings.Fields(m[1]) {
+			rel[tok] = true
+		}
 	}
-	if strings.Contains(anchor, "target=") {
+	if !rel["noopener"] || !rel["sponsored"] {
+		t.Errorf("hosting link rel must carry sponsored and noopener: %s", tag)
+	}
+	if strings.Contains(tag, "target=") {
 		t.Errorf("hosting link opens a new tab; the footer's links do not")
 	}
 	if !strings.Contains(anchor, ">Hostellation<") {

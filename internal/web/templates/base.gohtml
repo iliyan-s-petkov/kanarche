@@ -159,7 +159,7 @@
     {{/* Donated, so the credit is owed on every page and at a size that can be
          read — the rest of the footer is 12px caption. */}}
     <p class="footer__sponsor">{{.T "footer.hosting_short"}}
-      <a class="link" href="https://hostellation.com/" rel="noopener noreferrer">Hostellation</a></p>
+      <a class="link" href="https://hostellation.com/" rel="sponsored noopener noreferrer">Hostellation</a></p>
     {{if not .GeneratedAt.IsZero}}<p>{{.T "area.updated"}}: <time datetime="{{.GeneratedAtISO}}" data-local-time>{{.GeneratedAtHuman}}</time></p>{{end}}
   </div>
 </footer>

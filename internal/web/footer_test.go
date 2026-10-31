@@ -160,7 +160,8 @@ func TestFooterExternalLinksSeverTheOpenerAndStayInTheTab(t *testing.T) {
 		t.Fatalf("found only %d external anchors in the footer", len(anchors))
 	}
 	for _, a := range anchors {
-		if !strings.Contains(a, `rel="noopener noreferrer"`) {
+		// The hosting link also carries sponsored, so match the pair, not the whole attribute.
+		if !strings.Contains(a, "noopener noreferrer") {
 			t.Errorf("external footer link without noopener noreferrer: %s", a)
 		}
 		if strings.Contains(a, "target=") {
