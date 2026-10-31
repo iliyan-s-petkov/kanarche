@@ -154,8 +154,11 @@ for (const vp of VIEWPORTS) {
       await page.goto(path)
       await expect(page.locator('.map__full')).toBeVisible()
 
+      // Under 400px the finder is its icon button.
+      const narrow = opts.isMobile && opts.viewport.width < 400
       const controls = Object.fromEntries(Object.entries(CONTROLS)
-        .filter(([k]) => !(opts.isMobile && PHONE_HIDDEN.includes(k))))
+        .filter(([k]) => !(opts.isMobile && PHONE_HIDDEN.includes(k)))
+        .map(([k, sel]) => [k, k === 'finder' && narrow ? '.map-controls__find .find-toggle' : sel]))
       const names = Object.keys(controls)
       // The baseline: outside fullscreen every control is there and sized.
       await expect.poll(() => controlStates(page, controls, false).then((r) => r.filter((x) => /missing|zero size/.test(x))), { timeout: 15000 }).toEqual([])
