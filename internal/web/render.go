@@ -242,6 +242,8 @@ type PageData struct {
 	// error render. base.gohtml drops canonical/alternate/OG tags and emits
 	// robots noindex instead.
 	NoIndex bool
+	// RefreshSeconds, when set, adds a meta refresh. Only the restart notice sets it.
+	RefreshSeconds int
 
 	// AltLangs limits the languages a page exists in. Nil means every loaded
 	// language. Fewer than two means no hreflang alternates at all.
@@ -1307,6 +1309,12 @@ func (rr *Renderer) RenderError(w http.ResponseWriter, r *http.Request, status i
 	// canonical/alternate/OG tags for this page and emits robots noindex
 	// instead — see OpenProject #605's error-page audit finding.
 	data.NoIndex = true
+	// The restart notice asks the client to come back and reloads itself.
+	// Other errors are final, so they send neither.
+	if kind == "unavailable" {
+		w.Header().Set("Retry-After", "30")
+		data.RefreshSeconds = 20
+	}
 	// No Cache-Control set here: render derives it from the status, so an error
 	// page is no-store by construction. Setting it here as well was how the
 	// overwrite bug hid — it looked handled at this level and was undone below.
