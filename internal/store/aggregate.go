@@ -112,17 +112,24 @@ func (s *Store) cutoffs() (official, community time.Time) {
 // blended: the citizen median is the headline, and an area with no citizen
 // row falls back to the official median. The official figure stays in
 // per_area_source either way.
-const perAreaCTE = `
+func perAreaCTE(thresholdParam int) string {
+	return fmt.Sprintf(`
 per_area AS (
     -- The median, not the mean: one failed device reading 900 µg/m³ beside
     -- four neighbours in the teens moved a whole province to 189.
+    --
+    -- Per (area, metric): citizen stations at or above the coverage threshold
+    -- give the headline. Otherwise any official station for that metric does,
+    -- being reference grade, so one is enough. Otherwise there is no value.
     SELECT ps.slug, ps.source, ps.metric, ps.avg_value
       FROM per_area_source ps
-     WHERE ps.source = '` + communitySource + `'
-        OR NOT EXISTS (SELECT 1 FROM per_area_source c
-                        WHERE c.slug = ps.slug AND c.metric = ps.metric
-                          AND c.source = '` + communitySource + `')
-)`
+     WHERE (ps.source = '%[1]s' AND ps.stations >= $%[3]d)
+        OR (ps.source = '%[2]s'
+            AND NOT EXISTS (SELECT 1 FROM per_area_source c
+                             WHERE c.slug = ps.slug AND c.metric = ps.metric
+                               AND c.source = '%[1]s' AND c.stations >= $%[3]d))
+)`, communitySource, officialSource, thresholdParam)
+}
 
 const coverageCTE = `
 coverage AS (
@@ -160,13 +167,17 @@ func perAreaSourceCTE(valueCol, extraJoin string) string {
 	return `
 per_area_source AS (
     SELECT a.slug, ` + sourceExpr + ` AS source, l.metric,
-           percentile_cont(0.5) WITHIN GROUP (ORDER BY ` + valueCol + `) AS avg_value
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY ` + valueCol + `) AS avg_value,
+           -- Stations, not devices: the same distinct-coordinate rule as coverageCTE.
+           count(DISTINCT (ST_X(s.location::geometry), ST_Y(s.location::geometry))) AS stations
       FROM area a
       JOIN area_sensor asx ON asx.area_slug = a.slug
       JOIN latest l        ON l.sensor_id = asx.sensor_id
+      JOIN sensor s        ON s.sensor_id = asx.sensor_id
 ` + extraJoin + `
      WHERE a.kind = ANY($3::text[])
-     GROUP BY a.slug, source, l.metric
+     -- The expression, not the alias: sensor has its own source column.
+     GROUP BY a.slug, ` + sourceExpr + `, l.metric
 )`
 }
 
@@ -206,7 +217,7 @@ SELECT a.slug, a.kind, a.name_bg, a.name_en,
            '{}'::jsonb),
        COALESCE(
            (SELECT CASE WHEN bool_or(p.source = '` + communitySource + `') THEN '` + HeadlineCommunity + `'
-                        ELSE '` + HeadlineOfficial + `' END
+                        WHEN bool_or(p.source = '` + officialSource + `') THEN '` + HeadlineOfficial + `' END
               FROM per_area p WHERE p.slug = a.slug),
            ''),
        COALESCE(
@@ -220,7 +231,7 @@ SELECT a.slug, a.kind, a.name_bg, a.name_en,
  ORDER BY a.slug`
 
 var areaAggregateSQL = "WITH" + latestCTE(4) + "," +
-	perAreaSourceCTE("l.value", "") + "," + perAreaCTE + "," + coverageCTE + "," + coverageSourceCTE +
+	perAreaSourceCTE("l.value", "") + "," + perAreaCTE(5) + "," + coverageCTE + "," + coverageSourceCTE +
 	areaAggregateSelect
 
 // AreaAggregates returns one row per area of the requested kinds, including
@@ -233,7 +244,7 @@ var areaAggregateSQL = "WITH" + latestCTE(4) + "," +
 func (s *Store) AreaAggregates(ctx context.Context, kinds []string) ([]AreaAggregate, error) {
 	official, community := s.cutoffs()
 
-	rows, err := s.pool.Query(ctx, areaAggregateSQL, official, usableQuality, kinds, community)
+	rows, err := s.pool.Query(ctx, areaAggregateSQL, official, usableQuality, kinds, community, s.cfg.CoverageThreshold)
 	if err != nil {
 		return nil, fmt.Errorf("store: area aggregates: %w", err)
 	}
@@ -259,7 +270,7 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 			&a.SensorCount, &values, &bySource, &headline, &headlines); err != nil {
 			return nil, fmt.Errorf("store: scan area aggregate: %w", err)
 		}
-		a.Covered = headlineStations(a.SensorCount, headline, bySource) >= s.cfg.CoverageThreshold
+		a.Covered = headline != "" || a.SensorCount >= s.cfg.CoverageThreshold
 		if a.Covered {
 			a.Values = values
 			a.BySource = bySource
@@ -278,22 +289,6 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 		return nil, fmt.Errorf("store: area aggregates rows: %w", err)
 	}
 	return out, nil
-}
-
-// headlineStations is the station count the coverage threshold applies to:
-// the stations behind the headline, not every network in the area. One citizen
-// station beside five official ones must not pass a threshold of two on the
-// strength of stations whose readings are not the headline. SensorCount stays
-// the all-network total for display. With no headline there is nothing to
-// narrow to, and the total applies as before.
-func headlineStations(total int, headline string, by map[string]SourceAggregate) int {
-	switch headline {
-	case HeadlineCommunity:
-		return by[communitySource].N
-	case HeadlineOfficial:
-		return by[officialSource].N
-	}
-	return total
 }
 
 type SensorReading struct {

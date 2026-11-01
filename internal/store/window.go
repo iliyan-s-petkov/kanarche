@@ -40,7 +40,7 @@ var windowedAreaAggregateSQL = "WITH" + latestCTE(5) +
 	"," + fmt.Sprintf(windowedSensorCTE, 4) +
 	"," + perAreaSourceCTE("w.value",
 	"      JOIN windowed w      ON w.sensor_id = l.sensor_id AND w.metric = l.metric") +
-	"," + perAreaCTE +
+	"," + perAreaCTE(6) +
 	"," + coverageCTE + "," + coverageSourceCTE + areaAggregateSelect
 
 // WindowedAreaAggregates is AreaAggregates with the published value replaced by
@@ -51,7 +51,7 @@ var windowedAreaAggregateSQL = "WITH" + latestCTE(5) +
 func (s *Store) WindowedAreaAggregates(ctx context.Context, kinds []string, since time.Time) ([]AreaAggregate, error) {
 	official, community := s.cutoffs()
 
-	rows, err := s.pool.Query(ctx, windowedAreaAggregateSQL, official, usableQuality, kinds, since, community)
+	rows, err := s.pool.Query(ctx, windowedAreaAggregateSQL, official, usableQuality, kinds, since, community, s.cfg.CoverageThreshold)
 	if err != nil {
 		return nil, fmt.Errorf("store: windowed area aggregates: %w", err)
 	}

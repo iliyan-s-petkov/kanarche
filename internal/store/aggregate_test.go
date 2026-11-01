@@ -1341,7 +1341,6 @@ func TestAreaAggregatesNameOnlyTheTwoKnownNetworks(t *testing.T) {
 	seedArea(t, ctx, pool, "sofia", "oblast", 23.3219, 42.6977)
 	seedSensorReading(t, ctx, pool, 111, 23.3219, 42.6977, "P2", 10, "ok", now)
 	seedSensorReading(t, ctx, pool, 112, 23.3229, 42.6977, "P2", 20, "ok", now)
-	seedSensorReading(t, ctx, pool, 113, 23.3234, 42.6977, "P2", 30, "ok", now)
 	seedOfficialSensorReading(t, ctx, pool, store.OfficialSensorIDFloor+11, 23.3239, 42.6977, "P2", 90, now)
 	assignAreas(t, ctx, pool)
 
@@ -1388,7 +1387,7 @@ func TestAreaAggregatesPerSourceIsEmptyWithoutCoverage(t *testing.T) {
 
 	seedArea(t, ctx, pool, "sofia", "oblast", 23.3219, 42.6977)
 	seedSensorReading(t, ctx, pool, 301, 23.3219, 42.6977, "P2", 10, "ok", now)
-	seedOfficialSensorReading(t, ctx, pool, store.OfficialSensorIDFloor+21, 23.3229, 42.6977, "P2", 90, now)
+	seedSensorReading(t, ctx, pool, 302, 23.3229, 42.6977, "P2", 90, "ok", now)
 	assignAreas(t, ctx, pool)
 
 	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
@@ -1396,7 +1395,9 @@ func TestAreaAggregatesPerSourceIsEmptyWithoutCoverage(t *testing.T) {
 		t.Fatalf("AreaAggregates: %v", err)
 	}
 	a := findAgg(t, aggs, "sofia")
-	// testStoreConfig's CoverageThreshold is 3; two stations is below it.
+	// testStoreConfig's CoverageThreshold is 3; two citizen stations and no
+	// official one is below it. With an official station the area would be
+	// covered by its reference-grade reading.
 	if a.Covered {
 		t.Fatalf("two stations should be below the coverage threshold; got Covered = true")
 	}
@@ -1707,34 +1708,52 @@ func TestAreaSeriesFollowTheHeadlineRule(t *testing.T) {
 	}
 }
 
-func TestCoverageCountsOnlyTheStationsBehindTheHeadline(t *testing.T) {
+// The gate is per (area, metric): citizen stations at the threshold (3 in the
+// test config) give the headline, else an official station does, else nothing.
+func TestHeadlineGateIsCitizenThresholdThenOfficialThenNothing(t *testing.T) {
 	ctx, pool := migrated(t)
-	cfg := testStoreConfig()
-	cfg.CoverageThreshold = 2
-	s := store.New(pool, cfg, testSeriesTimeout)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
 	now := time.Now().UTC().Truncate(time.Minute)
 	off := store.OfficialSensorIDFloor
 
-	seedHeadlineArea(t, ctx, pool, "one-plus-five", 23.0, []headlineSeed{
-		{601, false, 10}, {off + 61, true, 50}, {off + 62, true, 50}, {off + 63, true, 50}, {off + 64, true, 50}, {off + 65, true, 50}}, now)
-	seedHeadlineArea(t, ctx, pool, "two-citizen", 25.0, []headlineSeed{{611, false, 10}, {612, false, 20}}, now)
-	seedHeadlineArea(t, ctx, pool, "two-official", 27.0, []headlineSeed{{off + 71, true, 40}, {off + 72, true, 60}}, now)
+	seedHeadlineArea(t, ctx, pool, "two-plus-one", 23.0, []headlineSeed{{801, false, 10}, {802, false, 20}, {off + 81, true, 40}}, now)
+	seedHeadlineArea(t, ctx, pool, "three-plus-one", 25.0, []headlineSeed{{811, false, 10}, {812, false, 20}, {813, false, 30}, {off + 82, true, 100}}, now)
+	seedHeadlineArea(t, ctx, pool, "two-only", 27.0, []headlineSeed{{821, false, 10}, {822, false, 20}}, now)
+	seedHeadlineArea(t, ctx, pool, "lone-official", 29.0, []headlineSeed{{off + 83, true, 55}}, now)
 	assignAreas(t, ctx, pool)
 
+	check := func(t *testing.T, aggs []store.AreaAggregate) {
+		t.Helper()
+		a := findAgg(t, aggs, "two-plus-one")
+		if a.Values["P2"] != 40 || a.HeadlineSource != "eea" || !a.Covered {
+			t.Errorf("2 citizen + 1 official = %v %q covered=%v, want 40 eea covered", a.Values["P2"], a.HeadlineSource, a.Covered)
+		}
+		if a.SensorCount != 3 {
+			t.Errorf("SensorCount = %d, want the all-network total 3", a.SensorCount)
+		}
+		a = findAgg(t, aggs, "three-plus-one")
+		if a.Values["P2"] != 20 || a.HeadlineSource != "community" {
+			t.Errorf("3 citizen + 1 official = %v %q, want 20 community", a.Values["P2"], a.HeadlineSource)
+		}
+		a = findAgg(t, aggs, "lone-official")
+		if a.Values["P2"] != 55 || a.HeadlineSource != "eea" || !a.Covered {
+			t.Errorf("1 official alone = %v %q covered=%v, want 55 eea covered: one reference-grade station is enough", a.Values["P2"], a.HeadlineSource, a.Covered)
+		}
+		a = findAgg(t, aggs, "two-only")
+		if len(a.Values) != 0 || a.HeadlineSource != "" || a.Covered {
+			t.Errorf("2 citizen alone = %v %q covered=%v, want no value", a.Values, a.HeadlineSource, a.Covered)
+		}
+	}
 	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
 	if err != nil {
 		t.Fatalf("AreaAggregates: %v", err)
 	}
-	a := findAgg(t, aggs, "one-plus-five")
-	if a.Covered || len(a.Values) != 0 {
-		t.Errorf("1 citizen + 5 official at threshold 2: covered=%v values=%v, want it treated as 1 sensor", a.Covered, a.Values)
+	check(t, aggs)
+	aggs, err = s.WindowedAreaAggregates(ctx, []string{"oblast"}, now.Add(-24*time.Hour))
+	if err != nil {
+		t.Fatalf("WindowedAreaAggregates: %v", err)
 	}
-	if a.SensorCount != 6 {
-		t.Errorf("SensorCount = %d, want 6: the all-network total stays", a.SensorCount)
-	}
-	if !findAgg(t, aggs, "two-citizen").Covered || !findAgg(t, aggs, "two-official").Covered {
-		t.Error("two stations behind the headline must meet a threshold of 2")
-	}
+	check(t, aggs)
 }
 
 // Stale citizen beside a fresh official: the headline is the official median
