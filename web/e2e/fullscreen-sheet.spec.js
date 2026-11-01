@@ -68,7 +68,13 @@ for (const vp of VIEWPORTS) {
     // A metric with no reading shows the panel's "no data" text rather than a number.
     const shown = (await sheet.locator('.gauge__value').allTextContents())
       .map((t) => (/^-?\d/.test(t) ? t.split(' ')[0] : null))
-    expect(shown).toEqual(expected)
+    // The panel groups thousands and rounds (1013.04 shows as 1,013), so compare numerically.
+    const num = (v) => (v === null ? null : Number(String(v).replace(/,/g, '')))
+    expect(shown).toHaveLength(expected.length)
+    shown.forEach((v, i) => {
+      if (expected[i] === null) return expect(v).toBeNull()
+      expect(Math.abs(num(v) - num(expected[i]))).toBeLessThan(0.5)
+    })
 
     await context.close()
   })
