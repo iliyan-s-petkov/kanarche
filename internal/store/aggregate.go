@@ -259,7 +259,7 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 			&a.SensorCount, &values, &bySource, &headline, &headlines); err != nil {
 			return nil, fmt.Errorf("store: scan area aggregate: %w", err)
 		}
-		a.Covered = a.SensorCount >= s.cfg.CoverageThreshold
+		a.Covered = headlineStations(a.SensorCount, headline, bySource) >= s.cfg.CoverageThreshold
 		if a.Covered {
 			a.Values = values
 			a.BySource = bySource
@@ -278,6 +278,22 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 		return nil, fmt.Errorf("store: area aggregates rows: %w", err)
 	}
 	return out, nil
+}
+
+// headlineStations is the station count the coverage threshold applies to:
+// the stations behind the headline, not every network in the area. One citizen
+// station beside five official ones must not pass a threshold of two on the
+// strength of stations whose readings are not the headline. SensorCount stays
+// the all-network total for display. With no headline there is nothing to
+// narrow to, and the total applies as before.
+func headlineStations(total int, headline string, by map[string]SourceAggregate) int {
+	switch headline {
+	case HeadlineCommunity:
+		return by[communitySource].N
+	case HeadlineOfficial:
+		return by[officialSource].N
+	}
+	return total
 }
 
 type SensorReading struct {
@@ -453,17 +469,29 @@ type Point struct {
 	Value float64
 }
 
+// citizenMark tags the per-sensor subquery citizenFirst rewrites. A bare
+// "(SELECT" would also match notFaulty's.
+const citizenMark = "/*citizen-first*/"
+
 // citizenFirst applies the headline rule to a per-sensor series subquery: a
 // citizen sensor always counts, an official one only when no citizen sensor is
 // in the same partition (the area, for the all-area queries) for this metric
 // and window. The series then agrees with the headline median it sits under.
-// q must contain one "(SELECT" per-sensor subquery aliased per_sensor, exposing
-// sensor_id. part is the PARTITION BY expression.
+// q must contain one citizenMark-tagged per-sensor subquery aliased
+// per_sensor, exposing sensor_id. part is the PARTITION BY expression.
+//
+// part is spliced into SQL: pass a constant, never caller input. Both rewrites
+// must match exactly once or the query would silently lose the rule, so
+// anything else panics at package init.
 func citizenFirst(q, part string) string {
+	const selectMark, aliasMark = citizenMark + "(SELECT", ") per_sensor"
+	if strings.Count(q, selectMark) != 1 || strings.Count(q, aliasMark) != 1 {
+		panic("store: citizenFirst needs exactly one " + selectMark + " and one " + aliasMark + " in the query")
+	}
 	open := fmt.Sprintf(`(SELECT * FROM (SELECT ps.*, bool_or(ps.sensor_id < %[1]d) OVER (PARTITION BY %[2]s) AS has_citizen FROM (SELECT`, OfficialSensorIDFloor, part)
 	closing := fmt.Sprintf(`) ps) hf WHERE hf.sensor_id < %d OR NOT hf.has_citizen) per_sensor`, OfficialSensorIDFloor)
-	q = strings.Replace(q, "(SELECT", open, 1)
-	return strings.Replace(q, ") per_sensor", closing, 1)
+	q = strings.Replace(q, selectMark, open, 1)
+	return strings.Replace(q, aliasMark, closing, 1)
 }
 
 // bucketExpr is time_bucket with the width supplied as a query parameter rather
@@ -567,7 +595,7 @@ func (s *Store) SensorSeries(ctx context.Context, sensorID int64, metric string,
 // One row per sensor per bucket. Written once and composed into both the median
 // series and the band below it, so the two can never bucket differently or
 // disagree about which readings count.
-var areaRawPerSensorSQL = citizenFirst(`(SELECT `+bucketed("r.time", 5)+` AS b, r.sensor_id, avg(r.value) AS v
+var areaRawPerSensorSQL = citizenFirst(citizenMark+`(SELECT `+bucketed("r.time", 5)+` AS b, r.sensor_id, avg(r.value) AS v
           FROM reading r
           JOIN area_sensor asx ON asx.sensor_id = r.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -600,7 +628,7 @@ SELECT b, min(v), percentile_cont(0.5) WITHIN GROUP (ORDER BY v), max(v)
 // filter, so re-filtering here would be impossible AND unnecessary.
 // Per-sensor step is weighted by sample_count; the median across sensors stays
 // unweighted, one vote per sensor.
-var areaHourlyPerSensorSQL = citizenFirst(`(SELECT `+bucketed("h.bucket", 4)+` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
+var areaHourlyPerSensorSQL = citizenFirst(citizenMark+`(SELECT `+bucketed("h.bucket", 4)+` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -640,7 +668,7 @@ SELECT b, min(v), percentile_cont(0.5) WITHIN GROUP (ORDER BY v), max(v)
 // the same chart changes shape depending on whether the cache was warm.
 var allAreaRawSeriesSQL = `
 SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
-  FROM ` + citizenFirst(`(SELECT a.slug, `+bucketed("r.time", 4)+` AS b, r.sensor_id, avg(r.value) AS v
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("r.time", 4)+` AS b, r.sensor_id, avg(r.value) AS v
           FROM reading r
           JOIN area_sensor asx ON asx.sensor_id = r.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -658,7 +686,7 @@ SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
 // filter.
 var allAreaHourlySeriesSQL = `
 SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
-  FROM ` + citizenFirst(`(SELECT a.slug, `+bucketed("h.bucket", 3)+` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("h.bucket", 3)+` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -917,7 +945,7 @@ func (s *Store) AreaKm2(ctx context.Context) (map[string]float64, error) {
 // which readings a bucket contains.
 var allAreaRawSeriesCountSQL = `
 SELECT slug, b, count(*)
-  FROM ` + citizenFirst(`(SELECT a.slug, `+bucketed("r.time", 4)+` AS b, r.sensor_id
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("r.time", 4)+` AS b, r.sensor_id
           FROM reading r
           JOIN area_sensor asx ON asx.sensor_id = r.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -932,7 +960,7 @@ SELECT slug, b, count(*)
 
 var allAreaHourlySeriesCountSQL = `
 SELECT slug, b, count(*)
-  FROM ` + citizenFirst(`(SELECT a.slug, `+bucketed("h.bucket", 3)+` AS b, h.sensor_id
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("h.bucket", 3)+` AS b, h.sensor_id
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
