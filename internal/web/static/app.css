@@ -1236,6 +1236,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 .readout__label, .readout__group, .readout__band, .readout__tier { font-size: var(--text-compact); letter-spacing: var(--track-compact); }
 .readout__label, .readout__group, .readout__tier { color: var(--fg-2); }
 .readout__band { font-weight: var(--weight-emphasis); }
+.readout__official { font-size: var(--text-compact); letter-spacing: var(--track-compact); color: var(--fg-2); max-inline-size: 100%; overflow-wrap: anywhere; }
 /* Fixed size: the unit may drop to a second line on a narrow card, the figure never does. */
 .readout.card .readout__value {
   display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); max-inline-size: 100%;
