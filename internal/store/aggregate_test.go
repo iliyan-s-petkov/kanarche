@@ -1643,3 +1643,65 @@ func TestWindowedAreaHeadlineIsCitizenMedianWithOfficialFallback(t *testing.T) {
 	}
 	checkHeadlines(t, aggs)
 }
+
+// wantHeadlineSeries is the series-side twin of checkHeadlines: one bucket per
+// area, valued and counted the way the headline is.
+var wantHeadlineSeries = map[string]struct {
+	value float64
+	n     int
+}{
+	"mixed":         {20, 3},
+	"official-only": {60, 3},
+	"citizen-only":  {15, 3},
+	"metric-mix":    {12, 1},
+}
+
+func TestAreaSeriesFollowTheHeadlineRule(t *testing.T) {
+	ctx, pool, now := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	since := now.Add(-2 * time.Hour)
+	for _, hourly := range []bool{false, true} {
+		bucket := 5 * time.Minute
+		if hourly {
+			bucket = time.Hour
+		}
+		series, err := s.AllAreaSeries(ctx, "P2", since, hourly, bucket)
+		if err != nil {
+			t.Fatalf("AllAreaSeries hourly=%v: %v", hourly, err)
+		}
+		counts, err := s.AllAreaSeriesCounts(ctx, "P2", since, hourly, bucket)
+		if err != nil {
+			t.Fatalf("AllAreaSeriesCounts hourly=%v: %v", hourly, err)
+		}
+		for slug, want := range wantHeadlineSeries {
+			pts := series[slug]
+			if len(pts) != 1 || pts[0].Value != want.value {
+				t.Errorf("hourly=%v %s series = %v, want one point of %v", hourly, slug, pts, want.value)
+			}
+			if len(counts[slug]) != 1 {
+				t.Errorf("hourly=%v %s has %d count buckets, want 1", hourly, slug, len(counts[slug]))
+			}
+			for _, n := range counts[slug] {
+				if n != want.n {
+					t.Errorf("hourly=%v %s count = %d, want %d", hourly, slug, n, want.n)
+				}
+			}
+		}
+		co, err := s.AllAreaSeries(ctx, "CO", since, hourly, bucket)
+		if err != nil {
+			t.Fatalf("AllAreaSeries CO: %v", err)
+		}
+		if pts := co["metric-mix"]; len(pts) != 1 || pts[0].Value != 2190 {
+			t.Errorf("hourly=%v metric-mix CO series = %v, want 2190", hourly, pts)
+		}
+		for slug, want := range wantHeadlineSeries {
+			pts, err := s.AreaSeries(ctx, slug, "P2", since, nil, hourly, bucket)
+			if err != nil {
+				t.Fatalf("AreaSeries: %v", err)
+			}
+			if len(pts) != 1 || pts[0].Value != want.value {
+				t.Errorf("hourly=%v AreaSeries %s = %v, want %v", hourly, slug, pts, want.value)
+			}
+		}
+	}
+}
