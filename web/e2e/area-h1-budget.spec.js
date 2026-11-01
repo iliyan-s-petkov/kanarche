@@ -47,3 +47,75 @@ for (const lang of ['bg', 'en']) {
     })
   }
 }
+
+// Phone landscape: the h1 sits in a narrow column of the header row, which must grow for a 3-line name.
+const LANDSCAPE = [[844, 390], [667, 375]]
+// h1 top measured on master with the fixed 48px row (row at 40..88, h1 centred): the row must not move these.
+const PINNED_TOP = { sofia: 54, 'varna-oblast': 44 }
+const TOL = 0.5
+
+// Puts each text into the real h1 and returns the names whose h1 box leaves the first grid row
+// or reaches into the masthead, plus the h1 top of the pinned names.
+const landscapeFit = ({ rows, pins, tol }) => {
+  const h1 = document.querySelector('.page-head h1')
+  const frame = h1.closest('.frame')
+  const cs = getComputedStyle(frame)
+  const rowH = parseFloat(cs.gridTemplateRows)
+  const rowTop = frame.getBoundingClientRect().top + parseFloat(cs.paddingTop) + parseFloat(cs.borderTopWidth)
+  const mast = document.querySelector('.masthead').getBoundingClientRect().bottom
+  const bad = []
+  const tops = {}
+  for (const r of rows) {
+    h1.textContent = r.h1
+    // The row is re-read per text: it grows with the name.
+    const rh = parseFloat(getComputedStyle(frame).gridTemplateRows)
+    const b = h1.getBoundingClientRect()
+    const why = []
+    if (b.top < rowTop - tol) why.push(`top ${b.top} above row top ${rowTop}`)
+    if (b.bottom > rowTop + rh + tol) why.push(`bottom ${b.bottom} below row bottom ${rowTop + rh}`)
+    if (b.top < mast - tol) why.push(`top ${b.top} overlaps masthead bottom ${mast}`)
+    if (why.length) bad.push(`${r.slug} (${why.join(', ')})`)
+    if (r.slug in pins) tops[r.slug] = b.top
+  }
+  return { bad, tops, rowH }
+}
+
+for (const lang of ['bg', 'en']) {
+  for (const [w, h] of LANDSCAPE) {
+    test(`${lang} ${w}x${h} landscape: every real area h1 stays inside its grid row`, async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true })
+      try {
+        const page = await ctx.newPage()
+        await page.goto(lang === 'en' ? '/en/area/sofia' : '/area/sofia')
+        await mapSettled(page)
+        await page.evaluate(() => document.fonts.ready)
+        const rows = TEXTS.filter((t) => t.lang === lang)
+        expect(rows.length).toBeGreaterThan(70)
+        const res = await page.evaluate(landscapeFit, { rows, pins: PINNED_TOP, tol: TOL })
+        expect(res.bad, `${lang} ${w}x${h}`).toEqual([])
+      } finally {
+        await ctx.close()
+      }
+    })
+  }
+}
+
+for (const [w, h] of LANDSCAPE) {
+  test(`en ${w}x${h} landscape: 1- and 2-line h1 keep their top`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true })
+    try {
+      const page = await ctx.newPage()
+      await page.goto('/en/area/sofia')
+      await mapSettled(page)
+      await page.evaluate(() => document.fonts.ready)
+      const rows = TEXTS.filter((t) => t.lang === 'en' && t.slug in PINNED_TOP)
+      expect(rows.map((r) => r.slug).sort()).toEqual(Object.keys(PINNED_TOP).sort())
+      const res = await page.evaluate(landscapeFit, { rows, pins: PINNED_TOP, tol: TOL })
+      for (const [slug, top] of Object.entries(PINNED_TOP)) {
+        expect(Math.abs(res.tops[slug] - top), `${slug} ${w}x${h}: h1 top ${res.tops[slug]}, pinned ${top}`).toBeLessThanOrEqual(1)
+      }
+    } finally {
+      await ctx.close()
+    }
+  })
+}

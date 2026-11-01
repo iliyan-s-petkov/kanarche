@@ -1785,10 +1785,8 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     display: grid; grid-template-columns: fit-content(11rem) fit-content(10rem) minmax(0, 1fr) minmax(0, 1fr);
     /* The breadcrumb column is capped (it scrolls inside): a district trail at max-content took
        450px of 667 and crushed the toolbar to 12px. */
-    /* Row 1 pinned: an auto row here measured taller than any header cell's
-       own content (a nested flex formatting context inside a grid track,
-       sized inflated) — every header cell's real content is under 48px. */
-    grid-template-rows: 48px auto;
+    /* Row 1 is 48px at least and grows for a 3-line h1 in the narrow title column. */
+    grid-template-rows: minmax(48px, auto) auto;
     align-items: center; column-gap: var(--space-3); row-gap: var(--space-2);
   }
   /* The capped trail ends in an ellipsis; the text stays whole in the DOM for screen readers. */
