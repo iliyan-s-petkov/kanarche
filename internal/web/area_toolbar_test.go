@@ -15,7 +15,7 @@ func TestAreaMapHeadingIsVisible(t *testing.T) {
 	if at < 0 {
 		t.Fatal("the map section lost its heading")
 	}
-	tag := body[strings.LastIndex(body[:at], "<h2"):at+strings.Index(body[at:], ">")]
+	tag := body[strings.LastIndex(body[:at], "<h2") : at+strings.Index(body[at:], ">")]
 	if strings.Contains(tag, "visually-hidden") {
 		t.Errorf("the map heading is still hidden: %s", tag)
 	}
