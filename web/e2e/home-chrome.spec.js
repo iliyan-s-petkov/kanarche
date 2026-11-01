@@ -97,6 +97,8 @@ for (const path of ['/', '/en']) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(touch ? { isMobile: true, hasTouch: true } : {}) })
       const page = await ctx.newPage()
       await page.goto(path)
+      // A capture while the map canvas is still mounting fails with "Unable to capture screenshot".
+      await mapSettled(page)
       await page.evaluate(() => document.fonts.ready)
       await page.keyboard.press('Tab')
       await shot(page, `skip-${w}x${h}${path.replace(/\//g, '_')}`, { x: 0, y: 0, width: w, height: 90 })

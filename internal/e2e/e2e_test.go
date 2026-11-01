@@ -21,6 +21,7 @@ import (
 
 	"kanarche.eu/internal/config"
 	"kanarche.eu/internal/db"
+	"kanarche.eu/internal/server"
 	"kanarche.eu/internal/store"
 	"kanarche.eu/internal/testsupport"
 )
@@ -54,7 +55,26 @@ func TestBrowser(t *testing.T) {
 	st := store.New(pool, cfg.Store, cfg.Database.StatementTimeouts.Series)
 	seedFixtures(t, st) // the fixtures every spec relies on; see seedFixtures
 
-	public, _ := testsupport.StartServer(t, st, cfg)
+	public, _ := testsupport.StartServer(t, st, cfg, func(o *server.Options) {
+		// The page treats a snapshot older than 30 minutes as stale and drops
+		// the area chips, which shifts the map layout. Production republishes
+		// every cycle; a run that outlasts 30 minutes needs the same.
+		pub := o.Publisher
+		stop := make(chan struct{})
+		t.Cleanup(func() { close(stop) })
+		go func() {
+			tick := time.NewTicker(10 * time.Minute)
+			defer tick.Stop()
+			for {
+				select {
+				case <-stop:
+					return
+				case now := <-tick.C:
+					_ = pub.Publish(context.Background(), now.UTC())
+				}
+			}
+		}()
+	})
 	baseURL := "http://" + public
 
 	args := []string{"playwright", "test"}
@@ -66,6 +86,8 @@ func TestBrowser(t *testing.T) {
 	if spec := os.Getenv("E2E_SPEC"); spec != "" {
 		args = append(args, spec)
 	}
+	// E2E_ARGS adds Playwright flags, space separated: --repeat-each=5 or -g skip (no quoting).
+	args = append(args, strings.Fields(os.Getenv("E2E_ARGS"))...)
 	cmd := startGroup(e2eContext(t), groupGrace, "npx", args...)
 	cmd.Dir = filepath.Join("..", "..", "web")
 	// Playwright's transform cache defaults to os.tmpdir(); a repo-scoped TMPDIR

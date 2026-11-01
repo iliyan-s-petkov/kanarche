@@ -105,15 +105,16 @@ for (const path of ['/', '/area/sofia']) {
   }
 }
 
-// Time controls sit at the bottom-left, right after the legend. Boxes are measured
-// relative to the map shell so scroll position does not matter.
+// Time controls sit at the bottom-left, right after the legend. x and r are measured from the
+// map shell's left edge, y and b from its bottom edge (negative, up), so neither scroll position
+// nor the rows above the map (area chips, which come and go) move them.
 const rowProbe = () => {
   const shell = document.querySelector('.map-shell').getBoundingClientRect()
   const rel = (el) => {
     if (!el) return null
     const r = el.getBoundingClientRect()
     if (r.width === 0) return null
-    return { x: Math.round(r.left - shell.left), y: Math.round(r.top - shell.top), r: Math.round(r.right - shell.left), b: Math.round(r.bottom - shell.top) }
+    return { x: Math.round(r.left - shell.left), y: Math.round(r.top - shell.bottom), r: Math.round(r.right - shell.left), b: Math.round(r.bottom - shell.bottom) }
   }
   const q = (s) => document.querySelector(s)
   return {
@@ -159,11 +160,12 @@ for (const path of ['/', '/area/sofia', '/en', '/en/area/sofia']) {
 }
 
 // Phone positions as measured on master 6ff505a, pinned so the desktop rules cannot move them.
+// y and b are from the map shell's bottom edge.
 const phonePins = {
-  "390x844 /": {"legend":{"x":8,"y":688,"r":192,"b":732},"group":{"x":214,"y":688,"r":330,"b":732},"refresh":null,"window":{"x":214,"y":688,"r":274,"b":732},"play":{"x":278,"y":688,"r":330,"b":732},"attrib":{"x":333,"y":687,"r":377,"b":731},"attribBtn":{"x":333,"y":687,"r":377,"b":731}},
-  "360x640 /": {"legend":{"x":8,"y":484,"r":176,"b":528},"group":{"x":184,"y":484,"r":300,"b":528},"refresh":null,"window":{"x":184,"y":484,"r":244,"b":528},"play":{"x":248,"y":484,"r":300,"b":528},"attrib":{"x":303,"y":483,"r":347,"b":527},"attribBtn":{"x":303,"y":483,"r":347,"b":527}},
-  "390x844 /area/sofia": {"legend":{"x":8,"y":464,"r":174,"b":508},"group":{"x":182,"y":464,"r":298,"b":508},"refresh":null,"window":{"x":182,"y":464,"r":242,"b":508},"play":{"x":246,"y":464,"r":298,"b":508},"attrib":{"x":301,"y":463,"r":345,"b":507},"attribBtn":{"x":301,"y":463,"r":345,"b":507}},
-  "360x640 /area/sofia": {"legend":{"x":8,"y":260,"r":144,"b":304},"group":{"x":152,"y":260,"r":268,"b":304},"refresh":null,"window":{"x":152,"y":260,"r":212,"b":304},"play":{"x":216,"y":260,"r":268,"b":304},"attrib":{"x":271,"y":259,"r":315,"b":303},"attribBtn":{"x":271,"y":259,"r":315,"b":303}},
+  "390x844 /": {"legend":{"x":8,"y":-56,"r":192,"b":-12},"group":{"x":214,"y":-56,"r":330,"b":-12},"refresh":null,"window":{"x":214,"y":-56,"r":274,"b":-12},"play":{"x":278,"y":-56,"r":330,"b":-12},"attrib":{"x":333,"y":-57,"r":377,"b":-13},"attribBtn":{"x":333,"y":-57,"r":377,"b":-13}},
+  "360x640 /": {"legend":{"x":8,"y":-56,"r":176,"b":-12},"group":{"x":184,"y":-56,"r":300,"b":-12},"refresh":null,"window":{"x":184,"y":-56,"r":244,"b":-12},"play":{"x":248,"y":-56,"r":300,"b":-12},"attrib":{"x":303,"y":-57,"r":347,"b":-13},"attribBtn":{"x":303,"y":-57,"r":347,"b":-13}},
+  "390x844 /area/sofia": {"legend":{"x":8,"y":-56,"r":174,"b":-12},"group":{"x":182,"y":-56,"r":298,"b":-12},"refresh":null,"window":{"x":182,"y":-56,"r":242,"b":-12},"play":{"x":246,"y":-56,"r":298,"b":-12},"attrib":{"x":301,"y":-57,"r":345,"b":-13},"attribBtn":{"x":301,"y":-57,"r":345,"b":-13}},
+  "360x640 /area/sofia": {"legend":{"x":8,"y":-56,"r":144,"b":-12},"group":{"x":152,"y":-56,"r":268,"b":-12},"refresh":null,"window":{"x":152,"y":-56,"r":212,"b":-12},"play":{"x":216,"y":-56,"r":268,"b":-12},"attrib":{"x":271,"y":-57,"r":315,"b":-13},"attribBtn":{"x":271,"y":-57,"r":315,"b":-13}},
 }
 for (const path of ['/', '/area/sofia']) {
   for (const [w, h] of [[390, 844], [360, 640]]) {
