@@ -60,21 +60,17 @@ for (const vp of VIEWPORTS) {
     const res = await page.request.get('/api/v1/area/sofia/sensors')
     const cols = (await res.json()).sensors
     const idx = cols.id.findIndex((v) => Number(v) === id)
+    // The panel's own rounding and grouping: 1013.04 shows as 1,013.
+    const panelNumber = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 })
     const metrics = (await page.locator('[data-island="panel"]').getAttribute('data-metrics')).split(',')
     const measured = new Set(cols.measures?.[idx] ?? metrics)
     const expected = metrics.filter((m) => measured.has(m) && cols[m] !== undefined)
-      .map((m) => (cols[m][idx] == null ? null : String(cols[m][idx])))
+      .map((m) => (cols[m][idx] == null ? null : panelNumber.format(cols[m][idx])))
     expect(expected.filter((v) => v !== null).length).toBeGreaterThan(0)
     // A metric with no reading shows the panel's "no data" text rather than a number.
     const shown = (await sheet.locator('.gauge__value').allTextContents())
       .map((t) => (/^-?\d/.test(t) ? t.split(' ')[0] : null))
-    // The panel groups thousands and rounds (1013.04 shows as 1,013), so compare numerically.
-    const num = (v) => (v === null ? null : Number(String(v).replace(/,/g, '')))
-    expect(shown).toHaveLength(expected.length)
-    shown.forEach((v, i) => {
-      if (expected[i] === null) return expect(v).toBeNull()
-      expect(Math.abs(num(v) - num(expected[i]))).toBeLessThan(0.5)
-    })
+    expect(shown).toEqual(expected)
 
     await context.close()
   })

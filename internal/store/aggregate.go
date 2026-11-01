@@ -109,6 +109,12 @@ func (s *Store) cutoffs() (official, community time.Time) {
 	return now.Add(-s.cfg.OfficialFreshnessWindow), now.Add(-s.cfg.FreshnessWindow)
 }
 
+// officialCutoff is the freshness bound an official reading must meet to count as now.
+func (s *Store) officialCutoff() time.Time {
+	official, _ := s.cutoffs()
+	return official
+}
+
 // perAreaCTE is the headline median, built from per_area_source so the live
 // and windowed queries share it. Reference-grade and low-cost data are not
 // blended: the citizen median is the headline, and an area with no citizen
@@ -117,14 +123,9 @@ func (s *Store) cutoffs() (official, community time.Time) {
 func perAreaCTE(thresholdParam int) string {
 	return fmt.Sprintf(`
 per_area AS (
-    -- The median, not the mean: one failed device reading 900 µg/m³ beside
-    -- four neighbours in the teens moved a whole province to 189.
-    --
-    -- Per (area, metric), in order: (1) citizen stations at or above the
-    -- coverage threshold give the headline. (2) Else any official station for
-    -- that metric does, being reference grade, so one is enough. (3) Else the
-    -- citizen median, however few stations, as before the split. (4) Else
-    -- nothing.
+    -- Per (area, metric): 1) citizen stations >= threshold: citizen median.
+    -- 2) else a fresh official station: official median. 3) else any citizen
+    -- value: citizen median. 4) else nothing.
     SELECT ps.slug, ps.source, ps.metric, ps.avg_value
       FROM per_area_source ps
      WHERE (ps.source = '%[1]s'
@@ -487,38 +488,40 @@ type Point struct {
 // "(SELECT" would also match notFaulty's.
 const citizenMark = "/*citizen-first*/"
 
-// citizenFirst applies the headline rule to a per-sensor series subquery, per
-// partition (the area, for the all-area queries) for this metric and window:
-// official sensors count only when the citizen stations are fewer than the
-// coverage threshold (headline branch 2), and citizen sensors count unless
-// that happens with an official sensor present. The series then agrees with
-// the headline median it sits under. Stations are distinct coordinates.
-// q must contain one citizenMark-tagged per-sensor subquery aliased
-// per_sensor, exposing sensor_id. part is the PARTITION BY expression and
-// thresholdParam the bind index of the coverage threshold.
-//
-// part is spliced into SQL: pass a constant, never caller input. Both rewrites
-// must match exactly once or the query would silently lose the rule, so
-// anything else panics at package init.
-func citizenFirst(q, part string, thresholdParam int) string {
+// citizenFirst keeps a series on the headline's side per partition: official
+// sensors when the window has fewer citizen stations than the threshold and an
+// official station is fresh now, citizen sensors otherwise. part is spliced.
+func citizenFirst(q, part string, thresholdParam, metricParam, cutoffParam int) string {
 	const selectMark, aliasMark = citizenMark + "(SELECT", ") per_sensor"
 	if strings.Count(q, selectMark) != 1 || strings.Count(q, aliasMark) != 1 {
 		panic("store: citizenFirst needs exactly one " + selectMark + " and one " + aliasMark + " in the query")
 	}
-	// crank numbers the citizen coordinates, so its max is the station count.
+	// crank numbers the citizen coordinates, so its max is the window's station count.
+	// fresh_official is the headline's freshness: a reading newer than the official cutoff.
 	open := fmt.Sprintf(`(SELECT * FROM (SELECT x.*,
 	       max(x.crank) OVER (PARTITION BY %[2]s) AS cit_stations,
-	       bool_or(x.sensor_id >= %[1]d) OVER (PARTITION BY %[2]s) AS has_official
+	       bool_or(x.sensor_id >= %[1]d AND EXISTS (
+	           SELECT 1 FROM reading r
+	            WHERE r.sensor_id = x.sensor_id AND r.metric = $%[3]d
+	              AND r.time >= $%[4]d::timestamptz
+	              AND r.quality = ANY(%[5]s::quality_flag[])
+	              AND `+notFaulty+`)) OVER (PARTITION BY %[2]s) AS has_official
 	  FROM (SELECT ps.*,
 	               CASE WHEN ps.sensor_id < %[1]d THEN dense_rank() OVER (
 	                   PARTITION BY %[2]s, (ps.sensor_id < %[1]d)
 	                   ORDER BY ST_X(sn.location::geometry), ST_Y(sn.location::geometry)) END AS crank
-	          FROM (SELECT`, OfficialSensorIDFloor, part)
+	          FROM (SELECT`, OfficialSensorIDFloor, part, metricParam, cutoffParam, qualityLiteral())
 	closing := fmt.Sprintf(`) ps JOIN sensor sn ON sn.sensor_id = ps.sensor_id) x) hf
 	 WHERE (hf.sensor_id < %[1]d AND (COALESCE(hf.cit_stations, 0) >= $%[2]d::int OR NOT hf.has_official))
-	    OR (hf.sensor_id >= %[1]d AND COALESCE(hf.cit_stations, 0) < $%[2]d::int)) per_sensor`, OfficialSensorIDFloor, thresholdParam)
+	    OR (hf.sensor_id >= %[1]d AND COALESCE(hf.cit_stations, 0) < $%[2]d::int
+	        AND (hf.has_official OR hf.cit_stations IS NULL))) per_sensor`, OfficialSensorIDFloor, thresholdParam)
 	q = strings.Replace(q, selectMark, open, 1)
 	return strings.Replace(q, aliasMark, closing, 1)
+}
+
+// qualityLiteral is usableQuality as an SQL array literal; the values are constants.
+func qualityLiteral() string {
+	return "ARRAY['" + strings.Join(usableQuality, "','") + "']"
 }
 
 // bucketExpr is time_bucket with the width supplied as a query parameter rather
@@ -632,7 +635,7 @@ var areaRawPerSensorSQL = citizenFirst(citizenMark+`(SELECT `+bucketed("r.time",
            AND r.quality = ANY($4::quality_flag[])
            AND ($6::timestamptz IS NULL OR r.time < $6)
            AND `+notFaulty+`
-         GROUP BY b, r.sensor_id) per_sensor`, "true", 7)
+         GROUP BY b, r.sensor_id) per_sensor`, "true", 7, 2, 8)
 
 var areaRawSeriesSQL = `
 SELECT b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
@@ -663,7 +666,7 @@ var areaHourlyPerSensorSQL = citizenFirst(citizenMark+`(SELECT `+bucketed("h.buc
            AND h.metric = $2
            AND h.bucket >= $3
            AND ($5::timestamptz IS NULL OR h.bucket < $5)
-         GROUP BY b, h.sensor_id) per_sensor`, "true", 6)
+         GROUP BY b, h.sensor_id) per_sensor`, "true", 6, 2, 7)
 
 var areaHourlySeriesSQL = `
 SELECT b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
@@ -703,7 +706,7 @@ SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
            AND r.time  >= $2
            AND r.quality = ANY($3::quality_flag[])
            AND `+notFaulty+`
-         GROUP BY a.slug, b, r.sensor_id) per_sensor`, "slug", 6) + `
+         GROUP BY a.slug, b, r.sensor_id) per_sensor`, "slug", 6, 1, 7) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $5`
@@ -719,7 +722,7 @@ SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
           JOIN area a          ON a.slug = asx.area_slug
          WHERE h.metric = $1
            AND h.bucket >= $2
-         GROUP BY a.slug, b, h.sensor_id) per_sensor`, "slug", 5) + `
+         GROUP BY a.slug, b, h.sensor_id) per_sensor`, "slug", 5, 1, 6) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $4`
@@ -747,9 +750,9 @@ func (s *Store) AllAreaSeries(ctx context.Context, metric string, since time.Tim
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, allAreaHourlySeriesSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, allAreaHourlySeriesSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, allAreaRawSeriesSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, allAreaRawSeriesSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: all area series for %q: %w", metric, err)
@@ -811,9 +814,9 @@ func (s *Store) AreaSeries(ctx context.Context, slug, metric string, since time.
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, areaHourlySeriesSQL, slug, metric, since, bucket.Seconds(), until, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, areaHourlySeriesSQL, slug, metric, since, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, areaRawSeriesSQL, slug, metric, since, usableQuality, bucket.Seconds(), until, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, areaRawSeriesSQL, slug, metric, since, usableQuality, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: area series for %q: %w", slug, err)
@@ -861,9 +864,9 @@ func (s *Store) AreaSeriesBand(ctx context.Context, slug, metric string, since t
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, areaHourlyBandSQL, slug, metric, since, bucket.Seconds(), until, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, areaHourlyBandSQL, slug, metric, since, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, areaRawBandSQL, slug, metric, since, usableQuality, bucket.Seconds(), until, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, areaRawBandSQL, slug, metric, since, usableQuality, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: area band for %q: %w", slug, err)
@@ -980,7 +983,7 @@ SELECT slug, b, count(*)
            AND r.time  >= $2
            AND r.quality = ANY($3::quality_flag[])
            AND `+notFaulty+`
-         GROUP BY a.slug, b, r.sensor_id) per_sensor`, "slug", 6) + `
+         GROUP BY a.slug, b, r.sensor_id) per_sensor`, "slug", 6, 1, 7) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $5`
@@ -993,7 +996,7 @@ SELECT slug, b, count(*)
           JOIN area a          ON a.slug = asx.area_slug
          WHERE h.metric = $1
            AND h.bucket >= $2
-         GROUP BY a.slug, b, h.sensor_id) per_sensor`, "slug", 5) + `
+         GROUP BY a.slug, b, h.sensor_id) per_sensor`, "slug", 5, 1, 6) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $4`
@@ -1016,9 +1019,9 @@ func (s *Store) AllAreaSeriesCounts(ctx context.Context, metric string, since ti
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, allAreaHourlySeriesCountSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, allAreaHourlySeriesCountSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, allAreaRawSeriesCountSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold)
+		rows, err = tx.Query(ctx, allAreaRawSeriesCountSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: all area series counts for %q: %w", metric, err)

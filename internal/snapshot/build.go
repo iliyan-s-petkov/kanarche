@@ -309,8 +309,10 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 			Slug: a.Slug, Kind: a.Kind, NameBG: a.NameBG, NameEN: a.NameEN,
 			CentroidLon: a.CentroidLon, CentroidLat: a.CentroidLat,
 			DefaultZoom: a.DefaultZoom, Covered: a.Covered, SensorCount: a.SensorCount,
-			Values: a.Values, HeadlineSource: a.HeadlineSource, HeadlineSources: a.HeadlineSources, Source: metaSource, BySource: metaBySource,
-			ParentSlug: parents[a.Slug], Km2: sizes[a.Slug],
+			Values: a.Values, Source: metaSource, BySource: metaBySource,
+			HeadlineSource:  a.HeadlineSource,
+			HeadlineSources: a.HeadlineSources,
+			ParentSlug:      parents[a.Slug], Km2: sizes[a.Slug],
 		}
 		snap.KnownSlugs[a.Slug] = meta
 	}
@@ -735,8 +737,10 @@ func fingerprint(meta AreaMeta) string {
 	}
 	c := content{
 		Slug: meta.Slug, Kind: meta.Kind, NameBG: meta.NameBG, NameEN: meta.NameEN,
-		ParentSlug: meta.ParentSlug, Source: meta.Source, HeadlineSource: meta.HeadlineSource, HeadlineSources: meta.HeadlineSources, Covered: meta.Covered,
-		Values: make(map[string]float64, len(meta.Values)),
+		ParentSlug: meta.ParentSlug, Source: meta.Source, Covered: meta.Covered,
+		HeadlineSource:  meta.HeadlineSource,
+		HeadlineSources: meta.HeadlineSources,
+		Values:          make(map[string]float64, len(meta.Values)),
 	}
 	for m, v := range meta.Values {
 		c.Values[m] = math.Round(v)

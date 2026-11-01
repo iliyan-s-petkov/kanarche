@@ -30,12 +30,8 @@ windowed AS (
 )`
 
 // The windowed per-area medians join the window's numbers onto the LIVE latest
-// CTE (perAreaSourceCTE with w.value), and that join is the whole design.
-// Identity, freshness and quality stay the live answer, so switching the window
-// changes the numbers and nothing else: the same areas exist, with the same
-// station counts, and an area that has gone silent today does not reappear
-// because it had readings on Tuesday. The headline per_area is the shared
-// perAreaCTE over those windowed source medians.
+// CTE, so identity, freshness and station counts stay the live answer.
+// per_area is the shared perAreaCTE over those windowed medians.
 var windowedAreaAggregateSQL = "WITH" + latestCTE(5) +
 	"," + fmt.Sprintf(windowedSensorCTE, 4) +
 	"," + perAreaSourceCTE("w.value",
