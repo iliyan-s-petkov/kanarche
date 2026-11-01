@@ -489,6 +489,7 @@ func (rr *Renderer) rowFrom(meta snapshot.AreaMeta, lang string) AreaRow {
 		Value: value, HasValue: hasValue, ValueText: valueText,
 		Colour: colour, Class: class, Values: meta.Values,
 		Source: meta.Source, BySource: meta.BySource,
+		HeadlineSource: meta.HeadlineSource, HeadlineSources: meta.HeadlineSources,
 		ParentSlug: meta.ParentSlug, Day: meta.Day,
 	}
 }

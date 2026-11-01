@@ -401,6 +401,10 @@ type AreaRow struct {
 	// The attribution the snapshot published. Exactly one is ever set.
 	Source   string
 	BySource map[string]snapshot.SourceEntry
+	// Whose reading Values holds, as the snapshot published it: per metric,
+	// with the scalar as the fallback for a snapshot that predates the map.
+	HeadlineSource  string
+	HeadlineSources map[string]string
 	// ParentSlug mirrors snapshot.AreaMeta.ParentSlug — see ParentChain.
 	ParentSlug string
 	// Day is the 24h min/max range, or nil — see snapshot.DayRange and
@@ -429,6 +433,12 @@ type Readout struct {
 	// card of a group only, names that group for the H3 above it.
 	Weather bool
 	Heading string
+	// Source names the official stations when the figure is their median
+	// because no citizen sensor reports the metric. Official is the secondary
+	// line "<official stations>: <value> <unit>" under a citizen figure. At
+	// most one of the two is set.
+	Source   string
+	Official string
 }
 
 // readoutMetricSep joins a metric name to the rest of a Readout's Label (see
@@ -587,6 +597,7 @@ func (p PageData) AreaReadouts() []Readout {
 			Weather:    weatherMetrics[m],
 		}
 		c.band(p, m, v)
+		c.officialSource(p, m)
 		if c.Weather {
 			weather = append(weather, c)
 		} else {
@@ -611,6 +622,28 @@ func (p PageData) AreaReadouts() []Readout {
 		weather[0].Heading = p.T("area.heading.weather")
 	}
 	return append(pollutants, weather...)
+}
+
+// headlineSourceOf says whose median the area's figure for metric m is.
+func (r AreaRow) headlineSourceOf(m string) string {
+	if s, ok := r.HeadlineSources[m]; ok {
+		return s
+	}
+	return r.HeadlineSource
+}
+
+// officialSource marks the card for metric m. A fallback figure is labelled as
+// the official stations'. A citizen figure gets the official median beneath it
+// when the area has one, and an area without an official station gets nothing.
+func (c *Readout) officialSource(p PageData, m string) {
+	name := p.T("source.name.eea")
+	if p.Area.headlineSourceOf(m) == "eea" {
+		c.Source = name
+		return
+	}
+	if v, ok := p.Area.BySource["eea"].Values[m]; ok && p.Area.headlineSourceOf(m) == "community" {
+		c.Official = name + ": " + formatValue(v, p.Lang) + " " + p.T("unit."+m)
+	}
 }
 
 // AreaChip is the header's value and band chip for the default metric, or nil
