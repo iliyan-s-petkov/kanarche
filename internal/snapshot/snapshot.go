@@ -109,6 +109,8 @@ type AreaMeta struct {
 	// HeadlineSource says whose readings Values holds: "community" (citizen
 	// sensors) or "eea" (no citizen reading, official median shown instead).
 	HeadlineSource string
+	// Per metric; a metric only an official station reports is "eea".
+	HeadlineSources map[string]string
 	// The same attribution the wire type publishes, so the server-rendered
 	// area page needs no second round trip.
 	Source   string

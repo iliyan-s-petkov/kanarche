@@ -60,6 +60,8 @@ type areaPayloadEntry struct {
 	// "community" or "eea": whose readings Values holds. "eea" means the area
 	// has no citizen reading and shows the official median.
 	HeadlineSource string `json:"headline_source,omitempty"`
+	// Per metric, for the mixed area whose CO is official and PM citizen.
+	HeadlineSources map[string]string `json:"headline_sources,omitempty"`
 	// Exactly one of the two is ever set, and neither appears for an
 	// uncovered area. Source names the one network; BySource breaks out several.
 	Source   string                 `json:"source,omitempty"`
@@ -307,7 +309,7 @@ func buildAreas(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, 
 			Slug: a.Slug, Kind: a.Kind, NameBG: a.NameBG, NameEN: a.NameEN,
 			CentroidLon: a.CentroidLon, CentroidLat: a.CentroidLat,
 			DefaultZoom: a.DefaultZoom, Covered: a.Covered, SensorCount: a.SensorCount,
-			Values: a.Values, HeadlineSource: a.HeadlineSource, Source: metaSource, BySource: metaBySource,
+			Values: a.Values, HeadlineSource: a.HeadlineSource, HeadlineSources: a.HeadlineSources, Source: metaSource, BySource: metaBySource,
 			ParentSlug: parents[a.Slug], Km2: sizes[a.Slug],
 		}
 		snap.KnownSlugs[a.Slug] = meta
@@ -495,8 +497,8 @@ func areaPayloadFrom(now time.Time, aggs []store.AreaAggregate) areaPayload {
 			Slug: a.Slug, Kind: a.Kind, NameBG: a.NameBG, NameEN: a.NameEN,
 			Lon: a.CentroidLon, Lat: a.CentroidLat, Zoom: a.DefaultZoom,
 			SensorCount: a.SensorCount, Covered: a.Covered, Values: values,
-			HeadlineSource: a.HeadlineSource,
-			Source:         source, BySource: bySource,
+			HeadlineSource: a.HeadlineSource, HeadlineSources: a.HeadlineSources,
+			Source: source, BySource: bySource,
 		})
 	}
 	return p
@@ -725,6 +727,7 @@ func changeStamp(stamps map[string]store.AreaChange, meta AreaMeta, now time.Tim
 func fingerprint(meta AreaMeta) string {
 	type content struct {
 		Slug, Kind, NameBG, NameEN, ParentSlug, Source, HeadlineSource string
+		HeadlineSources                                                map[string]string
 		Covered                                                        bool
 		Values                                                         map[string]float64
 		Sources                                                        []string
@@ -732,7 +735,7 @@ func fingerprint(meta AreaMeta) string {
 	}
 	c := content{
 		Slug: meta.Slug, Kind: meta.Kind, NameBG: meta.NameBG, NameEN: meta.NameEN,
-		ParentSlug: meta.ParentSlug, Source: meta.Source, HeadlineSource: meta.HeadlineSource, Covered: meta.Covered,
+		ParentSlug: meta.ParentSlug, Source: meta.Source, HeadlineSource: meta.HeadlineSource, HeadlineSources: meta.HeadlineSources, Covered: meta.Covered,
 		Values: make(map[string]float64, len(meta.Values)),
 	}
 	for m, v := range meta.Values {

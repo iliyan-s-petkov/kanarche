@@ -54,9 +54,13 @@ type AreaAggregate struct {
 	// official median when the area has no citizen reading (HeadlineSource).
 	Values  map[string]float64
 	Covered bool
-	// HeadlineSource says whose readings Values holds: HeadlineCommunity or
-	// HeadlineOfficial, "" when there is no value.
+	// HeadlineSource summarises whose readings Values holds: HeadlineCommunity
+	// when any metric is a citizen median, HeadlineOfficial when all are
+	// official, "" when there is no value.
 	HeadlineSource string
+	// HeadlineSources is the same per metric: a metric only an official
+	// station reports is "eea" even when the area's PM headline is "community".
+	HeadlineSources map[string]string
 	// Each contributing network's own figures, keyed "sensor.community" or
 	// "eea". Empty for an uncovered area.
 	BySource map[string]SourceAggregate
@@ -116,7 +120,8 @@ per_area AS (
       FROM per_area_source ps
      WHERE ps.source = '` + communitySource + `'
         OR NOT EXISTS (SELECT 1 FROM per_area_source c
-                        WHERE c.slug = ps.slug AND c.source = '` + communitySource + `')
+                        WHERE c.slug = ps.slug AND c.metric = ps.metric
+                          AND c.source = '` + communitySource + `')
 )`
 
 const coverageCTE = `
@@ -200,10 +205,15 @@ SELECT a.slug, a.kind, a.name_bg, a.name_en,
               FROM coverage_source cs WHERE cs.slug = a.slug),
            '{}'::jsonb),
        COALESCE(
-           (SELECT CASE min(p.source) WHEN '` + communitySource + `' THEN '` + HeadlineCommunity + `'
-                                      ELSE '` + HeadlineOfficial + `' END
+           (SELECT CASE WHEN bool_or(p.source = '` + communitySource + `') THEN '` + HeadlineCommunity + `'
+                        ELSE '` + HeadlineOfficial + `' END
               FROM per_area p WHERE p.slug = a.slug),
-           '')
+           ''),
+       COALESCE(
+           (SELECT jsonb_object_agg(p.metric, CASE p.source WHEN '` + communitySource + `' THEN '` + HeadlineCommunity + `'
+                                                            ELSE '` + HeadlineOfficial + `' END)
+              FROM per_area p WHERE p.slug = a.slug),
+           '{}'::jsonb)
   FROM area a
   LEFT JOIN coverage c ON c.slug = a.slug
  WHERE a.kind = ANY($3::text[])
@@ -243,9 +253,10 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 		var values map[string]float64
 		var bySource map[string]SourceAggregate
 		var headline string
+		var headlines map[string]string
 		if err := rows.Scan(&a.Slug, &a.Kind, &a.NameBG, &a.NameEN,
 			&a.CentroidLon, &a.CentroidLat, &a.DefaultZoom,
-			&a.SensorCount, &values, &bySource, &headline); err != nil {
+			&a.SensorCount, &values, &bySource, &headline, &headlines); err != nil {
 			return nil, fmt.Errorf("store: scan area aggregate: %w", err)
 		}
 		a.Covered = a.SensorCount >= s.cfg.CoverageThreshold
@@ -253,6 +264,7 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 			a.Values = values
 			a.BySource = bySource
 			a.HeadlineSource = headline
+			a.HeadlineSources = headlines
 		} else {
 			// Explicitly empty, not the scanned map. An uncovered area must
 			// carry no number anywhere downstream — a handler that checked

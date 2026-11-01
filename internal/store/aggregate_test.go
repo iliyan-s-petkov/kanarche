@@ -1592,6 +1592,9 @@ func headlineFixture(t *testing.T) (contextT, poolT, time.Time) {
 	off := store.OfficialSensorIDFloor
 	seedHeadlineArea(t, ctx, pool, "mixed", 23.0, []headlineSeed{{501, false, 10}, {502, false, 20}, {503, false, 30}, {off + 51, true, 100}}, now)
 	seedHeadlineArea(t, ctx, pool, "official-only", 25.0, []headlineSeed{{off + 52, true, 40}, {off + 53, true, 60}, {off + 54, true, 80}}, now)
+	seedHeadlineArea(t, ctx, pool, "metric-mix", 29.0, []headlineSeed{{521, false, 12}, {off + 55, true, 70}}, now)
+	seedOfficialSensorReading(t, ctx, pool, off+56, 29.004, 42.0, "CO", 2190, now)
+	seedHourly(t, ctx, pool, off+56, "CO", now.Truncate(time.Hour), 2190, 1)
 	seedHeadlineArea(t, ctx, pool, "citizen-only", 27.0, []headlineSeed{{511, false, 5}, {512, false, 15}, {513, false, 25}}, now)
 	assignAreas(t, ctx, pool)
 	return ctx, pool, now
@@ -1609,6 +1612,11 @@ func checkHeadlines(t *testing.T, aggs []store.AreaAggregate) {
 	off := findAgg(t, aggs, "official-only")
 	if off.Values["P2"] != 60 || off.HeadlineSource != "eea" {
 		t.Errorf("official-only = %v %q, want 60 eea", off.Values["P2"], off.HeadlineSource)
+	}
+	// PM comes from the citizen sensor, CO only exists officially and stays.
+	mix := findAgg(t, aggs, "metric-mix")
+	if mix.Values["P2"] != 12 || mix.Values["CO"] != 2190 || mix.HeadlineSources["P2"] != "community" || mix.HeadlineSources["CO"] != "eea" || mix.HeadlineSource != "community" {
+		t.Errorf("metric-mix = %v %v %q, want P2 12 community, CO 2190 eea", mix.Values, mix.HeadlineSources, mix.HeadlineSource)
 	}
 	cit := findAgg(t, aggs, "citizen-only")
 	if cit.Values["P2"] != 15 || cit.HeadlineSource != "community" {
