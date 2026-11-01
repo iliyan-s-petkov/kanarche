@@ -1317,9 +1317,9 @@ func TestAreaAggregatesBreakDownByNetwork(t *testing.T) {
 	if eea.N != 1 || eea.Values["P2"] != 100 {
 		t.Errorf("eea = {n:%d P2:%v}, want {n:1 P2:100}", eea.N, eea.Values["P2"])
 	}
-	// The median of all four, not of either network: 10, 20, 30, 100 -> 25.
-	if a.Values["P2"] != 25 {
-		t.Errorf("values.P2 = %v, want 25 — the blended median must not move", a.Values["P2"])
+	// The headline is the citizen median (10, 20, 30 -> 20), not the blend (25).
+	if a.Values["P2"] != 20 || a.HeadlineSource != store.HeadlineCommunity {
+		t.Errorf("values.P2 = %v source %q, want 20 community", a.Values["P2"], a.HeadlineSource)
 	}
 	// Two networks at one coordinate are two stations per-source and one in the
 	// total, so the parts bound the total rather than summing to it.
@@ -1387,7 +1387,7 @@ func TestAreaAggregatesPerSourceIsEmptyWithoutCoverage(t *testing.T) {
 
 	seedArea(t, ctx, pool, "sofia", "oblast", 23.3219, 42.6977)
 	seedSensorReading(t, ctx, pool, 301, 23.3219, 42.6977, "P2", 10, "ok", now)
-	seedOfficialSensorReading(t, ctx, pool, store.OfficialSensorIDFloor+21, 23.3229, 42.6977, "P2", 90, now)
+	seedSensorReading(t, ctx, pool, 302, 23.3229, 42.6977, "P2", 90, "ok", now)
 	assignAreas(t, ctx, pool)
 
 	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
@@ -1395,7 +1395,9 @@ func TestAreaAggregatesPerSourceIsEmptyWithoutCoverage(t *testing.T) {
 		t.Fatalf("AreaAggregates: %v", err)
 	}
 	a := findAgg(t, aggs, "sofia")
-	// testStoreConfig's CoverageThreshold is 3; two stations is below it.
+	// testStoreConfig's CoverageThreshold is 3; two citizen stations and no
+	// official one is below it. With an official station the area would be
+	// covered by its reference-grade reading.
 	if a.Covered {
 		t.Fatalf("two stations should be below the coverage threshold; got Covered = true")
 	}
@@ -1562,5 +1564,256 @@ func TestAllAreaSeriesCounts(t *testing.T) {
 	}
 	if got := counts["smolyan"][bucketPoints[0].Time]; got != 3 {
 		t.Errorf("count at %v = %d, want 3", bucketPoints[0].Time, got)
+	}
+}
+
+// headlineSeed is one sensor of a headline fixture area.
+type headlineSeed struct {
+	id       int64
+	official bool
+	value    float64
+}
+
+func seedHeadlineArea(t *testing.T, ctx contextT, pool poolT, slug string, lon float64, seeds []headlineSeed, now time.Time) {
+	t.Helper()
+	seedArea(t, ctx, pool, slug, "oblast", lon, 42.0)
+	for i, sd := range seeds {
+		x := lon + float64(i)/1000
+		if sd.official {
+			seedOfficialSensorReading(t, ctx, pool, sd.id, x, 42.0, "P2", sd.value, now)
+		} else {
+			seedSensorReading(t, ctx, pool, sd.id, x, 42.0, "P2", sd.value, "ok", now)
+		}
+		seedHourly(t, ctx, pool, sd.id, "P2", now.Truncate(time.Hour), sd.value, 1)
+	}
+}
+
+func headlineFixture(t *testing.T) (contextT, poolT, time.Time) {
+	ctx, pool := migrated(t)
+	now := time.Now().UTC().Truncate(time.Minute)
+	off := store.OfficialSensorIDFloor
+	seedHeadlineArea(t, ctx, pool, "mixed", 23.0, []headlineSeed{{501, false, 10}, {502, false, 20}, {503, false, 30}, {off + 51, true, 100}}, now)
+	seedHeadlineArea(t, ctx, pool, "official-only", 25.0, []headlineSeed{{off + 52, true, 40}, {off + 53, true, 60}, {off + 54, true, 80}}, now)
+	seedHeadlineArea(t, ctx, pool, "metric-mix", 29.0, []headlineSeed{{521, false, 12}, {522, false, 12}, {523, false, 12}, {off + 55, true, 70}}, now)
+	seedOfficialSensorReading(t, ctx, pool, off+56, 29.009, 42.0, "CO", 2190, now)
+	seedHourly(t, ctx, pool, off+56, "CO", now.Truncate(time.Hour), 2190, 1)
+	seedHeadlineArea(t, ctx, pool, "citizen-only", 27.0, []headlineSeed{{511, false, 5}, {512, false, 15}, {513, false, 25}}, now)
+	assignAreas(t, ctx, pool)
+	return ctx, pool, now
+}
+
+func checkHeadlines(t *testing.T, aggs []store.AreaAggregate) {
+	t.Helper()
+	mixed := findAgg(t, aggs, "mixed")
+	if mixed.Values["P2"] != 20 || mixed.HeadlineSource != "community" {
+		t.Errorf("mixed = %v %q, want 20 community", mixed.Values["P2"], mixed.HeadlineSource)
+	}
+	if mixed.BySource["eea"].Values["P2"] != 100 {
+		t.Errorf("mixed eea by_source = %v, want 100 kept", mixed.BySource["eea"].Values["P2"])
+	}
+	off := findAgg(t, aggs, "official-only")
+	if off.Values["P2"] != 60 || off.HeadlineSource != "eea" {
+		t.Errorf("official-only = %v %q, want 60 eea", off.Values["P2"], off.HeadlineSource)
+	}
+	// PM comes from the citizen sensor, CO only exists officially and stays.
+	mix := findAgg(t, aggs, "metric-mix")
+	if mix.Values["P2"] != 12 || mix.Values["CO"] != 2190 || mix.HeadlineSources["P2"] != "community" || mix.HeadlineSources["CO"] != "eea" || mix.HeadlineSource != "community" {
+		t.Errorf("metric-mix = %v %v %q, want P2 12 community, CO 2190 eea", mix.Values, mix.HeadlineSources, mix.HeadlineSource)
+	}
+	cit := findAgg(t, aggs, "citizen-only")
+	if cit.Values["P2"] != 15 || cit.HeadlineSource != "community" {
+		t.Errorf("citizen-only = %v %q, want 15 community", cit.Values["P2"], cit.HeadlineSource)
+	}
+}
+
+func TestAreaHeadlineIsCitizenMedianWithOfficialFallback(t *testing.T) {
+	ctx, pool, _ := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
+	if err != nil {
+		t.Fatalf("AreaAggregates: %v", err)
+	}
+	checkHeadlines(t, aggs)
+}
+
+func TestWindowedAreaHeadlineIsCitizenMedianWithOfficialFallback(t *testing.T) {
+	ctx, pool, now := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	aggs, err := s.WindowedAreaAggregates(ctx, []string{"oblast"}, now.Add(-24*time.Hour))
+	if err != nil {
+		t.Fatalf("WindowedAreaAggregates: %v", err)
+	}
+	checkHeadlines(t, aggs)
+}
+
+// wantHeadlineSeries is the series-side twin of checkHeadlines: one bucket per
+// area, valued and counted the way the headline is.
+var wantHeadlineSeries = map[string]struct {
+	value float64
+	n     int
+}{
+	"mixed":         {20, 3},
+	"official-only": {60, 3},
+	"citizen-only":  {15, 3},
+	"metric-mix":    {12, 3},
+}
+
+func TestAreaSeriesFollowTheHeadlineRule(t *testing.T) {
+	ctx, pool, now := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	since := now.Add(-2 * time.Hour)
+	for _, hourly := range []bool{false, true} {
+		bucket := 5 * time.Minute
+		if hourly {
+			bucket = time.Hour
+		}
+		series, err := s.AllAreaSeries(ctx, "P2", since, hourly, bucket)
+		if err != nil {
+			t.Fatalf("AllAreaSeries hourly=%v: %v", hourly, err)
+		}
+		counts, err := s.AllAreaSeriesCounts(ctx, "P2", since, hourly, bucket)
+		if err != nil {
+			t.Fatalf("AllAreaSeriesCounts hourly=%v: %v", hourly, err)
+		}
+		for slug, want := range wantHeadlineSeries {
+			pts := series[slug]
+			if len(pts) != 1 || pts[0].Value != want.value {
+				t.Errorf("hourly=%v %s series = %v, want one point of %v", hourly, slug, pts, want.value)
+			}
+			if len(counts[slug]) != 1 {
+				t.Errorf("hourly=%v %s has %d count buckets, want 1", hourly, slug, len(counts[slug]))
+			}
+			for _, n := range counts[slug] {
+				if n != want.n {
+					t.Errorf("hourly=%v %s count = %d, want %d", hourly, slug, n, want.n)
+				}
+			}
+		}
+		co, err := s.AllAreaSeries(ctx, "CO", since, hourly, bucket)
+		if err != nil {
+			t.Fatalf("AllAreaSeries CO: %v", err)
+		}
+		if pts := co["metric-mix"]; len(pts) != 1 || pts[0].Value != 2190 {
+			t.Errorf("hourly=%v metric-mix CO series = %v, want 2190", hourly, pts)
+		}
+		for slug, want := range wantHeadlineSeries {
+			pts, err := s.AreaSeries(ctx, slug, "P2", since, nil, hourly, bucket)
+			if err != nil {
+				t.Fatalf("AreaSeries: %v", err)
+			}
+			if len(pts) != 1 || pts[0].Value != want.value {
+				t.Errorf("hourly=%v AreaSeries %s = %v, want %v", hourly, slug, pts, want.value)
+			}
+		}
+	}
+}
+
+// The gate is per (area, metric): citizen stations at the threshold (3 in the
+// test config) give the headline, else an official station does, else nothing.
+func TestHeadlineGateIsCitizenThresholdThenOfficialThenNothing(t *testing.T) {
+	ctx, pool := migrated(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	now := time.Now().UTC().Truncate(time.Minute)
+	off := store.OfficialSensorIDFloor
+
+	seedHeadlineArea(t, ctx, pool, "two-plus-one", 23.0, []headlineSeed{{801, false, 10}, {802, false, 20}, {off + 81, true, 40}}, now)
+	seedHeadlineArea(t, ctx, pool, "three-plus-one", 25.0, []headlineSeed{{811, false, 10}, {812, false, 20}, {813, false, 30}, {off + 82, true, 100}}, now)
+	seedHeadlineArea(t, ctx, pool, "two-only", 27.0, []headlineSeed{{821, false, 10}, {822, false, 20}}, now)
+	seedHeadlineArea(t, ctx, pool, "lone-official", 29.0, []headlineSeed{{off + 83, true, 55}}, now)
+	assignAreas(t, ctx, pool)
+
+	check := func(t *testing.T, aggs []store.AreaAggregate) {
+		t.Helper()
+		a := findAgg(t, aggs, "two-plus-one")
+		if a.Values["P2"] != 40 || a.HeadlineSource != "eea" || !a.Covered {
+			t.Errorf("2 citizen + 1 official = %v %q covered=%v, want 40 eea covered", a.Values["P2"], a.HeadlineSource, a.Covered)
+		}
+		if a.SensorCount != 3 {
+			t.Errorf("SensorCount = %d, want the all-network total 3", a.SensorCount)
+		}
+		a = findAgg(t, aggs, "three-plus-one")
+		if a.Values["P2"] != 20 || a.HeadlineSource != "community" {
+			t.Errorf("3 citizen + 1 official = %v %q, want 20 community", a.Values["P2"], a.HeadlineSource)
+		}
+		a = findAgg(t, aggs, "lone-official")
+		if a.Values["P2"] != 55 || a.HeadlineSource != "eea" || !a.Covered {
+			t.Errorf("1 official alone = %v %q covered=%v, want 55 eea covered: one reference-grade station is enough", a.Values["P2"], a.HeadlineSource, a.Covered)
+		}
+		a = findAgg(t, aggs, "two-only")
+		if len(a.Values) != 0 || a.HeadlineSource != "" || a.Covered {
+			t.Errorf("2 citizen alone = %v %q covered=%v, want no value", a.Values, a.HeadlineSource, a.Covered)
+		}
+	}
+	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
+	if err != nil {
+		t.Fatalf("AreaAggregates: %v", err)
+	}
+	check(t, aggs)
+	aggs, err = s.WindowedAreaAggregates(ctx, []string{"oblast"}, now.Add(-24*time.Hour))
+	if err != nil {
+		t.Fatalf("WindowedAreaAggregates: %v", err)
+	}
+	check(t, aggs)
+}
+
+// Stale citizen beside a fresh official: the headline is the official median
+// (the stale citizen is not in latest), but the 24h series is a history and
+// keeps showing the citizen buckets. A bucket where only the official reported
+// is absent, because the area has citizen data for the window.
+func TestStaleCitizenHeadlineIsOfficialSeriesStaysCitizen(t *testing.T) {
+	ctx, pool := migrated(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	now := time.Now().UTC().Truncate(time.Minute)
+	stale := now.Add(-5 * time.Hour)
+	off := store.OfficialSensorIDFloor
+
+	seedArea(t, ctx, pool, "sofia", "oblast", 23.0, 42.0)
+	for i, id := range []int64{701, 702, 703} {
+		seedSensorReading(t, ctx, pool, id, 23.0+float64(i)/1000, 42.0, "P2", 10, "ok", stale)
+		seedOfficialSensorReading(t, ctx, pool, off+int64(80+i), 23.0+float64(i)/1000, 42.0005, "P2", 70, now)
+	}
+	assignAreas(t, ctx, pool)
+
+	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
+	if err != nil {
+		t.Fatalf("AreaAggregates: %v", err)
+	}
+	a := findAgg(t, aggs, "sofia")
+	if a.HeadlineSource != "eea" || a.Values["P2"] != 70 {
+		t.Errorf("headline = %v %q, want 70 eea", a.Values["P2"], a.HeadlineSource)
+	}
+	series, err := s.AllAreaSeries(ctx, "P2", now.Add(-24*time.Hour), false, 5*time.Minute)
+	if err != nil {
+		t.Fatalf("AllAreaSeries: %v", err)
+	}
+	pts := series["sofia"]
+	if len(pts) != 1 || pts[0].Value != 10 {
+		t.Errorf("series = %v, want exactly the one citizen bucket (10); the official-only bucket must be absent", pts)
+	}
+}
+
+func TestAreaSeriesBandFollowsTheHeadlineRule(t *testing.T) {
+	ctx, pool, now := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	want := map[string][3]float64{
+		"mixed":         {10, 20, 30},
+		"official-only": {40, 60, 80},
+		"citizen-only":  {5, 15, 25},
+		"metric-mix":    {12, 12, 12},
+	}
+	for _, hourly := range []bool{false, true} {
+		bucket := 5 * time.Minute
+		if hourly {
+			bucket = time.Hour
+		}
+		for slug, w := range want {
+			band, err := s.AreaSeriesBand(ctx, slug, "P2", now.Add(-2*time.Hour), nil, hourly, bucket)
+			if err != nil {
+				t.Fatalf("AreaSeriesBand: %v", err)
+			}
+			if len(band) != 1 || band[0].Low != w[0] || band[0].Median != w[1] || band[0].High != w[2] {
+				t.Errorf("hourly=%v %s band = %v, want low/median/high %v", hourly, slug, band, w)
+			}
+		}
 	}
 }

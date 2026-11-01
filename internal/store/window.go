@@ -29,27 +29,14 @@ windowed AS (
      GROUP BY h.sensor_id, h.metric
 )`
 
-// The windowed per-area median joins the window's numbers onto the LIVE latest
-// CTE, and that join is the whole design. Identity, freshness and quality stay
-// the live answer, so switching the window changes the numbers and nothing else:
-// the same areas exist, with the same station counts, and an area that has gone
-// silent today does not reappear because it had readings on Tuesday.
-const windowedPerAreaCTE = `
-per_area AS (
-    SELECT a.slug, l.metric, percentile_cont(0.5) WITHIN GROUP (ORDER BY w.value) AS avg_value
-      FROM area a
-      JOIN area_sensor asx ON asx.area_slug = a.slug
-      JOIN latest l        ON l.sensor_id = asx.sensor_id
-      JOIN windowed w      ON w.sensor_id = l.sensor_id AND w.metric = l.metric
-     WHERE a.kind = ANY($3::text[])
-     GROUP BY a.slug, l.metric
-)`
-
+// The windowed per-area medians join the window's numbers onto the LIVE latest
+// CTE, so identity, freshness and station counts stay the live answer.
+// per_area is the shared perAreaCTE over those windowed medians.
 var windowedAreaAggregateSQL = "WITH" + latestCTE(5) +
 	"," + fmt.Sprintf(windowedSensorCTE, 4) +
-	"," + windowedPerAreaCTE +
 	"," + perAreaSourceCTE("w.value",
 	"      JOIN windowed w      ON w.sensor_id = l.sensor_id AND w.metric = l.metric") +
+	"," + perAreaCTE(6) +
 	"," + coverageCTE + "," + coverageSourceCTE + areaAggregateSelect
 
 // WindowedAreaAggregates is AreaAggregates with the published value replaced by
@@ -60,7 +47,7 @@ var windowedAreaAggregateSQL = "WITH" + latestCTE(5) +
 func (s *Store) WindowedAreaAggregates(ctx context.Context, kinds []string, since time.Time) ([]AreaAggregate, error) {
 	official, community := s.cutoffs()
 
-	rows, err := s.pool.Query(ctx, windowedAreaAggregateSQL, official, usableQuality, kinds, since, community)
+	rows, err := s.pool.Query(ctx, windowedAreaAggregateSQL, official, usableQuality, kinds, since, community, s.cfg.CoverageThreshold)
 	if err != nil {
 		return nil, fmt.Errorf("store: windowed area aggregates: %w", err)
 	}

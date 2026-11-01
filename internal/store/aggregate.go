@@ -18,6 +18,12 @@ import (
 // would silently drop every rural sensor.
 var usableQuality = []string{"ok", "no_neighbours"}
 
+// HeadlineSource values.
+const (
+	HeadlineCommunity = "community"
+	HeadlineOfficial  = "eea"
+)
+
 // SourceAggregate is one network's own station count and median per metric.
 // json tags because it is scanned straight out of a jsonb object.
 type SourceAggregate struct {
@@ -44,8 +50,19 @@ type AreaAggregate struct {
 	// place, and painting a whole oblast from them is exactly what the threshold
 	// exists to refuse.
 	SensorCount int
-	Values      map[string]float64
-	Covered     bool
+	// Values is the headline median per metric: the citizen median at the
+	// station threshold, else the official one, else the citizen median of
+	// fewer stations (see perAreaCTE). Covered is SensorCount at the threshold
+	// or some metric on the official median.
+	Values  map[string]float64
+	Covered bool
+	// HeadlineSource summarises whose readings Values holds: HeadlineCommunity
+	// when any metric is a citizen median, HeadlineOfficial when all are
+	// official, "" when there is no value.
+	HeadlineSource string
+	// HeadlineSources is the same per metric: a metric only an official
+	// station reports is "eea" even when the area's PM headline is "community".
+	HeadlineSources map[string]string
 	// Each contributing network's own figures, keyed "sensor.community" or
 	// "eea". Empty for an uncovered area.
 	BySource map[string]SourceAggregate
@@ -92,19 +109,36 @@ func (s *Store) cutoffs() (official, community time.Time) {
 	return now.Add(-s.cfg.OfficialFreshnessWindow), now.Add(-s.cfg.FreshnessWindow)
 }
 
-const perAreaCTE = `
+// officialCutoff is the freshness bound an official reading must meet to count as now.
+func (s *Store) officialCutoff() time.Time {
+	official, _ := s.cutoffs()
+	return official
+}
+
+// perAreaCTE is the headline median, built from per_area_source so the live
+// and windowed queries share it. Reference-grade and low-cost data are not
+// blended: the citizen median is the headline, and an area with no citizen
+// row falls back to the official median. The official figure stays in
+// per_area_source either way.
+func perAreaCTE(thresholdParam int) string {
+	return fmt.Sprintf(`
 per_area AS (
-    -- The median across the area's sensors, not the mean: one failed device
-    -- reading 900 µg/m³ beside four neighbours in the teens moved a whole
-    -- province to 189, a figure nobody in it was breathing. Two sensors behave
-    -- exactly as before, the median of a pair being their mean.
-    SELECT a.slug, l.metric, percentile_cont(0.5) WITHIN GROUP (ORDER BY l.value) AS avg_value
-      FROM area a
-      JOIN area_sensor asx ON asx.area_slug = a.slug
-      JOIN latest l        ON l.sensor_id = asx.sensor_id
-     WHERE a.kind = ANY($3::text[])
-     GROUP BY a.slug, l.metric
-)`
+    -- Per (area, metric): 1) citizen stations >= threshold: citizen median.
+    -- 2) else a fresh official station: official median. 3) else any citizen
+    -- value: citizen median. 4) else nothing.
+    SELECT ps.slug, ps.source, ps.metric, ps.avg_value
+      FROM per_area_source ps
+     WHERE (ps.source = '%[1]s'
+            AND (ps.stations >= $%[3]d
+                 OR NOT EXISTS (SELECT 1 FROM per_area_source o
+                                 WHERE o.slug = ps.slug AND o.metric = ps.metric
+                                   AND o.source = '%[2]s')))
+        OR (ps.source = '%[2]s'
+            AND NOT EXISTS (SELECT 1 FROM per_area_source c
+                             WHERE c.slug = ps.slug AND c.metric = ps.metric
+                               AND c.source = '%[1]s' AND c.stations >= $%[3]d))
+)`, communitySource, officialSource, thresholdParam)
+}
 
 const coverageCTE = `
 coverage AS (
@@ -125,23 +159,34 @@ coverage AS (
      GROUP BY slug
 )`
 
+// The two network keys of AreaAggregate.BySource.
+const (
+	communitySource = "sensor.community"
+	officialSource  = "eea"
+)
+
 // sourceExpr reads the network off the sensor id. Migration 00012 constrains
 // 'eea' and the 9e9 id range to mean the same thing, so no join is needed.
-var sourceExpr = fmt.Sprintf(`CASE WHEN l.sensor_id >= %d THEN 'eea' ELSE 'sensor.community' END`, OfficialSensorIDFloor)
+var sourceExpr = fmt.Sprintf(`CASE WHEN l.sensor_id >= %d THEN '%s' ELSE '%s' END`,
+	OfficialSensorIDFloor, officialSource, communitySource)
 
-// perAreaSourceCTE is perAreaCTE split by network. valueCol is l.value live and
+// perAreaSourceCTE is the per-area median split by network. valueCol is l.value live and
 // w.value windowed; extraJoin brings the window in.
 func perAreaSourceCTE(valueCol, extraJoin string) string {
 	return `
 per_area_source AS (
     SELECT a.slug, ` + sourceExpr + ` AS source, l.metric,
-           percentile_cont(0.5) WITHIN GROUP (ORDER BY ` + valueCol + `) AS avg_value
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY ` + valueCol + `) AS avg_value,
+           -- Stations, not devices: the same distinct-coordinate rule as coverageCTE.
+           count(DISTINCT (ST_X(s.location::geometry), ST_Y(s.location::geometry))) AS stations
       FROM area a
       JOIN area_sensor asx ON asx.area_slug = a.slug
       JOIN latest l        ON l.sensor_id = asx.sensor_id
+      JOIN sensor s        ON s.sensor_id = asx.sensor_id
 ` + extraJoin + `
      WHERE a.kind = ANY($3::text[])
-     GROUP BY a.slug, source, l.metric
+     -- The expression, not the alias: sensor has its own source column.
+     GROUP BY a.slug, ` + sourceExpr + `, l.metric
 )`
 }
 
@@ -161,7 +206,7 @@ coverage_source AS (
      GROUP BY slug, source
 )`
 
-const areaAggregateSelect = `
+var areaAggregateSelect = `
 SELECT a.slug, a.kind, a.name_bg, a.name_en,
        ST_X(a.centroid::geometry), ST_Y(a.centroid::geometry), a.default_zoom,
        COALESCE(c.stations, 0),
@@ -178,14 +223,24 @@ SELECT a.slug, a.kind, a.name_bg, a.name_en,
                              WHERE ps.slug = cs.slug AND ps.source = cs.source),
                            '{}'::jsonb)))
               FROM coverage_source cs WHERE cs.slug = a.slug),
+           '{}'::jsonb),
+       COALESCE(
+           (SELECT CASE WHEN bool_or(p.source = '` + communitySource + `') THEN '` + HeadlineCommunity + `'
+                        WHEN bool_or(p.source = '` + officialSource + `') THEN '` + HeadlineOfficial + `' END
+              FROM per_area p WHERE p.slug = a.slug),
+           ''),
+       COALESCE(
+           (SELECT jsonb_object_agg(p.metric, CASE p.source WHEN '` + communitySource + `' THEN '` + HeadlineCommunity + `'
+                                                            ELSE '` + HeadlineOfficial + `' END)
+              FROM per_area p WHERE p.slug = a.slug),
            '{}'::jsonb)
   FROM area a
   LEFT JOIN coverage c ON c.slug = a.slug
  WHERE a.kind = ANY($3::text[])
  ORDER BY a.slug`
 
-var areaAggregateSQL = "WITH" + latestCTE(4) + "," + perAreaCTE + "," +
-	perAreaSourceCTE("l.value", "") + "," + coverageCTE + "," + coverageSourceCTE +
+var areaAggregateSQL = "WITH" + latestCTE(4) + "," +
+	perAreaSourceCTE("l.value", "") + "," + perAreaCTE(5) + "," + coverageCTE + "," + coverageSourceCTE +
 	areaAggregateSelect
 
 // AreaAggregates returns one row per area of the requested kinds, including
@@ -198,11 +253,22 @@ var areaAggregateSQL = "WITH" + latestCTE(4) + "," + perAreaCTE + "," +
 func (s *Store) AreaAggregates(ctx context.Context, kinds []string) ([]AreaAggregate, error) {
 	official, community := s.cutoffs()
 
-	rows, err := s.pool.Query(ctx, areaAggregateSQL, official, usableQuality, kinds, community)
+	rows, err := s.pool.Query(ctx, areaAggregateSQL, official, usableQuality, kinds, community, s.cfg.CoverageThreshold)
 	if err != nil {
 		return nil, fmt.Errorf("store: area aggregates: %w", err)
 	}
 	return s.scanAreaAggregates(rows)
+}
+
+// hasOfficialHeadline reports whether some metric took the official median
+// (rule 2): that covers an area the citizen threshold alone would not.
+func hasOfficialHeadline(headlines map[string]string) bool {
+	for _, src := range headlines {
+		if src == HeadlineOfficial {
+			return true
+		}
+	}
+	return false
 }
 
 // scanAreaAggregates reads the projection areaAggregateSelect produces. Shared
@@ -217,15 +283,19 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 		var a AreaAggregate
 		var values map[string]float64
 		var bySource map[string]SourceAggregate
+		var headline string
+		var headlines map[string]string
 		if err := rows.Scan(&a.Slug, &a.Kind, &a.NameBG, &a.NameEN,
 			&a.CentroidLon, &a.CentroidLat, &a.DefaultZoom,
-			&a.SensorCount, &values, &bySource); err != nil {
+			&a.SensorCount, &values, &bySource, &headline, &headlines); err != nil {
 			return nil, fmt.Errorf("store: scan area aggregate: %w", err)
 		}
-		a.Covered = a.SensorCount >= s.cfg.CoverageThreshold
+		a.Covered = a.SensorCount >= s.cfg.CoverageThreshold || hasOfficialHeadline(headlines)
 		if a.Covered {
 			a.Values = values
 			a.BySource = bySource
+			a.HeadlineSource = headline
+			a.HeadlineSources = headlines
 		} else {
 			// Explicitly empty, not the scanned map. An uncovered area must
 			// carry no number anywhere downstream — a handler that checked
@@ -414,6 +484,46 @@ type Point struct {
 	Value float64
 }
 
+// citizenMark tags the per-sensor subquery citizenFirst rewrites. A bare
+// "(SELECT" would also match notFaulty's.
+const citizenMark = "/*citizen-first*/"
+
+// citizenFirst keeps a series on the headline's side per partition: official
+// sensors when the window has fewer citizen stations than the threshold and an
+// official station is fresh now, citizen sensors otherwise. part is spliced.
+func citizenFirst(q, part string, thresholdParam, metricParam, cutoffParam int) string {
+	const selectMark, aliasMark = citizenMark + "(SELECT", ") per_sensor"
+	if strings.Count(q, selectMark) != 1 || strings.Count(q, aliasMark) != 1 {
+		panic("store: citizenFirst needs exactly one " + selectMark + " and one " + aliasMark + " in the query")
+	}
+	// crank numbers the citizen coordinates, so its max is the window's station count.
+	// fresh_official is the headline's freshness: a reading newer than the official cutoff.
+	open := fmt.Sprintf(`(SELECT * FROM (SELECT x.*,
+	       max(x.crank) OVER (PARTITION BY %[2]s) AS cit_stations,
+	       bool_or(x.sensor_id >= %[1]d AND EXISTS (
+	           SELECT 1 FROM reading r
+	            WHERE r.sensor_id = x.sensor_id AND r.metric = $%[3]d
+	              AND r.time >= $%[4]d::timestamptz
+	              AND r.quality = ANY(%[5]s::quality_flag[])
+	              AND `+notFaulty+`)) OVER (PARTITION BY %[2]s) AS has_official
+	  FROM (SELECT ps.*,
+	               CASE WHEN ps.sensor_id < %[1]d THEN dense_rank() OVER (
+	                   PARTITION BY %[2]s, (ps.sensor_id < %[1]d)
+	                   ORDER BY ST_X(sn.location::geometry), ST_Y(sn.location::geometry)) END AS crank
+	          FROM (SELECT`, OfficialSensorIDFloor, part, metricParam, cutoffParam, qualityLiteral())
+	closing := fmt.Sprintf(`) ps JOIN sensor sn ON sn.sensor_id = ps.sensor_id) x) hf
+	 WHERE (hf.sensor_id < %[1]d AND (COALESCE(hf.cit_stations, 0) >= $%[2]d::int OR NOT hf.has_official))
+	    OR (hf.sensor_id >= %[1]d AND COALESCE(hf.cit_stations, 0) < $%[2]d::int
+	        AND (hf.has_official OR hf.cit_stations IS NULL))) per_sensor`, OfficialSensorIDFloor, thresholdParam)
+	q = strings.Replace(q, selectMark, open, 1)
+	return strings.Replace(q, aliasMark, closing, 1)
+}
+
+// qualityLiteral is usableQuality as an SQL array literal; the values are constants.
+func qualityLiteral() string {
+	return "ARRAY['" + strings.Join(usableQuality, "','") + "']"
+}
+
 // bucketExpr is time_bucket with the width supplied as a query parameter rather
 // than a literal. make_interval takes the seconds because pgx has no unambiguous
 // mapping from time.Duration to interval, and an interval built from seconds is
@@ -515,7 +625,7 @@ func (s *Store) SensorSeries(ctx context.Context, sensorID int64, metric string,
 // One row per sensor per bucket. Written once and composed into both the median
 // series and the band below it, so the two can never bucket differently or
 // disagree about which readings count.
-var areaRawPerSensorSQL = `(SELECT ` + bucketed("r.time", 5) + ` AS b, r.sensor_id, avg(r.value) AS v
+var areaRawPerSensorSQL = citizenFirst(citizenMark+`(SELECT `+bucketed("r.time", 5)+` AS b, r.sensor_id, avg(r.value) AS v
           FROM reading r
           JOIN area_sensor asx ON asx.sensor_id = r.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -524,8 +634,8 @@ var areaRawPerSensorSQL = `(SELECT ` + bucketed("r.time", 5) + ` AS b, r.sensor_
            AND r.time  >= $3
            AND r.quality = ANY($4::quality_flag[])
            AND ($6::timestamptz IS NULL OR r.time < $6)
-           AND ` + notFaulty + `
-         GROUP BY b, r.sensor_id) per_sensor`
+           AND `+notFaulty+`
+         GROUP BY b, r.sensor_id) per_sensor`, "true", 7, 2, 8)
 
 var areaRawSeriesSQL = `
 SELECT b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
@@ -548,7 +658,7 @@ SELECT b, min(v), percentile_cont(0.5) WITHIN GROUP (ORDER BY v), max(v)
 // filter, so re-filtering here would be impossible AND unnecessary.
 // Per-sensor step is weighted by sample_count; the median across sensors stays
 // unweighted, one vote per sensor.
-var areaHourlyPerSensorSQL = `(SELECT ` + bucketed("h.bucket", 4) + ` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
+var areaHourlyPerSensorSQL = citizenFirst(citizenMark+`(SELECT `+bucketed("h.bucket", 4)+` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
@@ -556,7 +666,7 @@ var areaHourlyPerSensorSQL = `(SELECT ` + bucketed("h.bucket", 4) + ` AS b, h.se
            AND h.metric = $2
            AND h.bucket >= $3
            AND ($5::timestamptz IS NULL OR h.bucket < $5)
-         GROUP BY b, h.sensor_id) per_sensor`
+         GROUP BY b, h.sensor_id) per_sensor`, "true", 6, 2, 7)
 
 var areaHourlySeriesSQL = `
 SELECT b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
@@ -588,15 +698,15 @@ SELECT b, min(v), percentile_cont(0.5) WITHIN GROUP (ORDER BY v), max(v)
 // the same chart changes shape depending on whether the cache was warm.
 var allAreaRawSeriesSQL = `
 SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
-  FROM (SELECT a.slug, ` + bucketed("r.time", 4) + ` AS b, r.sensor_id, avg(r.value) AS v
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("r.time", 4)+` AS b, r.sensor_id, avg(r.value) AS v
           FROM reading r
           JOIN area_sensor asx ON asx.sensor_id = r.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
          WHERE r.metric = $1
            AND r.time  >= $2
            AND r.quality = ANY($3::quality_flag[])
-           AND ` + notFaulty + `
-         GROUP BY a.slug, b, r.sensor_id) per_sensor
+           AND `+notFaulty+`
+         GROUP BY a.slug, b, r.sensor_id) per_sensor`, "slug", 6, 1, 7) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $5`
@@ -606,13 +716,13 @@ SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
 // filter.
 var allAreaHourlySeriesSQL = `
 SELECT slug, b, percentile_cont(0.5) WITHIN GROUP (ORDER BY v)
-  FROM (SELECT a.slug, ` + bucketed("h.bucket", 3) + ` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("h.bucket", 3)+` AS b, h.sensor_id, COALESCE(sum(h.avg_value * h.sample_count) / NULLIF(sum(h.sample_count), 0), avg(h.avg_value)) AS v
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
          WHERE h.metric = $1
            AND h.bucket >= $2
-         GROUP BY a.slug, b, h.sensor_id) per_sensor
+         GROUP BY a.slug, b, h.sensor_id) per_sensor`, "slug", 5, 1, 6) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $4`
@@ -640,9 +750,9 @@ func (s *Store) AllAreaSeries(ctx context.Context, metric string, since time.Tim
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, allAreaHourlySeriesSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit)
+		rows, err = tx.Query(ctx, allAreaHourlySeriesSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, allAreaRawSeriesSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit)
+		rows, err = tx.Query(ctx, allAreaRawSeriesSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: all area series for %q: %w", metric, err)
@@ -704,9 +814,9 @@ func (s *Store) AreaSeries(ctx context.Context, slug, metric string, since time.
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, areaHourlySeriesSQL, slug, metric, since, bucket.Seconds(), until)
+		rows, err = tx.Query(ctx, areaHourlySeriesSQL, slug, metric, since, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, areaRawSeriesSQL, slug, metric, since, usableQuality, bucket.Seconds(), until)
+		rows, err = tx.Query(ctx, areaRawSeriesSQL, slug, metric, since, usableQuality, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: area series for %q: %w", slug, err)
@@ -754,9 +864,9 @@ func (s *Store) AreaSeriesBand(ctx context.Context, slug, metric string, since t
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, areaHourlyBandSQL, slug, metric, since, bucket.Seconds(), until)
+		rows, err = tx.Query(ctx, areaHourlyBandSQL, slug, metric, since, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, areaRawBandSQL, slug, metric, since, usableQuality, bucket.Seconds(), until)
+		rows, err = tx.Query(ctx, areaRawBandSQL, slug, metric, since, usableQuality, bucket.Seconds(), until, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: area band for %q: %w", slug, err)
@@ -865,28 +975,28 @@ func (s *Store) AreaKm2(ctx context.Context) (map[string]float64, error) {
 // which readings a bucket contains.
 var allAreaRawSeriesCountSQL = `
 SELECT slug, b, count(*)
-  FROM (SELECT a.slug, ` + bucketed("r.time", 4) + ` AS b, r.sensor_id
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("r.time", 4)+` AS b, r.sensor_id
           FROM reading r
           JOIN area_sensor asx ON asx.sensor_id = r.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
          WHERE r.metric = $1
            AND r.time  >= $2
            AND r.quality = ANY($3::quality_flag[])
-           AND ` + notFaulty + `
-         GROUP BY a.slug, b, r.sensor_id) per_sensor
+           AND `+notFaulty+`
+         GROUP BY a.slug, b, r.sensor_id) per_sensor`, "slug", 6, 1, 7) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $5`
 
 var allAreaHourlySeriesCountSQL = `
 SELECT slug, b, count(*)
-  FROM (SELECT a.slug, ` + bucketed("h.bucket", 3) + ` AS b, h.sensor_id
+  FROM ` + citizenFirst(citizenMark+`(SELECT a.slug, `+bucketed("h.bucket", 3)+` AS b, h.sensor_id
           FROM reading_hourly h
           JOIN area_sensor asx ON asx.sensor_id = h.sensor_id
           JOIN area a          ON a.slug = asx.area_slug
          WHERE h.metric = $1
            AND h.bucket >= $2
-         GROUP BY a.slug, b, h.sensor_id) per_sensor
+         GROUP BY a.slug, b, h.sensor_id) per_sensor`, "slug", 5, 1, 6) + `
  GROUP BY slug, b
  ORDER BY slug, b
  LIMIT $4`
@@ -909,9 +1019,9 @@ func (s *Store) AllAreaSeriesCounts(ctx context.Context, metric string, since ti
 
 	var rows pgx.Rows
 	if hourly {
-		rows, err = tx.Query(ctx, allAreaHourlySeriesCountSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit)
+		rows, err = tx.Query(ctx, allAreaHourlySeriesCountSQL, metric, since, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	} else {
-		rows, err = tx.Query(ctx, allAreaRawSeriesCountSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit)
+		rows, err = tx.Query(ctx, allAreaRawSeriesCountSQL, metric, since, usableQuality, bucket.Seconds(), AllAreaSeriesRowLimit, s.cfg.CoverageThreshold, s.officialCutoff())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: all area series counts for %q: %w", metric, err)
