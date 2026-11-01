@@ -262,7 +262,11 @@ func seedFixtures(t *testing.T, st *store.Store) {
 
 	// Wide weather figures on sensor 101: readout-overflow.spec.js needs a
 	// "1013,0 hPa" card to prove no readout pushes the phone page sideways.
-	seedReading(t, st, 101, "pressure", 1013.04, "ok", now)
+	// Three stations carry it: a citizen metric needs the coverage threshold
+	// of stations to be the area headline.
+	for _, id := range []int64{101, 102, 103} {
+		seedReading(t, st, id, "pressure", 1013.04, "ok", now)
+	}
 
 	// Enough history on sensor 101's P2 series that a 24h chart is non-empty:
 	// one point every two hours across the window.
