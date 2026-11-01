@@ -1,0 +1,792 @@
+[
+ {
+  "slug": "stara-zagora-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Стара Загора"
+ },
+ {
+  "slug": "varna-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Варна"
+ },
+ {
+  "slug": "blagoevgrad-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Благоевград"
+ },
+ {
+  "slug": "burgas-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Бургас"
+ },
+ {
+  "slug": "veliko-tarnovo-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Велико Търново"
+ },
+ {
+  "slug": "vidin-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Видин"
+ },
+ {
+  "slug": "vratsa-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Враца"
+ },
+ {
+  "slug": "gabrovo-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Габрово"
+ },
+ {
+  "slug": "dobrich-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Добрич"
+ },
+ {
+  "slug": "kardzhali-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Кърджали"
+ },
+ {
+  "slug": "kyustendil-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Кюстендил"
+ },
+ {
+  "slug": "lovech-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Ловеч"
+ },
+ {
+  "slug": "montana-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Монтана"
+ },
+ {
+  "slug": "pazardzhik-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Пазарджик"
+ },
+ {
+  "slug": "pernik-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Перник"
+ },
+ {
+  "slug": "pleven-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Плевен"
+ },
+ {
+  "slug": "plovdiv-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Пловдив"
+ },
+ {
+  "slug": "razgrad-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Разград"
+ },
+ {
+  "slug": "ruse-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Русе"
+ },
+ {
+  "slug": "silistra-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Силистра"
+ },
+ {
+  "slug": "sliven-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Сливен"
+ },
+ {
+  "slug": "smolyan-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Смолян"
+ },
+ {
+  "slug": "sofiyska-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Софийска област"
+ },
+ {
+  "slug": "sofia-grad-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област София-град"
+ },
+ {
+  "slug": "targovishte-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Търговище"
+ },
+ {
+  "slug": "haskovo-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Хасково"
+ },
+ {
+  "slug": "shumen-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Шумен"
+ },
+ {
+  "slug": "yambol-oblast",
+  "lang": "bg",
+  "h1": "Качество на въздуха в област Ямбол"
+ },
+ {
+  "slug": "sofia",
+  "lang": "bg",
+  "h1": "Качество на въздуха в София"
+ },
+ {
+  "slug": "ruse",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Русе"
+ },
+ {
+  "slug": "dobrich",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Добрич"
+ },
+ {
+  "slug": "razgrad",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Разград"
+ },
+ {
+  "slug": "targovishte",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Търговище"
+ },
+ {
+  "slug": "silistra",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Силистра"
+ },
+ {
+  "slug": "shumen",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Шумен"
+ },
+ {
+  "slug": "varna",
+  "lang": "bg",
+  "h1": "Качество на въздуха във Варна"
+ },
+ {
+  "slug": "gabrovo",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Габрово"
+ },
+ {
+  "slug": "veliko-tarnovo",
+  "lang": "bg",
+  "h1": "Качество на въздуха във Велико Търново"
+ },
+ {
+  "slug": "kyustendil",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Кюстендил"
+ },
+ {
+  "slug": "burgas",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Бургас"
+ },
+ {
+  "slug": "vidin",
+  "lang": "bg",
+  "h1": "Качество на въздуха във Видин"
+ },
+ {
+  "slug": "montana",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Монтана"
+ },
+ {
+  "slug": "vratsa",
+  "lang": "bg",
+  "h1": "Качество на въздуха във Враца"
+ },
+ {
+  "slug": "lovech",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Ловеч"
+ },
+ {
+  "slug": "pleven",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Плевен"
+ },
+ {
+  "slug": "haskovo",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Хасково"
+ },
+ {
+  "slug": "sliven",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Сливен"
+ },
+ {
+  "slug": "stara-zagora",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Стара Загора"
+ },
+ {
+  "slug": "kardzhali",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Кърджали"
+ },
+ {
+  "slug": "plovdiv",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Пловдив"
+ },
+ {
+  "slug": "pazardzhik",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Пазарджик"
+ },
+ {
+  "slug": "smolyan",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Смолян"
+ },
+ {
+  "slug": "blagoevgrad",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Благоевград"
+ },
+ {
+  "slug": "pernik",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Перник"
+ },
+ {
+  "slug": "yambol",
+  "lang": "bg",
+  "h1": "Качество на въздуха в Ямбол"
+ },
+ {
+  "slug": "bankya",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Банкя"
+ },
+ {
+  "slug": "ilinden",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Илинден"
+ },
+ {
+  "slug": "iskar",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Искър"
+ },
+ {
+  "slug": "izgrev",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Изгрев"
+ },
+ {
+  "slug": "krasna-polyana",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Красна поляна"
+ },
+ {
+  "slug": "krasno-selo",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Красно село"
+ },
+ {
+  "slug": "kremikovtsi",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Кремиковци"
+ },
+ {
+  "slug": "lyulin",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Люлин"
+ },
+ {
+  "slug": "lozenets",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Лозенец"
+ },
+ {
+  "slug": "mladost",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Младост"
+ },
+ {
+  "slug": "nadezhda",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Надежда"
+ },
+ {
+  "slug": "novi-iskar",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Нови Искър"
+ },
+ {
+  "slug": "oborishte",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Оборище"
+ },
+ {
+  "slug": "ovcha-kupel",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Овча купел"
+ },
+ {
+  "slug": "pancharevo",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Панчарево"
+ },
+ {
+  "slug": "poduyane",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Подуяне"
+ },
+ {
+  "slug": "serdika",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Сердика"
+ },
+ {
+  "slug": "slatina",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Слатина"
+ },
+ {
+  "slug": "sredets",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Средец"
+ },
+ {
+  "slug": "studentski",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Студентски"
+ },
+ {
+  "slug": "triaditsa",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Триадица"
+ },
+ {
+  "slug": "vazrazhdane",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Възраждане"
+ },
+ {
+  "slug": "vitosha",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Витоша"
+ },
+ {
+  "slug": "vrabnitsa",
+  "lang": "bg",
+  "h1": "Качество на въздуха в район Връбница"
+ },
+ {
+  "slug": "stara-zagora-oblast",
+  "lang": "en",
+  "h1": "Air quality in Stara Zagora Province"
+ },
+ {
+  "slug": "varna-oblast",
+  "lang": "en",
+  "h1": "Air quality in Varna Province"
+ },
+ {
+  "slug": "blagoevgrad-oblast",
+  "lang": "en",
+  "h1": "Air quality in Blagoevgrad Province"
+ },
+ {
+  "slug": "burgas-oblast",
+  "lang": "en",
+  "h1": "Air quality in Burgas Province"
+ },
+ {
+  "slug": "veliko-tarnovo-oblast",
+  "lang": "en",
+  "h1": "Air quality in Veliko Tarnovo Province"
+ },
+ {
+  "slug": "vidin-oblast",
+  "lang": "en",
+  "h1": "Air quality in Vidin Province"
+ },
+ {
+  "slug": "vratsa-oblast",
+  "lang": "en",
+  "h1": "Air quality in Vratsa Province"
+ },
+ {
+  "slug": "gabrovo-oblast",
+  "lang": "en",
+  "h1": "Air quality in Gabrovo Province"
+ },
+ {
+  "slug": "dobrich-oblast",
+  "lang": "en",
+  "h1": "Air quality in Dobrich Province"
+ },
+ {
+  "slug": "kardzhali-oblast",
+  "lang": "en",
+  "h1": "Air quality in Kardzhali Province"
+ },
+ {
+  "slug": "kyustendil-oblast",
+  "lang": "en",
+  "h1": "Air quality in Kyustendil Province"
+ },
+ {
+  "slug": "lovech-oblast",
+  "lang": "en",
+  "h1": "Air quality in Lovech Province"
+ },
+ {
+  "slug": "montana-oblast",
+  "lang": "en",
+  "h1": "Air quality in Montana Province"
+ },
+ {
+  "slug": "pazardzhik-oblast",
+  "lang": "en",
+  "h1": "Air quality in Pazardzhik Province"
+ },
+ {
+  "slug": "pernik-oblast",
+  "lang": "en",
+  "h1": "Air quality in Pernik Province"
+ },
+ {
+  "slug": "pleven-oblast",
+  "lang": "en",
+  "h1": "Air quality in Pleven Province"
+ },
+ {
+  "slug": "plovdiv-oblast",
+  "lang": "en",
+  "h1": "Air quality in Plovdiv Province"
+ },
+ {
+  "slug": "razgrad-oblast",
+  "lang": "en",
+  "h1": "Air quality in Razgrad Province"
+ },
+ {
+  "slug": "ruse-oblast",
+  "lang": "en",
+  "h1": "Air quality in Ruse Province"
+ },
+ {
+  "slug": "silistra-oblast",
+  "lang": "en",
+  "h1": "Air quality in Silistra Province"
+ },
+ {
+  "slug": "sliven-oblast",
+  "lang": "en",
+  "h1": "Air quality in Sliven Province"
+ },
+ {
+  "slug": "smolyan-oblast",
+  "lang": "en",
+  "h1": "Air quality in Smolyan Province"
+ },
+ {
+  "slug": "sofiyska-oblast",
+  "lang": "en",
+  "h1": "Air quality in Sofia Province"
+ },
+ {
+  "slug": "sofia-grad-oblast",
+  "lang": "en",
+  "h1": "Air quality in Sofia City Province"
+ },
+ {
+  "slug": "targovishte-oblast",
+  "lang": "en",
+  "h1": "Air quality in Targovishte Province"
+ },
+ {
+  "slug": "haskovo-oblast",
+  "lang": "en",
+  "h1": "Air quality in Haskovo Province"
+ },
+ {
+  "slug": "shumen-oblast",
+  "lang": "en",
+  "h1": "Air quality in Shumen Province"
+ },
+ {
+  "slug": "yambol-oblast",
+  "lang": "en",
+  "h1": "Air quality in Yambol Province"
+ },
+ {
+  "slug": "sofia",
+  "lang": "en",
+  "h1": "Air quality in Sofia"
+ },
+ {
+  "slug": "ruse",
+  "lang": "en",
+  "h1": "Air quality in Ruse"
+ },
+ {
+  "slug": "dobrich",
+  "lang": "en",
+  "h1": "Air quality in Dobrich"
+ },
+ {
+  "slug": "razgrad",
+  "lang": "en",
+  "h1": "Air quality in Razgrad"
+ },
+ {
+  "slug": "targovishte",
+  "lang": "en",
+  "h1": "Air quality in Targovishte"
+ },
+ {
+  "slug": "silistra",
+  "lang": "en",
+  "h1": "Air quality in Silistra"
+ },
+ {
+  "slug": "shumen",
+  "lang": "en",
+  "h1": "Air quality in Shumen"
+ },
+ {
+  "slug": "varna",
+  "lang": "en",
+  "h1": "Air quality in Varna"
+ },
+ {
+  "slug": "gabrovo",
+  "lang": "en",
+  "h1": "Air quality in Gabrovo"
+ },
+ {
+  "slug": "veliko-tarnovo",
+  "lang": "en",
+  "h1": "Air quality in Veliko Tarnovo"
+ },
+ {
+  "slug": "kyustendil",
+  "lang": "en",
+  "h1": "Air quality in Kyustendil"
+ },
+ {
+  "slug": "burgas",
+  "lang": "en",
+  "h1": "Air quality in Burgas"
+ },
+ {
+  "slug": "vidin",
+  "lang": "en",
+  "h1": "Air quality in Vidin"
+ },
+ {
+  "slug": "montana",
+  "lang": "en",
+  "h1": "Air quality in Montana"
+ },
+ {
+  "slug": "vratsa",
+  "lang": "en",
+  "h1": "Air quality in Vratsa"
+ },
+ {
+  "slug": "lovech",
+  "lang": "en",
+  "h1": "Air quality in Lovech"
+ },
+ {
+  "slug": "pleven",
+  "lang": "en",
+  "h1": "Air quality in Pleven"
+ },
+ {
+  "slug": "haskovo",
+  "lang": "en",
+  "h1": "Air quality in Haskovo"
+ },
+ {
+  "slug": "sliven",
+  "lang": "en",
+  "h1": "Air quality in Sliven"
+ },
+ {
+  "slug": "stara-zagora",
+  "lang": "en",
+  "h1": "Air quality in Stara Zagora"
+ },
+ {
+  "slug": "kardzhali",
+  "lang": "en",
+  "h1": "Air quality in Kardzhali"
+ },
+ {
+  "slug": "plovdiv",
+  "lang": "en",
+  "h1": "Air quality in Plovdiv"
+ },
+ {
+  "slug": "pazardzhik",
+  "lang": "en",
+  "h1": "Air quality in Pazardzhik"
+ },
+ {
+  "slug": "smolyan",
+  "lang": "en",
+  "h1": "Air quality in Smolyan"
+ },
+ {
+  "slug": "blagoevgrad",
+  "lang": "en",
+  "h1": "Air quality in Blagoevgrad"
+ },
+ {
+  "slug": "pernik",
+  "lang": "en",
+  "h1": "Air quality in Pernik"
+ },
+ {
+  "slug": "yambol",
+  "lang": "en",
+  "h1": "Air quality in Yambol"
+ },
+ {
+  "slug": "bankya",
+  "lang": "en",
+  "h1": "Air quality in Bankya district, Sofia"
+ },
+ {
+  "slug": "ilinden",
+  "lang": "en",
+  "h1": "Air quality in Ilinden district, Sofia"
+ },
+ {
+  "slug": "iskar",
+  "lang": "en",
+  "h1": "Air quality in Iskar district, Sofia"
+ },
+ {
+  "slug": "izgrev",
+  "lang": "en",
+  "h1": "Air quality in Izgrev district, Sofia"
+ },
+ {
+  "slug": "krasna-polyana",
+  "lang": "en",
+  "h1": "Air quality in Krasna Polyana district, Sofia"
+ },
+ {
+  "slug": "krasno-selo",
+  "lang": "en",
+  "h1": "Air quality in Krasno Selo district, Sofia"
+ },
+ {
+  "slug": "kremikovtsi",
+  "lang": "en",
+  "h1": "Air quality in Kremikovtsi district, Sofia"
+ },
+ {
+  "slug": "lyulin",
+  "lang": "en",
+  "h1": "Air quality in Lyulin district, Sofia"
+ },
+ {
+  "slug": "lozenets",
+  "lang": "en",
+  "h1": "Air quality in Lozenets district, Sofia"
+ },
+ {
+  "slug": "mladost",
+  "lang": "en",
+  "h1": "Air quality in Mladost district, Sofia"
+ },
+ {
+  "slug": "nadezhda",
+  "lang": "en",
+  "h1": "Air quality in Nadezhda district, Sofia"
+ },
+ {
+  "slug": "novi-iskar",
+  "lang": "en",
+  "h1": "Air quality in Novi Iskar district, Sofia"
+ },
+ {
+  "slug": "oborishte",
+  "lang": "en",
+  "h1": "Air quality in Oborishte district, Sofia"
+ },
+ {
+  "slug": "ovcha-kupel",
+  "lang": "en",
+  "h1": "Air quality in Ovcha Kupel district, Sofia"
+ },
+ {
+  "slug": "pancharevo",
+  "lang": "en",
+  "h1": "Air quality in Pancharevo district, Sofia"
+ },
+ {
+  "slug": "poduyane",
+  "lang": "en",
+  "h1": "Air quality in Poduyane district, Sofia"
+ },
+ {
+  "slug": "serdika",
+  "lang": "en",
+  "h1": "Air quality in Serdika district, Sofia"
+ },
+ {
+  "slug": "slatina",
+  "lang": "en",
+  "h1": "Air quality in Slatina district, Sofia"
+ },
+ {
+  "slug": "sredets",
+  "lang": "en",
+  "h1": "Air quality in Sredets district, Sofia"
+ },
+ {
+  "slug": "studentski",
+  "lang": "en",
+  "h1": "Air quality in Studentski district, Sofia"
+ },
+ {
+  "slug": "triaditsa",
+  "lang": "en",
+  "h1": "Air quality in Triaditsa district, Sofia"
+ },
+ {
+  "slug": "vazrazhdane",
+  "lang": "en",
+  "h1": "Air quality in Vazrazhdane district, Sofia"
+ },
+ {
+  "slug": "vitosha",
+  "lang": "en",
+  "h1": "Air quality in Vitosha district, Sofia"
+ },
+ {
+  "slug": "vrabnitsa",
+  "lang": "en",
+  "h1": "Air quality in Vrabnitsa district, Sofia"
+ }
+]
