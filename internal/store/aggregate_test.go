@@ -1317,9 +1317,9 @@ func TestAreaAggregatesBreakDownByNetwork(t *testing.T) {
 	if eea.N != 1 || eea.Values["P2"] != 100 {
 		t.Errorf("eea = {n:%d P2:%v}, want {n:1 P2:100}", eea.N, eea.Values["P2"])
 	}
-	// The median of all four, not of either network: 10, 20, 30, 100 -> 25.
-	if a.Values["P2"] != 25 {
-		t.Errorf("values.P2 = %v, want 25 — the blended median must not move", a.Values["P2"])
+	// The headline is the citizen median (10, 20, 30 -> 20), not the blend (25).
+	if a.Values["P2"] != 20 || a.HeadlineSource != store.HeadlineCommunity {
+		t.Errorf("values.P2 = %v source %q, want 20 community", a.Values["P2"], a.HeadlineSource)
 	}
 	// Two networks at one coordinate are two stations per-source and one in the
 	// total, so the parts bound the total rather than summing to it.
@@ -1563,4 +1563,75 @@ func TestAllAreaSeriesCounts(t *testing.T) {
 	if got := counts["smolyan"][bucketPoints[0].Time]; got != 3 {
 		t.Errorf("count at %v = %d, want 3", bucketPoints[0].Time, got)
 	}
+}
+
+// headlineSeed is one sensor of a headline fixture area.
+type headlineSeed struct {
+	id       int64
+	official bool
+	value    float64
+}
+
+func seedHeadlineArea(t *testing.T, ctx contextT, pool poolT, slug string, lon float64, seeds []headlineSeed, now time.Time) {
+	t.Helper()
+	seedArea(t, ctx, pool, slug, "oblast", lon, 42.0)
+	for i, sd := range seeds {
+		x := lon + float64(i)/1000
+		if sd.official {
+			seedOfficialSensorReading(t, ctx, pool, sd.id, x, 42.0, "P2", sd.value, now)
+		} else {
+			seedSensorReading(t, ctx, pool, sd.id, x, 42.0, "P2", sd.value, "ok", now)
+		}
+		seedHourly(t, ctx, pool, sd.id, "P2", now.Truncate(time.Hour), sd.value, 1)
+	}
+}
+
+func headlineFixture(t *testing.T) (contextT, poolT, time.Time) {
+	ctx, pool := migrated(t)
+	now := time.Now().UTC().Truncate(time.Minute)
+	off := store.OfficialSensorIDFloor
+	seedHeadlineArea(t, ctx, pool, "mixed", 23.0, []headlineSeed{{501, false, 10}, {502, false, 20}, {503, false, 30}, {off + 51, true, 100}}, now)
+	seedHeadlineArea(t, ctx, pool, "official-only", 25.0, []headlineSeed{{off + 52, true, 40}, {off + 53, true, 60}, {off + 54, true, 80}}, now)
+	seedHeadlineArea(t, ctx, pool, "citizen-only", 27.0, []headlineSeed{{511, false, 5}, {512, false, 15}, {513, false, 25}}, now)
+	assignAreas(t, ctx, pool)
+	return ctx, pool, now
+}
+
+func checkHeadlines(t *testing.T, aggs []store.AreaAggregate) {
+	t.Helper()
+	mixed := findAgg(t, aggs, "mixed")
+	if mixed.Values["P2"] != 20 || mixed.HeadlineSource != "community" {
+		t.Errorf("mixed = %v %q, want 20 community", mixed.Values["P2"], mixed.HeadlineSource)
+	}
+	if mixed.BySource["eea"].Values["P2"] != 100 {
+		t.Errorf("mixed eea by_source = %v, want 100 kept", mixed.BySource["eea"].Values["P2"])
+	}
+	off := findAgg(t, aggs, "official-only")
+	if off.Values["P2"] != 60 || off.HeadlineSource != "eea" {
+		t.Errorf("official-only = %v %q, want 60 eea", off.Values["P2"], off.HeadlineSource)
+	}
+	cit := findAgg(t, aggs, "citizen-only")
+	if cit.Values["P2"] != 15 || cit.HeadlineSource != "community" {
+		t.Errorf("citizen-only = %v %q, want 15 community", cit.Values["P2"], cit.HeadlineSource)
+	}
+}
+
+func TestAreaHeadlineIsCitizenMedianWithOfficialFallback(t *testing.T) {
+	ctx, pool, _ := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	aggs, err := s.AreaAggregates(ctx, []string{"oblast"})
+	if err != nil {
+		t.Fatalf("AreaAggregates: %v", err)
+	}
+	checkHeadlines(t, aggs)
+}
+
+func TestWindowedAreaHeadlineIsCitizenMedianWithOfficialFallback(t *testing.T) {
+	ctx, pool, now := headlineFixture(t)
+	s := store.New(pool, testStoreConfig(), testSeriesTimeout)
+	aggs, err := s.WindowedAreaAggregates(ctx, []string{"oblast"}, now.Add(-24*time.Hour))
+	if err != nil {
+		t.Fatalf("WindowedAreaAggregates: %v", err)
+	}
+	checkHeadlines(t, aggs)
 }

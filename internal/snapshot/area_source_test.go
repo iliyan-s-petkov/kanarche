@@ -194,3 +194,18 @@ func TestNeighbourhoodTierCarriesTheBreakdown(t *testing.T) {
 		t.Errorf("by_source = %#v, want both networks on the neighbourhood tier", hood.BySource)
 	}
 }
+
+func TestAreaPayloadCarriesHeadlineSourceAndFingerprintSeesIt(t *testing.T) {
+	agg := aggFrom("sofia", "oblast", 3, map[string]float64{"P2": 60}, nil)
+	agg.HeadlineSource = store.HeadlineOfficial
+	e := areaPayloadFrom(time.Now(), []store.AreaAggregate{agg}).Areas[0]
+	if e.HeadlineSource != "eea" {
+		t.Errorf("payload headline_source = %q, want eea", e.HeadlineSource)
+	}
+	community := AreaMeta{Slug: "sofia", Values: agg.Values, HeadlineSource: store.HeadlineCommunity}
+	official := community
+	official.HeadlineSource = store.HeadlineOfficial
+	if fingerprint(community) == fingerprint(official) {
+		t.Error("fingerprint ignores HeadlineSource: a flip to the official fallback would not stamp the page changed")
+	}
+}

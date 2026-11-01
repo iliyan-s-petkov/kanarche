@@ -106,6 +106,9 @@ type AreaMeta struct {
 	// no-JS fallback and the crawlable content, and a ranking that only
 	// exists once JavaScript has run is one crawlers never see.
 	Values map[string]float64
+	// HeadlineSource says whose readings Values holds: "community" (citizen
+	// sensors) or "eea" (no citizen reading, official median shown instead).
+	HeadlineSource string
 	// The same attribution the wire type publishes, so the server-rendered
 	// area page needs no second round trip.
 	Source   string

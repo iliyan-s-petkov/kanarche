@@ -18,6 +18,12 @@ import (
 // would silently drop every rural sensor.
 var usableQuality = []string{"ok", "no_neighbours"}
 
+// HeadlineSource values.
+const (
+	HeadlineCommunity = "community"
+	HeadlineOfficial  = "eea"
+)
+
 // SourceAggregate is one network's own station count and median per metric.
 // json tags because it is scanned straight out of a jsonb object.
 type SourceAggregate struct {
@@ -44,8 +50,13 @@ type AreaAggregate struct {
 	// place, and painting a whole oblast from them is exactly what the threshold
 	// exists to refuse.
 	SensorCount int
-	Values      map[string]float64
-	Covered     bool
+	// Values is the headline median per metric: citizen sensors only, or the
+	// official median when the area has no citizen reading (HeadlineSource).
+	Values  map[string]float64
+	Covered bool
+	// HeadlineSource says whose readings Values holds: HeadlineCommunity or
+	// HeadlineOfficial, "" when there is no value.
+	HeadlineSource string
 	// Each contributing network's own figures, keyed "sensor.community" or
 	// "eea". Empty for an uncovered area.
 	BySource map[string]SourceAggregate
@@ -92,18 +103,20 @@ func (s *Store) cutoffs() (official, community time.Time) {
 	return now.Add(-s.cfg.OfficialFreshnessWindow), now.Add(-s.cfg.FreshnessWindow)
 }
 
+// perAreaCTE is the headline median, built from per_area_source so the live
+// and windowed queries share it. Reference-grade and low-cost data are not
+// blended: the citizen median is the headline, and an area with no citizen
+// row falls back to the official median. The official figure stays in
+// per_area_source either way.
 const perAreaCTE = `
 per_area AS (
-    -- The median across the area's sensors, not the mean: one failed device
-    -- reading 900 µg/m³ beside four neighbours in the teens moved a whole
-    -- province to 189, a figure nobody in it was breathing. Two sensors behave
-    -- exactly as before, the median of a pair being their mean.
-    SELECT a.slug, l.metric, percentile_cont(0.5) WITHIN GROUP (ORDER BY l.value) AS avg_value
-      FROM area a
-      JOIN area_sensor asx ON asx.area_slug = a.slug
-      JOIN latest l        ON l.sensor_id = asx.sensor_id
-     WHERE a.kind = ANY($3::text[])
-     GROUP BY a.slug, l.metric
+    -- The median, not the mean: one failed device reading 900 µg/m³ beside
+    -- four neighbours in the teens moved a whole province to 189.
+    SELECT ps.slug, ps.source, ps.metric, ps.avg_value
+      FROM per_area_source ps
+     WHERE ps.source = '` + communitySource + `'
+        OR NOT EXISTS (SELECT 1 FROM per_area_source c
+                        WHERE c.slug = ps.slug AND c.source = '` + communitySource + `')
 )`
 
 const coverageCTE = `
@@ -125,11 +138,18 @@ coverage AS (
      GROUP BY slug
 )`
 
+// The two network keys of AreaAggregate.BySource.
+const (
+	communitySource = "sensor.community"
+	officialSource  = "eea"
+)
+
 // sourceExpr reads the network off the sensor id. Migration 00012 constrains
 // 'eea' and the 9e9 id range to mean the same thing, so no join is needed.
-var sourceExpr = fmt.Sprintf(`CASE WHEN l.sensor_id >= %d THEN 'eea' ELSE 'sensor.community' END`, OfficialSensorIDFloor)
+var sourceExpr = fmt.Sprintf(`CASE WHEN l.sensor_id >= %d THEN '%s' ELSE '%s' END`,
+	OfficialSensorIDFloor, officialSource, communitySource)
 
-// perAreaSourceCTE is perAreaCTE split by network. valueCol is l.value live and
+// perAreaSourceCTE is the per-area median split by network. valueCol is l.value live and
 // w.value windowed; extraJoin brings the window in.
 func perAreaSourceCTE(valueCol, extraJoin string) string {
 	return `
@@ -161,7 +181,7 @@ coverage_source AS (
      GROUP BY slug, source
 )`
 
-const areaAggregateSelect = `
+var areaAggregateSelect = `
 SELECT a.slug, a.kind, a.name_bg, a.name_en,
        ST_X(a.centroid::geometry), ST_Y(a.centroid::geometry), a.default_zoom,
        COALESCE(c.stations, 0),
@@ -178,14 +198,19 @@ SELECT a.slug, a.kind, a.name_bg, a.name_en,
                              WHERE ps.slug = cs.slug AND ps.source = cs.source),
                            '{}'::jsonb)))
               FROM coverage_source cs WHERE cs.slug = a.slug),
-           '{}'::jsonb)
+           '{}'::jsonb),
+       COALESCE(
+           (SELECT CASE min(p.source) WHEN '` + communitySource + `' THEN '` + HeadlineCommunity + `'
+                                      ELSE '` + HeadlineOfficial + `' END
+              FROM per_area p WHERE p.slug = a.slug),
+           '')
   FROM area a
   LEFT JOIN coverage c ON c.slug = a.slug
  WHERE a.kind = ANY($3::text[])
  ORDER BY a.slug`
 
-var areaAggregateSQL = "WITH" + latestCTE(4) + "," + perAreaCTE + "," +
-	perAreaSourceCTE("l.value", "") + "," + coverageCTE + "," + coverageSourceCTE +
+var areaAggregateSQL = "WITH" + latestCTE(4) + "," +
+	perAreaSourceCTE("l.value", "") + "," + perAreaCTE + "," + coverageCTE + "," + coverageSourceCTE +
 	areaAggregateSelect
 
 // AreaAggregates returns one row per area of the requested kinds, including
@@ -217,15 +242,17 @@ func (s *Store) scanAreaAggregates(rows pgx.Rows) ([]AreaAggregate, error) {
 		var a AreaAggregate
 		var values map[string]float64
 		var bySource map[string]SourceAggregate
+		var headline string
 		if err := rows.Scan(&a.Slug, &a.Kind, &a.NameBG, &a.NameEN,
 			&a.CentroidLon, &a.CentroidLat, &a.DefaultZoom,
-			&a.SensorCount, &values, &bySource); err != nil {
+			&a.SensorCount, &values, &bySource, &headline); err != nil {
 			return nil, fmt.Errorf("store: scan area aggregate: %w", err)
 		}
 		a.Covered = a.SensorCount >= s.cfg.CoverageThreshold
 		if a.Covered {
 			a.Values = values
 			a.BySource = bySource
+			a.HeadlineSource = headline
 		} else {
 			// Explicitly empty, not the scanned map. An uncovered area must
 			// carry no number anywhere downstream — a handler that checked
