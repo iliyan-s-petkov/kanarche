@@ -6,7 +6,7 @@ import (
 	"kanarche.eu/internal/snapshot"
 )
 
-// officialArea has a citizen P2 headline with an official P2 beside it, and an
+// officialArea has a citizen P2 headline with an official P2 beside it, and a
 // P1 only the official stations report.
 func officialArea() AreaRow {
 	a := area("city", 5, map[string]float64{"P2": 12.4, "P1": 40})
@@ -54,5 +54,14 @@ func TestCitizenOnlyAreaHasNeitherLabelNorRow(t *testing.T) {
 	c := cardFor(t, "en", a, "P2")
 	if c.Source != "" || c.Official != "" {
 		t.Errorf("Source=%q Official=%q", c.Source, c.Official)
+	}
+}
+
+func TestUnknownHeadlineSourceGetsNoOfficialRow(t *testing.T) {
+	a := officialArea()
+	a.HeadlineSources = nil
+	c := cardFor(t, "en", a, "P2")
+	if c.Official != "" || c.Source != "" {
+		t.Errorf("Official=%q Source=%q", c.Official, c.Source)
 	}
 }

@@ -641,7 +641,7 @@ func (c *Readout) officialSource(p PageData, m string) {
 		c.Source = name
 		return
 	}
-	if v, ok := p.Area.BySource["eea"].Values[m]; ok {
+	if v, ok := p.Area.BySource["eea"].Values[m]; ok && p.Area.headlineSourceOf(m) == "community" {
 		c.Official = name + ": " + formatValue(v, p.Lang) + " " + p.T("unit."+m)
 	}
 }
