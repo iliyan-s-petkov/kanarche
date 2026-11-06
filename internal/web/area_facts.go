@@ -148,6 +148,11 @@ func (p PageData) sizedPlace(meta snapshot.AreaMeta, snap *snapshot.Snapshot, km
 
 // citizenSensors is the citizen sensor count: all stations minus the official ones.
 func citizenSensors(meta snapshot.AreaMeta) int {
+	return max(meta.SensorCount-officialCount(meta), 0)
+}
+
+// officialCount is how many of the area's stations are official ones.
+func officialCount(meta snapshot.AreaMeta) int {
 	official := 0
 	switch {
 	case meta.BySource["eea"].N > 0:
@@ -158,7 +163,7 @@ func citizenSensors(meta snapshot.AreaMeta) int {
 		// An uncovered area publishes no source split, so assume each station inside is counted.
 		official = min(len(meta.Stations), meta.SensorCount)
 	}
-	return max(meta.SensorCount-official, 0)
+	return official
 }
 
 // stationName is the station's name as printed: Bulgarian as committed, Latin letters for every other language.
