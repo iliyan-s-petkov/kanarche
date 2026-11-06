@@ -487,7 +487,7 @@ func (rr *Renderer) rowFrom(meta snapshot.AreaMeta, lang string) AreaRow {
 		Lon: meta.CentroidLon, Lat: meta.CentroidLat, Zoom: meta.DefaultZoom,
 		Covered: meta.Covered, SensorCount: meta.SensorCount,
 		Official: officialCount(meta),
-		Value: value, HasValue: hasValue, ValueText: valueText,
+		Value:    value, HasValue: hasValue, ValueText: valueText,
 		Colour: colour, Class: class, Values: meta.Values,
 		Source: meta.Source, BySource: meta.BySource,
 		HeadlineSource: meta.HeadlineSource, HeadlineSources: meta.HeadlineSources,

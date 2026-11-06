@@ -45,12 +45,31 @@ func TestFewSentenceKeepsStationCount(t *testing.T) {
 	}
 }
 
-// An all-fallback area has no citizen sensors; the count renders as 0 like any other.
-func TestAllOfficialAreaRendersZeroCitizens(t *testing.T) {
+// An all-fallback area has no citizen sensors; its median is the official one, so the official count shows.
+func TestAllOfficialAreaCountsOfficialStations(t *testing.T) {
 	a := area("city", 2, map[string]float64{"P2": 9})
 	a.Official = 2
-	if got := areaPage(t, "en", a).AreaReadoutsSub(); got != "city median · 0 sensors" {
-		t.Errorf("sub-line = %q", got)
+	a.HasValue, a.Value = true, 9
+	subs := map[string]string{"en": "city median · 2 sensors", "bg": "медиана за града · 2 сензора"}
+	nows := map[string]string{"en": "Median of 2 sensors", "bg": "Медиана от 2 сензора"}
+	for lang := range subs {
+		p := areaPage(t, lang, a)
+		if got := p.AreaReadoutsSub(); got != subs[lang] {
+			t.Errorf("%s sub-line = %q, want %q", lang, got, subs[lang])
+		}
+		if got := p.areaNowText(a); !strings.Contains(got, nows[lang]) {
+			t.Errorf("%s now sentence = %q, want %q", lang, got, nows[lang])
+		}
+	}
+}
+
+// Each province adds the count its own median used.
+func TestHomeSumUsesOfficialCountForFallbackProvince(t *testing.T) {
+	p := homePageData(t, "en")
+	p.Areas[0].Official = 100
+	p.Areas[1].Official = 10
+	if got := string(p.HomeNowHTML()); !strings.Contains(got, "Median of 170 sensors") {
+		t.Errorf("HomeNowHTML() = %q, want Median of 170 sensors (100 official + 40 + 30)", got)
 	}
 }
 

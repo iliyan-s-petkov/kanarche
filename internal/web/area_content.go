@@ -251,7 +251,7 @@ func (p PageData) areaNowText(row AreaRow) string {
 	// "Median of {sensors}" describes the citizen headline; the other sentences count every station.
 	count := row.SensorCount
 	if key == "area.now" || key == "area.now_stale" {
-		count = row.Citizens()
+		count = row.MedianCount()
 	}
 	text = strings.ReplaceAll(text, "{sensors}", htmlEscape(p.sensorsText(count)))
 	text = strings.ReplaceAll(text, "{metric}", htmlEscape(p.T("metric."+p.DefaultMetric)))
