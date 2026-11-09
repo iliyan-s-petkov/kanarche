@@ -27,6 +27,9 @@
 
 <h2>{{.T "privacy.third.heading"}}</h2>
 <p>{{.T "privacy.third.body"}} <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" rel="noopener noreferrer">{{.T "privacy.third.link"}}</a>.</p>
+{{if .FeedbackLink}}<h2>{{.T "privacy.feedback.heading"}}</h2>
+<p>{{.T "privacy.feedback.body"}}</p>
+{{end}}
 
 <h2>{{.T "privacy.storage.heading"}}</h2>
 {{template "privacyStorage" .}}

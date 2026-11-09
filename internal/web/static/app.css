@@ -1522,7 +1522,7 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     /* 8px between the masthead items; narrower pickers give back 16 of the 24px it costs. */
     .masthead__nav { gap: var(--space-2); }
     .langpick__btn { padding-inline: var(--space-1); }
-    .masthead__link--source, .masthead__link--about, .masthead__link--news { display: none; }
+    .masthead__link--source, .masthead__link--about, .masthead__link--news, .masthead__link--feedback { display: none; }
     .langpick__extra { display: list-item; }
     .langpick__extra--first { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
   }
