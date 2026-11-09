@@ -50,6 +50,7 @@
     <a class="masthead__link" href="{{.Path "/areas"}}"{{if .OnPath "/areas"}} aria-current="page"{{end}}>{{.T "nav.areas"}}</a>
     <a class="masthead__link masthead__link--news" href="{{.Path "/news"}}"{{if .OnNews}} aria-current="page"{{end}}>{{.T "nav.news"}}</a>
     <a class="masthead__link masthead__link--about" href="{{.Path "/about"}}"{{if .OnPath "/about"}} aria-current="page"{{end}}>{{.T "nav.about"}}</a>
+    {{with .FeedbackLink}}<a class="masthead__link masthead__link--feedback" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "nav.feedback"}}</a>{{end}}
     {{/* Off-site, so it is the one link here that opens in its own tab, with the
          opener severed. The mark is inline rather than a static file: it is the
          only icon on the page and a request would cost more than the bytes. */}}
@@ -77,6 +78,7 @@
         {{/* Phone only (app.css): the header drops both links at that width. */}}
         <li class="langpick__extra langpick__extra--first"><a class="langpick__opt" href="{{.Path "/news"}}"{{if .OnNews}} aria-current="page"{{end}}>{{.T "nav.news"}}</a></li>
         <li class="langpick__extra"><a class="langpick__opt" href="{{.Path "/about"}}"{{if .OnPath "/about"}} aria-current="page"{{end}}>{{.T "nav.about"}}</a></li>
+        {{with .FeedbackLink}}<li class="langpick__extra langpick__extra--feedback"><a class="langpick__opt" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "nav.feedback"}}</a></li>{{end}}
         <li class="langpick__extra"><a class="langpick__opt" href="{{.SourceRepoURL}}" target="_blank" rel="noopener noreferrer">{{.T "nav.source"}}</a></li>
       </ul>
     </details>
@@ -220,6 +222,15 @@
      data-t-layer-poi-shop="{{.T "map.layer.poi_shop"}}"
      data-t-layer-poi-transport="{{.T "map.layer.poi_transport"}}"
      data-t-layer-poi-other="{{.T "map.layer.poi_other"}}"{{end}}
+
+{{/* The survey section on /about. */}}
+{{define "feedbackSection"}}{{with .FeedbackLink}}
+<section class="about-section about-feedback" aria-labelledby="feedback-h">
+  <h2 id="feedback-h">{{$.T "about.feedback.heading"}}</h2>
+  <p>{{$.T "about.feedback.body"}}</p>
+  <p><a class="link" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "about.feedback.link"}}</a></p>
+</section>
+{{end}}{{end}}
 
 {{/* The privacy section's storage list and clear button, shared by /about and
      /about-the-data so the list is rendered from one place. The island needs

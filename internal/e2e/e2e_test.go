@@ -41,6 +41,8 @@ func TestBrowser(t *testing.T) {
 	t.Setenv(config.DatabaseURLEnv, "postgres://user:pass@localhost:5432/airbg")
 	widenRateLimits(t)
 	t.Setenv("KANARCHE_GEOCODER_URL", startGeocoderStub(t).URL)
+	// The survey host does not resolve; web/e2e/feedback.spec.js answers it from a stub.
+	t.Setenv("KANARCHE_FEEDBACK_URL", "https://feedback.example.test/")
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatalf("config.Load: %v", err)

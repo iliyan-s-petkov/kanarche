@@ -1526,6 +1526,18 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     .langpick__extra { display: list-item; }
     .langpick__extra--first { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
   }
+  /* The Bulgarian masthead overflows up to 530px with the survey item, so it moves into the picker. */
+  @media (max-width: 560px) {
+    .masthead__link--feedback { display: none; }
+    .langpick__extra--feedback { display: list-item; }
+    /* Above 480px the news item is hidden too, so the lone entry carries the separator. */
+    /* 481-560px: four text links, the repo mark and both pickers need ~13px more than 481px gives (Bulgarian, Helvetica Neue), so the masthead and picker padding take the 320px reflow's values. */
+    @media (min-width: 481px) {
+      .masthead { padding-inline: var(--space-2); }
+      .langpick__btn { padding-inline: var(--space-1); }
+      .langpick__extra--feedback { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
+    }
+  }
   .langpick__list { max-inline-size: calc(100vw - var(--space-4)); }
   /* 320px reflow: the masthead was 25px wider than the viewport. */
   @media (max-width: 360px) {
@@ -2274,12 +2286,12 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
    because stacked hit boxes would overlap. Pinned by web/e2e/touch-targets.spec.js. */
 @media (hover: none) {
   :is(.masthead__brand, .langpick__btn, .colmenu__btn, .chart-reset, .map-locate-hint__btn, .map-play__btn,
-    .map-window__btn, .data-refresh__btn--icon, .map-data-link .link, .about-back a, .about-step__extra p > a) {
+    .map-window__btn, .data-refresh__btn--icon, .map-data-link .link, .about-back a, .about-step__extra p > a, .about-feedback .link) {
     position: relative;
   }
   :is(.masthead__brand, .langpick__btn, .colmenu__btn, .chart-reset, .map-locate-hint__btn, .map-play__btn,
     .map-window__btn, .data-refresh__btn--icon, .about-code__copy, .map-data-link .link, .about-back a,
-    .about-step__extra p > a)::after {
+    .about-step__extra p > a, .about-feedback .link)::after {
     content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
   }
   /* The rail and the attribution button stay 44px past the 672px phone cut-off (landscape phones). */

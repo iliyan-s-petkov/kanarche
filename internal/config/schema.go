@@ -30,6 +30,7 @@ type raw struct {
 	I18n       *rawI18n       `yaml:"i18n"`
 	DesignKit  *rawDesignKit  `yaml:"design_kit"`
 	Social     *rawSocial     `yaml:"social"`
+	Feedback   *rawFeedback   `yaml:"feedback"`
 }
 
 type rawListen struct {
@@ -398,4 +399,10 @@ type rawDesignKit struct {
 type rawSocial struct {
 	FacebookURL *string `yaml:"facebook_url"`
 	LinkedInURL *string `yaml:"linkedin_url"`
+}
+
+// rawFeedback holds the optional link to the feedback survey. Empty means every
+// survey link on the site is hidden.
+type rawFeedback struct {
+	URL *string `yaml:"url"`
 }

@@ -34,8 +34,9 @@ type Config struct {
 	DesignKit  DesignKit
 
 	// offline is set by LoadFileOffline: no database credential is required.
-	offline bool
-	Social  Social
+	offline  bool
+	Social   Social
+	Feedback Feedback
 }
 
 type Listen struct {
@@ -477,6 +478,11 @@ type Social struct {
 	LinkedInURL string
 }
 
+// Feedback holds the survey's base URL; empty hides every survey link.
+type Feedback struct {
+	URL string
+}
+
 // Enabled reports whether the design-kit route exists.
 func (d DesignKit) Enabled() bool { return d.Dir != "" }
 
@@ -750,6 +756,9 @@ func resolve(r *raw) Config {
 		Social: Social{
 			FacebookURL: *r.Social.FacebookURL,
 			LinkedInURL: *r.Social.LinkedInURL,
+		},
+		Feedback: Feedback{
+			URL: *r.Feedback.URL,
 		},
 	}
 

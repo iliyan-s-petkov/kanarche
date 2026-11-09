@@ -55,6 +55,7 @@ type Renderer struct {
 	defaultMetric   string
 	defaultPeriod   string
 	social          config.Social
+	feedbackURL     string
 	rzi             config.SeaRZI
 	pollMinutes     int
 	// File order, which is the order the switcher offers them in and the order
@@ -132,6 +133,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 		basemapStyleURL: cfg.Tiles.StyleURL(),
 		frontend:        cfg.Frontend,
 		social:          cfg.Social,
+		feedbackURL:     cfg.Feedback.URL,
 		rzi:             cfg.Sea.RZI,
 		pollMinutes:     int(cfg.Upstream.PollInterval / time.Minute),
 		defaultMetric:   cfg.Series.DefaultMetric,
@@ -354,7 +356,8 @@ type PageData struct {
 	// FacebookURL and LinkedInURL are the optional footer profiles; empty hides the icon.
 	FacebookURL, LinkedInURL string
 
-	rzi config.SeaRZI
+	rzi         config.SeaRZI
+	feedbackURL string
 
 	cat *i18n.Catalogue
 	// sofiaLoc is the zone the area sentences' {time} placeholders are
@@ -1183,6 +1186,27 @@ func (p PageData) SourceLicenceURL() string { return sourceRepoURL + "/blob/mast
 // address is written once (jsonld.go).
 func (p PageData) SourceRepoURL() string { return sourceRepoURL }
 
+// FeedbackLink is the survey URL for this page's language, or "" when no survey
+// is configured. Templates wrap every survey element in {{with .FeedbackLink}}
+// or {{if .FeedbackLink}}, so an unset URL renders nothing. The survey offers
+// BG and EN only, so every page language except the default maps to en. Only
+// ?lang= is ever sent.
+func (p PageData) FeedbackLink() string {
+	if p.feedbackURL == "" {
+		return ""
+	}
+	u, err := url.Parse(p.feedbackURL)
+	if err != nil {
+		return ""
+	}
+	lang := "en"
+	if p.Lang == i18n.DefaultLang {
+		lang = "bg"
+	}
+	u.RawQuery = url.Values{"lang": {lang}}.Encode()
+	return u.String()
+}
+
 // newPageData builds the common fields for one request.
 func (rr *Renderer) newPageData(lang, path string, generatedAt time.Time) PageData {
 	// CanonicalMetrics is sorted, not map-ordered — see its own doc comment —
@@ -1214,6 +1238,7 @@ func (rr *Renderer) newPageData(lang, path string, generatedAt time.Time) PageDa
 		FooterAreas:     rr.footerAreas(lang),
 		FacebookURL:     rr.social.FacebookURL,
 		rzi:             rr.rzi,
+		feedbackURL:     rr.feedbackURL,
 		LinkedInURL:     rr.social.LinkedInURL,
 
 		NoDataColour:       rr.frontend.NoDataColour,

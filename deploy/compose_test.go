@@ -1432,3 +1432,55 @@ func TestNoServiceInheritsAHostSearchDomain(t *testing.T) {
 		}
 	}
 }
+
+// Private deployments add site blocks (the feedback survey) by dropping a *.caddy
+// file into conf.d. The public file only has to import the directory and mount it
+// read-only. A glob that matches nothing is not an error, so this is inert here.
+func TestCaddyImportsTheConfDirectory(t *testing.T) {
+	data, err := os.ReadFile("Caddyfile")
+	if err != nil {
+		t.Fatalf("ReadFile(Caddyfile) error = %v, want nil", err)
+	}
+	found := false
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.TrimSpace(stripCaddyComment(line)) == "import /etc/caddy/conf.d/*.caddy" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("Caddyfile lacks the line: import /etc/caddy/conf.d/*.caddy")
+	}
+	compose, err := os.ReadFile("docker-compose.prod.yml")
+	if err != nil {
+		t.Fatalf("ReadFile(docker-compose.prod.yml) error = %v, want nil", err)
+	}
+	if !strings.Contains(string(compose), "./conf.d:/etc/caddy/conf.d:ro") {
+		t.Error("the caddy service does not mount ./conf.d read-only at /etc/caddy/conf.d")
+	}
+	if blocks := caddyBlocks(t, "Caddyfile"); len(blocks) == 0 {
+		t.Error("caddyBlocks found no site blocks after the import line was added")
+	}
+}
+
+// The survey link is opt-in per deployment. An example that shipped a URL would
+// put a survey on every install that copies it, so the key must stay empty. A
+// second line would also be ambiguous to an operator, so exactly one is required.
+func TestEnvExampleLeavesFeedbackURLEmpty(t *testing.T) {
+	const key = "KANARCHE_FEEDBACK_URL="
+	data, err := os.ReadFile(".env.example")
+	if err != nil {
+		t.Fatalf("ReadFile(.env.example) error = %v, want nil", err)
+	}
+	var values []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, key) {
+			values = append(values, strings.TrimPrefix(line, key))
+		}
+	}
+	if len(values) != 1 {
+		t.Fatalf(".env.example has %d %s lines, want exactly 1", len(values), key)
+	}
+	if got := strings.TrimSpace(values[0]); got != "" {
+		t.Errorf(".env.example sets %s%q, want it empty", key, got)
+	}
+}
