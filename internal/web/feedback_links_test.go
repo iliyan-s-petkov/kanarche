@@ -147,6 +147,7 @@ func TestFeedbackMastheadItemIsHiddenOnPhones(t *testing.T) {
 		t.Errorf("app.css lacks the phone rule %q", want)
 	}
 }
+
 func readFile(t *testing.T, name string) string {
 	t.Helper()
 	b, err := os.ReadFile(name)
