@@ -248,7 +248,12 @@ func (p PageData) areaNowText(row AreaRow) string {
 		text = strings.ReplaceAll(text, "{time}.", "{time}")
 	}
 	text = strings.ReplaceAll(text, "{time}", timeHTML)
-	text = strings.ReplaceAll(text, "{sensors}", htmlEscape(p.sensorsText(row.SensorCount)))
+	// "Median of {sensors}" describes the citizen headline; the other sentences count every station.
+	count := row.SensorCount
+	if key == "area.now" || key == "area.now_stale" {
+		count = row.MedianCount()
+	}
+	text = strings.ReplaceAll(text, "{sensors}", htmlEscape(p.sensorsText(count)))
 	text = strings.ReplaceAll(text, "{metric}", htmlEscape(p.T("metric."+p.DefaultMetric)))
 	if row.HasValue {
 		text = strings.ReplaceAll(text, "{unit}", p.unitMarkup(p.DefaultMetric))

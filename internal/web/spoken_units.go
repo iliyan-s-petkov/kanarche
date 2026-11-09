@@ -87,7 +87,7 @@ func (p PageData) HomeNowHTML() template.HTML {
 	top, topValue, sensors := "", 0.0, 0
 	for _, a := range p.Areas {
 		if a.Covered {
-			sensors += a.SensorCount
+			sensors += a.MedianCount()
 		}
 		if !a.HasValue {
 			continue

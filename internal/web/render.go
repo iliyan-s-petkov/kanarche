@@ -372,6 +372,8 @@ type AreaRow struct {
 	Zoom        int
 	Covered     bool
 	SensorCount int
+	// Official is how many of SensorCount are official stations.
+	Official int
 	// Value is the reading for the page's default metric; HasValue says
 	// whether there is one. 0 is a legitimate reading, so absence gets its own
 	// flag rather than being encoded as a zero the template would print.
@@ -673,7 +675,19 @@ func (p PageData) AreaReadoutsSub() string {
 	if p.Area == nil {
 		return ""
 	}
-	return p.AreaTier() + " · " + p.sensorsText(p.Area.SensorCount)
+	return p.AreaTier() + " · " + p.sensorsText(p.Area.MedianCount())
+}
+
+// Citizens is the sensor count behind the citizen median.
+func (a AreaRow) Citizens() int { return max(a.SensorCount-a.Official, 0) }
+
+// MedianCount is the count behind the headline median: the citizen sensors,
+// or the official stations when the area has no citizen sensor.
+func (a AreaRow) MedianCount() int {
+	if c := a.Citizens(); c > 0 {
+		return c
+	}
+	return min(a.Official, a.SensorCount)
 }
 
 // readoutGroups splits cards at each one that carries a Heading, so the template
