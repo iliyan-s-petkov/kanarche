@@ -75,6 +75,7 @@ for (const [prefix, lang] of [['', 'bg'], ['/en', 'en']]) {
     await page.setViewportSize({ width: 561, height: 800 })
     await page.goto(`${prefix}/areas`)
     await expect(page.locator('.masthead__link--feedback')).toBeVisible()
+    await page.locator('details.langpick').first().locator('summary').click()
     await expect(page.locator('.langpick__extra a[href^="' + SURVEY + '"]').first()).toBeHidden()
     await page.close()
   })

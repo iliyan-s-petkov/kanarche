@@ -1529,7 +1529,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
   /* The Bulgarian masthead overflows up to 530px with the survey item, so it moves into the picker. */
   @media (max-width: 560px) {
     .masthead__link--feedback { display: none; }
-    .langpick__extra:has(a[href*="?lang="]) { display: list-item; }
+    .langpick__extra--feedback { display: list-item; }
+    /* Above 480px the news item is hidden too, so the lone entry carries the separator. */
+    @media (min-width: 481px) {
+      .langpick__extra--feedback { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
+    }
   }
   .langpick__list { max-inline-size: calc(100vw - var(--space-4)); }
   /* 320px reflow: the masthead was 25px wider than the viewport. */

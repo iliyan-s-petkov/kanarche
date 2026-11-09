@@ -78,7 +78,7 @@
         {{/* Phone only (app.css): the header drops both links at that width. */}}
         <li class="langpick__extra langpick__extra--first"><a class="langpick__opt" href="{{.Path "/news"}}"{{if .OnNews}} aria-current="page"{{end}}>{{.T "nav.news"}}</a></li>
         <li class="langpick__extra"><a class="langpick__opt" href="{{.Path "/about"}}"{{if .OnPath "/about"}} aria-current="page"{{end}}>{{.T "nav.about"}}</a></li>
-        {{with .FeedbackLink}}<li class="langpick__extra"><a class="langpick__opt" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "nav.feedback"}}</a></li>{{end}}
+        {{with .FeedbackLink}}<li class="langpick__extra langpick__extra--feedback"><a class="langpick__opt" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "nav.feedback"}}</a></li>{{end}}
         <li class="langpick__extra"><a class="langpick__opt" href="{{.SourceRepoURL}}" target="_blank" rel="noopener noreferrer">{{.T "nav.source"}}</a></li>
       </ul>
     </details>

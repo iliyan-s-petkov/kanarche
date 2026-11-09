@@ -144,7 +144,7 @@ func TestFeedbackMastheadItemIsHiddenOnPhones(t *testing.T) {
 	css := readFile(t, "static/app.css")
 	for _, want := range []string{
 		"@media (max-width: 560px) {\n    .masthead__link--feedback { display: none; }",
-		".langpick__extra:has(a[href*=\"?lang=\"]) { display: list-item; }",
+		".langpick__extra--feedback { display: list-item;",
 	} {
 		if !strings.Contains(css, want) {
 			t.Errorf("app.css lacks the narrow-width rule %q", want)
