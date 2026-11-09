@@ -307,6 +307,44 @@ func (p PageData) areaDayHTML(row AreaRow) template.HTML {
 	return template.HTML(`<p class="area-day">` + text + `</p>`)
 }
 
+// Daily limits for the city comparison, in µg/m³. WHO 2021 air quality guideline (24h) and the EU daily limit
+// from 2030 in Directive (EU) 2024/2881.
+const (
+	whoDay25, whoDay10 = 15, 45
+	euDay25, euDay10   = 25, 45
+)
+
+// areaCompareHTML renders the 24h mean next to the WHO and EU daily limits on a city page.
+// It is empty for other kinds and under the areaDayHTML gate, and when either metric has no 24h mean.
+func (p PageData) areaCompareHTML(row AreaRow) template.HTML {
+	if row.Kind != "city" || p.stale() || !row.Covered || !row.HasValue {
+		return ""
+	}
+	pm25, ok25 := row.Day24Mean["P2"]
+	pm10, ok10 := row.Day24Mean["P1"]
+	if !ok25 || !ok10 {
+		return ""
+	}
+	fill := strings.NewReplacer(
+		"{pm25}", formatValue(pm25, p.Lang), "{pm10}", formatValue(pm10, p.Lang),
+		"{who25}", strconv.Itoa(whoDay25), "{who10}", strconv.Itoa(whoDay10),
+		"{eu25}", strconv.Itoa(euDay25), "{eu10}", strconv.Itoa(euDay10),
+	)
+	var b strings.Builder
+	b.WriteString(`<div class="area-compare">`)
+	for _, key := range []string{"area.compare.day", "area.compare.who", "area.compare.eu", "area.compare.note"} {
+		b.WriteString(`<p>` + htmlEscape(fill.Replace(p.T(key))) + `</p>`)
+	}
+	b.WriteString(`</div>`)
+	return template.HTML(b.String())
+}
+
+// areaSeasonHTML renders the season paragraph with its link to the air pollution explainer.
+func (p PageData) areaSeasonHTML() template.HTML {
+	return template.HTML(`<p class="area-season">` + string(p.linkedText("area.season.body",
+		phLink{"{air_link}", p.T("area.season.link"), p.Path("/air-pollution")})) + `</p>`)
+}
+
 // healthBandKeys is the catalogue suffix per bandClass index, best first.
 var healthBandKeys = [...]string{"good", "fair", "moderate", "poor", "very_poor", "extremely_poor"}
 

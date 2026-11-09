@@ -218,6 +218,9 @@ type PageData struct {
 	AreaDayHTML template.HTML
 	// AreaHealthHTML is the EEA guidance block; empty under the AreaDayHTML gate.
 	AreaHealthHTML template.HTML
+	// AreaCompareHTML and AreaSeasonHTML are the city-only limit comparison and season paragraph.
+	AreaCompareHTML template.HTML
+	AreaSeasonHTML  template.HTML
 	// AreaPollen is the pollen table and chip; nil without a forecast.
 	AreaPollen *PollenBlock
 	// AreaFAQ is the area page's FAQ, rendered once so the markup and the FAQPage JSON-LD share strings.
@@ -417,6 +420,8 @@ type AreaRow struct {
 	// Day is the 24h min/max range, or nil — see snapshot.DayRange and
 	// PageData.AreaDay.
 	Day *snapshot.DayRange
+	// Day24Mean mirrors snapshot.AreaMeta.Day24Mean.
+	Day24Mean map[string]float64
 }
 
 // Readout is one cell of the country summary strip: what was measured, the
