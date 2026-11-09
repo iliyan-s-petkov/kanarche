@@ -1187,9 +1187,10 @@ func (p PageData) SourceLicenceURL() string { return sourceRepoURL + "/blob/mast
 func (p PageData) SourceRepoURL() string { return sourceRepoURL }
 
 // FeedbackLink is the survey URL for this page's language, or "" when no survey
-// is configured. Templates wrap every survey element in {{with .FeedbackLink}},
-// so an unset URL renders nothing. The survey offers BG and EN only, so every
-// page language except the default maps to en. Only ?lang= is ever sent.
+// is configured. Templates wrap every survey element in {{with .FeedbackLink}}
+// or {{if .FeedbackLink}}, so an unset URL renders nothing. The survey offers
+// BG and EN only, so every page language except the default maps to en. Only
+// ?lang= is ever sent.
 func (p PageData) FeedbackLink() string {
 	if p.feedbackURL == "" {
 		return ""

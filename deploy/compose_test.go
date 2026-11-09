@@ -1461,3 +1461,26 @@ func TestCaddyImportsTheConfDirectory(t *testing.T) {
 		t.Error("caddyBlocks found no site blocks after the import line was added")
 	}
 }
+
+// The survey link is opt-in per deployment. An example that shipped a URL would
+// put a survey on every install that copies it, so the key must stay empty. A
+// second line would also be ambiguous to an operator, so exactly one is required.
+func TestEnvExampleLeavesFeedbackURLEmpty(t *testing.T) {
+	const key = "KANARCHE_FEEDBACK_URL="
+	data, err := os.ReadFile(".env.example")
+	if err != nil {
+		t.Fatalf("ReadFile(.env.example) error = %v, want nil", err)
+	}
+	var values []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, key) {
+			values = append(values, strings.TrimPrefix(line, key))
+		}
+	}
+	if len(values) != 1 {
+		t.Fatalf(".env.example has %d %s lines, want exactly 1", len(values), key)
+	}
+	if got := strings.TrimSpace(values[0]); got != "" {
+		t.Errorf(".env.example sets %s%q, want it empty", key, got)
+	}
+}
