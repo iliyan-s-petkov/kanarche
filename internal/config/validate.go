@@ -93,6 +93,7 @@ func (c Config) Validate() error {
 	c.validateFrontend(&p)
 	c.validateTiles(&p)
 	c.validateSocial(&p)
+	c.validateFeedback(&p)
 
 	if len(p) > 0 {
 		return fmt.Errorf("config: %d problem(s):\n  %s", len(p), strings.Join(p, "\n  "))
@@ -1129,4 +1130,19 @@ func (c Config) validateSocial(p *problems) {
 		}
 	}
 
+}
+
+// validateFeedback accepts empty or a bare https URL. The value lands in an
+// href and the renderer appends ?lang= itself, so a query or fragment here
+// would produce a malformed link.
+func (c Config) validateFeedback(p *problems) {
+	v := c.Feedback.URL
+	if v == "" {
+		return
+	}
+	u, err := url.Parse(v)
+	if err != nil || strings.ContainsAny(v, " \t\r\n") || u.Scheme != "https" || u.Host == "" ||
+		u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
+		p.addf("feedback.url must be empty or an https URL without credentials, query or fragment")
+	}
 }

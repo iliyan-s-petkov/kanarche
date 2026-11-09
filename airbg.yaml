@@ -653,3 +653,8 @@ design_kit:
 social:
   facebook_url: ""
   linkedin_url: ""
+
+# Link to the visitor feedback survey, rendered only when set (https URL, no query).
+# Env: KANARCHE_FEEDBACK_URL. Keep unset until the survey passes its privacy probe.
+feedback:
+  url: ""

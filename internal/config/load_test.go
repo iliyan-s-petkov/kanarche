@@ -102,6 +102,7 @@ func TestRejectSecretsAllowsCommittedFile(t *testing.T) {
 func TestEnvName(t *testing.T) {
 	tests := []struct{ path, want string }{
 		{"listen.addr", "KANARCHE_LISTEN_ADDR"},
+		{"feedback.url", "KANARCHE_FEEDBACK_URL"},
 		{"listen.metrics_addr", "KANARCHE_LISTEN_METRICS_ADDR"},
 		{"upstream.poll_interval", "KANARCHE_UPSTREAM_POLL_INTERVAL"},
 		{"quality.ranges.pressure.min", "KANARCHE_QUALITY_RANGES_PRESSURE_MIN"},
