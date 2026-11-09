@@ -135,6 +135,8 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	if path == "/" {
 		data.HomeBigCities = rr.bigCityRows(snap, lang)
 		data.HomeSofia = hasSofiaHub(snap)
+		data.HomeDistricts = rr.areaLinkRows(snap, lang, "neighbourhood", sofiaHubSlug)
+		data.HomeCapitals = rr.areaLinkRows(snap, lang, "city", "")
 	}
 	// From 1024px the map's panel carries the open sensor; app.css hides the card under the map.
 	data.PanelHostClass = "place-host--docked"
