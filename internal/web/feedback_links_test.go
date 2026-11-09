@@ -142,9 +142,20 @@ func TestFeedbackSectionIsAbsentFromAboutTheData(t *testing.T) {
 // Phones hide the masthead item and keep the langpick one, like About and News.
 func TestFeedbackMastheadItemIsHiddenOnPhones(t *testing.T) {
 	css := readFile(t, "static/app.css")
-	want := ".masthead__link--source, .masthead__link--about, .masthead__link--news, .masthead__link--feedback { display: none; }"
-	if !strings.Contains(css, want) {
-		t.Errorf("app.css lacks the phone rule %q", want)
+	for _, want := range []string{
+		"@media (max-width: 560px) {\n    .masthead__link--feedback { display: none; }",
+		".langpick__extra:has(a[href*=\"?lang=\"]) { display: list-item; }",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("app.css lacks the narrow-width rule %q", want)
+		}
+	}
+}
+
+func TestFeedbackSectionLinkGetsTheTouchHitArea(t *testing.T) {
+	css := readFile(t, "static/app.css")
+	if got := strings.Count(css, ".about-feedback .link"); got != 2 {
+		t.Errorf("app.css lists .about-feedback .link %d times in the touch hit-area rules, want 2", got)
 	}
 }
 
