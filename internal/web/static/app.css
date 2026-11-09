@@ -1531,7 +1531,10 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
     .masthead__link--feedback { display: none; }
     .langpick__extra--feedback { display: list-item; }
     /* Above 480px the news item is hidden too, so the lone entry carries the separator. */
+    /* 481-560px: four text links, the repo mark and both pickers need ~13px more than 481px gives (Bulgarian, Helvetica Neue), so the masthead and picker padding take the 320px reflow's values. */
     @media (min-width: 481px) {
+      .masthead { padding-inline: var(--space-2); }
+      .langpick__btn { padding-inline: var(--space-1); }
       .langpick__extra--feedback { border-block-start: 1px solid var(--border); margin-block-start: var(--space-1); padding-block-start: var(--space-1); }
     }
   }
