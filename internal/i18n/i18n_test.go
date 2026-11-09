@@ -269,7 +269,8 @@ func TestMetaDescriptionsFitSearchSnippet(t *testing.T) {
 	metaKey := regexp.MustCompile(`^seo\.[a-z_]+\.description`)
 	for _, lang := range c.Languages() {
 		for _, key := range c.Keys() {
-			if !metaKey.MatchString(key) || strings.HasPrefix(key, "seo.dataset.") || !c.Has(lang, key) {
+			if !metaKey.MatchString(key) || strings.HasPrefix(key, "seo.dataset.") || strings.Contains(key, ".description_live") || !c.Has(lang, key) {
+				// Live templates hold placeholders, so only the rendered text has a length.
 				continue
 			}
 			if n := len([]rune(c.T(lang, key))); n > 160 {

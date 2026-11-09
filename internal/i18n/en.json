@@ -539,6 +539,8 @@
   "seo.areas.description": "Bulgaria's provinces ordered by indicative PM2.5 median, with links to all 27 provincial capitals and 24 Sofia districts.",
   "seo.areas.title": "Air pollution in Bulgaria by province and city",
   "seo.city.description": "{name} AQI and air pollution now: PM2.5 and PM10 from citizen sensors on a live map, with the European index band and 24-hour history.",
+  "seo.city.description_live": "In {name} PM2.5 is {pm25} µg/m³ ({cat}) and PM10 is {pm10} µg/m³. Air quality index (AQI) from citizen sensors and IAOS stations, with a 24-hour chart.",
+  "seo.city.description_live_vav": "In {name} PM2.5 is {pm25} µg/m³ ({cat}) and PM10 is {pm10} µg/m³. Air quality index (AQI) from citizen sensors and IAOS stations, with a 24-hour chart.",
   "seo.city.title": "{name} air quality (AQI) now: PM2.5 and PM10",
   "seo.city.title_vav": "{name} air quality (AQI) now: PM2.5 and PM10",
   "seo.dataset.description": "Current and historical air quality readings for Bulgaria: PM2.5 and PM10 from sensor.community citizen sensors, aggregated by province, city and Sofia district.",
