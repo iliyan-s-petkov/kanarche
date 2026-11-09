@@ -18,7 +18,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s 
 # Base pinned by digest; poppler-utils unpinned so Debian security revisions
 # apply. The integration test holds it to the 25.x series, Trivy gates CVEs.
 FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS docparse
+# The upgrade picks up Debian security fixes between digest bumps.
 RUN apt-get update \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends poppler-utils \
  && rm -rf /var/lib/apt/lists/* \
  && mkdir /in /out
