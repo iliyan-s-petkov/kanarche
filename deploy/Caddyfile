@@ -94,3 +94,7 @@ tiles.kanarche.eu {
 
 	header Strict-Transport-Security "max-age=86400"
 }
+
+# Extra site blocks that are not part of the public deployment are dropped into
+# conf.d by the host's own tooling. The glob may match nothing.
+import /etc/caddy/conf.d/*.caddy
