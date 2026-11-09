@@ -20,6 +20,7 @@ func areaLinksFixture() *snapshot.Snapshot {
 		add(fmt.Sprintf("d%02d", 24-i), "neighbourhood", "sofia", fmt.Sprintf("Район%02d", 24-i), fmt.Sprintf("District%02d", 24-i))
 	}
 	add("mladost", "neighbourhood", "sofia", "Младост", "Mladost")
+	add("trakiya", "neighbourhood", "plovdiv", "Тракия", "Trakiya")
 	add("sofia", "city", "sofia-oblast", "София", "Sofia")
 	add("vratsa", "city", "vratsa-oblast", "Враца", "Vratsa")
 	add("varna", "city", "varna-oblast", "Варна", "Varna")
@@ -61,6 +62,9 @@ func TestHomeLinksAllDistrictsAndCapitals(t *testing.T) {
 		districts := listSlugs(t, sec, "districts", c.pre)
 		if len(districts) != 24 {
 			t.Errorf("%s: %d district links, want 24", c.path, len(districts))
+		}
+		if strings.Contains(strings.Join(districts, " "), "trakiya") {
+			t.Errorf("%s: non-Sofia district trakiya is listed", c.path)
 		}
 		if !strings.Contains(strings.Join(districts, " "), "mladost") {
 			t.Errorf("%s: no mladost link", c.path)
