@@ -89,6 +89,30 @@ func (p PageData) AreaHeading() string {
 	}
 }
 
+// cityLiveDescription is the city meta description with the live PM2.5 and PM10 values.
+// It reports false when the page is stale or either value is missing, so the caller keeps the static copy.
+func (p PageData) cityLiveDescription(row AreaRow) (string, bool) {
+	if row.Kind != "city" || !row.Covered || p.stale() {
+		return "", false
+	}
+	pm25, ok25 := row.Values["P2"]
+	pm10, ok10 := row.Values["P1"]
+	if !ok25 || !ok10 {
+		return "", false
+	}
+	// Same в/във choice as the h1; the _vav key exists only in bg.
+	key := "seo.city.description_live"
+	if startsWithVav(row.Name) && p.cat.Has(p.Lang, key+"_vav") {
+		key += "_vav"
+	}
+	return strings.NewReplacer(
+		"{name}", row.Name,
+		"{pm25}", formatValue(pm25, p.Lang),
+		"{pm10}", formatValue(pm10, p.Lang),
+		"{cat}", p.T("band."+bandLabel("P2", pm25)),
+	).Replace(p.T(key)), true
+}
+
 // startsWithVav reports whether a name begins with в or ф in either case. Those
 // letters take "във" rather than "в" in the Bulgarian h1 sentence. ToLower
 // folds Cyrillic capitals too, so В and Ф match.

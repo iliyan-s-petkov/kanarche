@@ -204,6 +204,9 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	row := rr.rowFrom(meta, lang)
 	data.Area = &row
 	data.Title, data.Description = rr.areaSEO(row, lang)
+	if live, ok := data.cityLiveDescription(row); ok {
+		data.Description = live
+	}
 	data.AreaNowHTML = data.areaNowHTML(row)
 	data.AreaDayHTML = data.areaDayHTML(row)
 	data.AreaHealthHTML = data.areaHealthHTML(row)
@@ -218,9 +221,8 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 }
 
 // areaSEO builds the title and description for one area page, per kind — the
-// three shapes seo-copy.md §2/§4 defines. Static descriptions only (no live
-// numbers): OpenProject #605 ships the always-true variant, the live one
-// behind a flag later.
+// three shapes seo-copy.md §2/§4 defines. Static descriptions only; handleArea
+// swaps in the live city description via cityLiveDescription.
 func (rr *Renderer) areaSEO(row AreaRow, lang string) (title, description string) {
 	brand := rr.cat.T(lang, "seo.title_brand")
 	// An uncovered area has no readings to describe, so its copy says so instead
