@@ -353,6 +353,8 @@ type PageData struct {
 	// whether the block links the Sofia districts.
 	HomeBigCities []AreaRow
 	HomeSofia     bool
+	// HomeDistricts and HomeCapitals feed the home area-links block, each sorted by name.
+	HomeDistricts, HomeCapitals []AreaRow
 	// FacebookURL and LinkedInURL are the optional footer profiles; empty hides the icon.
 	FacebookURL, LinkedInURL string
 
