@@ -100,9 +100,9 @@ func (p PageData) cityLiveDescription(row AreaRow) (string, bool) {
 	if !ok25 || !ok10 {
 		return "", false
 	}
-	// Same в/във choice as the h1; the _vav key exists only in bg.
+	// Same в/във choice as the h1. The en _vav text equals the base text.
 	key := "seo.city.description_live"
-	if startsWithVav(row.Name) && p.cat.Has(p.Lang, key+"_vav") {
+	if startsWithVav(row.Name) {
 		key += "_vav"
 	}
 	return strings.NewReplacer(
