@@ -80,6 +80,7 @@ func (rr *Renderer) handlers() map[string]http.Handler {
 		h["GET "+prefix+"/about-the-data"] = http.HandlerFunc(rr.handleAbout)
 		h["GET "+prefix+"/privacy"] = http.HandlerFunc(rr.handlePrivacy)
 		h["GET "+prefix+"/licences"] = http.HandlerFunc(rr.handleLicences)
+		h["GET "+prefix+"/open-data"] = http.HandlerFunc(rr.handleOpenData)
 		h["GET "+prefix+"/terms"] = http.HandlerFunc(rr.handleTerms)
 		h["GET "+prefix+"/air-pollution"] = http.HandlerFunc(rr.handleAirPollution)
 		h["GET "+prefix+"/pm25"] = rr.handlePM("pm25", "pm10")
@@ -364,6 +365,11 @@ func (rr *Renderer) handleLicences(w http.ResponseWriter, r *http.Request) {
 		data.Description = rr.cat.T(data.Lang, "seo.licences.description_rzi")
 	}
 	rr.render(w, r, http.StatusOK, "licences", data)
+}
+
+// handleOpenData serves /open-data: how to reuse the data, with the request limits read from config.
+func (rr *Renderer) handleOpenData(w http.ResponseWriter, r *http.Request) {
+	rr.render(w, r, http.StatusOK, "open_data", rr.staticPageData(r, "seo.opendata"))
 }
 
 // staticPageData is the shared setup of the snapshot-free prose pages; keyBase
