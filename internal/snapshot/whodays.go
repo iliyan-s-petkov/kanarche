@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"kanarche.eu/internal/store"
@@ -52,20 +53,74 @@ func summariseWHODays(points []store.Point, since, now time.Time) *WHODays {
 	return out
 }
 
-// buildWHODays sets AreaMeta.WHODays from one daily P2 query over every area.
-// The query has no per-day hour count, so a day counts however many hours it covers.
-// A failed query is logged and leaves the field unset.
-func buildWHODays(ctx context.Context, s *store.Store, snap *Snapshot, now time.Time) {
-	since := now.Add(-whoDaysWindow)
-	series, err := s.AllAreaSeries(ctx, "P2", since, true, 24*time.Hour)
-	if err != nil {
-		slog.Warn("snapshot: days over WHO guideline unavailable", "error", err)
-		return
+// whoDaysRetry is how long a failed refresh blocks the next attempt.
+const whoDaysRetry = 30 * time.Minute
+
+// whoDaysFetchTimeout caps one refresh, above the statement's own 120 s timeout.
+const whoDaysFetchTimeout = 3 * time.Minute
+
+// whoDailyFetch reads the year of daily P2 means for every area.
+type whoDailyFetch func(ctx context.Context, since time.Time) (map[string][]store.Point, error)
+
+// whoDaysCache holds the per-slug WHO result across snapshot builds.
+// It refreshes at most once per UTC day, in a goroutine, so a build never waits on it.
+type whoDaysCache struct {
+	mu       sync.Mutex
+	day      time.Time
+	bySlug   map[string]WHODays
+	lastFail time.Time
+	running  bool
+	wg       sync.WaitGroup
+}
+
+// apply copies the cached result into snap and starts a refresh when the cache is from an earlier UTC day.
+func (c *whoDaysCache) apply(ctx context.Context, snap *Snapshot, now time.Time, fetch whoDailyFetch) {
+	today := now.UTC().Truncate(24 * time.Hour)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.running && c.day.Before(today) && (c.lastFail.IsZero() || now.Sub(c.lastFail) >= whoDaysRetry) {
+		c.running = true
+		c.wg.Add(1)
+		go c.refresh(context.WithoutCancel(ctx), now, fetch)
 	}
 	for slug, meta := range snap.KnownSlugs {
-		if sum := summariseWHODays(series[slug], since, now); sum != nil {
-			meta.WHODays = sum
+		if w, ok := c.bySlug[slug]; ok {
+			meta.WHODays = &w
 			snap.KnownSlugs[slug] = meta
 		}
 	}
+}
+
+func (c *whoDaysCache) refresh(ctx context.Context, now time.Time, fetch whoDailyFetch) {
+	defer c.wg.Done()
+	ctx, cancel := context.WithTimeout(ctx, whoDaysFetchTimeout)
+	defer cancel()
+	start := time.Now()
+	since := now.Add(-whoDaysWindow)
+	series, err := fetch(ctx, since)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.running = false
+	if err != nil {
+		c.lastFail = now
+		slog.Warn("snapshot: days over WHO guideline unavailable", "error", err)
+		return
+	}
+	by := make(map[string]WHODays, len(series))
+	for slug, pts := range series {
+		if sum := summariseWHODays(pts, since, now); sum != nil {
+			by[slug] = *sum
+		}
+	}
+	c.bySlug, c.day, c.lastFail = by, now.UTC().Truncate(24*time.Hour), time.Time{}
+	slog.Info("snapshot: days over WHO guideline refreshed", "areas", len(by), "duration", time.Since(start))
+}
+
+// buildWHODays sets AreaMeta.WHODays from the daily cache; the query itself runs off the build path.
+// The query has no per-day hour count, so a day counts however many hours it covers.
+func buildWHODays(ctx context.Context, s *store.Store, h *Holder, snap *Snapshot, now time.Time) {
+	h.who.apply(ctx, snap, now, func(ctx context.Context, since time.Time) (map[string][]store.Point, error) {
+		return s.AllAreaDailySeries(ctx, "P2", since, 24*time.Hour)
+	})
 }
