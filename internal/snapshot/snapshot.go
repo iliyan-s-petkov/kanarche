@@ -131,6 +131,9 @@ type AreaMeta struct {
 	// Covered or the series has too few coverage-gated buckets — see
 	// buildDayRange.
 	Day *DayRange
+	// Day24Mean is the mean of the last 24 hourly area medians per metric (P1, P2).
+	// A metric is absent when fewer than minHourlyMeanPoints hours have a value.
+	Day24Mean map[string]float64
 	// Km2 is the boundary's size in square kilometres, 0 when unknown.
 	// Read once per snapshot build.
 	Km2 float64

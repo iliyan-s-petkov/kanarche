@@ -354,6 +354,10 @@
        data-t-unavailable="{{.T "map.error.unavailable"}}"></div>
 </section>{{end}}
 
+{{/* City pages only: the 24h mean against the daily limits, then the season paragraph. Both empty elsewhere. */}}
+{{.AreaCompareHTML}}
+{{.AreaSeasonHTML}}
+
 {{/* Sensors: the in-view list and the full table, each a details whose summary is an H3. */}}
 {{if .Area.Covered}}<section class="area-sensors-sec" aria-labelledby="sensors-h">
 <h2 id="sensors-h">{{.T "area.heading.sensors"}}</h2>
