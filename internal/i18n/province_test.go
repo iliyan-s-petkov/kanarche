@@ -1,6 +1,7 @@
 package i18n_test
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -20,6 +21,9 @@ import (
 // Six strings breached this when the check was written — the map's tier line
 // and five sentences on the about page. A regression here is easy to introduce
 // and invisible to anyone reading only the Bulgarian.
+// areaSlug matches a URL slug such as plovdiv-oblast, an identifier shown as code.
+var areaSlug = regexp.MustCompile(`[a-z0-9]+(-[a-z0-9]+)*-oblast`)
+
 func TestEnglishSaysProvinceNotOblast(t *testing.T) {
 	cat, err := i18n.Load()
 	if err != nil {
@@ -28,7 +32,7 @@ func TestEnglishSaysProvinceNotOblast(t *testing.T) {
 
 	for _, key := range cat.Keys() {
 		value := cat.T("en", key)
-		if strings.Contains(strings.ToLower(value), "oblast") {
+		if strings.Contains(areaSlug.ReplaceAllString(strings.ToLower(value), ""), "oblast") {
 			t.Errorf("en[%s] transliterates област: %q", key, value)
 		}
 	}

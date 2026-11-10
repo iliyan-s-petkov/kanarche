@@ -63,3 +63,19 @@ cookie, no session and no form, so there is nothing for a clickjacker to aim at.
 The page also sends `X-Robots-Tag: noindex` and a canonical link to the map page
 it mirrors, so a crawler that finds the frame indexes the site rather than the
 frame.
+
+## Area badge
+
+`/badge/{slug}.svg` (`/en/badge/{slug}.svg` for English) is a 200x40 image of one
+area's current PM2.5 median with its band word. Link it to `/area/{slug}`, which is
+the credit for the data. The snippet is on `/open-data`.
+
+```html
+<a href="https://kanarche.eu/area/plovdiv-oblast"><img src="https://kanarche.eu/badge/plovdiv-oblast.svg" alt="..." width="200" height="40"></a>
+```
+
+It is the only route that answers with `Cross-Origin-Resource-Policy: cross-origin`,
+so a page on another site can show it. The host page's own Content Security Policy
+must allow images from kanarche.eu. The cache lifetime is 5 minutes. An area with no
+current reading gets a grey "no data" image cached for 1 minute. An unknown slug is a
+404 and a retired slug redirects.
