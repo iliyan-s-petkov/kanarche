@@ -82,7 +82,7 @@ kanarche.eu, www.kanarche.eu {
 
 	reverse_proxy app:8080
 
-	header Strict-Transport-Security "max-age=86400"
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 }
 
 # DNS-only like tiles.airbg.org, so no client certificate.
@@ -92,7 +92,7 @@ tiles.kanarche.eu {
 
 	reverse_proxy app:8082
 
-	header Strict-Transport-Security "max-age=86400"
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 }
 
 # Extra site blocks that are not part of the public deployment are dropped into

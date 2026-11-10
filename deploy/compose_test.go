@@ -1227,9 +1227,9 @@ func TestExampleEnvIsCanonicalOnKanarche(t *testing.T) {
 	}
 }
 
-// HSTS on a new name is hard to undo, so it ramps: 300, then 86400 (this), then
-// 31536000 with includeSubDomains. No preload.
-func TestKanarcheHSTSIsShortAndUnscoped(t *testing.T) {
+// HSTS on a new name is hard to undo, so it ramps: 300, then 86400, then
+// 31536000 with includeSubDomains (this). No preload.
+func TestKanarcheHSTSIsOneYearWithSubdomains(t *testing.T) {
 	blocks := caddyBlocks(t, "Caddyfile")
 	re := regexp.MustCompile(`Strict-Transport-Security\s+"([^"]*)"`)
 	for _, name := range []string{"kanarche.eu", "www.kanarche.eu", "tiles.kanarche.eu"} {
@@ -1238,8 +1238,8 @@ func TestKanarcheHSTSIsShortAndUnscoped(t *testing.T) {
 			t.Errorf("%s sends no Strict-Transport-Security", name)
 			continue
 		}
-		if m[1] != "max-age=86400" {
-			t.Errorf("%s HSTS = %q, want exactly %q", name, m[1], "max-age=86400")
+		if want := "max-age=31536000; includeSubDomains"; m[1] != want {
+			t.Errorf("%s HSTS = %q, want exactly %q", name, m[1], want)
 		}
 	}
 }
