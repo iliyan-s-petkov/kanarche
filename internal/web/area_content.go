@@ -310,7 +310,7 @@ func (p PageData) areaDayHTML(row AreaRow) template.HTML {
 // Daily limits for the city comparison, in µg/m³. WHO 2021 air quality guideline (24h) and the EU daily limit
 // from 2030 in Directive (EU) 2024/2881.
 const (
-	whoDay25, whoDay10 = 15, 45
+	whoDay25, whoDay10 = snapshot.WHODayPM25, 45
 	euDay25, euDay10   = 25, 45
 )
 
@@ -343,6 +343,38 @@ func (p PageData) areaCompareHTML(row AreaRow) template.HTML {
 func (p PageData) areaSeasonHTML() template.HTML {
 	return template.HTML(`<p class="area-season">` + string(p.linkedText("area.season.body",
 		phLink{"{air_link}", p.T("area.season.link"), p.Path("/air-pollution")})) + `</p>`)
+}
+
+// minWHODays is the fewest days with data before the year of WHO days is shown.
+const minWHODays = 60
+
+// areaWHODaysHTML renders the days over the WHO guideline in the past year, or "" under minWHODays.
+func (p PageData) areaWHODaysHTML(row AreaRow) template.HTML {
+	d := row.WHODays
+	if d == nil || d.DaysWithData < minWHODays {
+		return ""
+	}
+	key := "area.over_who"
+	switch d.DaysOver {
+	case 0:
+		key = "area.over_who_zero"
+	case 1:
+		key = "area.over_who_one"
+	}
+	day := strconv.Itoa(d.WorstDay.UTC().Day())
+	month := p.T("news.month." + strconv.Itoa(int(d.WorstDay.UTC().Month())))
+	date := strings.NewReplacer("{day}", day, "{month}", month, "{year}", strconv.Itoa(d.WorstDay.UTC().Year())).Replace(p.T("area.over_who.date"))
+	text := strings.NewReplacer(
+		"{days}", strconv.Itoa(d.DaysWithData),
+		"{n_days}", strconv.Itoa(d.DaysOver),
+		"{day_noun}", p.T("area.over_who.days"),
+		"{area_in}", p.areaIn(),
+		"{area}", p.areaPlain(row),
+		"{who}", strconv.Itoa(whoDay25),
+		"{worst_date}", date,
+		"{max}", formatValue(d.WorstMean, p.Lang),
+	).Replace(p.T(key))
+	return template.HTML(`<p class="area-who-days">` + htmlEscape(text) + `</p>`)
 }
 
 // healthBandKeys is the catalogue suffix per bandClass index, best first.

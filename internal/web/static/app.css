@@ -166,7 +166,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 }
 .area-day { color: var(--fg-2); }
 /* City limit comparison and season paragraph, below the chart. */
-.area-compare p, .area-season { margin-block: var(--space-2) 0; }
+.area-compare p, .area-season, .area-who-days { margin-block: var(--space-2) 0; }
 .area-compare p:last-child { font-size: var(--text-compact); color: var(--fg-2); }
 /* The area page title and its value chip row. */
 .frame:has(> .area-summary) > .page-head:not(.page-head--compact) h1 { font-size: var(--text-h1); font-weight: var(--weight-display); line-height: 1.19; }
