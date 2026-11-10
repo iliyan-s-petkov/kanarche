@@ -217,6 +217,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 		data.AreaCompareHTML = data.areaCompareHTML(row)
 		data.AreaSeasonHTML = data.areaSeasonHTML()
 	}
+	data.AreaWHODaysHTML = data.areaWHODaysHTML(row)
 	data.AreaPollen = rr.pollenBlock(snap.Pollen(meta.Slug), lang)
 	rr.buildAreaLinks(&data, meta, row, snap, lang)
 	data.AreaFacts = rr.areaFacts(data, meta, snap)
@@ -505,7 +506,7 @@ func (rr *Renderer) rowFrom(meta snapshot.AreaMeta, lang string) AreaRow {
 		Colour: colour, Class: class, Values: meta.Values,
 		Source: meta.Source, BySource: meta.BySource,
 		HeadlineSource: meta.HeadlineSource, HeadlineSources: meta.HeadlineSources,
-		ParentSlug: meta.ParentSlug, Day: meta.Day, Day24Mean: meta.Day24Mean,
+		ParentSlug: meta.ParentSlug, Day: meta.Day, Day24Mean: meta.Day24Mean, WHODays: meta.WHODays,
 	}
 }
 

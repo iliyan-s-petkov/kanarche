@@ -357,6 +357,8 @@
 {{/* City pages only: the 24h mean against the daily limits, then the season paragraph. Both empty elsewhere. */}}
 {{.AreaCompareHTML}}
 {{.AreaSeasonHTML}}
+{{/* Every kind: days over the WHO daily guideline in the past year. Empty under 60 days of data. */}}
+{{.AreaWHODaysHTML}}
 
 {{/* Sensors: the in-view list and the full table, each a details whose summary is an H3. */}}
 {{if .Area.Covered}}<section class="area-sensors-sec" aria-labelledby="sensors-h">
