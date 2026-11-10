@@ -57,6 +57,7 @@ type Renderer struct {
 	social          config.Social
 	feedbackURL     string
 	rzi             config.SeaRZI
+	rateLimit       config.RateLimit
 	pollMinutes     int
 	// File order, which is the order the switcher offers them in and the order
 	// the config author chose — alphabetical would put "1y" first.
@@ -135,6 +136,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 		social:          cfg.Social,
 		feedbackURL:     cfg.Feedback.URL,
 		rzi:             cfg.Sea.RZI,
+		rateLimit:       cfg.RateLimit,
 		pollMinutes:     int(cfg.Upstream.PollInterval / time.Minute),
 		defaultMetric:   cfg.Series.DefaultMetric,
 		defaultPeriod:   defaultPeriodName(cfg.Series),
@@ -161,7 +163,7 @@ func NewRenderer(cat *i18n.Catalogue, holder *snapshot.Holder, cfg config.Config
 
 	// "embed" is parsed with base.gohtml like the rest, and then redefines
 	// "base" itself: it needs base's map partials but none of its chrome.
-	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "terms", "pm", "air_pollution", "news_list", "news_post", "error", "embed"} {
+	for _, page := range []string{"index", "area", "about", "about_project", "privacy", "licences", "open_data", "terms", "pm", "air_pollution", "news_list", "news_post", "error", "embed"} {
 		t, err := template.New("base.gohtml").Funcs(templateFuncs).ParseFS(templateFS,
 			"templates/base.gohtml", "templates/"+page+".gohtml")
 		if err != nil {
@@ -359,6 +361,7 @@ type PageData struct {
 	FacebookURL, LinkedInURL string
 
 	rzi         config.SeaRZI
+	rateLimit   config.RateLimit
 	feedbackURL string
 
 	cat *i18n.Catalogue
@@ -1240,6 +1243,7 @@ func (rr *Renderer) newPageData(lang, path string, generatedAt time.Time) PageDa
 		FooterAreas:     rr.footerAreas(lang),
 		FacebookURL:     rr.social.FacebookURL,
 		rzi:             rr.rzi,
+		rateLimit:       rr.rateLimit,
 		feedbackURL:     rr.feedbackURL,
 		LinkedInURL:     rr.social.LinkedInURL,
 
@@ -1460,6 +1464,27 @@ func (p PageData) LicencesAPIParts() []involvedPart {
 	return involvedParts(p.T("licences.api"), map[string]involvedLink{
 		"terms": {Href: p.Path("/terms"), Label: p.T("licences.api.terms")},
 	})
+}
+
+// OpenDataLicenceParts is opendata.licence.body with {licences} as a link.
+func (p PageData) OpenDataLicenceParts() []involvedPart {
+	return involvedParts(p.T("opendata.licence.body"), map[string]involvedLink{
+		"licences": {Href: p.Path("/licences"), Label: p.T("terms.licences.link")},
+	})
+}
+
+// OpenDataFair is opendata.fair.body with its numbers read from ratelimit.*,
+// so the copy cannot drift from the limits the server enforces.
+func (p PageData) OpenDataFair() string {
+	num := func(f float64) string { return strconv.FormatFloat(f, 'f', -1, 64) }
+	rl := p.rateLimit
+	return strings.NewReplacer(
+		"{api_rps}", num(rl.API.PerSecond),
+		"{series_rps}", num(rl.Series.PerSecond),
+		"{areas}", strconv.Itoa(rl.Enumerate.AreasPerWindow),
+		"{sensors}", strconv.Itoa(rl.Enumerate.SensorsPerWindow),
+		"{minutes}", strconv.Itoa(int(rl.Enumerate.RetryAfter/time.Minute)),
+	).Replace(p.T("opendata.fair.body"))
 }
 
 // TermsLicencesParts is terms.licences.body with {licences} as a link.

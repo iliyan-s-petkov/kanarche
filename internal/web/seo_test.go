@@ -108,9 +108,9 @@ func TestSitemapContainsEveryArea(t *testing.T) {
 			t.Errorf("sitemap is missing the English variant %q", want)
 		}
 	}
-	// Twelve pages in each of the two fixture languages (including the explainers and uncovered vidin).
-	if len(doc.URLs) != 24 {
-		t.Errorf("sitemap has %d <url> entries, want 24", len(doc.URLs))
+	// Thirteen pages in each of the two fixture languages (including the explainers and uncovered vidin).
+	if len(doc.URLs) != 26 {
+		t.Errorf("sitemap has %d <url> entries, want 26", len(doc.URLs))
 	}
 }
 

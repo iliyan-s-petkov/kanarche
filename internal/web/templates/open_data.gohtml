@@ -1,0 +1,26 @@
+{{/* /open-data: static prose, no snapshot needed. The request limits are
+     filled from ratelimit.* in the config, see PageData.OpenDataFair. */}}
+{{define "main"}}
+<div class="measure">
+<div class="page-head">
+  <h1 class="t-title">{{.T "opendata.title"}}</h1>
+</div>
+
+<h2>{{.T "opendata.data.heading"}}</h2>
+<p>{{.T "opendata.data.body"}}</p>
+
+<h2>{{.T "opendata.formats.heading"}}</h2>
+<p>{{.T "opendata.formats.body"}}</p>
+
+<h2>{{.T "opendata.licence.heading"}}</h2>
+<p>{{range .OpenDataLicenceParts}}{{if .Href}}<a href="{{.Href}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+
+<h2>{{.T "opendata.update.heading"}}</h2>
+<p>{{.T "opendata.update.body"}}</p>
+
+<h2>{{.T "opendata.fair.heading"}}</h2>
+<p>{{.OpenDataFair}}</p>
+
+<p><a href="{{.Path "/"}}">{{.T "area.back_to_map"}}</a></p>
+</div>
+{{end}}
