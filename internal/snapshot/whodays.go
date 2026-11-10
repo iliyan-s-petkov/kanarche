@@ -24,13 +24,23 @@ type WHODays struct {
 	WorstMean float64
 }
 
-// summariseWHODays reduces a daily series to its WHODays, or nil for an empty series.
-func summariseWHODays(points []store.Point) *WHODays {
-	if len(points) == 0 {
-		return nil
+// summariseWHODays reduces a daily series to its WHODays, or nil when no full day remains.
+// The bucket of the current UTC day and any bucket starting before the window's first full UTC day are partial and skipped.
+func summariseWHODays(points []store.Point, since, now time.Time) *WHODays {
+	firstFull := since.UTC().Truncate(24 * time.Hour)
+	if firstFull.Before(since) {
+		firstFull = firstFull.Add(24 * time.Hour)
 	}
-	out := &WHODays{DaysWithData: len(points), WorstDay: points[0].Time, WorstMean: points[0].Value}
+	today := now.UTC().Truncate(24 * time.Hour)
+	var out *WHODays
 	for _, p := range points {
+		if p.Time.Before(firstFull) || !p.Time.Before(today) {
+			continue
+		}
+		if out == nil {
+			out = &WHODays{WorstDay: p.Time, WorstMean: p.Value}
+		}
+		out.DaysWithData++
 		if p.Value > WHODayPM25 {
 			out.DaysOver++
 		}
@@ -46,13 +56,14 @@ func summariseWHODays(points []store.Point) *WHODays {
 // The query has no per-day hour count, so a day counts however many hours it covers.
 // A failed query is logged and leaves the field unset.
 func buildWHODays(ctx context.Context, s *store.Store, snap *Snapshot, now time.Time) {
-	series, err := s.AllAreaSeries(ctx, "P2", now.Add(-whoDaysWindow), true, 24*time.Hour)
+	since := now.Add(-whoDaysWindow)
+	series, err := s.AllAreaSeries(ctx, "P2", since, true, 24*time.Hour)
 	if err != nil {
 		slog.Warn("snapshot: days over WHO guideline unavailable", "error", err)
 		return
 	}
 	for slug, meta := range snap.KnownSlugs {
-		if sum := summariseWHODays(series[slug]); sum != nil {
+		if sum := summariseWHODays(series[slug], since, now); sum != nil {
 			meta.WHODays = sum
 			snap.KnownSlugs[slug] = meta
 		}
