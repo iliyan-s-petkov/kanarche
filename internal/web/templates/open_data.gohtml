@@ -18,6 +18,12 @@
 <h2>{{.T "opendata.update.heading"}}</h2>
 <p>{{.T "opendata.update.body"}}</p>
 
+<h2>{{.T "opendata.badge.heading"}}</h2>
+<p>{{.T "opendata.badge.body"}}</p>
+<div class="about-code-wrap" data-island="copycode" data-t-copy="{{.T "about.start.embed.copy"}}" data-t-copied="{{.T "about.start.embed.copied"}}" data-t-failed="{{.T "panel.copy_failed"}}">
+<pre class="about-code" dir="ltr" tabindex="0" role="region" aria-label="{{.T "about.start.embed.code_label"}}"><code>&lt;a href="{{.BaseURL}}{{.Path (printf "/area/%s" .BadgeExampleSlug)}}"&gt;&lt;img src="{{.BaseURL}}{{.Path (printf "/badge/%s.svg" .BadgeExampleSlug)}}" alt="{{.BadgeExampleAlt}}" width="200" height="40"&gt;&lt;/a&gt;</code></pre>
+</div>
+
 <h2>{{.T "opendata.fair.heading"}}</h2>
 <p>{{.OpenDataFair}}</p>
 

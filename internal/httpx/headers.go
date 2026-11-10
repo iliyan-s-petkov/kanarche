@@ -120,6 +120,7 @@ func SecurityHeaders(next http.Handler, csp, permissionsPolicy string) http.Hand
 		// a third-party document context. This is the header that does the
 		// job CORS is commonly mistaken for; see the deliberate absence of
 		// every Access-Control-* header, pinned by TestNoCORSHeaders.
+		// Only the badge image (internal/web/badge.go) overrides it, to cross-origin.
 		h.Set("Cross-Origin-Resource-Policy", "same-origin")
 		next.ServeHTTP(w, r)
 	})
