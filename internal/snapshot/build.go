@@ -222,7 +222,7 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 	}
 
 	buildDayMeans(ctx, s, snap, now)
-	buildWHODays(ctx, s, snap, now)
+	buildWHODays(ctx, s, h, snap, now)
 
 	counts, err := s.AllAreaSeriesCounts(ctx, h.metric, now.Add(-h.window), false, h.bucket)
 	if err != nil {

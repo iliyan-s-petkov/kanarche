@@ -734,6 +734,18 @@ const AllAreaSeriesRowLimit = 200_000
 // AllAreaSeries returns the area-mean series for one metric, keyed by slug;
 // an area with no data in the window is simply absent from the map.
 func (s *Store) AllAreaSeries(ctx context.Context, metric string, since time.Time, hourly bool, bucket time.Duration) (map[string][]Point, error) {
+	return s.allAreaSeries(ctx, metric, since, hourly, bucket, s.seriesTimeout)
+}
+
+// WHODaysTimeout bounds the once-a-day year-long daily read; it is longer than seriesTimeout because it runs rarely.
+const WHODaysTimeout = 120 * time.Second
+
+// AllAreaDailySeries is AllAreaSeries over the hourly rollup with WHODaysTimeout instead of the series timeout.
+func (s *Store) AllAreaDailySeries(ctx context.Context, metric string, since time.Time, bucket time.Duration) (map[string][]Point, error) {
+	return s.allAreaSeries(ctx, metric, since, true, bucket, WHODaysTimeout)
+}
+
+func (s *Store) allAreaSeries(ctx context.Context, metric string, since time.Time, hourly bool, bucket, timeout time.Duration) (map[string][]Point, error) {
 	// A transaction only so statement_timeout can be scoped: set_config's local
 	// flag is transaction-scoped, and this read must not inherit the pool-wide
 	// 15s. Rolled back rather than committed — nothing is written, and a rollback
@@ -744,7 +756,7 @@ func (s *Store) AllAreaSeries(ctx context.Context, metric string, since time.Tim
 	}
 	defer tx.Rollback(ctx)
 
-	if err := db.SetLocalStatementTimeout(ctx, tx, db.StatementTimeoutValue(s.seriesTimeout)); err != nil {
+	if err := db.SetLocalStatementTimeout(ctx, tx, db.StatementTimeoutValue(timeout)); err != nil {
 		return nil, fmt.Errorf("store: all area series timeout: %w", err)
 	}
 

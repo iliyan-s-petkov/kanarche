@@ -286,6 +286,9 @@ type Holder struct {
 	// pollen and pollenZone are set by WithPollen; the zero value is disabled.
 	pollen     config.Pollen
 	pollenZone *time.Location
+
+	// who survives across builds so the daily WHO query runs once per UTC day.
+	who whoDaysCache
 }
 
 // NewHolder takes the series configuration because the snapshot serves the
