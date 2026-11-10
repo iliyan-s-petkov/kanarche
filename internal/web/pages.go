@@ -86,6 +86,7 @@ func (rr *Renderer) handlers() map[string]http.Handler {
 		h["GET "+prefix+"/pm25"] = rr.handlePM("pm25", "pm10")
 		h["GET "+prefix+"/pm10"] = rr.handlePM("pm10", "pm25")
 		h["GET "+prefix+"/embed"] = http.HandlerFunc(rr.handleEmbed)
+		h["GET "+prefix+"/badge/{file}"] = http.HandlerFunc(rr.handleBadge)
 		h["GET "+prefix+newsPath] = http.HandlerFunc(rr.handleNewsList)
 		h["GET "+prefix+newsPath+"/{slug}"] = http.HandlerFunc(rr.handleNewsPost)
 		h["GET "+prefix+newsPath+"/feed.xml"] = http.HandlerFunc(rr.handleNewsFeed)
@@ -365,7 +366,10 @@ func (rr *Renderer) handleLicences(w http.ResponseWriter, r *http.Request) {
 
 // handleOpenData serves /open-data: how to reuse the data, with the request limits read from config.
 func (rr *Renderer) handleOpenData(w http.ResponseWriter, r *http.Request) {
-	rr.render(w, r, http.StatusOK, "open_data", rr.staticPageData(r, "seo.opendata"))
+	data := rr.staticPageData(r, "seo.opendata")
+	data.BadgeExampleSlug = badgeExample
+	data.BadgeExampleAlt = rr.badgeExampleAlt(data.Lang)
+	rr.render(w, r, http.StatusOK, "open_data", data)
 }
 
 // staticPageData is the shared setup of the snapshot-free prose pages; keyBase

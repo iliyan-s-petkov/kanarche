@@ -337,6 +337,9 @@ type PageData struct {
 	// rather than a second copy of the block.
 	PanelHostClass string
 
+	// BadgeExampleSlug and BadgeExampleAlt fill the /open-data badge snippet.
+	BadgeExampleSlug, BadgeExampleAlt string
+
 	// StorageKeys is the privacy section's rendered allow-list — every
 	// browser-storage key this site writes, each with its plain-language
 	// purpose from the catalogue. Built from static/storage-keys.json (the
