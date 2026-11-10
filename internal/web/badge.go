@@ -133,10 +133,13 @@ func (rr *Renderer) badgeSVG(lang string, look badgeLook) []byte {
 		}
 		b.WriteString(`<text x="16" y="31" ` + font + ` font-size="11" fill="#4a4a4a">` + xmlEsc(noData) + `</text>`)
 	} else {
+		// Three rows: name, reading, band word. The band word has its own row because the
+		// longest Bulgarian word does not fit beside the reading in 176 px.
 		head(rr.badgeAlt(lang, look), look.Colour)
-		b.WriteString(`<text x="16" y="16" ` + font + ` font-size="12" font-weight="700" fill="#1a1a1a">` + xmlEsc(clipName(look.Name)) + `</text>`)
-		reading := rr.cat.T(lang, "metric."+badgeMetric) + " " + look.Value + " " + rr.cat.T(lang, "unit."+badgeMetric) + " " + look.Band
-		b.WriteString(`<text x="16" y="31" ` + font + ` font-size="10" fill="#1a1a1a">` + xmlEsc(reading) + `</text>`)
+		b.WriteString(`<text x="16" y="12" ` + font + ` font-size="11" font-weight="700" fill="#1a1a1a">` + xmlEsc(clipName(look.Name)) + `</text>`)
+		reading := rr.cat.T(lang, "metric."+badgeMetric) + " " + look.Value + " " + rr.cat.T(lang, "unit."+badgeMetric)
+		b.WriteString(`<text x="16" y="25" ` + font + ` font-size="10" fill="#1a1a1a">` + xmlEsc(reading) + `</text>`)
+		b.WriteString(`<text x="16" y="37" ` + font + ` font-size="10" font-weight="700" fill="#1a1a1a">` + xmlEsc(look.Band) + `</text>`)
 	}
 	b.WriteString(`<text x="194" y="11" text-anchor="end" ` + font + ` font-size="8" fill="#4a4a4a">` + brand + `</text></svg>`)
 	return []byte(b.String())

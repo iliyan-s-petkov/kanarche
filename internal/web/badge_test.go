@@ -4,9 +4,11 @@ import (
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"kanarche.eu/internal/httpx"
 	"kanarche.eu/internal/i18n"
@@ -246,4 +248,55 @@ func TestOpenDataShowsBadgeSectionAndSnippet(t *testing.T) {
 
 func htmlEscape(s string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&#34;", "'", "&#39;").Replace(s)
+}
+
+type badgeText struct {
+	X    string `xml:"x,attr"`
+	Y    string `xml:"y,attr"`
+	Size string `xml:"font-size,attr"`
+	Text string `xml:",chardata"`
+}
+
+type badgeLayout struct {
+	XMLName xml.Name    `xml:"svg"`
+	Texts   []badgeText `xml:"text"`
+}
+
+// The band word sits on its own line, so the longest word never shares a row with the reading.
+func TestBadgeBandWordHasItsOwnLineInTheWorstCase(t *testing.T) {
+	cat, err := i18n.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap := badgeSnapshot()
+	snap.KnownSlugs["sofia"] = snapshot.AreaMeta{Slug: "sofia", Kind: "oblast", NameBG: "Благоевград-Бл", NameEN: "Blagoevgrad-Bla",
+		Covered: true, SensorCount: 12, Values: map[string]float64{"P2": 999.9}}
+	for path, lang := range map[string]string{"/badge/sofia.svg": "bg", "/en/badge/sofia.svg": "en"} {
+		var l badgeLayout
+		if err := xml.Unmarshal(badgeFetch(t, snap, path).Body.Bytes(), &l); err != nil {
+			t.Fatal(err)
+		}
+		band := cat.T(lang, "band.extremely_poor")
+		bandAt, readingAt := -1, -1
+		for i, tx := range l.Texts {
+			if tx.Text == band {
+				bandAt = i
+			}
+			if strings.Contains(tx.Text, "µg/m³") {
+				readingAt = i
+				if strings.Contains(tx.Text, band) {
+					t.Errorf("%s: band word shares a text with the reading: %q", path, tx.Text)
+				}
+			}
+			// 0.62 em per glyph is wider than the widest letters in the stack, so this bounds the right edge.
+			size, _ := strconv.ParseFloat(tx.Size, 64)
+			x, _ := strconv.ParseFloat(tx.X, 64)
+			if tx.X != "194" && x+0.62*size*float64(utf8.RuneCountInString(tx.Text)) > 192 {
+				t.Errorf("%s: text %q at x=%s size %s can pass x=192", path, tx.Text, tx.X, tx.Size)
+			}
+		}
+		if bandAt < 0 || readingAt < 0 || l.Texts[bandAt].Y == l.Texts[readingAt].Y {
+			t.Errorf("%s: band word (%d) and reading (%d) must be separate lines: %+v", path, bandAt, readingAt, l.Texts)
+		}
+	}
 }
