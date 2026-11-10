@@ -24,6 +24,11 @@ test('pause keeps the paused frame on the map, exit restores live', async ({ pag
   const body = await (await replay).json()
   await expect(page.locator('.map-play--open')).toHaveCount(1)
 
+  // The fixture has a reading every second hour, so the oldest frame is empty in half of all hours.
+  const firstWithData = body.frames.findIndex((f) => f.v.some((v) => v !== null && v !== undefined))
+  expect(firstWithData).toBeGreaterThanOrEqual(0)
+  await expect.poll(async () => Number(await page.locator('.map-play__scrub').inputValue())).toBeGreaterThanOrEqual(firstWithData)
+
   // Pause on whichever frame the clock has reached.
   await play.click()
   await expect(play).toHaveAttribute('aria-pressed', 'false')
