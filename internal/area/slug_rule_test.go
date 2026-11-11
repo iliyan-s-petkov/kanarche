@@ -92,6 +92,12 @@ func readBoundaries(t *testing.T, path string) boundaryFile {
 	return fc
 }
 
+// slugNameOverrides lists the districts whose slug is not slugify(name_bg).
+// Varna's Младост would collide with Sofia's `mladost`, whose page is indexed.
+var slugNameOverrides = map[string]struct{ file, slug string }{
+	"Младост": {"varna-districts.geojson", "mladost-varna"},
+}
+
 // TestCommittedSlugsFollowTheDocumentedRule. Every oblast carries a uniform
 // `-oblast` suffix; cities and Sofia districts carry the bare transliteration.
 //
@@ -110,6 +116,8 @@ func TestCommittedSlugsFollowTheDocumentedRule(t *testing.T) {
 		{"../../data/boundaries/oblasti.geojson", "-oblast", 28},
 		{"../../data/boundaries/cities.geojson", "", 27},
 		{"../../data/boundaries/sofia-districts.geojson", "", 24},
+		{"../../data/boundaries/plovdiv-districts.geojson", "", 6},
+		{"../../data/boundaries/varna-districts.geojson", "", 5},
 	} {
 		fc := readBoundaries(t, f.path)
 		// The count is the positive control. Without it a file that parsed to
@@ -125,7 +133,11 @@ func TestCommittedSlugsFollowTheDocumentedRule(t *testing.T) {
 				t.Errorf("%s: feature with slug %q has no name_bg, so its slug cannot be verified", f.path, p.Slug)
 				continue
 			}
-			if want := slugify(p.NameBG) + f.suffix; p.Slug != want {
+			want := slugify(p.NameBG) + f.suffix
+			if o, ok := slugNameOverrides[p.NameBG]; ok && strings.HasSuffix(f.path, o.file) {
+				want = o.slug
+			}
+			if p.Slug != want {
 				t.Errorf("%s: name_bg %q has slug %q, want %q", f.path, p.NameBG, p.Slug, want)
 			}
 		}
@@ -139,8 +151,8 @@ func TestCommittedSlugsFollowTheDocumentedRule(t *testing.T) {
 // runs on a machine with no Docker.
 func TestSlugsAreUniqueAcrossEveryFile(t *testing.T) {
 	// 6 countries (Bulgaria and the five neighbours in upstream.countries) +
-	// 28 oblasti + 27 cities + 24 Sofia districts.
-	const wantTotal = 85
+	// 28 oblasti + 27 cities + 24 Sofia, 6 Plovdiv and 5 Varna districts.
+	const wantTotal = 96
 
 	// Globbed rather than listed: the list is the thing that goes stale. A
 	// sixth boundary file added without a matching edit here would otherwise
