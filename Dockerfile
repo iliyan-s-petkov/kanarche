@@ -22,7 +22,7 @@ RUN npm run build
 
 # Native builder, cross-compiled binary. Building with --platform instead would
 # run the whole toolchain under emulation: slow, and `go mod download` fails.
-FROM --platform=$BUILDPLATFORM golang:1.26.10@sha256:3745f1aa11822297b79113f5e84ce2bffeb039734571c39855809cfe9e5d7be6 AS build
+FROM --platform=$BUILDPLATFORM golang:1.26.11@sha256:7af425da11f4fc1a9308eb704369e3f6d1c44e35bac0f874a59ade3f20fdc07e AS build
 ARG TARGETARCH
 WORKDIR /src
 COPY go.mod go.sum ./
