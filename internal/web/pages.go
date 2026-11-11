@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"kanarche.eu/internal/i18n"
 	"kanarche.eu/internal/snapshot"
@@ -242,7 +243,8 @@ func (rr *Renderer) areaSEO(row AreaRow, lang string) (title, description string
 		if row.Kind == "oblast" {
 			name = rr.oblastForm(row.Slug, lang, row.Name, "seo.oblast.label")
 		}
-		core := strings.ReplaceAll(rr.cat.T(lang, "seo.area.nodata.title"), "{name}", name)
+		core := strings.NewReplacer("{name}", name, "{city}", row.DistrictCity).Replace(
+			rr.cat.T(lang, districtKey("seo.area.nodata.title", row.DistrictCity)))
 		desc := strings.ReplaceAll(rr.cat.T(lang, "seo.area.nodata.description"), "{name}", name)
 		return composeTitle(core, brand), desc
 	}
@@ -264,7 +266,12 @@ func (rr *Renderer) areaSEO(row AreaRow, lang string) (title, description string
 		return composeTitle(core, brand), desc
 	default: // "neighbourhood"
 		fill := strings.NewReplacer("{name}", row.Name, "{city}", row.DistrictCity)
-		core := fill.Replace(rr.cat.T(lang, districtKey("seo.district.title", row.DistrictCity)))
+		titleKey := districtKey("seo.district.title", row.DistrictCity)
+		core := fill.Replace(rr.cat.T(lang, titleKey))
+		// A core over 60 runes uses the short key when there is one, so the title is not cut.
+		if utf8.RuneCountInString(core) > 60 && rr.cat.Has(lang, titleKey+"_short") {
+			core = fill.Replace(rr.cat.T(lang, titleKey+"_short"))
+		}
 		desc := fill.Replace(rr.cat.T(lang, districtKey("seo.district.description", row.DistrictCity)))
 		return composeTitle(core, brand), desc
 	}

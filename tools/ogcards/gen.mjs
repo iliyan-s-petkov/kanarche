@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outDir = path.join(root, 'internal/web/static/og');
-const kinds = { oblasti: 'oblast', cities: 'city', 'sofia-districts': 'district' };
+const kinds = { oblasti: 'oblast', cities: 'city', 'sofia-districts': 'district', 'plovdiv-districts': 'district', 'varna-districts': 'district' };
 const langs = ['bg', 'en'];
 
 const areas = [];
