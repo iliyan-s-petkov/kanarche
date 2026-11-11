@@ -48,7 +48,7 @@ func TestDatasetJSONLDNamesCitizenSensorsOnly(t *testing.T) {
 	}
 }
 
-// The /areas description states 27 cities and 24 Sofia districts; pin those
+// The /areas description states 27 cities and 35 districts; pin those
 // numbers to the boundary files so adding a boundary forces a copy update.
 func TestAreasDescriptionCountsMatchBoundaryFiles(t *testing.T) {
 	count := func(file string) int {
@@ -64,15 +64,16 @@ func TestAreasDescriptionCountsMatchBoundaryFiles(t *testing.T) {
 		}
 		return len(fc.Features)
 	}
-	cities, districts := count("cities.geojson"), count("sofia-districts.geojson")
+	cities := count("cities.geojson")
+	districts := count("sofia-districts.geojson") + count("plovdiv-districts.geojson") + count("varna-districts.geojson")
 
 	rr := renderer(t, seoFixture(t))
 	bg := pageDescription(t, fetch(t, rr, "/areas").Body.String())
 	en := html.UnescapeString(pageDescription(t, fetch(t, rr, "/en/areas").Body.String()))
-	if want := fmt.Sprintf("%d-те областни града и %d-те района на София", cities, districts); !strings.Contains(bg, want) {
+	if want := fmt.Sprintf("%d-те областни града и %d-те района на София, Пловдив и Варна", cities, districts); !strings.Contains(bg, want) {
 		t.Errorf("bg /areas description %q does not contain %q", bg, want)
 	}
-	if want := fmt.Sprintf("all %d provincial capitals and %d Sofia districts", cities, districts); !strings.Contains(en, want) {
+	if want := fmt.Sprintf("all %d provincial capitals and %d districts in Sofia, Plovdiv and Varna", cities, districts); !strings.Contains(en, want) {
 		t.Errorf("en /areas description %q does not contain %q", en, want)
 	}
 }

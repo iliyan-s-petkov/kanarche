@@ -31,6 +31,8 @@ func TestCommittedBoundariesImport(t *testing.T) {
 		{"../../data/boundaries/cities.geojson", "city", 27, 27},
 		// Sofia has 24 raiони (districts).
 		{"../../data/boundaries/sofia-districts.geojson", "neighbourhood", 24, 24},
+		{"../../data/boundaries/plovdiv-districts.geojson", "neighbourhood", 6, 6},
+		{"../../data/boundaries/varna-districts.geojson", "neighbourhood", 5, 5},
 	} {
 		n, err := area.Import(ctx, pool, tc.path, tc.kind)
 		if err != nil {
@@ -54,6 +56,8 @@ func TestSofiaSensorResolvesThroughAllTiers(t *testing.T) {
 		{"../../data/boundaries/oblasti.geojson", "oblast"},
 		{"../../data/boundaries/cities.geojson", "city"},
 		{"../../data/boundaries/sofia-districts.geojson", "neighbourhood"},
+		{"../../data/boundaries/plovdiv-districts.geojson", "neighbourhood"},
+		{"../../data/boundaries/varna-districts.geojson", "neighbourhood"},
 	} {
 		if _, err := area.Import(ctx, pool, f.path, f.kind); err != nil {
 			t.Fatalf("Import(%s): %v", f.path, err)
@@ -120,6 +124,8 @@ func TestAllFourFilesImportWithoutRowLoss(t *testing.T) {
 		{"../../data/boundaries/oblasti.geojson", "oblast"},
 		{"../../data/boundaries/cities.geojson", "city"},
 		{"../../data/boundaries/sofia-districts.geojson", "neighbourhood"},
+		{"../../data/boundaries/plovdiv-districts.geojson", "neighbourhood"},
+		{"../../data/boundaries/varna-districts.geojson", "neighbourhood"},
 	} {
 		if _, err := area.Import(ctx, pool, f.path, f.kind); err != nil {
 			t.Fatalf("Import(%s, %s): %v", f.path, f.kind, err)
@@ -130,7 +136,7 @@ func TestAllFourFilesImportWithoutRowLoss(t *testing.T) {
 		"country":       1,
 		"oblast":        28,
 		"city":          27,
-		"neighbourhood": 24,
+		"neighbourhood": 35,
 	}
 
 	rows, err := pool.Query(ctx, `SELECT kind, count(*) FROM area GROUP BY kind`)
@@ -206,6 +212,8 @@ func TestBoundaryPartsAssembleIntoAPlausibleArea(t *testing.T) {
 		{"../../data/boundaries/oblasti.geojson", "oblast"},
 		{"../../data/boundaries/cities.geojson", "city"},
 		{"../../data/boundaries/sofia-districts.geojson", "neighbourhood"},
+		{"../../data/boundaries/plovdiv-districts.geojson", "neighbourhood"},
+		{"../../data/boundaries/varna-districts.geojson", "neighbourhood"},
 	} {
 		if _, err := area.Import(ctx, pool, f.path, f.kind); err != nil {
 			t.Fatalf("Import(%s, %s): %v", f.path, f.kind, err)

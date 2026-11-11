@@ -155,9 +155,9 @@ func TestRenderedTitlesAndDescriptionsMatchApprovedCopy(t *testing.T) {
 		{
 			path:          "/areas",
 			bgTitle:       "Замърсяване на въздуха по области и градове | Канарче",
-			bgDescription: "Областите в България, подредени по ориентировъчната медиана на ФПЧ2.5. С връзки към 27-те областни града и 24-те района на София.",
+			bgDescription: "Областите в България, подредени по ориентировъчната медиана на ФПЧ2.5. С връзки към 27-те областни града и 35-те района на София, Пловдив и Варна.",
 			enTitle:       "Air pollution in Bulgaria by province and city | Kanarche",
-			enDescription: "Bulgaria's provinces ordered by indicative PM2.5 median, with links to all 27 provincial capitals and 24 Sofia districts.",
+			enDescription: "Bulgaria's provinces ordered by indicative PM2.5 median, with links to all 27 provincial capitals and 35 districts in Sofia, Plovdiv and Varna.",
 		},
 		{
 			path:          "/about-the-data",

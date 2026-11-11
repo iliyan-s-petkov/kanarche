@@ -211,3 +211,12 @@ vs. Sofia district, oblast vs. Sofia district, and every one of the three
 files against `bulgaria.geojson`'s own `bulgaria` slug. Any future fourth or
 fifth tier must run the same cross-file slug check before being committed —
 the primary key does not care which file a row came from.
+
+## `plovdiv-districts.geojson`, `varna-districts.geojson`
+
+Plovdiv's 6 and Varna's 5 districts, OSM `admin_level=6` relations (ODbL 1.0), cleaned as in `docs/boundary-regeneration.md`. Both import as `neighbourhood`. Slugs follow the district rule, except Varna's Младост, which is `mladost-varna` because `mladost` is Sofia's.
+
+```bash
+airbg import-areas data/boundaries/plovdiv-districts.geojson neighbourhood
+airbg import-areas data/boundaries/varna-districts.geojson neighbourhood
+```
