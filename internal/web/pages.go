@@ -206,6 +206,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	lang, path := rr.cat.LangFromPath(r.URL.Path)
 	data := rr.newPageData(lang, path, snap.GeneratedAt)
 	row := rr.rowFrom(meta, lang)
+	row.DistrictCity = rr.districtCity(meta, snap, lang)
 	data.Area = &row
 	data.Title, data.Description = rr.areaSEO(row, lang)
 	if live, ok := data.cityLiveDescription(row); ok {
@@ -261,9 +262,10 @@ func (rr *Renderer) areaSEO(row AreaRow, lang string) (title, description string
 		core := strings.ReplaceAll(rr.cat.T(lang, titleKey), "{name}", row.Name)
 		desc := strings.ReplaceAll(rr.cat.T(lang, row.descKey("seo.city.description")), "{name}", row.Name)
 		return composeTitle(core, brand), desc
-	default: // "neighbourhood" — the 24 Sofia districts; no other kind exists.
-		core := strings.ReplaceAll(rr.cat.T(lang, "seo.district.title"), "{name}", row.Name)
-		desc := strings.ReplaceAll(rr.cat.T(lang, "seo.district.description"), "{name}", row.Name)
+	default: // "neighbourhood"
+		fill := strings.NewReplacer("{name}", row.Name, "{city}", row.DistrictCity)
+		core := fill.Replace(rr.cat.T(lang, districtKey("seo.district.title", row.DistrictCity)))
+		desc := fill.Replace(rr.cat.T(lang, districtKey("seo.district.description", row.DistrictCity)))
 		return composeTitle(core, brand), desc
 	}
 }

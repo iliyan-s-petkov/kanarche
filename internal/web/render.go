@@ -425,6 +425,8 @@ type AreaRow struct {
 	HeadlineSources map[string]string
 	// ParentSlug mirrors snapshot.AreaMeta.ParentSlug — see ParentChain.
 	ParentSlug string
+	// DistrictCity is the parent city's name on a district page. Empty for Sofia districts, which keep the original copy.
+	DistrictCity string
 	// Day is the 24h min/max range, or nil — see snapshot.DayRange and
 	// PageData.AreaDay.
 	Day *snapshot.DayRange

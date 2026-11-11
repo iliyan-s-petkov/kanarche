@@ -85,7 +85,8 @@ func (p PageData) AreaHeading() string {
 		}
 		return strings.ReplaceAll(p.T(key), "{name}", row.Name)
 	default:
-		return strings.ReplaceAll(p.T("area.h1.neighbourhood"), "{name}", row.Name)
+		key := districtKey("area.h1.neighbourhood", row.DistrictCity)
+		return strings.NewReplacer("{name}", row.Name, "{city}", row.DistrictCity).Replace(p.T(key))
 	}
 }
 
@@ -431,7 +432,7 @@ func (rr *Renderer) nearestSameKind(meta snapshot.AreaMeta, snap *snapshot.Snaps
 	}
 	candidates := make([]candidate, 0, len(snap.KnownSlugs))
 	for slug, m := range snap.KnownSlugs {
-		if slug == meta.Slug || m.Kind != meta.Kind {
+		if slug == meta.Slug || m.Kind != meta.Kind || !sameDistrictCity(meta, m) {
 			continue
 		}
 		d := haversineKM(meta.CentroidLat, meta.CentroidLon, m.CentroidLat, m.CentroidLon)
@@ -542,9 +543,12 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 
 	if children := rr.childrenOf(meta, snap, lang); len(children) > 0 {
 		label := p.T("area.children.oblast")
-		// Districts are the neighbourhood-kind children; no slug literal, so a renamed Sofia still matches.
+		// Districts are the neighbourhood-kind children; Sofia keeps its own label, any other city names itself.
 		if children[0].Kind == "neighbourhood" {
 			label = p.T("area.children.districts")
+			if meta.Slug != sofiaHubSlug {
+				label = strings.ReplaceAll(p.T("area.children.districts_city"), "{city}", row.Name)
+			}
 		}
 		p.AreaChildrenBlock = &AreaLinkBlock{Label: label, Items: children}
 		// The Sofia city page is the districts hub; it is identified by slug and kind, via sofiaHubSlug.

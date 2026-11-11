@@ -56,6 +56,7 @@ func (p PageData) factText(key string, pairs ...string) string {
 		"{area_in}", in,
 		"{area_in_cap}", capFirst(in),
 		"{area_plain}", p.areaPlain(row),
+		"{city}", row.DistrictCity,
 	}
 	return strings.NewReplacer(append(base, pairs...)...).Replace(p.T(key))
 }
@@ -63,6 +64,43 @@ func (p PageData) factText(key string, pairs ...string) string {
 // countText picks key.one or key.other for n and fills {n}.
 func (p PageData) countText(key string, n int) string {
 	return strings.ReplaceAll(p.T(key+"."+pluralOf(n, "one", "other")), "{n}", strconv.Itoa(n))
+}
+
+// districtKey is the catalogue key for a district's copy: the original for Sofia (empty city), the _city variant otherwise.
+func districtKey(base, city string) string {
+	if city == "" {
+		return base
+	}
+	return base + "_city"
+}
+
+// districtCity is the name of the city a district belongs to. It is empty for Sofia districts, and for a district
+// whose parent is unknown, so both keep the original copy.
+func (rr *Renderer) districtCity(meta snapshot.AreaMeta, snap *snapshot.Snapshot, lang string) string {
+	if meta.Kind != "neighbourhood" || meta.ParentSlug == sofiaHubSlug {
+		return ""
+	}
+	parent, ok := snap.KnownSlugs[meta.ParentSlug]
+	if !ok {
+		return ""
+	}
+	return rr.rowFrom(parent, lang).Name
+}
+
+// sameDistrictCity is false only for two districts of different cities.
+func sameDistrictCity(a, b snapshot.AreaMeta) bool {
+	return a.Kind != "neighbourhood" || a.ParentSlug == b.ParentSlug
+}
+
+// peersOf lists the areas of meta's kind it is ranked against. A district ranks within its own city.
+func peersOf(snap *snapshot.Snapshot, meta snapshot.AreaMeta) []snapshot.AreaMeta {
+	var out []snapshot.AreaMeta
+	for _, m := range sameKind(snap, meta.Kind) {
+		if sameDistrictCity(meta, m) {
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // sameKind lists the areas of one kind.
@@ -83,7 +121,7 @@ func (rr *Renderer) areaFacts(p PageData, meta snapshot.AreaMeta, snap *snapshot
 	f.Network = p.networkFact(meta, snap)
 	f.Rank, f.rankFAQ = p.rankFact(meta, snap)
 	if f.Rank != "" {
-		f.kindPlain = p.T("area.facts.kind_plain." + meta.Kind)
+		f.kindPlain = p.factText(districtKey("area.facts.kind_plain."+meta.Kind, p.Area.DistrictCity))
 	}
 	return f
 }
@@ -101,7 +139,7 @@ func (rr *Renderer) placeFact(p PageData, meta snapshot.AreaMeta, snap *snapshot
 	case "oblast":
 		parts = p.sizedPlace(meta, snap, km2, "area.facts.place.oblast_lead", "area.facts.place.size_rank_oblast")
 	case "neighbourhood":
-		parts = p.sizedPlace(meta, snap, km2, "area.facts.place.district_lead", "area.facts.place.size_rank_district")
+		parts = p.sizedPlace(meta, snap, km2, districtKey("area.facts.place.district_lead", p.Area.DistrictCity), "area.facts.place.size_rank_district")
 	}
 	return strings.Join(parts, " ")
 }
@@ -128,7 +166,7 @@ func (rr *Renderer) cityPlace(p PageData, meta snapshot.AreaMeta, snap *snapshot
 
 // sizedPlace is the district and oblast shape: how many there are, the size, and the place by size.
 func (p PageData) sizedPlace(meta snapshot.AreaMeta, snap *snapshot.Snapshot, km2, leadKey, rankKey string) []string {
-	peers := sameKind(snap, meta.Kind)
+	peers := peersOf(snap, meta)
 	parts := []string{p.factText(leadKey, "{total}", strconv.Itoa(len(peers)))}
 	if km2 == "" {
 		return parts
@@ -301,7 +339,7 @@ func (p PageData) rankFact(meta snapshot.AreaMeta, snap *snapshot.Snapshot) (ful
 		return "", ""
 	}
 	var vals []float64
-	for _, m := range sameKind(snap, meta.Kind) {
+	for _, m := range peersOf(snap, meta) {
 		if pv, has := m.Values[rankMetric]; has {
 			vals = append(vals, pv)
 		}
@@ -315,7 +353,7 @@ func (p PageData) rankFact(meta snapshot.AreaMeta, snap *snapshot.Snapshot) (ful
 	pairs := []string{
 		"{rank}", ordinal(p.Lang, rank),
 		"{total}", strconv.Itoa(len(vals)),
-		"{kind}", p.T("area.facts.kind." + meta.Kind),
+		"{kind}", p.factText(districtKey("area.facts.kind."+meta.Kind, p.Area.DistrictCity)),
 		"{value}", formatValue(v, p.Lang),
 		"{median}", formatValue(median, p.Lang),
 	}
