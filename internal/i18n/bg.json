@@ -724,7 +724,7 @@
   "pollen.weekday.fri": "пт",
   "pollen.weekday.sat": "сб",
   "pollen.weekday.sun": "нд",
-  "pollen.unit_note": "Цветният прашец (полени), средно за деня, зрънца в кубичен метър въздух.",
+  "pollen.unit_note": "Зрънца цветен прашец (полени) в кубичен метър въздух, средно за деня.",
   "pollen.note": "Това е прогноза от модел, за ориентация. Тя не е измерване и не е медицински съвет.",
   "pollen.credit": "Съдържа преработена информация от Copernicus Atmosphere Monitoring Service, 2026 г., чрез Open-Meteo.com (CC BY 4.0). Европейската комисия и ECMWF не носят отговорност за ползването на тази информация.",
   "pollen.chip": "Прашец днес: {level} · {species}",
