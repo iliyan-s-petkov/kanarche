@@ -334,7 +334,12 @@ func (p PageData) areaCompareHTML(row AreaRow) template.HTML {
 	var b strings.Builder
 	b.WriteString(`<div class="area-compare">`)
 	for _, key := range []string{"area.compare.day", "area.compare.who", "area.compare.eu", "area.compare.note"} {
-		b.WriteString(`<p>` + htmlEscape(fill.Replace(p.T(key))) + `</p>`)
+		line := fill.Replace(p.T(key))
+		if key == "area.compare.day" {
+			b.WriteString(`<p>` + p.linkPMLabels(line) + `</p>`)
+			continue
+		}
+		b.WriteString(`<p>` + htmlEscape(line) + `</p>`)
 	}
 	b.WriteString(`</div>`)
 	return template.HTML(b.String())

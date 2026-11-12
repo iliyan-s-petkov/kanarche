@@ -62,12 +62,17 @@ for (const path of ['/', '/en']) {
       await expect(input(page)).toHaveAttribute('placeholder', PLACEHOLDER[path])
       await page.waitForTimeout(300)
       await shot(page, `open-${tag}`)
-      const res = await page.evaluate(() => {
+      const res = await page.evaluate(async () => {
         const box = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width } }
         const f = document.querySelector('.map-controls__find input')
         const cs = getComputedStyle(f)
+        const fontString = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+        // Canvas measures with whatever font is loaded at that instant. Wait for the web font,
+        // otherwise the fallback (wider) font is measured and the fit check fails spuriously.
+        await document.fonts.load(fontString, f.placeholder)
+        await document.fonts.ready
         const c = document.createElement('canvas').getContext('2d')
-        c.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+        c.font = fontString
         const text = c.measureText(f.placeholder).width
         const room = f.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
         const rail = [...document.querySelectorAll('.map-rail button, .map-rail a')].filter((e) => e.checkVisibility())
