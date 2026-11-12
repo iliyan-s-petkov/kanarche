@@ -152,10 +152,44 @@ func TestFeedbackMastheadItemIsHiddenOnPhones(t *testing.T) {
 	}
 }
 
-func TestFeedbackSectionLinkGetsTheTouchHitArea(t *testing.T) {
+// The section is a card with an icon heading and a pill button, not a bare link.
+func TestFeedbackSectionIsACardWithAPillButton(t *testing.T) {
+	rr := rendererWithFeedback(t, surveyBase)
+	body := fetch(t, rr, "/en/about").Body.String()
+	i := strings.Index(body, `id="feedback-h"`)
+	if i < 0 {
+		t.Fatal("no feedback section")
+	}
+	sec := body[strings.LastIndex(body[:i], "<section"):]
+	sec = sec[:strings.Index(sec, "</section>")]
+	for _, want := range []string{`class="about-feedback__card"`, `about-feedback__ico`, `class="about-feedback__btn"`, `aria-hidden="true"`} {
+		if !strings.Contains(sec, want) {
+			t.Errorf("feedback section lacks %q", want)
+		}
+	}
+	if strings.Contains(sec, `class="link"`) {
+		t.Error("feedback section still uses the plain link class")
+	}
+	if strings.Contains(sec, "↗") {
+		t.Error("the arrow must be an icon, not text")
+	}
+}
+
+func TestFeedbackButtonGetsTheTouchHeightAndTheButtonStyle(t *testing.T) {
 	css := readFile(t, "static/app.css")
-	if got := strings.Count(css, ".about-feedback .link"); got != 2 {
-		t.Errorf("app.css lists .about-feedback .link %d times in the touch hit-area rules, want 2", got)
+	for _, want := range []string{
+		".about-feedback__btn {",
+		"border-radius: var(--radius-pill)",
+		".about-feedback__btn:hover { background: var(--accent-hover)",
+		".about-feedback__btn:focus-visible { box-shadow: var(--focus-ring); }",
+		"  .about-feedback__btn { min-block-size: 44px; }",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("app.css lacks %q", want)
+		}
+	}
+	if strings.Contains(css, ".about-feedback .link") {
+		t.Error("app.css still styles .about-feedback .link")
 	}
 }
 

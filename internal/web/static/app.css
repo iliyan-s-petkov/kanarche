@@ -2104,6 +2104,20 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .about-card__title a:focus-visible::after { box-shadow: var(--focus-ring); }
 .about-card__desc { color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); line-height: 1.4; }
 .about-section > p.about-card__note { font-size: var(--text-caption); color: var(--muted); }
+/* The survey card on /about: .about-card look, pill button like .map-dock__more. */
+.about-feedback__card { max-inline-size: 40rem; background: var(--bg); border: 1px solid var(--border-faint); border-radius: var(--radius); padding: var(--space-4); }
+.about-feedback__card > h2 { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.about-feedback__card > p { color: var(--fg-2); margin: 0 0 var(--space-3); }
+.about-feedback__card > p:last-child { margin-block-end: 0; }
+.about-feedback__ico { flex: none; color: var(--accent); }
+.about-feedback__btn {
+  display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-4);
+  min-block-size: 2rem; border: 1px solid var(--accent); border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--accent-on); font-weight: var(--weight-emphasis); text-decoration: none;
+}
+.about-feedback__btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-on); }
+.about-feedback__btn:focus-visible { box-shadow: var(--focus-ring); }
+.about-feedback__arrow { flex: none; }
 .about-promise { display: flex; gap: var(--space-3); align-items: flex-start; background: var(--surface-sel); border-radius: var(--radius); padding: var(--space-4); margin-block-end: var(--space-4); }
 .about-promise svg { flex: none; color: var(--accent); }
 .about-promise p { margin: 0; }
@@ -2289,13 +2303,14 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
    the hit box, by half the shortfall on each side. Lists of links get real height instead,
    because stacked hit boxes would overlap. Pinned by web/e2e/touch-targets.spec.js. */
 @media (hover: none) {
+  .about-feedback__btn { min-block-size: 44px; }
   :is(.masthead__brand, .langpick__btn, .colmenu__btn, .chart-reset, .map-locate-hint__btn, .map-play__btn,
-    .map-window__btn, .data-refresh__btn--icon, .map-data-link .link, .about-back a, .about-step__extra p > a, .about-feedback .link) {
+    .map-window__btn, .data-refresh__btn--icon, .map-data-link .link, .about-back a, .about-step__extra p > a) {
     position: relative;
   }
   :is(.masthead__brand, .langpick__btn, .colmenu__btn, .chart-reset, .map-locate-hint__btn, .map-play__btn,
     .map-window__btn, .data-refresh__btn--icon, .about-code__copy, .map-data-link .link, .about-back a,
-    .about-step__extra p > a, .about-feedback .link)::after {
+    .about-step__extra p > a)::after {
     content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
   }
   /* The rail and the attribution button stay 44px past the 672px phone cut-off (landscape phones). */

@@ -226,9 +226,11 @@
 {{/* The survey section on /about. */}}
 {{define "feedbackSection"}}{{with .FeedbackLink}}
 <section class="about-section about-feedback" aria-labelledby="feedback-h">
-  <h2 id="feedback-h">{{$.T "about.feedback.heading"}}</h2>
-  <p>{{$.T "about.feedback.body"}}</p>
-  <p><a class="link" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "about.feedback.link"}}</a></p>
+  <div class="about-feedback__card">
+    <h2 id="feedback-h"><svg class="about-feedback__ico" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{{$.T "about.feedback.heading"}}</h2>
+    <p>{{$.T "about.feedback.body"}}</p>
+    <p><a class="about-feedback__btn" href="{{.}}" target="_blank" rel="noopener noreferrer">{{$.T "about.feedback.link"}}<svg class="about-feedback__arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+  </div>
 </section>
 {{end}}{{end}}
 
