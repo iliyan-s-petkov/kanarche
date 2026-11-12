@@ -93,6 +93,8 @@ func (p PageData) aboutFAQBlock() *FAQBlock {
 	links := []faqLink{
 		{Label: p.T("about.sources.heading"), Href: "#sources"},
 		{Label: p.T("licences.title"), Href: p.Path("/licences")},
+		{Label: p.T("metric.P2"), Href: p.Path("/pm25")},
+		{Label: p.T("metric.P1"), Href: p.Path("/pm10")},
 	}
 	block := &FAQBlock{Heading: p.T("about_faq.heading")}
 	for n := 1; n <= aboutFAQCount; n++ {
@@ -123,4 +125,24 @@ func (p PageData) withRZILinks(item FAQItem) FAQItem {
 	item.Answer += " " + strings.Join(urls, " ")
 	item.AnswerHTML += template.HTML(" " + strings.Join(anchors, " · "))
 	return item
+}
+
+// PMLink is the PM label of metric ("P2" or "P1") as a link to its explainer page.
+func (p PageData) PMLink(metric string) template.HTML {
+	path := "/pm25"
+	if metric == "P1" {
+		path = "/pm10"
+	}
+	return template.HTML(`<a class="link" href="` + html.EscapeString(p.Path(path)) + `">` + html.EscapeString(p.T("metric."+metric)) + `</a>`)
+}
+
+// linkPMLabels escapes s and links the first PM2.5 and the first PM10 label in it.
+func (p PageData) linkPMLabels(s string) string {
+	out := html.EscapeString(s)
+	for _, m := range []string{"P2", "P1"} {
+		if label := html.EscapeString(p.T("metric." + m)); strings.Contains(out, label) {
+			out = strings.Replace(out, label, string(p.PMLink(m)), 1)
+		}
+	}
+	return out
 }
