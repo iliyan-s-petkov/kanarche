@@ -63,7 +63,15 @@ func (rr *Renderer) handleBadge(w http.ResponseWriter, r *http.Request) {
 // badgeAlt is badge.alt filled for one reading, shared by the SVG title and the page snippet.
 func (rr *Renderer) badgeAlt(lang string, look badgeLook) string {
 	return strings.NewReplacer("{name}", look.Name, "{band}", look.Band, "{value}", look.Value).
-		Replace(rr.cat.T(lang, "badge.alt"))
+		Replace(rr.cat.T(lang, rr.vavKey(lang, "badge.alt", look.Name)))
+}
+
+// vavKey is key's _vav variant for в/ф names (startsWithVav), when the catalogue has one.
+func (rr *Renderer) vavKey(lang, key, name string) string {
+	if startsWithVav(name) && rr.cat.Has(lang, key+"_vav") {
+		return key + "_vav"
+	}
+	return key
 }
 
 // badgeFor is the look of one area's current reading; ok is false without a PM2.5 value.
@@ -158,5 +166,5 @@ func (rr *Renderer) badgeExampleAlt(lang string) string {
 			name = rr.rowFrom(meta, lang).Name
 		}
 	}
-	return strings.ReplaceAll(rr.cat.T(lang, "badge.link_text"), "{name}", name)
+	return strings.ReplaceAll(rr.cat.T(lang, rr.vavKey(lang, "badge.link_text", name)), "{name}", name)
 }
