@@ -409,8 +409,8 @@
       <caption>{{.Caption $}}</caption>
       <thead><tr>
         <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
-        <th scope="col" class="num">{{$.T "metric.P2"}}, {{$.T "unit.P2"}}</th>
-        <th scope="col" class="num">{{$.T "metric.P1"}}, {{$.T "unit.P1"}}</th>
+        <th scope="col" class="num">{{$.PMLink "P2"}}, {{$.T "unit.P2"}}</th>
+        <th scope="col" class="num">{{$.PMLink "P1"}}, {{$.T "unit.P1"}}</th>
         <th scope="col">{{$.T "area.updated"}}</th>
       </tr></thead>
       <tbody>{{range .Rows}}
