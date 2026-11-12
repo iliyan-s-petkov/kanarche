@@ -15,6 +15,8 @@ func TestCityTitleTakesVavLikeTheH1(t *testing.T) {
 		{"/area/varna", "Индекс за качество на въздуха във Варна (AQI) сега"},
 		{"/area/vratsa", "Индекс за качество на въздуха във Враца (AQI) сега"},
 		{"/area/veliko-tarnovo", "Индекс за качество на въздуха във Велико Търново (AQI) сега"},
+		{"/area/vidin", "Индекс за качество на въздуха във Видин (AQI) сега"},
+		{"/area/sofia", "Индекс за качество на въздуха в София (AQI) сега"},
 		{"/area/plovdiv", "Индекс за качество на въздуха в Пловдив (AQI) сега"},
 	}
 	for _, c := range cases {
@@ -25,6 +27,11 @@ func TestCityTitleTakesVavLikeTheH1(t *testing.T) {
 		if got := tagAttr(t, body, `<meta property="og:title" content="`); !strings.HasPrefix(got, c.want) {
 			t.Errorf("%s: og:title = %q, want prefix %q", c.path, got, c.want)
 		}
+	}
+	// An oblast reads "област Варна", so it keeps "в" and never takes "във".
+	ob := pageTitle(t, fetch(t, rr, "/area/varna-oblast").Body.String())
+	if strings.Contains(ob, "във") || !strings.Contains(ob, "Област Варна") {
+		t.Errorf("oblast title = %q, want Област Варна without във", ob)
 	}
 	// EN has no _vav key and is untouched.
 	if got := pageTitle(t, fetch(t, rr, "/en/area/varna").Body.String()); strings.Contains(got, "във") {
