@@ -39,7 +39,7 @@ func TestCityPageRendersLimitComparison(t *testing.T) {
 	rr := renderer(t, compareFixture(t, time.Now()))
 	for path, want := range map[string][]string{"/area/plovdiv": compareBG, "/en/area/plovdiv": compareEN} {
 		// Tags are stripped because the PM labels in the first sentence are links.
-		body := strings.Join(strings.Fields(visibleText(fetch(t, rr, path).Body.String())), " ")
+		body := tagRe.ReplaceAllString(fetch(t, rr, path).Body.String(), "")
 		for _, s := range want {
 			if !strings.Contains(body, s) {
 				t.Errorf("%s: missing %q", path, s)
