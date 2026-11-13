@@ -61,3 +61,11 @@ edition URL (year bumped by one). 200 sets gauge `airbg_sea_datahub_newer_editio
 to 1, 404 to 0, other statuses return an error and leave it alone. Yearly
 runbook: bump URL and sha in `airbg.yaml`, run extract command, review diff,
 open a PR.
+
+## Staleness
+
+Gauges `airbg_sea_last_import_timestamp` and `airbg_sea_import_stale` (1 when the
+last good import is over 14 days old or absent) are set at start, after each
+import and after each failure. Each failed attempt logs one WARN with the age of
+the last good import. A non-200 error carries the status, Server header and up
+to 200 bytes of body.

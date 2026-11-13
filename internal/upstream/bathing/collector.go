@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"kanarche.eu/internal/config"
+	"kanarche.eu/internal/metrics"
 	"kanarche.eu/internal/store"
 )
 
@@ -14,6 +15,14 @@ const retryAfter = time.Hour
 
 // watchEvery is the gap between new-edition probes. Imports run more often.
 const watchEvery = 7 * 24 * time.Hour
+
+// staleAfter is the age of the last good import past which the source reads as stale.
+const staleAfter = 14 * 24 * time.Hour
+
+var (
+	lastImportTS = metrics.Gauge("airbg_sea_last_import_timestamp", "Unix time of the last good bathing-water import.")
+	importStale  = metrics.Gauge("airbg_sea_import_stale", "1 when the last good bathing-water import is older than 14 days or absent, else 0.")
+)
 
 // Sink is the store side of an import.
 type Sink interface {
@@ -71,6 +80,37 @@ func (c *Collector) WatchEdition(ctx context.Context) {
 	}
 }
 
+// publishAge sets the freshness gauges from the stored last import and
+// returns it.
+func (c *Collector) publishAge(ctx context.Context) (time.Time, bool) {
+	last, ok, err := c.sink.BathingLastImport(ctx)
+	if err != nil {
+		slog.Error("sea import: read last import", "error", err)
+		return time.Time{}, false
+	}
+	if ok {
+		lastImportTS.Set(float64(last.Unix()))
+	}
+	if !ok || c.clock().Sub(last) > staleAfter {
+		importStale.Set(1)
+	} else {
+		importStale.Set(0)
+	}
+	return last, ok
+}
+
+// NoteFailure logs one WARN for a failed attempt with the age of the last good
+// import, and refreshes the freshness gauges.
+func (c *Collector) NoteFailure(ctx context.Context, cause error) {
+	last, ok := c.publishAge(ctx)
+	if !ok {
+		slog.Warn("sea import failed, no good import on record", "error", cause)
+		return
+	}
+	age := c.clock().Sub(last).Round(time.Minute)
+	slog.Warn("sea import failed", "error", cause, "last_good", last.UTC().Format(time.RFC3339), "age", age.String(), "stale", age > staleAfter)
+}
+
 // RunOnce fetches, validates and replaces the stored set. Nothing is written on failure.
 func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
 	raw, err := c.client.Fetch(ctx)
@@ -110,6 +150,7 @@ func (c *Collector) Loop(ctx context.Context) {
 	if err != nil {
 		slog.Error("sea import: read last import", "error", err)
 	}
+	c.publishAge(ctx)
 	wait := NextDelay(c.clock(), last, ok, c.cfg.RefreshInterval)
 	// A new snapshot edition is imported at once instead of waiting out the interval.
 	if c.sup != nil && wait > 0 {
@@ -129,10 +170,11 @@ func (c *Collector) Loop(ctx context.Context) {
 		}
 		st, err := c.RunOnce(ctx)
 		if err != nil {
-			slog.Error("sea import failed", "error", err)
+			c.NoteFailure(ctx, err)
 			wait = min(retryAfter, c.cfg.RefreshInterval)
 			continue
 		}
+		c.publishAge(ctx)
 		slog.Info("sea import complete", "sites", st.Sites, "classes", st.Classes, "samples", st.Samples,
 			"retired", st.Skipped.Retired, "invalid", st.Skipped.Invalid, "orphan", st.Skipped.Orphan,
 			"supplement_applied", st.Supplement.Applied, "supplement_shadowed", st.Supplement.Shadowed,

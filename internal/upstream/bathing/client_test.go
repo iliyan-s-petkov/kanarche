@@ -163,3 +163,29 @@ func TestFetchRefusesAnInvalidCountry(t *testing.T) {
 		t.Errorf("%d requests sent, want none", calls.Load())
 	}
 }
+
+func TestNon200ErrorCarriesStatusServerAndBody(t *testing.T) {
+	body := "<html>\x00blocked\n" + strings.Repeat("x", 400)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Server", "Microsoft-Azure-Application-Gateway/v2")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(body))
+	}))
+	defer srv.Close()
+	_, err := bathing.New(testConfig(srv.URL)).Fetch(context.Background())
+	if err == nil {
+		t.Fatal("Fetch succeeded on 403")
+	}
+	msg := err.Error()
+	for _, want := range []string{"status 403", "Microsoft-Azure-Application-Gateway/v2", "blocked"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("error %q lacks %q", msg, want)
+		}
+	}
+	if strings.ContainsAny(msg, "\x00\n") {
+		t.Errorf("error carries control characters: %q", msg)
+	}
+	if strings.Count(msg, "x") > 200 {
+		t.Errorf("error quotes more than 200 body bytes: %d", strings.Count(msg, "x"))
+	}
+}
