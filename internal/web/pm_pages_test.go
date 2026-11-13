@@ -9,6 +9,28 @@ import (
 	"kanarche.eu/internal/api"
 )
 
+// TestPMPageTitlesAndH1 pins the owner-chosen title core and H1 of each
+// explainer page. The title may carry the brand suffix, so only the core is
+// matched at the start of <title>.
+func TestPMPageTitlesAndH1(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	cases := []struct{ path, title, h1 string }{
+		{"/pm25", "ФПЧ2.5: фини прахови частици във въздуха", "Какво са фини прахови частици ФПЧ2.5?"},
+		{"/pm10", "ФПЧ10: фини прахови частици във въздуха", "Какво са фини прахови частици ФПЧ10?"},
+		{"/en/pm25", "PM2.5: fine particulate matter in the air", "What is PM2.5, fine particulate matter?"},
+		{"/en/pm10", "PM10: particulate matter in the air", "What is PM10, particulate matter?"},
+	}
+	for _, c := range cases {
+		body := fetch(t, rr, c.path).Body.String()
+		if !strings.Contains(body, "<title>"+c.title) {
+			t.Errorf("%s: title does not start with %q", c.path, c.title)
+		}
+		if !strings.Contains(body, ">"+c.h1+"</h1>") {
+			t.Errorf("%s: h1 %q missing", c.path, c.h1)
+		}
+	}
+}
+
 var pmPages = []struct{ path, metric, other string }{
 	{"/pm25", "P2", "/pm10"},
 	{"/pm10", "P1", "/pm25"},
