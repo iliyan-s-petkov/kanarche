@@ -1114,7 +1114,9 @@
   "area.heading.weather": "Weather",
   "area.heading.sensors": "Sensors",
   "badge.alt": "Air quality in {name}: {band}, PM2.5 {value} µg/m³. Kanarche",
+  "badge.alt_vav": "Air quality in {name}: {band}, PM2.5 {value} µg/m³. Kanarche",
   "badge.link_text": "Air quality in {name} on Kanarche",
+  "badge.link_text_vav": "Air quality in {name} on Kanarche",
   "badge.no_data": "No recent data",
   "opendata.badge.heading": "Badge for your site",
   "opendata.badge.body": "Show the current air quality of one area on your page. Replace the area name in the address with the slug from the area page URL, for example plovdiv-oblast. The badge links to the area page on Kanarche, which is the credit for the data. Copy the code below. Your own Content Security Policy must allow images from kanarche.eu. The image updates about every 5 minutes. It is indicative and not for health decisions."

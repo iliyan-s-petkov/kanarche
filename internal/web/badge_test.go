@@ -300,3 +300,31 @@ func TestBadgeBandWordHasItsOwnLineInTheWorstCase(t *testing.T) {
 		}
 	}
 }
+
+// TestBadgeAltTakesVavLikeTheH1: the Bulgarian badge alt text says "във" before
+// В/Ф names and "в" elsewhere. EN is untouched.
+func TestBadgeAltTakesVavLikeTheH1(t *testing.T) {
+	snap := badgeSnapshot()
+	for slug, name := range map[string]string{"varna": "Варна", "veliko-tarnovo": "Велико Търново", "vratsa": "Враца"} {
+		snap.KnownSlugs[slug] = snapshot.AreaMeta{Slug: slug, Kind: "oblast", NameBG: name, NameEN: name,
+			Covered: true, SensorCount: 3, Values: map[string]float64{"P2": 12}}
+	}
+	snap.KnownSlugs["vidin"] = snapshot.AreaMeta{Slug: "vidin", Kind: "oblast", NameBG: "Видин", NameEN: "Vidin",
+		Covered: true, SensorCount: 3, Values: map[string]float64{"P2": 12}}
+	cases := []struct{ slug, want string }{
+		{"varna", "Качество на въздуха във Варна:"},
+		{"vidin", "Качество на въздуха във Видин:"},
+		{"veliko-tarnovo", "Качество на въздуха във Велико Търново:"},
+		{"vratsa", "Качество на въздуха във Враца:"},
+		{"sofia", "Качество на въздуха в София:"},
+	}
+	for _, c := range cases {
+		s := parseBadge(t, badgeFetch(t, snap, "/badge/"+c.slug+".svg"))
+		if !strings.HasPrefix(s.Title, c.want) {
+			t.Errorf("%s: title = %q, want prefix %q", c.slug, s.Title, c.want)
+		}
+	}
+	if s := parseBadge(t, badgeFetch(t, snap, "/en/badge/varna.svg")); strings.Contains(s.Title, "във") {
+		t.Errorf("EN title = %q", s.Title)
+	}
+}

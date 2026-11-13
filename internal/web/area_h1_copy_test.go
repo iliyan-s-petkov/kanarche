@@ -32,6 +32,8 @@ func h1Fixture(t *testing.T) *snapshot.Snapshot {
 	snap.KnownSlugs["vratsa"] = city("vratsa", "Враца", "Vratsa", "vratsa-oblast", 23.55, 43.2, true)
 	snap.KnownSlugs["veliko-tarnovo-oblast"] = oblast("veliko-tarnovo-oblast", "Велико Търново", "Veliko Tarnovo", 25.6, 43.08)
 	snap.KnownSlugs["veliko-tarnovo"] = city("veliko-tarnovo", "Велико Търново", "Veliko Tarnovo", "veliko-tarnovo-oblast", 25.62, 43.08, true)
+	snap.KnownSlugs["vidin-oblast"] = oblast("vidin-oblast", "Видин", "Vidin", 22.87, 43.99)
+	snap.KnownSlugs["vidin"] = city("vidin", "Видин", "Vidin", "vidin-oblast", 22.87, 43.99, true)
 	snap.KnownSlugs["vazrazhdane"] = snapshot.AreaMeta{Slug: "vazrazhdane", Kind: "neighbourhood",
 		NameBG: "Възраждане", NameEN: "Vazrazhdane", ParentSlug: "sofia",
 		CentroidLon: 23.3, CentroidLat: 42.69, DefaultZoom: 13, Covered: true, SensorCount: 3,
