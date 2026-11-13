@@ -1,10 +1,14 @@
 package bathing_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"kanarche.eu/internal/metrics"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -248,4 +252,38 @@ func TestEditionWatchFailureStillThrottled(t *testing.T) {
 
 func TestEditionWatchUnsetIsNoop(t *testing.T) {
 	bathing.NewCollector(config.Sea{}, &fakeSink{}).WatchEdition(context.Background())
+}
+
+func scrape(t *testing.T) string {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	metrics.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	return rec.Body.String()
+}
+
+func TestNoteFailureWarnsWithAgeAndMarksStale(t *testing.T) {
+	var buf bytes.Buffer
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	defer slog.SetDefault(old)
+
+	now := time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)
+	sink := &fakeSink{last: now.Add(-22 * 24 * time.Hour), hasLast: true}
+	c := bathing.NewCollector(testConfig("http://unused"), sink)
+	c.SetClockForTesting(func() time.Time { return now })
+	c.NoteFailure(context.Background(), errors.New("status 403"))
+
+	log := buf.String()
+	if strings.Count(log, "level=WARN") != 1 || !strings.Contains(log, "age=528h0m0s") || !strings.Contains(log, "stale=true") {
+		t.Errorf("log = %q", log)
+	}
+	if out := scrape(t); !strings.Contains(out, "airbg_sea_import_stale 1") {
+		t.Errorf("metrics lack stale=1:\n%s", out)
+	}
+
+	sink.last = now.Add(-3 * 24 * time.Hour)
+	c.NoteFailure(context.Background(), errors.New("status 403"))
+	if out := scrape(t); !strings.Contains(out, "airbg_sea_import_stale 0") {
+		t.Errorf("metrics lack stale=0 for a 3 day old import:\n%s", out)
+	}
 }

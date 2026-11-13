@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"kanarche.eu/internal/config"
 )
@@ -108,6 +109,22 @@ func (c *Client) Fetch(ctx context.Context) (Raw, error) {
 	return raw, nil
 }
 
+// maxErrBody caps the response body quoted in a non-200 error.
+const maxErrBody = 200
+
+// statusError describes a non-200 response: status, the Server header (which
+// tells a WAF from the origin) and a short body snippet.
+func statusError(resp *http.Response) error {
+	snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrBody))
+	clean := strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}, strings.ToValidUTF8(string(snippet), ""))
+	return fmt.Errorf("status %d, server %q, body %q", resp.StatusCode, resp.Header.Get("Server"), strings.TrimSpace(clean))
+}
+
 // row is the set of table shapes the client decodes.
 type row interface {
 	SiteRow | StatusRow | SampleRow
@@ -148,7 +165,7 @@ func query[T row](c *Client, ctx context.Context, sql string) ([]T, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %d", resp.StatusCode)
+		return nil, statusError(resp)
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, c.cfg.MaxPayloadBytes+1))
 	if err != nil {
