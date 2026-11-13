@@ -66,7 +66,12 @@ type ldNode struct {
 		ID string `json:"@id"`
 	} `json:"isBasedOn"`
 	ContainedInPlace *ldPlaceNode `json:"containedInPlace"`
-	ItemListElement  []struct {
+	Geo              *struct {
+		Type string  `json:"@type"`
+		Lat  float64 `json:"latitude"`
+		Lon  float64 `json:"longitude"`
+	} `json:"geo"`
+	ItemListElement []struct {
 		Type     string `json:"@type"`
 		Position int    `json:"position"`
 		Name     string `json:"name"`
@@ -212,6 +217,7 @@ func TestJSONLDHomeHasWebApplication(t *testing.T) {
 }
 
 func TestJSONLDAreaContainedInPlace(t *testing.T) {
+	wantCountry := map[bool]string{false: "България", true: "Bulgaria"}
 	rr := renderer(t, jsonLDFixture(t))
 	cases := map[string][]string{
 		"/area/plovdiv":    {"/area/plovdiv-oblast"},
@@ -230,12 +236,19 @@ func TestJSONLDAreaContainedInPlace(t *testing.T) {
 			}
 			got = got.ContainedInPlace
 		}
-		if got != nil {
-			t.Errorf("%s: containedInPlace chain longer than %d", path, len(want))
+		// The chain ends at the country.
+		if got == nil || got.Type != "Place" || got.Name != wantCountry[strings.HasPrefix(path, "/en/")] || got.ContainedInPlace != nil {
+			t.Errorf("%s: chain must end at the country Place, got %+v", path, got)
+		}
+		if place.Geo == nil || place.Geo.Type != "GeoCoordinates" || place.Geo.Lat == 0 || place.Geo.Lon == 0 {
+			t.Errorf("%s: geo = %+v, want GeoCoordinates with lat and lon", path, place.Geo)
 		}
 	}
-	if place := nodeOfType(jsonLD(t, "/area/plovdiv-oblast", fetch(t, rr, "/area/plovdiv-oblast").Body.String()), "Place"); place != nil && place.ContainedInPlace != nil {
-		t.Errorf("oblast has containedInPlace %+v", place.ContainedInPlace)
+	// An oblast sits directly in the country.
+	if place := nodeOfType(jsonLD(t, "/area/plovdiv-oblast", fetch(t, rr, "/area/plovdiv-oblast").Body.String()), "Place"); place != nil {
+		if c := place.ContainedInPlace; c == nil || c.Name != "България" || c.ContainedInPlace != nil {
+			t.Errorf("oblast containedInPlace = %+v, want the country alone", c)
+		}
 	}
 }
 

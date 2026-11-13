@@ -101,7 +101,7 @@ func TestSitemapAreaWithoutChangeTimeHasNoLastMod(t *testing.T) {
 	}
 }
 
-var staticPagePaths = []string{"/about", "/about-the-data", "/privacy", "/licences", "/terms", "/pm25", "/pm10", "/air-pollution"}
+var staticPagePaths = []string{"/about", "/about-the-data", "/privacy", "/licences", "/terms", "/open-data", "/pm25", "/pm10", "/air-pollution"}
 
 // Static pages carry a fixed release date: a valid day, the same in both languages, and not
 // the snapshot day, so a new snapshot does not move it.

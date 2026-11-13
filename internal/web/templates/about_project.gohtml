@@ -3,6 +3,7 @@
      it may not read .Areas or .Area. */}}
 {{define "main"}}
 <div class="measure about-page">
+{{template "breadcrumb" .}}
 <div class="page-head">
   <img class="about-mascot" src="{{.Static "kanarche-mascot.svg"}}" data-logo="kanarche-1b-mascot" width="200" height="200" fetchpriority="high" alt="{{.T "about.mascot.alt"}}">
   <h1 class="t-title">{{.T "about.page.title"}}</h1>

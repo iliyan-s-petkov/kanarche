@@ -330,6 +330,7 @@ func (rr *Renderer) handleAbout(w http.ResponseWriter, r *http.Request) {
 	data.Title = composeTitle(rr.cat.T(lang, "seo.about_data.title"), rr.cat.T(lang, "seo.title_brand"))
 	data.Description = rr.cat.T(lang, "seo.about_data.description")
 	data.AboutFAQ = data.aboutFAQBlock()
+	data.setCrumbs("about.title")
 	data.JSONLD = rr.mustJSONLD(data.datasetJSONLD())
 	// The privacy section (OpenProject #585): every key comes from the
 	// embedded allow-list, never hand-typed here — see storagekeys.go.
@@ -351,6 +352,8 @@ func (rr *Renderer) handleAboutProject(w http.ResponseWriter, r *http.Request) {
 	data := rr.newPageData(lang, path, generatedAt)
 	data.Title = composeTitle(rr.cat.T(lang, "seo.about.title"), rr.cat.T(lang, "seo.title_brand"))
 	data.Description = rr.cat.T(lang, "seo.about.description")
+	data.setCrumbs("nav.about")
+	data.JSONLD = rr.mustJSONLD(encodeJSONLD(data.breadcrumbLD()))
 	data.StorageKeys = storageKeyInfos(rr.cat, lang)
 	data.StorageKeysCSV = storageKeysCSV()
 	rr.render(w, r, http.StatusOK, "about_project", data)
@@ -359,6 +362,7 @@ func (rr *Renderer) handleAboutProject(w http.ResponseWriter, r *http.Request) {
 // handlePrivacy serves /privacy. Static prose like /about: no snapshot needed.
 func (rr *Renderer) handlePrivacy(w http.ResponseWriter, r *http.Request) {
 	data := rr.staticPageData(r, "seo.privacy")
+	data.setStaticCrumbs("privacy.title")
 	data.StorageKeys = storageKeyInfos(rr.cat, data.Lang)
 	data.StorageKeysCSV = storageKeysCSV()
 	rr.render(w, r, http.StatusOK, "privacy", data)
@@ -366,12 +370,15 @@ func (rr *Renderer) handlePrivacy(w http.ResponseWriter, r *http.Request) {
 
 // handleTerms serves /terms: the data disclaimer, liability and non-affiliation text.
 func (rr *Renderer) handleTerms(w http.ResponseWriter, r *http.Request) {
-	rr.render(w, r, http.StatusOK, "terms", rr.staticPageData(r, "seo.terms"))
+	data := rr.staticPageData(r, "seo.terms")
+	data.setStaticCrumbs("terms.title")
+	rr.render(w, r, http.StatusOK, "terms", data)
 }
 
 // handleLicences serves /licences: every data source and the code licence.
 func (rr *Renderer) handleLicences(w http.ResponseWriter, r *http.Request) {
 	data := rr.staticPageData(r, "seo.licences")
+	data.setStaticCrumbs("licences.title")
 	if data.RZIEnabled() {
 		data.Description = rr.cat.T(data.Lang, "seo.licences.description_rzi")
 	}
@@ -381,9 +388,24 @@ func (rr *Renderer) handleLicences(w http.ResponseWriter, r *http.Request) {
 // handleOpenData serves /open-data: how to reuse the data, with the request limits read from config.
 func (rr *Renderer) handleOpenData(w http.ResponseWriter, r *http.Request) {
 	data := rr.staticPageData(r, "seo.opendata")
+	data.setStaticCrumbs("opendata.title")
 	data.BadgeExampleSlug = badgeExample
 	data.BadgeExampleAlt = rr.badgeExampleAlt(data.Lang)
 	rr.render(w, r, http.StatusOK, "open_data", data)
+}
+
+// setCrumbs sets the two-step trail, home then this page, labelled by an existing catalogue key.
+func (p *PageData) setCrumbs(labelKey string) {
+	p.Crumbs = []Crumb{
+		{Name: p.T("area.breadcrumb.home"), URL: p.Path("/")},
+		{Name: p.T(labelKey), URL: p.Path(p.RequestPath), Current: true},
+	}
+}
+
+// setStaticCrumbs is setCrumbs plus a JSON-LD graph of the trail, for pages with no other markup.
+func (p *PageData) setStaticCrumbs(labelKey string) {
+	p.setCrumbs(labelKey)
+	p.JSONLD = mustJSONLDOf(encodeJSONLD(p.breadcrumbLD()))
 }
 
 // staticPageData is the shared setup of the snapshot-free prose pages; keyBase

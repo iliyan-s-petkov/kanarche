@@ -311,6 +311,9 @@ func (p PageData) datasetJSONLD() (template.JS, error) {
 		ds.DateModified = p.GeneratedAtISO()
 	}
 	nodes := []interface{ ldNode() }{ds, org}
+	if len(p.Crumbs) > 0 {
+		nodes = append(nodes, p.breadcrumbLD())
+	}
 	// A page built without the About FAQ carries the Dataset and Organization alone.
 	if p.AboutFAQ != nil {
 		nodes = append(nodes, faqPageOf(p.AboutFAQ))
@@ -355,19 +358,23 @@ func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
 		return "", err
 	}
 	place := ldPlace{Type: "Place", Name: rr.areaCrumbName(row, p.Lang), URL: p.CanonicalURL(), Geo: geo}
+	country := &ldPlace{Type: "Place", Name: p.T("seo.dataset.place")}
+	place.ContainedInPlace = country
 	if p.AreaParentBlock != nil {
-		place.ContainedInPlace = rr.containedIn(p, p.AreaParentBlock.Items)
+		if parent := rr.containedIn(p, p.AreaParentBlock.Items, country); parent != nil {
+			place.ContainedInPlace = parent
+		}
 	}
 	return encodeJSONLD(crumbs, place, faq)
 }
 
-// containedIn nests the ancestor chain (immediate parent first) into containedInPlace Places.
-func (rr *Renderer) containedIn(p PageData, chain []AreaRow) *ldPlace {
+// containedIn nests the ancestor chain (immediate parent first) into containedInPlace Places, ending in top.
+func (rr *Renderer) containedIn(p PageData, chain []AreaRow, top *ldPlace) *ldPlace {
 	if len(chain) == 0 {
-		return nil
+		return top
 	}
 	a := chain[0]
-	return &ldPlace{Type: "Place", Name: rr.areaCrumbName(a, p.Lang), URL: p.BaseURL + p.Path("/area/"+a.Slug), ContainedInPlace: rr.containedIn(p, chain[1:])}
+	return &ldPlace{Type: "Place", Name: rr.areaCrumbName(a, p.Lang), URL: p.BaseURL + p.Path("/area/"+a.Slug), ContainedInPlace: rr.containedIn(p, chain[1:], top)}
 }
 
 // areaCrumbName labels an oblast as a province so it does not read as its capital city.
@@ -376,6 +383,14 @@ func (rr *Renderer) areaCrumbName(a AreaRow, lang string) string {
 		return rr.oblastForm(a.Slug, lang, a.Name, "seo.oblast.label")
 	}
 	return a.Name
+}
+
+// mustJSONLDOf is mustJSONLD for callers with no Renderer.
+func mustJSONLDOf(js template.JS, err error) template.JS {
+	if err != nil {
+		return ""
+	}
+	return js
 }
 
 // mustJSONLD drops the graph on a marshal error; the page still renders without it.

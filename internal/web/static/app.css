@@ -2332,6 +2332,10 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
   .breadcrumb ol { overflow: hidden; text-overflow: ellipsis; padding: 4px 6px 24px; margin: -4px -6px -24px; }
   .breadcrumb a { position: relative; display: inline-block; }
   .breadcrumb a::after { content: ''; position: absolute; inset-block: -4px -24px; inset-inline: min(0px, calc((100% - 44px) / 2)); }
+  /* Prose pages: the trail takes a real 44px line so its hit boxes stay clear of the title and mascot below. */
+  .measure > .breadcrumb ol { padding: 0; margin: 0; line-height: 44px; }
+  .measure > .breadcrumb a { min-inline-size: 44px; text-align: center; }
+  .measure > .breadcrumb a::after { inset: 0; }
 }
 /* In the 48px header row of a landscape phone the trail's line is 44px tall, so its links are. */
 @media (orientation: landscape) and (max-height: 520px) and (hover: none) {
