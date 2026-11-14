@@ -50,12 +50,6 @@ func (p PageData) AreaExplainerLine() template.HTML {
 		phLink{"{link}", p.T("faq.explainer_link"), p.Path("/air-pollution")})
 }
 
-// AreaGeneralLine is the pointer from the area FAQ to the shared data questions.
-func (p PageData) AreaGeneralLine() template.HTML {
-	return p.linkedText("faq.general_line",
-		phLink{"{link}", p.T("faq.general_link"), p.Path("/about-the-data")})
-}
-
 // airPollutionFAQ builds the explainer's FAQ once, so the markup and the FAQPage JSON-LD share strings.
 func (p PageData) airPollutionFAQ() *FAQBlock {
 	fill := strings.NewReplacer(append([]string{"{minutes}", strconv.Itoa(p.pollMinutes)}, eaqiEdgePairs()...)...)

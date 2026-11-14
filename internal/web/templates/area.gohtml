@@ -38,7 +38,7 @@
      Touch phones show it below the map (app.css) to keep the pull tab above the fold. */}}
 <div class="area-summary">
 {{.AreaNowHTML}}
-<p class="area-summary__note">{{.T "area.indicative"}}</p>
+<p class="area-summary__note">{{.T "area.indicative"}} <a class="link" href="{{.Path "/about-the-data"}}">{{.T "about.title"}}</a></p>
 {{.AreaDayHTML}}
 </div>
 
@@ -436,8 +436,8 @@
 {{end}}</tbody>
 </table>
 </div>
-<p class="pollen-note">{{$.T "pollen.unit_note"}} {{$.T "pollen.note"}}</p>
-<p class="pollen-credit"><a class="link" href="{{$.AttributionURL "open-meteo"}}" rel="noopener noreferrer">{{$.T "pollen.credit"}}</a></p>
+<p class="pollen-note">{{$.T "pollen.unit_note"}}</p>
+<p class="pollen-credit"><a class="link" href="{{$.AttributionURL "open-meteo"}}" rel="noopener noreferrer">{{$.T "pollen.credit_short"}}</a></p>
 </section>
 {{end}}
 
@@ -489,7 +489,6 @@
 </details>
 {{end}}
 </section>
-<p class="faq__more">{{$.AreaGeneralLine}}</p>
 <p class="faq__more">{{$.AreaExplainerLine}}</p>
 {{end}}
 </div>
