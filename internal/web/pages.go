@@ -213,7 +213,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	if live, ok := data.cityLiveDescription(row); ok {
 		data.Description = live
 	}
-	data.AreaNowHTML = data.areaNowHTML(row)
+	data.AreaNowHTML = data.areaNowHTML(row) + data.areaAQIHTML(row)
 	data.AreaDayHTML = data.areaDayHTML(row)
 	data.AreaHealthHTML = data.areaHealthHTML(row)
 	if row.Kind == "city" {

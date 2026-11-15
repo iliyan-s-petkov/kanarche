@@ -103,7 +103,7 @@ func TestHomeSummaryStatesTheCountryAndTheWorstProvince(t *testing.T) {
 
 	for _, want := range []string{
 		"Bulgaria right now: PM2.5 4",
-		"that is 'good' (indicative)",
+		"AQI (EU): good",
 		"Median of 180 sensors",
 		"Highest province: Plovdiv, 20",
 		"micrograms per cubic metre",

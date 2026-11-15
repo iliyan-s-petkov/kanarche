@@ -175,6 +175,17 @@ describe('SensorPanel.svelte', () => {
     expect(target.textContent).toContain('sensor.community')
   })
 
+  it('shows the AQI level above the gauges', () => {
+    const target = render({ aqi: 'moderate', aqiLabel: 'AQI (EU)' })
+    const line = target.querySelector('.panel-aqi')
+    expect(line.textContent).toBe('AQI (EU): moderate')
+    expect(line.compareDocumentPosition(target.querySelector('.gauges')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('shows no AQI line without a level', () => {
+    expect(render({ aqi: '', aqiLabel: 'AQI (EU)' }).querySelector('.panel-aqi')).toBeNull()
+  })
+
   it('shows no network line when there is none to show', () => {
     expect(render({ network: '' }).querySelector('.panel-network')).toBeNull()
   })

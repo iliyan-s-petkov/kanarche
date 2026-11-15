@@ -129,6 +129,29 @@ func TestSEOCopyWordingRules(t *testing.T) {
 	}
 }
 
+// The area hero names the EU AQI level as the worse of PM2.5 and PM10. Plovdiv
+// reads PM2.5 good and PM10 moderate, so a PM2.5-only level would say "good".
+func TestAreaHeroNamesTheWorseParticulateAQILevel(t *testing.T) {
+	snap := seoFixture(t)
+	plovdiv := snap.KnownSlugs["plovdiv"]
+	plovdiv.Values = map[string]float64{"P2": 4, "P1": 60}
+	snap.KnownSlugs["plovdiv"] = plovdiv
+	rr := renderer(t, snap)
+
+	for path, want := range map[string]string{
+		"/area/plovdiv":    "AQI (ЕС): умерено",
+		"/en/area/plovdiv": "AQI (EU): moderate",
+	} {
+		body := fetch(t, rr, path).Body.String()
+		if !strings.Contains(body, want) {
+			t.Errorf("%s hero does not contain %q", path, want)
+		}
+		if strings.Contains(body, "AQI (ЕС): добро") || strings.Contains(body, "AQI (EU): good") {
+			t.Errorf("%s hero names the PM2.5-only level", path)
+		}
+	}
+}
+
 // Every title ends with " | <brand>" and fits 60 runes; og:title is the
 // same title without the suffix, so the two cannot drift apart.
 func TestTitlesEndWithBrandAndOGTitleFollows(t *testing.T) {

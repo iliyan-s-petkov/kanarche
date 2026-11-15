@@ -92,6 +92,23 @@ func bandLabel(metric string, value float64) string {
 	return ""
 }
 
+// eaqiComposite is the catalogue key suffix of the worse of the PM2.5 and PM10
+// EAQI bands in values, the level the EAQI gives a site. With one of the two
+// present it is that one's band; empty when neither is.
+func eaqiComposite(values map[string]float64) string {
+	worst, key := -1, ""
+	for _, metric := range []string{"P2", "P1"} {
+		v, ok := values[metric]
+		if !ok {
+			continue
+		}
+		if i := bandClass(metric, v); i > worst {
+			worst, key = i, bandLabel(metric, v)
+		}
+	}
+	return key
+}
+
 // bandClass is the index of the band value falls in, best first, or -1 when the
 // metric has no scale. The table chip's outline weight is keyed on it (A11Y-05).
 func bandClass(metric string, value float64) int {

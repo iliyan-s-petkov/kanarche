@@ -243,6 +243,32 @@ func (p PageData) areaNowHTML(row AreaRow) template.HTML {
 	return template.HTML(`<p class="area-now">` + p.areaNowText(row) + `</p>`)
 }
 
+// areaAQIHTML is the short "AQI (ЕС): level" line after the air-now sentence.
+// The level is the worse of the PM2.5 and PM10 bands, falling back to the
+// default metric's band; empty when the area has no value to rate.
+func (p PageData) areaAQIHTML(row AreaRow) template.HTML {
+	line := p.areaAQIText(row)
+	if line == "" {
+		return ""
+	}
+	return template.HTML(`<p class="area-aqi">` + line + `</p>`)
+}
+
+// areaAQIText is the line without its wrapper, shared with the home summary.
+func (p PageData) areaAQIText(row AreaRow) string {
+	if !row.Covered || !row.HasValue {
+		return ""
+	}
+	key := eaqiComposite(row.Values)
+	if key == "" {
+		key = bandLabel(p.DefaultMetric, row.Value)
+	}
+	if key == "" {
+		return ""
+	}
+	return strings.ReplaceAll(p.T("area.aqi_level"), "{band}", htmlEscape(p.T("band."+key)))
+}
+
 // areaNowText is the sentence areaNowHTML wraps, shared with the home summary.
 func (p PageData) areaNowText(row AreaRow) string {
 	subject := htmlEscape(p.areaSubject(row))
@@ -283,7 +309,6 @@ func (p PageData) areaNowText(row AreaRow) string {
 	if row.HasValue {
 		text = strings.ReplaceAll(text, "{unit}", p.unitMarkup(p.DefaultMetric))
 		text = strings.ReplaceAll(text, "{value}", htmlEscape(formatValue(row.Value, p.Lang)))
-		text = strings.ReplaceAll(text, "{band}", htmlEscape(p.T("band."+bandLabel(p.DefaultMetric, row.Value))))
 	}
 	return text
 }
