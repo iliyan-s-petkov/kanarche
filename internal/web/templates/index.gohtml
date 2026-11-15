@@ -421,7 +421,7 @@
 </ul>
 {{end}}
 {{if .Districts}}
-<h4>{{$.T "area.children.districts"}}</h4>
+<h4>{{.DistrictsLabel}}</h4>
 <ul class="areas-directory__districts">
 {{range .Districts}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{.Name}}</a></li>{{end}}
 </ul>

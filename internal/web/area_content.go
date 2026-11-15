@@ -580,10 +580,7 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 		label := p.T("area.children.oblast")
 		// Districts are the neighbourhood-kind children; Sofia keeps its own label, any other city names itself.
 		if children[0].Kind == "neighbourhood" {
-			label = p.T("area.children.districts")
-			if meta.Slug != sofiaHubSlug {
-				label = strings.ReplaceAll(p.T("area.children.districts_city"), "{city}", row.Name)
-			}
+			label = p.districtsLabel(meta.Slug, row.Name)
 		}
 		p.AreaChildrenBlock = &AreaLinkBlock{Label: label, Items: children}
 		// The Sofia city page is the districts hub; it is identified by slug and kind, via sofiaHubSlug.
@@ -603,14 +600,24 @@ func (rr *Renderer) buildAreaLinks(p *PageData, meta snapshot.AreaMeta, row Area
 	}
 }
 
+// districtsLabel names the districts of a city: Sofia keeps its own label, any other city names itself.
+func (p PageData) districtsLabel(citySlug, cityName string) string {
+	if citySlug == sofiaHubSlug {
+		return p.T("area.children.districts")
+	}
+	return strings.ReplaceAll(p.T("area.children.districts_city"), "{city}", cityName)
+}
+
 // DirGroup is one /areas directory entry: an oblast, its own label form, the
-// cities inside it, and — for the group whose city has districts — the 24
-// Sofia districts nested under that city (§3 of the SEO6 plan).
+// cities inside it, and the districts of a city that has them (Sofia,
+// Plovdiv, Varna) nested under that city (§3 of the SEO6 plan).
 type DirGroup struct {
 	Oblast    AreaRow
 	Label     string
 	Cities    []AreaRow
 	Districts []AreaRow
+	// DistrictsLabel is the heading over Districts, naming their city.
+	DistrictsLabel string
 }
 
 // buildDirectory is the /areas directory: every oblast, its cities, and
@@ -646,6 +653,7 @@ func (rr *Renderer) buildDirectory(snap *snapshot.Snapshot, lang string) []DirGr
 			}
 			sort.Slice(districts, func(i, j int) bool { return districts[i].Name < districts[j].Name })
 			g.Districts = districts
+			g.DistrictsLabel = PageData{Lang: lang, cat: rr.cat}.districtsLabel(c.Slug, c.Name)
 		}
 		groups = append(groups, g)
 	}
