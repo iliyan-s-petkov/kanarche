@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"kanarche.eu/internal/api"
+	"kanarche.eu/internal/snapshot"
 )
 
 var (
@@ -50,7 +51,7 @@ func faqVisible(t *testing.T, body string) []faqEntry {
 // the fixture's small peer groups leave two.
 func TestAreaFAQHoldsOnlyAreaQuestions(t *testing.T) {
 	rr := renderer(t, eeaFixture(t))
-	for _, path := range []string{"/area/plovdiv", "/en/area/plovdiv", "/area/smolyan", "/en/area/smolyan-oblast", "/area/mladost"} {
+	for _, path := range []string{"/area/plovdiv", "/en/area/plovdiv", "/area/smolyan", "/area/mladost"} {
 		body := fetch(t, rr, path).Body.String()
 		items := faqVisible(t, body)
 		if len(items) < 2 || len(items) > 3 {
@@ -70,19 +71,30 @@ func TestAreaFAQHoldsOnlyAreaQuestions(t *testing.T) {
 func TestFAQLeavesNoRawPlaceholder(t *testing.T) {
 	snap := eeaFixture(t)
 	rr := renderer(t, snap)
+	checked := 0
 	for slug := range snap.KnownSlugs {
 		for _, prefix := range []string{"", "/en"} {
 			path := prefix + "/area/" + slug
-			sec := faqSection(t, fetch(t, rr, path).Body.String())
+			body := fetch(t, rr, path).Body.String()
+			// An oblast without a rank has no FAQ at all (TestUnrankedOblastHasNoEmptyFAQ).
+			if !strings.Contains(body, `id="faq-heading"`) {
+				continue
+			}
+			checked++
+			sec := faqSection(t, body)
 			if strings.ContainsAny(sec, "{}") {
 				t.Errorf("%s: FAQ section still holds a raw placeholder: %q", path, regexp.MustCompile(`\{[^}]*\}?`).FindString(sec))
 			}
 		}
 	}
+	if checked == 0 {
+		t.Fatal("no area page rendered a FAQ")
+	}
 }
 
 func TestFAQHeadingUsesBulgarianPreposition(t *testing.T) {
-	rr := renderer(t, eeaFixture(t))
+	// The ranked fixture gives the oblasts a rank question, so their FAQ renders.
+	rr := renderer(t, rankedOblastFixture(t))
 	cases := map[string]string{
 		"/area/smolyan":         "Въпроси за въздуха в Смолян",
 		"/area/veliko-tarnovo":  "Въпроси за въздуха във Велико Търново",
@@ -259,6 +271,92 @@ func TestAreaFAQDropsTheGenericKeys(t *testing.T) {
 			if _, ok := cat[k]; ok {
 				t.Errorf("%s.json still has %s", lang, k)
 			}
+		}
+	}
+}
+
+// rankedOblastFixture gives six oblasts a PM2.5 value so the rank question exists.
+func rankedOblastFixture(t *testing.T) *snapshot.Snapshot {
+	t.Helper()
+	snap := eeaFixture(t)
+	for i, slug := range []string{"smolyan-oblast", "sofiyska-oblast", "sofia-grad-oblast", "veliko-tarnovo-oblast", "pleven-oblast", "varna-oblast"} {
+		m, ok := snap.KnownSlugs[slug]
+		if !ok {
+			m = snapshot.AreaMeta{Slug: slug, Kind: "oblast", NameBG: slug, NameEN: slug, DefaultZoom: 9, Covered: true, SensorCount: 5}
+		}
+		m.Values = map[string]float64{"P2": float64(10 + 3*i)}
+		snap.KnownSlugs[slug] = m
+	}
+	return snap
+}
+
+// An oblast page keeps only the rank question: its official-station and territory
+// answers repeat the city's, since each oblast has one city. City and district pages keep theirs.
+func TestOblastFAQHoldsOnlyTheRankQuestion(t *testing.T) {
+	rr := renderer(t, rankedOblastFixture(t))
+	for _, path := range []string{"/area/smolyan-oblast", "/en/area/smolyan-oblast"} {
+		body := fetch(t, rr, path).Body.String()
+		items := faqVisible(t, body)
+		if len(items) != 1 {
+			t.Fatalf("%s: %d FAQ entries, want 1", path, len(items))
+		}
+		if !strings.Contains(faqSection(t, body), `class="faq__item"`) {
+			t.Errorf("%s: FAQ item missing", path)
+		}
+	}
+	for _, path := range []string{"/area/plovdiv", "/area/smolyan", "/area/mladost"} {
+		if n := len(faqVisible(t, fetch(t, rr, path).Body.String())); n < 2 {
+			t.Errorf("%s: %d FAQ entries, want at least 2", path, n)
+		}
+	}
+}
+
+// The oblast FAQPage JSON-LD lists exactly the visible item.
+func TestOblastFAQJSONLDMatchesVisible(t *testing.T) {
+	rr := renderer(t, rankedOblastFixture(t))
+	body := fetch(t, rr, "/area/smolyan-oblast").Body.String()
+	start := strings.Index(body, ldOpen) + len(ldOpen)
+	end := strings.Index(body[start:], "</script>")
+	var doc struct {
+		Graph []struct {
+			Type       string `json:"@type"`
+			MainEntity []struct {
+				Name           string `json:"name"`
+				AcceptedAnswer struct {
+					Text string `json:"text"`
+				} `json:"acceptedAnswer"`
+			} `json:"mainEntity"`
+		} `json:"@graph"`
+	}
+	if err := json.Unmarshal([]byte(body[start:start+end]), &doc); err != nil {
+		t.Fatal(err)
+	}
+	visible := faqVisible(t, body)
+	for _, n := range doc.Graph {
+		if n.Type != "FAQPage" {
+			continue
+		}
+		if len(n.MainEntity) != len(visible) || len(visible) != 1 {
+			t.Fatalf("%d JSON-LD entries, %d visible, want 1 each", len(n.MainEntity), len(visible))
+		}
+		if n.MainEntity[0].Name != visible[0].Q || n.MainEntity[0].AcceptedAnswer.Text != visible[0].A {
+			t.Errorf("JSON-LD differs from visible text")
+		}
+		return
+	}
+	t.Fatal("no FAQPage in JSON-LD")
+}
+
+// An oblast without a rank has no FAQ items, so neither the FAQ section nor a FAQPage is rendered.
+func TestUnrankedOblastHasNoEmptyFAQ(t *testing.T) {
+	rr := renderer(t, eeaFixture(t))
+	for _, path := range []string{"/area/smolyan-oblast", "/en/area/smolyan-oblast"} {
+		body := fetch(t, rr, path).Body.String()
+		if strings.Contains(body, `id="faq-heading"`) {
+			t.Errorf("%s: FAQ heading rendered with no items", path)
+		}
+		if strings.Contains(body, `"FAQPage"`) {
+			t.Errorf("%s: empty FAQPage in JSON-LD", path)
 		}
 	}
 }

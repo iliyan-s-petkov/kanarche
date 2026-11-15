@@ -333,6 +333,14 @@ func (p PageData) breadcrumbLD() ldBreadcrumbList {
 // faqPage maps the rendered FAQ one-to-one onto a FAQPage, so markup and visible text share strings.
 func (p PageData) faqPage() ldFAQPage { return faqPageOf(p.AreaFAQ) }
 
+// faqNodes is the area FAQPage, or nothing when the area has no FAQ.
+func (p PageData) faqNodes() []interface{ ldNode() } {
+	if p.AreaFAQ == nil {
+		return nil
+	}
+	return []interface{ ldNode() }{p.faqPage()}
+}
+
 // faqPageOf maps any FAQBlock onto a FAQPage, for the area and About pages alike.
 func faqPageOf(block *FAQBlock) ldFAQPage {
 	page := ldFAQPage{Type: "FAQPage"}
@@ -347,11 +355,10 @@ func faqPageOf(block *FAQBlock) ldFAQPage {
 
 // areaJSONLD is the breadcrumb trail, the FAQ, and a Place when a centroid exists.
 func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
-	crumbs := p.breadcrumbLD()
-	faq := p.faqPage()
+	nodes := []interface{ ldNode() }{p.breadcrumbLD()}
 
 	if row.Lat == 0 && row.Lon == 0 {
-		return encodeJSONLD(crumbs, faq)
+		return encodeJSONLD(append(nodes, p.faqNodes()...)...)
 	}
 	geo, err := json.Marshal(ldGeoCoordinates{Type: "GeoCoordinates", Latitude: row.Lat, Longitude: row.Lon})
 	if err != nil {
@@ -365,7 +372,7 @@ func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
 			place.ContainedInPlace = parent
 		}
 	}
-	return encodeJSONLD(crumbs, place, faq)
+	return encodeJSONLD(append(append(nodes, place), p.faqNodes()...)...)
 }
 
 // containedIn nests the ancestor chain (immediate parent first) into containedInPlace Places, ending in top.
