@@ -39,6 +39,38 @@ export const test = base.extend({
     }
     await sweeper?.close()
   }, { auto: true }],
+
+  // Any uncaught page exception fails the test that raised it. A Svelte throw
+  // in one island aborts the shared effect flush and silently breaks others.
+  // Specs open contexts three ways (ctx, the default context, browser.newContext),
+  // so the sink wraps newContext once per worker and listens on all of them.
+  pageErrorSink: [async ({ browser }, use) => {
+    const watched = new WeakSet()
+    const sink = {
+      errors: [],
+      watch: (c) => {
+        if (watched.has(c)) return
+        watched.add(c)
+        c.on('weberror', (e) => sink.errors.push(e.error().message))
+      },
+    }
+    const newContext = browser.newContext.bind(browser)
+    browser.newContext = async (...args) => {
+      const c = await newContext(...args)
+      sink.watch(c)
+      return c
+    }
+    await use(sink)
+    browser.newContext = newContext
+  }, { scope: 'worker' }],
+
+  failOnPageError: [async ({ pageErrorSink, ctx, context }, use) => {
+    pageErrorSink.watch(ctx)
+    pageErrorSink.watch(context)
+    pageErrorSink.errors.length = 0
+    await use()
+    expect(pageErrorSink.errors, 'uncaught page errors').toEqual([])
+  }, { auto: true }],
 })
 
 // Resolves once the map island has mounted, its style is loaded and its opening

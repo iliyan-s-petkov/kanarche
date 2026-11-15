@@ -233,7 +233,7 @@
       {#if suggestions.length === 0}
         <li class="combobox__empty">{texts.searchEmpty}</li>
       {:else}
-        {#each suggestions as match, i (match.name)}
+        {#each suggestions as match, i}
           {@const parts = splitMark(match.name, match.at, match.len)}
           <!-- mousedown, not click: click arrives after blur has closed the
                list, so a mouse pick would land on nothing. -->
