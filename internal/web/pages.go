@@ -141,7 +141,7 @@ func (rr *Renderer) handleIndex(w http.ResponseWriter, r *http.Request) {
 		data.HomeDistricts = rr.areaLinkRows(snap, lang, "neighbourhood", sofiaHubSlug)
 		data.HomeCapitals = rr.areaLinkRows(snap, lang, "city", "")
 	}
-	// From 1024px the map's panel carries the open sensor; app.css hides the card under the map.
+	// From 1024px the map's panel carries the open sensor; app.css hides the card under the map while it is mounted.
 	data.PanelHostClass = "place-host--docked"
 	// /areas shares this handler with / — same snapshot, same rows — but the
 	// two are different search results and must not share a title (OpenProject
