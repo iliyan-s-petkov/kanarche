@@ -42,9 +42,15 @@ export function createViewState({ metrics, defaultMetric, win = globalThis }) {
   // file's tests does) actually exercises it.
   let writing = false
 
+  // Hash-originated sensor changes only (pasted link, Back/Forward). Our own
+  // openSensor/closeSensor writes never come through here: the panel is already
+  // looking at the sensor that was clicked.
+  const hashSensorListeners = new Set()
+
   const onHashChange = () => {
     if (writing) return
     const next = parseHash(win.location.hash, { metrics, defaultMetric })
+    const sensorChanged = next.sensorId !== sensorId
     metric = next.metric
     sensorId = next.sensorId
     // Reuses `writing`: applying a hash-originated source change must not,
@@ -56,6 +62,7 @@ export function createViewState({ metrics, defaultMetric, win = globalThis }) {
       writing = false
     }
     notifyMetric()
+    if (sensorChanged) for (const fn of hashSensorListeners) fn(next.sensorId)
   }
   win.addEventListener('hashchange', onHashChange)
 
@@ -103,6 +110,11 @@ export function createViewState({ metrics, defaultMetric, win = globalThis }) {
       metricListeners.add(fn)
       return () => metricListeners.delete(fn)
     },
+    // See hashSensorListeners above. Returns an unsubscribe function.
+    onHashSensorChange(fn) {
+      hashSensorListeners.add(fn)
+      return () => hashSensorListeners.delete(fn)
+    },
     // A destination: pushState, so Back closes the panel and Back again leaves.
     openSensor(id) {
       if (id === sensorId) return
@@ -118,6 +130,7 @@ export function createViewState({ metrics, defaultMetric, win = globalThis }) {
       win.removeEventListener('hashchange', onHashChange)
       unsubscribeSources()
       metricListeners.clear()
+      hashSensorListeners.clear()
     },
   }
 }

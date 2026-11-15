@@ -155,3 +155,64 @@ describe('createViewState', () => {
     vs.destroy()
   })
 })
+
+// A sensor that arrives through the hash (pasted link, Back/Forward) must reach
+// the map island, which has to load it before the panel can open. Our own
+// openSensor/closeSensor writes must not, or a marker click would resolve twice.
+describe('onHashSensorChange', () => {
+  const hashTo = (hash) => {
+    history.replaceState(null, '', '/' + hash)
+    dispatchEvent(new HashChangeEvent('hashchange'))
+  }
+
+  it('reports a sensor that a hash change names', () => {
+    const vs = createViewState(opts)
+    const fn = vi.fn()
+    vs.onHashSensorChange(fn)
+    hashTo('#sensor=2888')
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn).toHaveBeenCalledWith(2888)
+    vs.destroy()
+  })
+
+  it('reports a cleared sensor as null', () => {
+    history.replaceState(null, '', '/#sensor=7')
+    const vs = createViewState(opts)
+    const fn = vi.fn()
+    vs.onHashSensorChange(fn)
+    hashTo('')
+    expect(fn).toHaveBeenCalledWith(null)
+    expect(vs.sensorId).toBeNull()
+    vs.destroy()
+  })
+
+  it('stays silent when the sensor did not change', () => {
+    history.replaceState(null, '', '/#sensor=7')
+    const vs = createViewState(opts)
+    const fn = vi.fn()
+    vs.onHashSensorChange(fn)
+    hashTo('#sensor=7&metric=P1')
+    expect(fn).not.toHaveBeenCalled()
+    vs.destroy()
+  })
+
+  it('stays silent for the store own writes', () => {
+    const vs = createViewState(opts)
+    const fn = vi.fn()
+    vs.onHashSensorChange(fn)
+    vs.openSensor(5)
+    vs.closeSensor()
+    vs.setMetric('P1')
+    expect(fn).not.toHaveBeenCalled()
+    vs.destroy()
+  })
+
+  it('unsubscribes', () => {
+    const vs = createViewState(opts)
+    const fn = vi.fn()
+    vs.onHashSensorChange(fn)()
+    hashTo('#sensor=9')
+    expect(fn).not.toHaveBeenCalled()
+    vs.destroy()
+  })
+})

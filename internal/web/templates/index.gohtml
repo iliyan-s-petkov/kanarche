@@ -253,7 +253,9 @@
      unchanged: the panel reads the sensor the map already loaded (see
      web/src/lib/sensors.svelte.js), and this page starts with no slug and
      therefore no sensor data — so a shared /#sensor=101 link renders the page
-     with no panel, exactly as before. */}}
+     with no panel, exactly as before. A #sensor= hash change on a page that
+     has already loaded does resolve the sensor, the way the load-time link
+     does (installMapLoad, vs.onHashSensorChange). */}}
 {{template "sensorCardHost" .}}
 {{template "nearbyList" .}}
 
