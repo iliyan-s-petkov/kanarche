@@ -25,16 +25,23 @@ func (p PageData) HomeAreaLinksHTML() template.HTML {
 	if len(p.HomeDistricts) == 0 && len(p.HomeCapitals) == 0 {
 		return ""
 	}
-	list := func(class string, rows []AreaRow) string {
+	// group is one labelled list; a kind with no rows renders nothing.
+	group := func(class, titleKey string, rows []AreaRow) string {
+		if len(rows) == 0 {
+			return ""
+		}
+		id := "home-area-links-" + class + "-h"
 		var b strings.Builder
-		b.WriteString(`<ul class="home-area-links__list home-area-links__` + class + `">`)
+		b.WriteString(`<div class="home-area-links__group"><h3 id="` + id + `">` + htmlEscape(p.T(titleKey)) + `</h3>`)
+		b.WriteString(`<ul class="home-area-links__list home-area-links__` + class + `" aria-labelledby="` + id + `">`)
 		for _, a := range rows {
 			b.WriteString(`<li><a class="link" href="` + htmlEscape(p.Path("/area/"+a.Slug)) + `">` + htmlEscape(a.Name) + `</a></li>`)
 		}
-		b.WriteString(`</ul>`)
+		b.WriteString(`</ul></div>`)
 		return b.String()
 	}
 	return template.HTML(`<section class="home-area-links" aria-labelledby="home-area-links-h"><h2 id="home-area-links-h">` +
-		htmlEscape(p.T("areas.directory.title")) + `</h2>` +
-		list("districts", p.HomeDistricts) + list("cities", p.HomeCapitals) + `</section>`)
+		htmlEscape(p.T("home.area_links.title")) + `</h2>` +
+		group("districts", "area.children.districts", p.HomeDistricts) +
+		group("cities", "home.area_links.capitals", p.HomeCapitals) + `</section>`)
 }

@@ -51,13 +51,21 @@ func TestHomeLinksAllDistrictsAndCapitals(t *testing.T) {
 	for _, c := range []struct {
 		path, pre, heading  string
 		firstCity, lastCity string
+		dLabel, cLabel      string
 	}{
-		{"/", "", "Градове и райони по области", "varna", "sofia"},
-		{"/en/", "/en", "Cities and districts by province", "plovdiv", "vratsa"},
+		{"/", "", "Райони и градове", "varna", "sofia", "Райони на София", "Областни градове"},
+		{"/en/", "/en", "Districts and cities", "plovdiv", "vratsa", "Sofia districts", "Provincial capitals"},
 	} {
 		sec := section(t, fetch(t, rr, c.path).Body.String(), "home-area-links")
 		if !strings.Contains(sec, "<h2 id=\"home-area-links-h\">"+c.heading+"</h2>") {
 			t.Errorf("%s: want heading %q", c.path, c.heading)
+		}
+		dh := strings.Index(sec, `<h3 id="home-area-links-districts-h">`+c.dLabel+`</h3>`)
+		ch := strings.Index(sec, `<h3 id="home-area-links-cities-h">`+c.cLabel+`</h3>`)
+		du := strings.Index(sec, `<ul class="home-area-links__list home-area-links__districts" aria-labelledby="home-area-links-districts-h">`)
+		cu := strings.Index(sec, `<ul class="home-area-links__list home-area-links__cities" aria-labelledby="home-area-links-cities-h">`)
+		if dh < 0 || ch < 0 || !(dh < du && du < ch && ch < cu) {
+			t.Errorf("%s: want each list under its own h3 (%d %d %d %d)", c.path, dh, du, ch, cu)
 		}
 		districts := listSlugs(t, sec, "districts", c.pre)
 		if len(districts) != 24 {
@@ -97,5 +105,19 @@ func TestAreasPageHasNoHomeAreaLinks(t *testing.T) {
 	rr := renderer(t, areaLinksFixture())
 	if strings.Contains(fetch(t, rr, "/areas").Body.String(), "home-area-links") {
 		t.Error("/areas renders the home block")
+	}
+}
+
+// A kind with no rows renders no heading and no empty list.
+func TestHomeAreaLinksEmptyGroupHasNoHeading(t *testing.T) {
+	known := map[string]snapshot.AreaMeta{"varna": {Slug: "varna", Kind: "city", ParentSlug: "varna-oblast", NameBG: "Варна", NameEN: "Varna",
+		Covered: true, SensorCount: 5, Values: map[string]float64{"P2": 10}}}
+	rr := renderer(t, &snapshot.Snapshot{GeneratedAt: time.Now(), KnownSlugs: known})
+	sec := section(t, fetch(t, rr, "/en/").Body.String(), "home-area-links")
+	if strings.Contains(sec, "Sofia districts") || strings.Contains(sec, "home-area-links__districts") {
+		t.Error("empty districts group rendered")
+	}
+	if !strings.Contains(sec, "Provincial capitals") {
+		t.Error("capitals group missing")
 	}
 }
