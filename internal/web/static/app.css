@@ -1315,6 +1315,10 @@ html:has(> body.embed) { block-size: 100%; }
 .area-summary__note { margin: 0; font-size: var(--text-compact); color: var(--fg-2); }
 .area-health { margin-block: var(--section-gap); }
 .area-health dl, .area-health__source { max-inline-size: var(--prose-measure); }
+.area-year { margin-block: var(--section-gap); }
+.area-year h2 { margin-block: 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); }
+.area-year p { max-inline-size: var(--prose-measure); margin-block: var(--space-2) 0; }
+.area-year__table { margin-block-start: var(--space-3); max-inline-size: 32rem; }
 .area-health h2 { margin-block: 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-body); }
 .area-health dt { font-size: var(--text-compact); color: var(--fg-2); margin-block-start: var(--space-2); }
 .area-health dd { margin: 0; }

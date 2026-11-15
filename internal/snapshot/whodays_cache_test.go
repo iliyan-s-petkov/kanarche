@@ -62,6 +62,24 @@ func TestWHOCacheOneQueryPerUTCDay(t *testing.T) {
 	}
 }
 
+// The year profile comes from the same daily query, so it rides the same cache.
+func TestWHOCacheCarriesYearProfile(t *testing.T) {
+	var c whoDaysCache
+	f := &fakeWHO{}
+	ctx := context.Background()
+	c.apply(ctx, whoSnap(), whoNow, f.fetch)
+	c.wg.Wait()
+	later := whoSnap()
+	c.apply(ctx, later, whoNow.Add(time.Minute), f.fetch)
+	got := later.KnownSlugs["sofia"].YearProfile
+	if got == nil || got.DaysWithData != 2 || got.DaysOver != 1 {
+		t.Fatalf("later snapshot YearProfile = %+v", got)
+	}
+	if f.count() != 1 {
+		t.Errorf("queries = %d, want 1", f.count())
+	}
+}
+
 func TestWHOCacheCarriesIntoLaterSnapshots(t *testing.T) {
 	var c whoDaysCache
 	f := &fakeWHO{}

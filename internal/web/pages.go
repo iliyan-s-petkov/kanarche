@@ -221,6 +221,12 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 		data.AreaSeasonHTML = data.areaSeasonHTML()
 	}
 	data.AreaWHODaysHTML = data.areaWHODaysHTML(row)
+	var fullProfile bool
+	data.AreaYearProfileHTML, fullProfile = data.areaYearProfileHTML(row)
+	if fullProfile {
+		// The profile carries its own WHO sentence, so the older paragraph would repeat it.
+		data.AreaWHODaysHTML = ""
+	}
 	data.AreaPollen = rr.pollenBlock(snap.Pollen(meta.Slug), lang)
 	rr.buildAreaLinks(&data, meta, row, snap, lang)
 	data.AreaFacts = rr.areaFacts(data, meta, snap)
@@ -541,7 +547,7 @@ func (rr *Renderer) rowFrom(meta snapshot.AreaMeta, lang string) AreaRow {
 		Colour: colour, Class: class, Values: meta.Values,
 		Source: meta.Source, BySource: meta.BySource,
 		HeadlineSource: meta.HeadlineSource, HeadlineSources: meta.HeadlineSources,
-		ParentSlug: meta.ParentSlug, Day: meta.Day, Day24Mean: meta.Day24Mean, WHODays: meta.WHODays,
+		ParentSlug: meta.ParentSlug, Day: meta.Day, Day24Mean: meta.Day24Mean, WHODays: meta.WHODays, YearProfile: meta.YearProfile,
 	}
 }
 

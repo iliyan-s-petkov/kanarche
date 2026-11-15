@@ -225,6 +225,8 @@ type PageData struct {
 	AreaSeasonHTML  template.HTML
 	// AreaWHODaysHTML is the year of days over the WHO guideline, empty under minWHODays.
 	AreaWHODaysHTML template.HTML
+	// AreaYearProfileHTML is the 12 month profile section, empty without a profile.
+	AreaYearProfileHTML template.HTML
 	// AreaPollen is the pollen table and chip; nil without a forecast.
 	AreaPollen *PollenBlock
 	// AreaFAQ is the area page's FAQ, rendered once so the markup and the FAQPage JSON-LD share strings.
@@ -434,6 +436,8 @@ type AreaRow struct {
 	Day24Mean map[string]float64
 	// WHODays mirrors snapshot.AreaMeta.WHODays.
 	WHODays *snapshot.WHODays
+	// YearProfile mirrors snapshot.AreaMeta.YearProfile.
+	YearProfile *snapshot.YearProfile
 }
 
 // Readout is one cell of the country summary strip: what was measured, the
