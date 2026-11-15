@@ -447,6 +447,15 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
     // call below self-corrects it the moment initData's own scales arrive.
     subs.unsubscribe = vs.onMetricChange((metric) => onMetricChange(map, state, cfg, chrome, metric))
 
+    // A #sensor= that arrives after load (pasted share link, Back/Forward) is a
+    // deep link again: the panel only opens for a sensor in the registry, so an
+    // unloaded one is resolved and the map moved to it, as at load. One locate
+    // request per change; openDeepLinkedSensor returns early for a loaded
+    // sensor and for a cleared one (closing is the panel's own reaction).
+    subs.unhashsensor = vs.onHashSensorChange(() => {
+      openDeepLinkedSensor(map, state, cfg, chrome, vs, getJSON, { move: true })
+    })
+
     // The sensor filter repaints from the body already in hand rather than
     // going back through refresh(): the tier, the slug and the metric are all
     // untouched by a filter change, so a refresh would be a request (cached,

@@ -1445,3 +1445,84 @@ describe('mountChrome storage handle', () => {
     ui.button.click() // close player
   })
 })
+
+// A #sensor= that arrives after the page loaded (a pasted share link, Back/
+// Forward between entries) is the same deep link as at load: the panel reads
+// the registry, so an unloaded sensor has to be resolved and the map moved.
+describe('mount() opens a sensor named by a later hash change', () => {
+  beforeEach(() => { resetViewStateForTests() })
+  afterEach(() => { resetViewStateForTests() })
+
+  const stubLocate = () => {
+    clearCache()
+    setSensors(null)
+    const asked = []
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      asked.push(String(url))
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => ({ id: 2888, lon: 23.31, lat: 42.69, slug: 'sofia', areas: [] }),
+      }
+    }))
+    return asked
+  }
+  const settle = async (asked) => {
+    await vi.waitFor(() => expect(asked.some((u) => u.includes('/api/v1/overview'))).toBe(true))
+    await new Promise((r) => setTimeout(r, 0))
+  }
+  const locates = (asked, id) => asked.filter((u) => u.includes(`/api/v1/sensor/${id}/locate`))
+
+  it('resolves an unloaded sensor once and moves the map to it', async () => {
+    const asked = stubLocate()
+    const { map } = mountTestMap({ metric: 'P2' })
+    await settle(asked)
+    map.jumpTo.mockClear()
+
+    location.hash = '#sensor=2888'
+    dispatchEvent(new HashChangeEvent('hashchange'))
+
+    await vi.waitFor(() => expect(locates(asked, 2888)).toHaveLength(1))
+    await vi.waitFor(() => expect(map.jumpTo.mock.calls.some((c) => c[0]?.zoom === DEEP_LINK_ZOOM)).toBe(true))
+    expect(locates(asked, 2888)).toHaveLength(1)
+  })
+
+  it('asks for nothing when the sensor is already loaded', async () => {
+    const asked = stubLocate()
+    const { map } = mountTestMap({ metric: 'P2' })
+    await settle(asked)
+    setSensors({ sensors: { id: [2888], station: [2888], quality: ['ok'], measures: [['P2']], P2: [7] } }, 'sofia')
+    map.jumpTo.mockClear()
+
+    location.hash = '#sensor=2888'
+    dispatchEvent(new HashChangeEvent('hashchange'))
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(locates(asked, 2888)).toHaveLength(0)
+    expect(map.jumpTo).not.toHaveBeenCalled()
+  })
+
+  it('does not resolve the sensor the store wrote itself', async () => {
+    const asked = stubLocate()
+    mountTestMap({ metric: 'P2' })
+    await settle(asked)
+
+    getViewState().openSensor(2888)
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(locates(asked, 2888)).toHaveLength(0)
+  })
+
+  it('closes the sensor when the hash clears it, with no request', async () => {
+    const asked = stubLocate()
+    mountTestMap({ metric: 'P2' })
+    await settle(asked)
+    getViewState().openSensor(2888)
+
+    location.hash = ''
+    dispatchEvent(new HashChangeEvent('hashchange'))
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(getViewState().sensorId).toBeNull()
+    expect(locates(asked, 2888)).toHaveLength(0)
+  })
+})

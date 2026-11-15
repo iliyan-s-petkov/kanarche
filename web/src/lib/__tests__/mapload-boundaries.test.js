@@ -46,7 +46,7 @@ async function boot(slug) {
   const cfg = { slug, t: { pollen: {}, sea: {}, layers: {} }, pollenLayer: false, metrics: [], metric: 'p' }
   installMapLoad({
     map, state: { slug }, cfg, chrome: { layerViews: [], inactiveView: {}, layersUI: {}, windowMenu: { onpick: vi.fn() }, showHint: vi.fn() },
-    vs: { metric: 'p', onMetricChange: vi.fn() }, windState: {}, boundaryState: {}, onMoveEnd: { cancel: vi.fn() }, subs: {},
+    vs: { metric: 'p', onMetricChange: vi.fn(), onHashSensorChange: vi.fn() }, windState: {}, boundaryState: {}, onMoveEnd: { cancel: vi.fn() }, subs: {},
   })
   const done = map.fire('load')
   await vi.waitFor(() => expect(h.views.length).toBeGreaterThan(0))
