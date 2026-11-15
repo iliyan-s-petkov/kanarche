@@ -220,6 +220,8 @@
   "area.tier_sensors": "отчитащи в този район",
   "area.updated": "Обновено",
   "areas.directory.intro": "Всяка област с областния ѝ град. Районите на София, Пловдив и Варна са под техните градове.",
+  "home.area_links.title": "Райони и градове",
+  "home.area_links.capitals": "Областни градове",
   "areas.directory.title": "Градове и райони по области",
   "areas.tier": "медиана за областта",
   "band.extremely_poor": "изключително лошо",
