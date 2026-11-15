@@ -69,8 +69,11 @@ func (p PageData) faqBlock(f *AreaFacts) *FAQBlock {
 	if f.rankFAQ != "" {
 		add("faq.q1", f.rankFAQ+" "+p.T("area.facts.rank.citizen"))
 	}
-	add("faq.q2", f.Network)
-	add("faq.q3", f.Place)
+	// An oblast has one city, so the station and territory answers would repeat the city's.
+	if p.Area.Kind != "oblast" {
+		add("faq.q2", f.Network)
+		add("faq.q3", f.Place)
+	}
 	return block
 }
 
