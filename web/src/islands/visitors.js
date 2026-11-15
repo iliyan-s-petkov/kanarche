@@ -76,12 +76,13 @@ export async function mount(el) {
   // uPlot paints once and never re-reads CSS, so a theme change needs a repaint.
   const restyle = () => {
     const n = colours()
-    plot.axes.forEach((a, i) => {
-      a.stroke = n.axis
-      a.ticks.stroke = n.axis
-      a.grid.stroke = n.grid
+    // uPlot calls strokes as functions on redraw. A plain string throws.
+    plot.axes.forEach((a) => {
+      a.stroke = () => n.axis
+      a.ticks.stroke = () => n.axis
+      a.grid.stroke = () => n.grid
     })
-    plot.series[1].stroke = n.line
+    plot.series[1].stroke = () => n.line
     plot.redraw()
   }
   new MutationObserver(restyle).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })

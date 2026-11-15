@@ -302,13 +302,13 @@
           <li role="presentation">
             <ul role="group" class="combobox__group" aria-labelledby="{id}-grp-{seg.key}">
               <li role="presentation" class="combobox__group-label" id="{id}-grp-{seg.key}">{groups[seg.key]}</li>
-              {#each seg.items as match, j (match.name)}
+              {#each seg.items as match, j}
                 {@render option(match, seg.start + j)}
               {/each}
             </ul>
           </li>
         {:else}
-          {#each seg.items as match, j (match.name)}
+          {#each seg.items as match, j}
             {@render option(match, seg.start + j)}
           {/each}
         {/if}

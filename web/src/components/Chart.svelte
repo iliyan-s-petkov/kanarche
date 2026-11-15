@@ -99,20 +99,21 @@
   const bgColour = () => token('--bg', FALLBACK_BG)
 
   // uPlot paints the canvas once and never re-reads CSS, so a theme toggle
-  // needs this to repaint the axes rather than a stylesheet swap.
+  // needs this to repaint the axes. Strokes must be functions: uPlot calls them.
   function restyleAxes(u, scales, lines) {
     const tick = axisColour()
     const grid = gridColour()
     const bg = bgColour()
-    u.axes[0].stroke = tick
-    u.axes[0].ticks.stroke = tick
-    u.axes[0].grid.stroke = grid
+    const paint = (c) => () => c
+    u.axes[0].stroke = paint(tick)
+    u.axes[0].ticks.stroke = paint(tick)
+    u.axes[0].grid.stroke = paint(grid)
     scales.forEach((scale, i) => {
       const line = lines.find((s) => (s.scale ?? 'y') === scale)
       const axis = u.axes[i + 1]
-      axis.stroke = line?.colour ? legibleStroke(line.colour, bg) : tick
-      axis.ticks.stroke = tick
-      axis.grid.stroke = grid
+      axis.stroke = paint(line?.colour ? legibleStroke(line.colour, bg) : tick)
+      axis.ticks.stroke = paint(tick)
+      axis.grid.stroke = paint(grid)
     })
     u.redraw()
   }
