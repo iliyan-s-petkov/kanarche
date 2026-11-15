@@ -10,8 +10,8 @@ import (
 	"kanarche.eu/internal/store"
 )
 
-// The area page keeps a one-line disclaimer, the current level's health
-// advice, a data-page link and a short credit. The generic text it used to
+// The area page keeps the disclaimer, the current level's health advice, a
+// data-page link, the forecast note and the full CAMS licence credit. The generic text it used to
 // repeat on every area lives on /about-the-data.
 var dataAttr = regexp.MustCompile(` data-t-[a-z-]+="[^"]*"`)
 
@@ -33,36 +33,30 @@ func TestAreaPageKeepsShortBoilerplateOnly(t *testing.T) {
 		{
 			path: "/area/sofia", dataPath: "/about-the-data",
 			moved: []string{
-				"Европейската комисия и ECMWF не носят отговорност",
-				"За официални предупреждения следвайте официалните източници.",
-				"Това е прогноза от модел, за ориентация.",
 				"Това са дневни средни на гражданските сензори.",
 				"Нормите се проверяват с официални измервания.",
 				"Подредбата се променя с всяко обновяване на данните.",
 				"Общите въпроси за данните, цветовете и обновяването",
 			},
-			kept:             []string{"Какво означава това за дейностите на открито", "Качеството на въздуха е добро."},
+			kept:             []string{"Какво означава това за дейностите на открито", "Качеството на въздуха е добро.", "За официални предупреждения следвайте официалните източници.", "Това е прогноза от модел, за ориентация."},
 			otherLevelAdvice: []string{"Избягвайте физическите натоварвания на открито.", "Намалете физическите натоварвания на открито."},
 			disclaimer:       "Стойността е ориентировъчна. Някои граждански станции може да са стари или неизправни, а ние не ги калибрираме.",
 			link:             `href="/about-the-data"`,
-			credit:           "Данни: Copernicus, Open-Meteo",
+			credit:           "Европейската комисия и ECMWF не носят отговорност",
 		},
 		{
 			path: "/en/area/sofia", dataPath: "/en/about-the-data",
 			moved: []string{
-				"Neither the European Commission nor ECMWF is responsible",
-				"For official alerts, follow official sources.",
-				"This is a model forecast, for orientation.",
 				"These are daily averages from citizen sensors.",
 				"Limits are checked with official measurements.",
 				"The ranking changes with every data update.",
 				"The general questions about the data, the colours and the update times",
 			},
-			kept:             []string{"What this means for outdoor activity", "The air quality is good."},
+			kept:             []string{"What this means for outdoor activity", "The air quality is good.", "For official alerts, follow official sources.", "This is a model forecast, for orientation."},
 			otherLevelAdvice: []string{"Avoid physical activities outdoors.", "Reduce physical activities outdoors."},
 			disclaimer:       "This figure is indicative. Some citizen stations may be old or faulty, and we do not calibrate them.",
 			link:             `href="/en/about-the-data"`,
-			credit:           "Data: Copernicus, Open-Meteo",
+			credit:           "Neither the European Commission nor ECMWF is responsible",
 		},
 	} {
 		rr := renderer(t, snap)
@@ -86,10 +80,8 @@ func TestAreaPageKeepsShortBoilerplateOnly(t *testing.T) {
 
 		data := fetch(t, rr, l.dataPath).Body.String()
 		for _, s := range l.moved {
-			// The pointer to this page has nothing to move onto it, and the
-			// alerts sentence is already on it, in the fuller about.reference.body.
-			if strings.HasPrefix(s, "The general questions") || strings.HasPrefix(s, "Общите въпроси") ||
-				strings.HasPrefix(s, "For official alerts") || strings.HasPrefix(s, "За официални предупреждения") {
+			// The pointer to this page has nothing to move onto it.
+			if strings.HasPrefix(s, "The general questions") || strings.HasPrefix(s, "Общите въпроси") {
 				continue
 			}
 			if !strings.Contains(data, s) {
