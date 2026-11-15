@@ -25,8 +25,10 @@ test('districts sit above cities under labelled groups; arrows skip headings', a
   await expect(labels.nth(0)).toHaveText('City districts')
   await expect(labels.nth(1)).toHaveText('Cities and provinces')
   const groups = page.locator('[data-island="finder"] [role="group"]')
-  await expect(groups.nth(0).locator('[role="option"]')).toHaveText(['Mladost'])
+  await expect(groups.nth(0).locator('[role="option"]')).toHaveText(['Mladost', 'Mladost'])
   await expect(groups.nth(1).locator('[role="option"]').first()).not.toHaveText('Mladost')
+  await input.press('ArrowDown')
+  await expect(page.locator('[data-island="finder"] [role="option"][aria-selected="true"]')).toHaveText('Mladost')
   await input.press('ArrowDown')
   await expect(page.locator('[data-island="finder"] [role="option"][aria-selected="true"]')).toHaveText('Mladost')
   await input.press('ArrowDown')
@@ -43,5 +45,18 @@ test('Bulgarian headings on a phone', async ({ ctx }) => {
   await expect(page.locator('[data-island="finder"] .combobox__group-label').nth(0)).toHaveText('Градски райони')
   await expect(page.locator('[data-island="finder"] .combobox__group-label').nth(1)).toHaveText('Градове и области')
   await page.screenshot({ path: '/tmp/airbg-verify/findgroups-390-bg.png' })
+  await page.close()
+})
+
+// Sofia and Varna each have a district called Младост. The prod bug: with the
+// dock open, the finder rendering both names threw each_key_duplicate, which
+// aborted the flush and broke the dock. The fixture fails on any page error.
+test('two districts with the same name both list and the dock stays open', async ({ ctx }) => {
+  const { page, input } = await openOverSofia(ctx, '/#sensor=101', { width: 1440, height: 900 })
+  await expect(page.locator('.map-dock')).toBeVisible({ timeout: 20000 })
+  await input.fill('Млад')
+  // Typed results are a flat list, and "Млад" also matches a city entry.
+  await expect(page.locator('[data-island="finder"] [role="option"]', { hasText: /^Младост$/ })).toHaveCount(2)
+  await expect(page.locator('.map-dock')).toBeVisible()
   await page.close()
 })

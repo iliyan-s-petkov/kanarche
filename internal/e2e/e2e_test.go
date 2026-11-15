@@ -239,6 +239,35 @@ func seedFixtures(t *testing.T, st *store.Store) {
 		t.Fatalf("seed district area: %v", err)
 	}
 
+	// Production has a second district called Младост, in Varna. Seeding the
+	// same name under another city makes every finder spec exercise duplicate
+	// area names (a keyed list on the name threw each_key_duplicate and broke
+	// the map dock). Varna shares the oblast-3 box (as sofia shares
+	// sofia-oblast's), so the /areas directory groups it under an oblast, and
+	// no sensor sits inside it.
+	const (
+		varnaLon = lon + 6
+		varnaLat = lat
+	)
+	box := func(cLon, cLat, d float64) string {
+		return fmt.Sprintf(
+			"MULTIPOLYGON(((%f %f, %f %f, %f %f, %f %f, %f %f)))",
+			cLon-d, cLat-d, cLon+d, cLat-d, cLon+d, cLat+d, cLon-d, cLat+d, cLon-d, cLat-d,
+		)
+	}
+	for _, a := range []struct{ slug, kind, bg, en, wkt string }{
+		{"varna", "city", "Варна", "Varna", box(varnaLon, varnaLat, delta)},
+		{"mladost-varna", "neighbourhood", "Младост", "Mladost", box(varnaLon, varnaLat, districtDelta)},
+	} {
+		_, err = st.Pool().Exec(ctx,
+			`INSERT INTO area (slug, kind, name_bg, name_en, geom)
+			 VALUES ($1, $2, $3, $4, ST_SetSRID(ST_GeomFromText($5), 4326)::geography)`,
+			a.slug, a.kind, a.bg, a.en, a.wkt)
+		if err != nil {
+			t.Fatalf("seed %s: %v", a.slug, err)
+		}
+	}
+
 	now := time.Now().UTC()
 
 	// Two ordinary sensors: both metrics present, both readings ok.
