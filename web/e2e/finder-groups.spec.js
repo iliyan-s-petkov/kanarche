@@ -54,8 +54,8 @@ test('Bulgarian headings on a phone', async ({ ctx }) => {
 test('two districts with the same name both list and the dock still opens', async ({ ctx }) => {
   const { page, input } = await openOverSofia(ctx, '/', { width: 1440, height: 900 })
   await input.fill('Млад')
-  await expect(page.locator('[data-island="finder"] [role="option"]')).toHaveCount(2)
-  await expect(page.locator('[data-island="finder"] [role="option"]')).toHaveText(['Младост', 'Младост'])
+  const districts = page.locator('[data-island="finder"] [role="group"]').nth(0).locator('[role="option"]')
+  await expect(districts).toHaveText(['Младост', 'Младост'])
   await page.goto('/#sensor=101')
   await expect(page.locator('.map-dock')).toBeVisible({ timeout: 20000 })
   await page.close()

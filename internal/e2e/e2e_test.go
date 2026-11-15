@@ -242,11 +242,12 @@ func seedFixtures(t *testing.T, st *store.Store) {
 	// Production has a second district called Младост, in Varna. Seeding the
 	// same name under another city makes every finder spec exercise duplicate
 	// area names (a keyed list on the name threw each_key_duplicate and broke
-	// the map dock). Varna sits far from the Sofia fixtures so no sensor or
-	// oblast box overlaps it.
+	// the map dock). Varna shares the oblast-3 box (as sofia shares
+	// sofia-oblast's), so the /areas directory groups it under an oblast, and
+	// no sensor sits inside it.
 	const (
-		varnaLon = 27.9
-		varnaLat = 44.5
+		varnaLon = lon + 6
+		varnaLat = lat
 	)
 	box := func(cLon, cLat, d float64) string {
 		return fmt.Sprintf(
