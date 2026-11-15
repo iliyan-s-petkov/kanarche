@@ -12,6 +12,9 @@ import { getMapAreas } from './mapareas.svelte.js'
 import { stackReserve, heightBounds, clampHeight, keyHeight, readHeight, writeHeight, clearHeight } from './dockheight.js'
 
 const WIDE = '(min-width: 1024px)'
+// Set on <html> only while the dock is mounted. app.css hides the card under the map under it,
+// so a dock that fails to mount leaves the card visible.
+const DOCKED_ROOT = 'has-map-dock'
 const TITLE_ID = 'map-dock-title'
 const FOLD_KEY = 'kanarche:panel-folded'
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -227,6 +230,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     watcher?.disconnect()
     el.remove()
     shell?.classList.remove('map-shell--docked')
+    doc.documentElement.classList.remove(DOCKED_ROOT)
     measure()
     const back = returnTo
     returnTo = null
@@ -261,6 +265,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
       returnTo = doc.activeElement
       frame.appendChild(el)
       shell?.classList.add('map-shell--docked')
+      doc.documentElement.classList.add(DOCKED_ROOT)
       watcher?.observe(el)
       ;[...(shell ?? frame).querySelectorAll(RIDERS + ', ' + TOP_ROW)].forEach((n) => watcher?.observe(n))
       applyHeight()
@@ -347,6 +352,21 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   })
   more.addEventListener('click', () => panel()?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
   mq?.addEventListener?.('change', sync)
+
+  // The panel's own DOM also drives sync, so the dock does not depend on the shared Svelte
+  // effect flush: a throw in another island aborts that flush. One sync per batch of changes.
+  // sync is idempotent, so the mutations it makes itself end in a no-op pass.
+  const panelHost = doc.querySelector('[data-island="panel"]')
+  let syncQueued = false
+  const panelWatch = panelHost && typeof win?.MutationObserver === 'function'
+    ? new win.MutationObserver(() => {
+      // A dock whose map has left the page must not reach into the next page's panel.
+      if (syncQueued || !frame.isConnected) return
+      syncQueued = true
+      queueMicrotask(() => { syncQueued = false; sync() })
+    })
+    : null
+  panelWatch?.observe(panelHost, { childList: true, subtree: true })
 
   // Capture phase, like the sheet, so a faux-fullscreen Escape handler never sees a dock Escape.
   doc.addEventListener('keydown', (e) => {

@@ -733,10 +733,11 @@ strong, b { font-weight: var(--weight-emphasis); }
 .hex-tip--below { transform: translate(-50%, 12px); }
 .hex-tip[hidden] { display: none; }
 /* The home page from 1024px: the map's panel carries the whole card (lib/panelhost.js).
+   Only while the dock is mounted (html.has-map-dock), so a dock that fails leaves the card visible.
    Hidden by visibility, not display, so the station sheet the card renders still shows over the page. */
 @media (min-width: 1024px) {
-  .place-host.place-host--docked { visibility: hidden; block-size: 0; overflow: hidden; margin: 0; padding: 0; border: 0; }
-  .place-host--docked .about-backdrop, .place-host--docked .about-sheet { visibility: visible; }
+  .has-map-dock .place-host.place-host--docked { visibility: hidden; block-size: 0; overflow: hidden; margin: 0; padding: 0; border: 0; }
+  .has-map-dock .place-host--docked .about-backdrop, .has-map-dock .place-host--docked .about-sheet { visibility: visible; }
 }
 .sensor-panel {
   background: var(--bg); border: 0; box-shadow: var(--elev-raised); border-radius: var(--radius);

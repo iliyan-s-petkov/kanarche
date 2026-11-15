@@ -36,7 +36,7 @@ function stubViewport(wide) {
 }
 
 // docked: the home page's host, which app.css hides from 1024px (only the dock shows the sensor there).
-function page({ docked = false, readouts = false } = {}) {
+function page({ docked = false, readouts = false, follow = true } = {}) {
   const shell = document.createElement('div')
   shell.className = 'map-shell'
   const el = document.createElement('div')
@@ -81,8 +81,9 @@ function page({ docked = false, readouts = false } = {}) {
   const chrome = mountChrome(el, readConfig(el))
   mountPanel(host)
   const vs = getViewState({ metrics: ['P1', 'P2', 'temperature', 'humidity'], defaultMetric: 'P2' })
-  const stop = chrome.dock.follow(vs, findSensor)
-  const stopSheet = chrome.sheet.follow(vs, findSensor)
+  // follow: false leaves the dock with no view-state effect, only the panel's own DOM to go on.
+  const stop = follow ? chrome.dock.follow(vs, findSensor) : () => {}
+  const stopSheet = follow ? chrome.sheet.follow(vs, findSensor) : () => {}
   return { shell, el, host, canvas, vs, dock: chrome.dock, stop: () => { stop(); stopSheet() }, full: el.querySelector('.map__full') }
 }
 
@@ -110,6 +111,7 @@ describe('the desktop bottom panel', () => {
     setSensors(null)
     document.body.replaceChildren()
     document.body.className = ''
+    document.documentElement.classList.remove('has-map-dock')
     vi.unstubAllGlobals()
   })
 
@@ -125,6 +127,44 @@ describe('the desktop bottom panel', () => {
     expect(dock.querySelectorAll('.gauge')).toHaveLength(4)
     expect(ctx.host.querySelector('.sensor-panel .gauges'), 'the gauges were copied, not moved').toBeNull()
     expect(ctx.shell.classList.contains('map-shell--docked')).toBe(true)
+  })
+
+  // app.css hides the card under the map only under this class, so a dock that never
+  // mounts leaves the card visible instead of hiding the sensor altogether.
+  it('marks the document while docked and clears the mark when the sensor closes', async () => {
+    vp = stubViewport(true)
+    ctx = page({ docked: true })
+    ctx.vs.openSensor(101)
+    await settle()
+    expect(document.documentElement.classList.contains('has-map-dock')).toBe(true)
+    ctx.vs.closeSensor()
+    await settle()
+    expect(document.documentElement.classList.contains('has-map-dock')).toBe(false)
+  })
+
+  it('does not mark the document on a narrow viewport', async () => {
+    vp = stubViewport(false)
+    ctx = page({ docked: true })
+    ctx.vs.openSensor(101)
+    await settle()
+    expect(document.documentElement.classList.contains('has-map-dock')).toBe(false)
+  })
+
+  // A throw in another island aborts the shared effect flush; the dock must still
+  // follow the panel from its rendered DOM.
+  it('docks from the rendered panel alone, without the view-state effect', async () => {
+    vp = stubViewport(true)
+    ctx = page({ follow: false })
+    ctx.vs.openSensor(101)
+    await settle()
+    await new Promise((r) => setTimeout(r, 0))
+    const dock = ctx.el.querySelector('.map-dock')
+    expect(dock, 'no dock without the follow effect').toBeTruthy()
+    expect(dock.querySelector('h2').textContent).toBe('Sensor 101')
+    ctx.vs.closeSensor()
+    await settle()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(ctx.el.querySelector('.map-dock')).toBeNull()
   })
 
   it('does not dock on a narrow viewport', async () => {

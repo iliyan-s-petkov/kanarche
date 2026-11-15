@@ -34,7 +34,7 @@ func extractSensorCardHost(t *testing.T, body string) string {
 // Mutation check: dropping one data-t-* attribute from the partial fails all
 // three cases below with the same one assertion, proving the golden actually
 // pins the block rather than merely running past it.
-// The home map's host carries place-host--docked: from 1024px app.css hides it behind the map's panel.
+// The home map's host carries place-host--docked: from 1024px app.css hides it while the map's panel is mounted.
 func TestSensorCardHostIsByteIdenticalAcrossPages(t *testing.T) {
 	rr := renderer(t, rankingSnapshot())
 	cfg := testConfig(t)
