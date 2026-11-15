@@ -136,6 +136,8 @@ type AreaMeta struct {
 	Day24Mean map[string]float64
 	// WHODays is the year of daily PM2.5 means against the WHO guideline, nil without a daily series.
 	WHODays *WHODays
+	// YearProfile is the last 12 months of daily PM2.5 means, from the same daily series as WHODays.
+	YearProfile *YearProfile
 	// Km2 is the boundary's size in square kilometres, 0 when unknown.
 	// Read once per snapshot build.
 	Km2 float64

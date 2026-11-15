@@ -28,11 +28,7 @@ type WHODays struct {
 // summariseWHODays reduces a daily series to its WHODays, or nil when no full day remains.
 // The bucket of the current UTC day and any bucket starting before the window's first full UTC day are partial and skipped.
 func summariseWHODays(points []store.Point, since, now time.Time) *WHODays {
-	firstFull := since.UTC().Truncate(24 * time.Hour)
-	if firstFull.Before(since) {
-		firstFull = firstFull.Add(24 * time.Hour)
-	}
-	today := now.UTC().Truncate(24 * time.Hour)
+	firstFull, today := fullDayBounds(since, now)
 	var out *WHODays
 	for _, p := range points {
 		if p.Time.Before(firstFull) || !p.Time.Before(today) {
@@ -68,6 +64,7 @@ type whoDaysCache struct {
 	mu       sync.Mutex
 	day      time.Time
 	bySlug   map[string]WHODays
+	profiles map[string]YearProfile
 	lastFail time.Time
 	running  bool
 	wg       sync.WaitGroup
@@ -86,6 +83,10 @@ func (c *whoDaysCache) apply(ctx context.Context, snap *Snapshot, now time.Time,
 	for slug, meta := range snap.KnownSlugs {
 		if w, ok := c.bySlug[slug]; ok {
 			meta.WHODays = &w
+			snap.KnownSlugs[slug] = meta
+		}
+		if y, ok := c.profiles[slug]; ok {
+			meta.YearProfile = &y
 			snap.KnownSlugs[slug] = meta
 		}
 	}
@@ -108,12 +109,16 @@ func (c *whoDaysCache) refresh(ctx context.Context, now time.Time, fetch whoDail
 		return
 	}
 	by := make(map[string]WHODays, len(series))
+	profiles := make(map[string]YearProfile, len(series))
 	for slug, pts := range series {
 		if sum := summariseWHODays(pts, since, now); sum != nil {
 			by[slug] = *sum
 		}
+		if prof := summariseYearProfile(pts, since, now); prof != nil {
+			profiles[slug] = *prof
+		}
 	}
-	c.bySlug, c.day, c.lastFail = by, now.UTC().Truncate(24*time.Hour), time.Time{}
+	c.bySlug, c.profiles, c.day, c.lastFail = by, profiles, now.UTC().Truncate(24*time.Hour), time.Time{}
 	slog.Info("snapshot: days over WHO guideline refreshed", "areas", len(by), "duration", time.Since(start))
 }
 

@@ -397,9 +397,7 @@ func (p PageData) areaWHODaysHTML(row AreaRow) template.HTML {
 	case 1:
 		key = "area.over_who_one"
 	}
-	day := strconv.Itoa(d.WorstDay.UTC().Day())
-	month := p.T("news.month." + strconv.Itoa(int(d.WorstDay.UTC().Month())))
-	date := strings.NewReplacer("{day}", day, "{month}", month, "{year}", strconv.Itoa(d.WorstDay.UTC().Year())).Replace(p.T("area.over_who.date"))
+	date := p.longDate(d.WorstDay)
 	text := strings.NewReplacer(
 		"{days}", strconv.Itoa(d.DaysWithData),
 		"{n_days}", strconv.Itoa(d.DaysOver),
