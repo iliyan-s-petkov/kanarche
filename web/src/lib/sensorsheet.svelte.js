@@ -1,8 +1,11 @@
 // The open sensor's readings as a sheet inside the fullscreen frame, where the
-// panel under the map cannot be seen. The panel's own .gauges node is moved in
-// and put back on exit, the same move-not-duplicate idiom as the legend.
-import { tick } from 'svelte'
-import { createStarSlot } from './panelstar.js'
+// panel under the map cannot be seen. components/SensorSheetCard.svelte draws the
+// title, star and gauges from the card model the panel island publishes
+// (lib/sensorcard.js); the card under the map drops its own while the sheet is up.
+import { tick, mount as mountComponent, unmount as unmountComponent, flushSync } from 'svelte'
+import SensorSheetCard from '../components/SensorSheetCard.svelte'
+import { panelDock } from './paneldock.svelte.js'
+import { getSensorCard } from './sensorcard.js'
 import { sectionHidden } from './panelhost.js'
 
 const TITLE_ID = 'map-sensor-sheet-title'
@@ -10,12 +13,13 @@ const TITLE_ID = 'map-sensor-sheet-title'
 export function createSensorSheet(frame, { closeLabel = '', historyLabel = '', exitFull = () => {} } = {}) {
   const doc = frame.ownerDocument
   let full = false
-  let gauges = null
-  let marker = null
+  let content = null
+  let contentCard = null
   let returnTo = null
   let scrollOnExit = false
   let onClose = () => {}
-  const starSlot = createStarSlot(doc)
+  // A new map frame starts with nothing lent: a sheet torn down with its page never said it had gone.
+  panelDock.sheet = false
 
   const el = doc.createElement('div')
   el.className = 'map-sensor-sheet'
@@ -23,33 +27,7 @@ export function createSensorSheet(frame, { closeLabel = '', historyLabel = '', e
   el.setAttribute('aria-labelledby', TITLE_ID)
   el.tabIndex = -1
 
-  const head = doc.createElement('div')
-  head.className = 'map-sensor-sheet__head'
-  const title = doc.createElement('h2')
-  title.id = TITLE_ID
-  title.className = 'map-sensor-sheet__title'
-  const close = doc.createElement('button')
-  close.type = 'button'
-  close.className = 'map-sensor-sheet__close'
-  close.setAttribute('aria-label', closeLabel)
-  close.title = closeLabel
-  const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  svg.setAttribute('class', 'map-sensor-sheet__close-ico')
-  svg.setAttribute('viewBox', '0 0 16 16')
-  svg.setAttribute('aria-hidden', 'true')
-  const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path')
-  path.setAttribute('d', 'M3.5 3.5l9 9M12.5 3.5l-9 9')
-  path.setAttribute('fill', 'none')
-  path.setAttribute('stroke', 'currentColor')
-  path.setAttribute('stroke-width', '1.5')
-  svg.appendChild(path)
-  close.appendChild(svg)
-  head.append(title, close)
-  el.appendChild(head)
-
-  const body = doc.createElement('div')
-  body.className = 'map-sensor-sheet__body'
-  el.appendChild(body)
+  // SensorSheetCard mounts here, before the history button.
 
   // A button, not an <a href="#…">: a fragment link would rewrite the hash the view state lives in.
   let history = null
@@ -61,51 +39,52 @@ export function createSensorSheet(frame, { closeLabel = '', historyLabel = '', e
     el.appendChild(history)
   }
 
-  const panel = () => doc.querySelector('[data-island="panel"] .sensor-panel')
+  const panelHost = () => doc.querySelector('[data-island="panel"]')
+  const panel = () => panelHost()?.querySelector('.sensor-panel') ?? null
 
   const mounted = () => el.parentNode === frame
 
-  // Puts the gauges back before the comment that marks where they came from.
-  function restoreGauges() {
-    if (marker && gauges) marker.replaceWith(gauges)
-    marker = null
-    gauges = null
+  function dropContent() {
+    if (content) unmountComponent(content)
+    content = null
+    contentCard = null
   }
 
   function unmount({ focus = true } = {}) {
     if (!mounted()) return
-    restoreGauges()
-    starSlot.release()
+    dropContent()
+    panelDock.sheet = false
+    // The card under the map has its gauges back before the caller scrolls to it or reads it.
+    flushSync()
     el.remove()
     const back = returnTo
     returnTo = null
     if (focus && back?.isConnected && typeof back.focus === 'function') back.focus({ preventScroll: true })
   }
 
-  // Idempotent: reads the panel as it is now and mounts, updates or unmounts.
+  // Idempotent: reads the card as it is now and mounts, updates or unmounts.
   function sync() {
-    const p = panel()
-    // Gauges already moved out of this panel are its own, not a panel without them.
-    const own = gauges && body.contains(gauges) && p?.contains(marker) ? gauges : null
-    const next = p?.querySelector('.gauges') ?? own
-    if (!full || !p || !next || frame.contains(p)) {
+    const host = panelHost()
+    const card = host ? getSensorCard() : null
+    if (!full || !card?.open || frame.contains(host)) {
       unmount()
       return
     }
-    title.textContent = p.querySelector('h2')?.textContent ?? ''
     // No link down to a section the wide home page hides.
-    if (history) history.hidden = sectionHidden(doc.defaultView, p)
-    if (next !== gauges) {
-      restoreGauges()
-      marker = doc.createComment('gauges')
-      next.before(marker)
-      gauges = next
-      body.appendChild(next)
+    if (history) history.hidden = sectionHidden(doc.defaultView, host)
+    if (card !== contentCard) {
+      dropContent()
+      contentCard = card
+      content = mountComponent(SensorSheetCard, {
+        target: el,
+        anchor: history ?? undefined,
+        props: { card, titleId: TITLE_ID, closeLabel, onclose: dismiss },
+      })
     }
-    starSlot.take(p, head, close)
     if (!mounted()) {
       returnTo = doc.activeElement
       frame.appendChild(el)
+      panelDock.sheet = true
       el.focus({ preventScroll: true })
     }
   }
@@ -115,7 +94,6 @@ export function createSensorSheet(frame, { closeLabel = '', historyLabel = '', e
     onClose()
   }
 
-  close.addEventListener('click', dismiss)
   history?.addEventListener('click', () => {
     scrollOnExit = true
     exitFull()

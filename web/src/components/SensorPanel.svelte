@@ -26,15 +26,18 @@
   // for. `network` is a single precomposed sentence, the same idiom as
   // `flagText`. Both default empty so every sensor without them (every
   // citizen device today) renders neither block.
-  import Gauge from './Gauge.svelte'
+  import PanelGauges from './PanelGauges.svelte'
+  import PanelStar from './PanelStar.svelte'
+  import PanelInfo from './PanelInfo.svelte'
   import AboutSheet from './AboutSheet.svelte'
   import { createPanelLink } from '../lib/panellink.svelte.js'
   import { relativeAge } from '../lib/relativeage.js'
-  import { number } from '../lib/areacards.js'
 
   // `source` and `updated` (ms) feed the phone header's "network · N min ago";
   // `link` is shared with the chart so a gauge tap picks its metric and the
   // chart menu can open the about sheet. `now` pins the clock for tests.
+  // `away` while the map dock or fullscreen sheet draws the gauges and star instead (one set on the page),
+  // `infoAway` while the dock draws the info button.
   let {
     rows, title, flagText, closeLabel, noValue, onclose,
     details = [], detailsLabel = '', chart = null, open = true,
@@ -42,6 +45,7 @@
     favourite = false, favSave = '', favRemove = '', onstar = null,
     source = '', updated = null, now = null, locale = undefined,
     link = createPanelLink(),
+    away = false, infoAway = false,
   } = $props()
 
   let clock = $state(Date.now())
@@ -81,22 +85,11 @@
       {#if subline}<p class="panel-sub">{subline}</p>{/if}
     </div>
     <div class="panel-actions">
-      <!-- Moved (not copied) into the map dock or fullscreen sheet header while the card is there. -->
-      {#if onstar}
-        <button
-          type="button"
-          class="panel-star"
-          aria-pressed={favourite}
-          aria-label={favourite ? favRemove : favSave}
-          title={favourite ? favRemove : favSave}
-          onclick={onstar}
-        ><span aria-hidden="true">{favourite ? '\u2605' : '\u2606'}</span></button>
+      <!-- Drawn by the map dock or fullscreen sheet header instead while the card is there. -->
+      {#if onstar && !away}
+        <PanelStar {favourite} {favSave} {favRemove} {onstar} />
       {/if}
-      <button type="button" class="panel-info" aria-label={detailsLabel} onclick={() => { link.aboutOpen = true }}>
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-          <circle cx="8" cy="8" r="6.3" /><path d="M8 7.2v4M8 4.8v.1" stroke-linecap="round" />
-        </svg>
-      </button>
+      {#if !infoAway}<PanelInfo label={detailsLabel} {link} />{/if}
       <button type="button" class="panel-close" data-close onclick={onclose}>
         <svg class="panel-close__ico" width="16" height="16" viewBox="0 0 16 16"
              fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -122,20 +115,7 @@
 
   {#if aqi}<p class="panel-aqi">{aqiLabel}: {aqi}</p>{/if}
 
-  <div class="gauges">
-    {#each rows as row (row.metric)}
-      <Gauge
-        label={row.label}
-        value={row.missing ? noValue : number(row.value, locale)}
-        unit={row.unit}
-        band={row.band}
-        model={row.model}
-        missing={row.missing}
-        pressed={link.metrics.includes(row.metric)}
-        onselect={() => { link.metrics = [row.metric] }}
-      />
-    {/each}
-  </div>
+  {#if !away}<PanelGauges {rows} {noValue} {link} {locale} />{/if}
 
   {#if details.length}
     <!-- A native <details>, like the language picker: the same three states

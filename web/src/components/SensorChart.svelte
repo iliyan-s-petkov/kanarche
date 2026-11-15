@@ -11,7 +11,6 @@
   import { getScales, getSensorArea } from '../lib/sensors.svelte.js'
   import { nearbyOptions, nearbySources } from '../lib/nearby.js'
   import { CUSTOM, periodQuery } from '../lib/period.js'
-  import { panelDock } from '../lib/paneldock.svelte.js'
 
   // The panel's chart and its controls: which metrics (several at once), which
   // window, and a reset back to the view the panel opened on.
@@ -35,6 +34,9 @@
     shareDone = '', embedDone = '', copyFailed = '',
     link = createPanelLink(),
     stamp = 0,
+    // 'panel': the chart under the map. 'dock': its copy in the map dock (lib/sidedock.svelte.js), which reads
+    // and writes the same link, so both draw one view; getJSON answers the second from its cache.
+    place = 'panel',
   } = $props()
 
   // Seeded from the server's defaults, owned here afterwards. The default
@@ -46,15 +48,15 @@
   // The metric selection lives in `link` so the panel's gauges can drive it.
   untrack(() => { if (link.metrics.length === 0 && seedMetric) link.metrics = [seedMetric] })
   const metrics = $derived(link.metrics)
-  let period = $state(untrack(() => initialPeriod))
-  let from = $state('')
-  let to = $state('')
-  // Bumped by Reset, and only by Reset: remounting the chart is also what
-  // discards the height the reader dragged the frame to.
-  let resetToken = $state(0)
+  // The window, range, nearby lines and reset live in `link` too, so the dock's copy shares them.
+  untrack(() => { if (link.period === null) link.period = initialPeriod })
+  const period = $derived(link.period)
+  const from = $derived(link.from)
+  const to = $derived(link.to)
+  const resetToken = $derived(link.resetToken)
   // Which of the area's three lines the reader asked for. Empty is the default
   // and means "just this sensor" — the chart the panel has always drawn.
-  let nearby = $state([])
+  const nearby = $derived(link.nearby)
 
   const labelOf = (m) => options.find((o) => o.metric === m)?.label ?? m
   const unitOf = (m) => unitFor(getScales(), m)
@@ -117,11 +119,11 @@
 
   function reset() {
     link.metrics = seedMetric ? [seedMetric] : []
-    nearby = []
-    period = initialPeriod
-    from = ''
-    to = ''
-    resetToken += 1
+    link.nearby = []
+    link.period = initialPeriod
+    link.from = ''
+    link.to = ''
+    link.resetToken += 1
   }
 
   // Phone controls: the segmented period and the "more" menu. Desktop keeps the
@@ -131,13 +133,8 @@
   const nearbyDetail = $derived(
     nearbyChoices.filter((o) => nearby.includes(o.key)).map((o) => o.label).join(', ') || nearbyOff)
 
-  let status = $state('')
-  let statusTimer
-  function say(text) {
-    status = text
-    clearTimeout(statusTimer)
-    statusTimer = setTimeout(() => { status = '' }, 4000)
-  }
+  const status = $derived(link.status)
+  const say = (text) => link.say(text)
 
   async function copy(text, done) {
     try {
@@ -172,7 +169,7 @@
       key: 'nearby', label: nearbyLegend, detail: nearbyDetail, sub: true,
       disabled: !bandable, hint: areaSlug ? nearbySingleOnly : '',
     },
-    { key: 'custom', label: `${customLabel}…`, run: () => { period = CUSTOM } },
+    { key: 'custom', label: `${customLabel}…`, run: () => { link.period = CUSTOM } },
     { key: 'reset', label: resetLabel, run: reset },
     { key: 'about', label: aboutLabel, separator: true, run: () => { link.aboutOpen = true } },
     { key: 'share', label: shareLabel, run: share },
@@ -182,7 +179,7 @@
   const dockItems = $derived(menuItems.filter((i) => i.key === 'share' || i.key === 'embed'))
 </script>
 
-<!-- The desktop chart controls, drawn under the map and again in the panel over it; the prefix keeps their ids apart. -->
+<!-- The desktop chart controls, drawn under the map and again in the dock over it; the prefix keeps their ids apart. -->
 {#snippet controls(prefix)}
   <MetricPicker
     {options}
@@ -196,7 +193,7 @@
     <NearbyPicker
       options={nearbyOptions(nearbyLabels)}
       selected={nearby}
-      onchange={(next) => { nearby = next }}
+      onchange={(next) => { link.nearby = next }}
       legend={nearbyLegend}
       offLabel={nearbyOff}
       disabled={!bandable}
@@ -217,17 +214,15 @@
     {toLabel}
     {nowLabel}
     id="{prefix}-period"
-    onchange={(next) => { period = next.period; from = next.from; to = next.to }}
+    onchange={(next) => { link.period = next.period; link.from = next.from; link.to = next.to }}
   />
   <!-- In the slot the old "Compare with" select had: the control that undoes
        everything the other two (and the drag handle) did. -->
   <ResetButton label={resetLabel} onreset={reset} />
 {/snippet}
 
-<!-- The panel over the map (lib/sidedock.svelte.js) moves this node out while it is open. It reads the
-     metric and period the controls below own, so it needs no state of its own and no second fetch:
-     getJSON answers the same URLs from its cache. A lone root node, so Svelte can remove it from anywhere. -->
-{#if panelDock.on}
+<!-- The dock's copy (lib/sidedock.svelte.js mounts it through components/MapDockCard.svelte). -->
+{#if place === 'dock'}
   <div class="panel-chart__dock" data-metric={metrics.join(',')} data-period={period}>
     <div class="panel-chart__tools">
       {@render controls('dock')}
@@ -244,8 +239,7 @@
       {/if}
     </div>
   </div>
-{/if}
-
+{:else}
 <div class="panel-chart">
   <div class="panel-chart__phone">
     <div class="period-seg" role="group" aria-label={periodLegend}>
@@ -253,7 +247,7 @@
         <button
           type="button"
           aria-pressed={period === p}
-          onclick={() => { period = p; from = ''; to = '' }}
+          onclick={() => { link.period = p; link.from = ''; link.to = '' }}
         >{shortLabel(p, i)}</button>
       {/each}
     </div>
@@ -266,7 +260,7 @@
               name="phone-nearby"
               value={option.key}
               checked={nearby.includes(option.key)}
-              onchange={() => { nearby = nearby.includes(option.key) ? nearby.filter((k) => k !== option.key) : [...nearby, option.key] }}
+              onchange={() => { link.nearby = nearby.includes(option.key) ? nearby.filter((k) => k !== option.key) : [...nearby, option.key] }}
             >
             <span>{option.label}</span>
           </label>
@@ -297,3 +291,4 @@
     {/key}
   {/if}
 </div>
+{/if}

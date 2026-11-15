@@ -1,9 +1,11 @@
 // The open sensor as a panel along the bottom of the map on wide screens: title, gauges, a chart.
-// The panel's own .gauges node is moved in and put back, the same move-not-duplicate idiom as sensorsheet.
-// The chart is drawn a second time while the panel is open (see SensorChart); getJSON serves it from cache.
-import { tick } from 'svelte'
-import { createStarSlot } from './panelstar.js'
+// components/MapDockCard.svelte draws them from the card model the panel island publishes (lib/sensorcard.js);
+// this file owns the frame around them: mounting, the grip and height, fold, the history and area buttons.
+// The chart is drawn a second time while the panel is open (SensorChart place="dock"); getJSON serves it from cache.
+import { tick, mount as mountComponent, unmount as unmountComponent, flushSync } from 'svelte'
+import MapDockCard from '../components/MapDockCard.svelte'
 import { panelDock } from './paneldock.svelte.js'
+import { getSensorCard } from './sensorcard.js'
 import { sectionHidden } from './panelhost.js'
 import { readFlag, writeFlag } from './storage.js'
 import { areaLine } from './arealine.js'
@@ -49,12 +51,12 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   const enabled = !doc.body.classList.contains('embed')
   const mq = win?.matchMedia?.(WIDE) ?? null
   let full = false
-  let gauges = null
-  let marker = null
+  let content = null
+  let contentCard = null
   let returnTo = null
   let onClose = () => {}
-  const starSlot = createStarSlot(doc)
-  const infoSlot = createStarSlot(doc, '.panel-info')
+  // A new map frame starts with nothing lent: a dock torn down with its page never said it had gone.
+  panelDock.on = false
 
   const el = doc.createElement('div')
   el.className = 'map-dock'
@@ -72,30 +74,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   grip.tabIndex = 0
   el.appendChild(grip)
 
-  const head = doc.createElement('div')
-  head.className = 'map-dock__head'
-  const title = doc.createElement('h2')
-  title.id = TITLE_ID
-  title.className = 'map-dock__title'
-  const close = doc.createElement('button')
-  close.type = 'button'
-  close.className = 'map-dock__close'
-  close.setAttribute('aria-label', closeLabel)
-  close.title = closeLabel
-  close.appendChild(icon(doc, 'map-dock__close-ico', 'M3.5 3.5l9 9M12.5 3.5l-9 9'))
-
-  // Named for what it does next, like the fullscreen button; the chevron points the way it will move.
-  const fold = doc.createElement('button')
-  fold.type = 'button'
-  fold.className = 'map-dock__fold'
-  fold.appendChild(icon(doc, 'map-dock__fold-ico', 'M3.5 6l4.5 4.5L12.5 6'))
-  head.append(title, fold, close)
-  el.appendChild(head)
-
-  const body = doc.createElement('div')
-  body.className = 'map-dock__body'
-  el.appendChild(body)
-
+  // MapDockCard mounts here, after the grip and before the history and area buttons.
   // A button, not an <a href="#…">: a fragment link would rewrite the hash the view state lives in.
   const more = doc.createElement('button')
   more.type = 'button'
@@ -129,18 +108,17 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     if (mounted()) applyHeight()
   }
 
-  let folded = readFlag(FOLD_KEY, false)
+  // The fold button (in MapDockCard) is named from ui.folded; the rest of the fold is the frame's.
+  const ui = $state({ folded: readFlag(FOLD_KEY, false) })
   function paintFold() {
-    el.classList.toggle('map-dock--folded', folded)
-    grip.hidden = folded
-    const label = folded ? expandLabel : foldLabel
-    fold.setAttribute('aria-label', label)
-    fold.title = label
-    moreText.textContent = folded && moreShortLabel ? moreShortLabel : moreLabel
+    el.classList.toggle('map-dock--folded', ui.folded)
+    grip.hidden = ui.folded
+    moreText.textContent = ui.folded && moreShortLabel ? moreShortLabel : moreLabel
   }
   paintFold()
 
-  const panel = () => doc.querySelector('[data-island="panel"] .sensor-panel')
+  const panelHost = () => doc.querySelector('[data-island="panel"]')
+  const panel = () => panelHost()?.querySelector('.sensor-panel') ?? null
   const mounted = () => el.parentNode === frame
 
   // The saved height is the reader's choice; what shows is that clamped to the map as it is now.
@@ -171,12 +149,6 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     grip.setAttribute('aria-valuenow', String(chosen === null ? clampHeight(el.offsetHeight, b) : clampHeight(chosen, b)))
   }
   applyHeight()
-
-  function restoreGauges() {
-    if (marker && gauges) marker.replaceWith(gauges)
-    marker = null
-    gauges = null
-  }
 
   // How much of the map's bottom the panel covers, inset included: the controls and the camera clear this much.
   const listeners = new Set()
@@ -209,24 +181,16 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   }
   const watcher = typeof win?.ResizeObserver === 'function' ? new win.ResizeObserver(measure) : null
 
-  // The chart's panel copy is rendered by SensorChart under the map, then moved here. Svelte removes it
-  // from anywhere when only its own flag goes, but not when a whole chart is torn down, so stale ones are dropped here.
-  const chartNodes = () => [...el.children].filter((n) => n.classList.contains('panel-chart__dock'))
-  function adoptChart() {
-    if (!mounted()) return
-    const node = panel()?.querySelector('.panel-chart__dock')
-    if (node && node.parentNode !== el) el.insertBefore(node, more.parentNode === el ? more : null)
-    if (node) chartNodes().filter((n) => n !== node).forEach((n) => n.remove())
-    measure()
+  function dropContent() {
+    if (content) unmountComponent(content)
+    content = null
+    contentCard = null
   }
 
   function unmount() {
     if (!mounted()) return
-    restoreGauges()
-    starSlot.release()
-    infoSlot.release()
+    dropContent()
     panelDock.on = false
-    chartNodes().forEach((n) => n.remove())
     watcher?.disconnect()
     el.remove()
     shell?.classList.remove('map-shell--docked')
@@ -239,28 +203,26 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     ;(usable ? back : frame.querySelector('canvas'))?.focus({ preventScroll: true })
   }
 
-  // Idempotent: reads the panel as it is now and mounts, updates or unmounts.
+  // Idempotent: reads the card as it is now and mounts, updates or unmounts. Plain reads, no effect:
+  // the panel's MutationObserver below calls this too.
   function sync() {
-    const p = panel()
-    // Gauges already moved out of this panel are its own, not a panel without them.
-    const own = gauges && body.contains(gauges) && p?.contains(marker) ? gauges : null
-    const next = p?.querySelector('.gauges') ?? own
-    if (!enabled || full || !mq?.matches || !p || !next) {
+    const host = panelHost()
+    const card = host ? getSensorCard() : null
+    if (!enabled || full || !mq?.matches || !card?.open) {
       unmount()
       return
     }
-    title.textContent = p.querySelector('h2')?.textContent ?? ''
     // No way down to a section that is not shown.
-    more.hidden = sectionHidden(win, p)
-    if (next !== gauges) {
-      restoreGauges()
-      marker = doc.createComment('gauges')
-      next.before(marker)
-      gauges = next
-      body.appendChild(next)
+    more.hidden = sectionHidden(win, host)
+    if (card !== contentCard) {
+      dropContent()
+      contentCard = card
+      content = mountComponent(MapDockCard, {
+        target: el,
+        anchor: more.parentNode === el ? more : area,
+        props: { card, titleId: TITLE_ID, closeLabel, foldLabel, expandLabel, ui, onfold: toggleFold, onclose: dismiss },
+      })
     }
-    starSlot.take(p, head, fold)
-    infoSlot.take(p, head, fold)
     if (!mounted()) {
       returnTo = doc.activeElement
       frame.appendChild(el)
@@ -272,9 +234,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
       panelDock.on = true
       el.focus({ preventScroll: true })
     }
-    adoptChart()
-    // The chart node exists only after Svelte has rendered the flag set above.
-    tick().then(adoptChart)
+    measure()
   }
 
   function dismiss() {
@@ -282,13 +242,14 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
     onClose()
   }
 
-  close.addEventListener('click', dismiss)
-  fold.addEventListener('click', () => {
-    folded = !folded
-    writeFlag(FOLD_KEY, folded)
+  function toggleFold() {
+    ui.folded = !ui.folded
+    writeFlag(FOLD_KEY, ui.folded)
     paintFold()
+    // The button's new name and the folded layout are read back at once (measure, and the reader's next key).
+    flushSync()
     measure()
-  })
+  }
   // Pointer events cover mouse, touch and pen; the capture keeps the drag when the pointer leaves the handle.
   let drag = null
   let queued = false
@@ -356,9 +317,9 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
   // The panel's own DOM also drives sync, so the dock does not depend on the shared Svelte
   // effect flush: a throw in another island aborts that flush. One sync per batch of changes.
   // sync is idempotent, so the mutations it makes itself end in a no-op pass.
-  const panelHost = doc.querySelector('[data-island="panel"]')
+  const watchedHost = panelHost()
   let syncQueued = false
-  const panelWatch = panelHost && typeof win?.MutationObserver === 'function'
+  const panelWatch = watchedHost && typeof win?.MutationObserver === 'function'
     ? new win.MutationObserver(() => {
       // A dock whose map has left the page must not reach into the next page's panel.
       if (syncQueued || !frame.isConnected) return
@@ -366,7 +327,7 @@ export function createSideDock(frame, { closeLabel = '', moreLabel = '', moreSho
       queueMicrotask(() => { syncQueued = false; sync() })
     })
     : null
-  panelWatch?.observe(panelHost, { childList: true, subtree: true })
+  panelWatch?.observe(watchedHost, { childList: true, subtree: true })
 
   // Capture phase, like the sheet, so a faux-fullscreen Escape handler never sees a dock Escape.
   doc.addEventListener('keydown', (e) => {
