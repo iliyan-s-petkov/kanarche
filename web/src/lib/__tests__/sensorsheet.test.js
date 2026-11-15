@@ -103,8 +103,10 @@ describe('the fullscreen sensor sheet', () => {
     ctx.full.click()
     expect(ctx.el.querySelector('.map-sensor-sheet')).toBeNull()
     const panel = ctx.host.querySelector('.sensor-panel')
-    expect(gauges.parentElement).toBe(panel)
-    expect(panel.querySelector('.gauges')).toBe(gauges)
+    // The sheet drew its own gauges; on exit they go and the card draws its own again, in place.
+    expect(gauges.isConnected).toBe(false)
+    expect(panel.querySelector(':scope > .gauges')).toBeTruthy()
+    expect(document.querySelectorAll('.gauges')).toHaveLength(1)
     expect([...panel.childNodes].some((n) => n.nodeType === Node.COMMENT_NODE && n.data === 'gauges')).toBe(false)
     expect(document.activeElement).toBe(ctx.canvas)
   })
@@ -159,6 +161,21 @@ describe('the fullscreen sensor sheet', () => {
     ctx.sheet.setFull(true)
     expect(ctx.el.querySelector('.map-sensor-sheet .gauges')).toBe(gauges)
     expect(ctx.host.querySelector('.sensor-panel .gauges')).toBeNull()
+  })
+
+  // The sheet renders the card's gauges from the card's own state, so a tap there picks the card's chart metric.
+  it('a gauge tapped in the sheet picks the metric of the chart under the map', async () => {
+    ctx = page()
+    ctx.full.click()
+    ctx.vs.openSensor(101)
+    await settle()
+    const pm10 = [...ctx.el.querySelectorAll('.map-sensor-sheet .gauge')].find((g) => g.textContent.includes('PM10'))
+    pm10.click()
+    await settle()
+    expect(pm10.getAttribute('aria-pressed')).toBe('true')
+    expect(ctx.el.querySelectorAll('.map-sensor-sheet .gauge[aria-pressed="true"]')).toHaveLength(1)
+    expect(ctx.host.querySelector('input[name="panel-metric"][value="P1"]').checked).toBe(true)
+    expect(ctx.host.querySelector('input[name="panel-metric"][value="P2"]').checked).toBe(false)
   })
 
   it('Escape closes the sheet first, then leaves fullscreen', async () => {

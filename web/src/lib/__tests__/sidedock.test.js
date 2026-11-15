@@ -188,13 +188,15 @@ describe('the desktop bottom panel', () => {
 
     vp.set(true)
     await settle()
-    expect(ctx.el.querySelector('.map-dock .gauges')).toBe(gauges)
+    // The dock draws its own gauges and the card drops its set: one on the page.
+    expect(ctx.el.querySelector('.map-dock .gauges')).toBeTruthy()
+    expect(panel.querySelector('.gauges')).toBeNull()
 
     vp.set(false)
     await settle()
     expect(ctx.el.querySelector('.map-dock')).toBeNull()
-    expect(panel.querySelector('.gauges')).toBe(gauges)
-    expect(gauges.previousElementSibling).toBe(before)
+    expect(panel.querySelector('.gauges')).toBeTruthy()
+    expect(panel.querySelector('.gauges').previousElementSibling).toBe(before)
     expect(document.querySelectorAll('.gauges')).toHaveLength(1)
     expect([...panel.childNodes].some((n) => n.nodeType === Node.COMMENT_NODE && n.data === 'gauges')).toBe(false)
     expect(ctx.shell.classList.contains('map-shell--docked')).toBe(false)
@@ -409,6 +411,57 @@ describe('the desktop bottom panel', () => {
     await settle()
     expect(plot.dataset.period).toBe('7d')
     expect(ctx.host.querySelector('#panel-period-select').value).toBe('7d')
+  })
+
+  // The dock and the card under the map are two renderings of one state (lib/panellink.svelte.js).
+  it('metrics and the period picked under the map move the dock chart and its gauges', async () => {
+    vp = stubViewport(true)
+    ctx = page()
+    ctx.vs.openSensor(101)
+    await settle()
+    const plot = ctx.el.querySelector('.panel-chart__dock')
+    ctx.host.querySelector('#panel-metric-menu').click()
+    await settle()
+    ctx.host.querySelector('input[name="panel-metric"][value="P1"]').click()
+    await settle()
+    expect(plot.dataset.metric).toBe('P2,P1')
+    const pressed = [...ctx.el.querySelectorAll('.map-dock .gauge[aria-pressed="true"]')]
+    expect(pressed, 'the dock gauges did not follow the section metrics').toHaveLength(2)
+    const select = ctx.host.querySelector('#panel-period-select')
+    select.value = '30d'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    await settle()
+    expect(plot.dataset.period).toBe('30d')
+    expect(ctx.el.querySelector('#dock-period-select').value).toBe('30d')
+  })
+
+  it('nearby sensors ticked under the map are ticked in the dock, and the reverse', async () => {
+    setSensors(BODY, 'sofia')
+    vp = stubViewport(true)
+    ctx = page()
+    ctx.vs.openSensor(101)
+    await settle()
+    ctx.host.querySelector('input[name="panel-nearby"][value="median"]').click()
+    await settle()
+    expect(ctx.el.querySelector('input[name="dock-nearby"][value="median"]').checked).toBe(true)
+    ctx.el.querySelector('input[name="dock-nearby"][value="high"]').click()
+    await settle()
+    expect(ctx.host.querySelector('input[name="panel-nearby"][value="high"]').checked).toBe(true)
+  })
+
+  it('a new sensor gives the dock a fresh chart state', async () => {
+    vp = stubViewport(true)
+    ctx = page()
+    ctx.vs.openSensor(101)
+    await settle()
+    const select = ctx.el.querySelector('#dock-period-select')
+    select.value = '7d'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    await settle()
+    ctx.vs.openSensor(102)
+    await settle()
+    expect(ctx.el.querySelector('.panel-chart__dock').dataset.period).toBe('24h')
+    expect(ctx.host.querySelector('#panel-period-select').value).toBe('24h')
   })
 
   it('a custom range in the dock gives from and to fields and a Now button', async () => {

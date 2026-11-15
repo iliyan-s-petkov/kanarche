@@ -28,6 +28,8 @@ import { compositeBand } from '../lib/compositeband.js'
 import { bandsFor } from '../lib/mappaint.js'
 import { createPanelScroll } from '../lib/panelscroll.js'
 import { watchPanelScroll, returnFocus } from '../lib/panelwatch.svelte.js'
+import { panelDock } from '../lib/paneldock.svelte.js'
+import { setSensorCard } from '../lib/sensorcard.js'
 
 // Re-exported, not re-implemented: the projection lives in
 // lib/sensors.svelte.js because findSensor (the registry's own lookup) needs
@@ -101,6 +103,8 @@ export function mount(el) {
   // should.
   let chartId = null
   let chartSnippet = null
+  // The chart's props, shared by the chart under the map and the map dock's copy of it.
+  let chartProps = null
   // One link per open station: it carries the chart's metric to the gauges.
   let link = createPanelLink()
   function chartFor(sensor) {
@@ -108,7 +112,8 @@ export function mount(el) {
     if (id === chartId) return chartSnippet
     chartId = id
     link = createPanelLink()
-    chartSnippet = id === null ? null : buildChartSnippet(sensor, options, d, link)
+    chartProps = id === null ? null : sensorChartProps(sensor, options, d, link)
+    chartSnippet = chartProps === null ? null : buildChartSnippet(chartProps)
     return chartSnippet
   }
 
@@ -129,88 +134,97 @@ export function mount(el) {
   // browser's own locale) only if the attribute is missing.
   const locale = document.documentElement.lang || undefined
 
-  mountComponent(SensorPanel, {
-    target: el,
-    props: {
-      get open() { return findSensor(vs.sensorId) !== null },
-      // Each row carries its own gauge model (SensorPanel stays dumb: it only
-      // hands the model to Gauge.svelte, never reads scales itself).
-      get rows() {
-        const sensor = findSensor(vs.sensorId)
-        if (!sensor) return []
-        const scales = getScales()
-        return panelRows(sensor, options, scales).map((row) => ({
-          ...row,
-          model: gaugeModel(row, scales),
-          // The band in words, so the arc's colour is not the only thing that says it.
-          band: row.missing ? '' : bandName(row.value, bandsFor(scales, row.metric), bandNames),
-        }))
-      },
-      // Composed from the (non-templated) i18n label plus the sensor id —
-      // see SensorPanel.svelte's own comment on why `sensor` itself is not
-      // one of its props. An official station names itself (station_name);
-      // the synthetic 9e9 sensor id it would otherwise fall back to is not
-      // a useful label for a reader.
-      get title() {
-        const sensor = findSensor(vs.sensorId)
-        if (!sensor) return ''
-        return sensor.stationName || `${d.tTitle || ''} ${sensor.id}`
-      },
-      get flagText() {
-        const sensor = findSensor(vs.sensorId)
-        return flagTextForSensor(sensor, flagCatalogue, metricLabels)
-      },
-      closeLabel: d.tClose || '',
-      favSave: d.tFavSave || '',
-      favRemove: d.tFavRemove || '',
-      get favourite() { return vs.sensorId !== null && favourite.id === vs.sensorId },
-      onstar: canStar ? () => { if (vs.sensorId !== null) favourite.toggle(vs.sensorId) } : null,
-      noValue: d.tNoValue || '',
-      aqiLabel: d.tAqi || '',
-      // The worse of the sensor's PM2.5 and PM10 bands, whichever of them the page lists as gauges.
-      get aqi() {
-        const sensor = findSensor(vs.sensorId)
-        if (!sensor) return ''
-        const scales = getScales()
-        return compositeBand(sensor.values, { P2: bandsFor(scales, 'P2'), P1: bandsFor(scales, 'P1') }, bandNames)
-      },
-      detailsLabel: d.tDetails || '',
-      get details() {
-        const sensor = findSensor(vs.sensorId)
-        return sensor ? detailRows(sensor, detailLabels, locale) : []
-      },
-      get meta() {
-        const sensor = findSensor(vs.sensorId)
-        return sensor ? stationMeta(sensor, stationLabels) : []
-      },
-      get network() {
-        const sensor = findSensor(vs.sensorId)
-        return sensor ? networkText(sensor, d.tNetwork || '') : ''
-      },
-      get source() {
-        const sensor = findSensor(vs.sensorId)
-        return sensor ? sensor.source || 'sensor.community' : ''
-      },
-      get updated() {
-        const sensor = findSensor(vs.sensorId)
-        return sensor ? lastUpdated(sensor) : null
-      },
-      locale,
-      // Read after `chart`, which is what swaps the link on a new station.
-      get link() {
-        chartFor(findSensor(vs.sensorId))
-        return link
-      },
-      onclose: () => vs.closeSensor(),
-      // Keyed by STATION now, not by the device charted: the chart component
-      // owns which metric it is drawing (and therefore which device it asks),
-      // so remounting it when the reader switches metric would throw away the
-      // selection that caused the switch.
-      get chart() {
-        return chartFor(findSensor(vs.sensorId))
-      },
+  const props = {
+    get open() { return findSensor(vs.sensorId) !== null },
+    // Each row carries its own gauge model (SensorPanel stays dumb: it only
+    // hands the model to Gauge.svelte, never reads scales itself).
+    get rows() {
+      const sensor = findSensor(vs.sensorId)
+      if (!sensor) return []
+      const scales = getScales()
+      return panelRows(sensor, options, scales).map((row) => ({
+        ...row,
+        model: gaugeModel(row, scales),
+        // The band in words, so the arc's colour is not the only thing that says it.
+        band: row.missing ? '' : bandName(row.value, bandsFor(scales, row.metric), bandNames),
+      }))
     },
-  })
+    // Composed from the (non-templated) i18n label plus the sensor id —
+    // see SensorPanel.svelte's own comment on why `sensor` itself is not
+    // one of its props. An official station names itself (station_name);
+    // the synthetic 9e9 sensor id it would otherwise fall back to is not
+    // a useful label for a reader.
+    get title() {
+      const sensor = findSensor(vs.sensorId)
+      if (!sensor) return ''
+      return sensor.stationName || `${d.tTitle || ''} ${sensor.id}`
+    },
+    get flagText() {
+      const sensor = findSensor(vs.sensorId)
+      return flagTextForSensor(sensor, flagCatalogue, metricLabels)
+    },
+    closeLabel: d.tClose || '',
+    favSave: d.tFavSave || '',
+    favRemove: d.tFavRemove || '',
+    get favourite() { return vs.sensorId !== null && favourite.id === vs.sensorId },
+    onstar: canStar ? () => { if (vs.sensorId !== null) favourite.toggle(vs.sensorId) } : null,
+    noValue: d.tNoValue || '',
+    aqiLabel: d.tAqi || '',
+    // The worse of the sensor's PM2.5 and PM10 bands, whichever of them the page lists as gauges.
+    get aqi() {
+      const sensor = findSensor(vs.sensorId)
+      if (!sensor) return ''
+      const scales = getScales()
+      return compositeBand(sensor.values, { P2: bandsFor(scales, 'P2'), P1: bandsFor(scales, 'P1') }, bandNames)
+    },
+    detailsLabel: d.tDetails || '',
+    get details() {
+      const sensor = findSensor(vs.sensorId)
+      return sensor ? detailRows(sensor, detailLabels, locale) : []
+    },
+    get meta() {
+      const sensor = findSensor(vs.sensorId)
+      return sensor ? stationMeta(sensor, stationLabels) : []
+    },
+    get network() {
+      const sensor = findSensor(vs.sensorId)
+      return sensor ? networkText(sensor, d.tNetwork || '') : ''
+    },
+    get source() {
+      const sensor = findSensor(vs.sensorId)
+      return sensor ? sensor.source || 'sensor.community' : ''
+    },
+    get updated() {
+      const sensor = findSensor(vs.sensorId)
+      return sensor ? lastUpdated(sensor) : null
+    },
+    locale,
+    // Read after `chart`, which is what swaps the link on a new station.
+    get link() {
+      chartFor(findSensor(vs.sensorId))
+      return link
+    },
+    onclose: () => vs.closeSensor(),
+    // Keyed by STATION now, not by the device charted: the chart component
+    // owns which metric it is drawing (and therefore which device it asks),
+    // so remounting it when the reader switches metric would throw away the
+    // selection that caused the switch.
+    get chart() {
+      return chartFor(findSensor(vs.sensorId))
+    },
+    // Read by the map dock (components/MapDockCard.svelte), not by SensorPanel.
+    chartComponent: SensorChart,
+    get chartProps() {
+      chartFor(findSensor(vs.sensorId))
+      return chartProps
+    },
+    // The dock or the fullscreen sheet draws these parts while it is up: one set of gauges on the page.
+    get away() { return panelDock.on || panelDock.sheet },
+    get infoAway() { return panelDock.on },
+  }
+  mountComponent(SensorPanel, { target: el, props })
+  // The map dock and the fullscreen sheet render the open sensor from the same getters.
+  setSensorCard(props)
 
   // Phones: tap scrolls the card into view; close scrolls back to the map.
   const scroll = createPanelScroll({
@@ -242,64 +256,65 @@ export function mount(el) {
 //
 // The metric list offered is this station's, not the map's whole set: the switcher
 // must not offer a metric whose only possible answer is an empty plot.
-function buildChartSnippet(sensor, options, d, link) {
-  const measured = options.filter(({ metric }) => Object.hasOwn(sensor.values, metric))
+function buildChartSnippet(props) {
   return createRawSnippet(() => ({
     render: () => '<div></div>',
     setup: (node) => {
-      const component = mountComponent(SensorChart, {
-        target: node,
-        props: {
-          stationId: sensor.id,
-          sources: sensor.sources,
-          options: measured,
-          periods: parseMetricList(d.periods),
-          periodLabels: parseMetricList(d.periodLabels),
-          periodShortLabels: parseMetricList(d.periodShortLabels),
-          link,
-          get stamp() { return getFreshness().at },
-          moreLabel: d.tMore || '',
-          aboutLabel: d.tDetails || '',
-          shareLabel: d.tShare || '',
-          embedLabel: d.tEmbed || '',
-          shareDone: d.tShareDone || '',
-          embedDone: d.tEmbedDone || '',
-          copyFailed: d.tCopyFailed || '',
-          initialPeriod: d.period,
-          initialMetric: d.metric,
-          metricLegend: d.tChartMetricLegend || '',
-          periodLegend: d.tChartPeriodLegend || '',
-          customLabel: d.tPeriodCustom || '',
-          fromLabel: d.tPeriodFrom || '',
-          toLabel: d.tPeriodTo || '',
-          nowLabel: d.tPeriodNow || '',
-          resetLabel: d.tChartReset || '',
-          rangeInvalid: d.tChartRangeInvalid || '',
-          nearbyLegend: d.tNearbyLegend || '',
-          nearbyOff: d.tNearbyOff || '',
-          nearbySingleOnly: d.tNearbySingleOnly || '',
-          nearbyLabels: {
-            low: d.tNearbyLow || '',
-            median: d.tNearbyMedian || '',
-            high: d.tNearbyHigh || '',
-          },
-          // Config (frontend.chart_*_colour), not CSS: a canvas inherits no
-          // custom property. The panel draws as many lines as the reader ticks,
-          // so the palette runs on past the two named colours.
-          colours: [d.lineColour, d.compareColour, ...parseMetricList(d.seriesColours)],
-          timeLabel: d.tChartTime || '',
-          empty: d.tChartEmpty || '',
-          unavailable: d.tChartUnavailable || '',
-          text: {
-            summary: d.tChartTextSummary || '',
-            none: d.tChartTextNone || '',
-            captionHourly: d.tChartTextCaptionByHour || '',
-            captionDaily: d.tChartTextCaptionByDay || '',
-          },
-        },
-      })
+      const component = mountComponent(SensorChart, { target: node, props })
       return () => unmount(component)
     },
   }))
+}
+
+function sensorChartProps(sensor, options, d, link) {
+  const measured = options.filter(({ metric }) => Object.hasOwn(sensor.values, metric))
+  return {
+    stationId: sensor.id,
+    sources: sensor.sources,
+    options: measured,
+    periods: parseMetricList(d.periods),
+    periodLabels: parseMetricList(d.periodLabels),
+    periodShortLabels: parseMetricList(d.periodShortLabels),
+    link,
+    get stamp() { return getFreshness().at },
+    moreLabel: d.tMore || '',
+    aboutLabel: d.tDetails || '',
+    shareLabel: d.tShare || '',
+    embedLabel: d.tEmbed || '',
+    shareDone: d.tShareDone || '',
+    embedDone: d.tEmbedDone || '',
+    copyFailed: d.tCopyFailed || '',
+    initialPeriod: d.period,
+    initialMetric: d.metric,
+    metricLegend: d.tChartMetricLegend || '',
+    periodLegend: d.tChartPeriodLegend || '',
+    customLabel: d.tPeriodCustom || '',
+    fromLabel: d.tPeriodFrom || '',
+    toLabel: d.tPeriodTo || '',
+    nowLabel: d.tPeriodNow || '',
+    resetLabel: d.tChartReset || '',
+    rangeInvalid: d.tChartRangeInvalid || '',
+    nearbyLegend: d.tNearbyLegend || '',
+    nearbyOff: d.tNearbyOff || '',
+    nearbySingleOnly: d.tNearbySingleOnly || '',
+    nearbyLabels: {
+      low: d.tNearbyLow || '',
+      median: d.tNearbyMedian || '',
+      high: d.tNearbyHigh || '',
+    },
+    // Config (frontend.chart_*_colour), not CSS: a canvas inherits no
+    // custom property. The panel draws as many lines as the reader ticks,
+    // so the palette runs on past the two named colours.
+    colours: [d.lineColour, d.compareColour, ...parseMetricList(d.seriesColours)],
+    timeLabel: d.tChartTime || '',
+    empty: d.tChartEmpty || '',
+    unavailable: d.tChartUnavailable || '',
+    text: {
+      summary: d.tChartTextSummary || '',
+      none: d.tChartTextNone || '',
+      captionHourly: d.tChartTextCaptionByHour || '',
+      captionDaily: d.tChartTextCaptionByDay || '',
+    },
+  }
 }
 
