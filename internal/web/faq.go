@@ -74,6 +74,9 @@ func (p PageData) faqBlock(f *AreaFacts) *FAQBlock {
 		add("faq.q2", f.Network)
 		add("faq.q3", f.Place)
 	}
+	if len(block.Items) == 0 {
+		return nil
+	}
 	return block
 }
 

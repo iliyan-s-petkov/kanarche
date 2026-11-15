@@ -71,19 +71,30 @@ func TestAreaFAQHoldsOnlyAreaQuestions(t *testing.T) {
 func TestFAQLeavesNoRawPlaceholder(t *testing.T) {
 	snap := eeaFixture(t)
 	rr := renderer(t, snap)
+	checked := 0
 	for slug := range snap.KnownSlugs {
 		for _, prefix := range []string{"", "/en"} {
 			path := prefix + "/area/" + slug
-			sec := faqSection(t, fetch(t, rr, path).Body.String())
+			body := fetch(t, rr, path).Body.String()
+			// An oblast without a rank has no FAQ at all (TestUnrankedOblastHasNoEmptyFAQ).
+			if !strings.Contains(body, `id="faq-heading"`) {
+				continue
+			}
+			checked++
+			sec := faqSection(t, body)
 			if strings.ContainsAny(sec, "{}") {
 				t.Errorf("%s: FAQ section still holds a raw placeholder: %q", path, regexp.MustCompile(`\{[^}]*\}?`).FindString(sec))
 			}
 		}
 	}
+	if checked == 0 {
+		t.Fatal("no area page rendered a FAQ")
+	}
 }
 
 func TestFAQHeadingUsesBulgarianPreposition(t *testing.T) {
-	rr := renderer(t, eeaFixture(t))
+	// The ranked fixture gives the oblasts a rank question, so their FAQ renders.
+	rr := renderer(t, rankedOblastFixture(t))
 	cases := map[string]string{
 		"/area/smolyan":         "Въпроси за въздуха в Смолян",
 		"/area/veliko-tarnovo":  "Въпроси за въздуха във Велико Търново",
@@ -334,4 +345,18 @@ func TestOblastFAQJSONLDMatchesVisible(t *testing.T) {
 		return
 	}
 	t.Fatal("no FAQPage in JSON-LD")
+}
+
+// An oblast without a rank has no FAQ items, so neither the FAQ section nor a FAQPage is rendered.
+func TestUnrankedOblastHasNoEmptyFAQ(t *testing.T) {
+	rr := renderer(t, eeaFixture(t))
+	for _, path := range []string{"/area/smolyan-oblast", "/en/area/smolyan-oblast"} {
+		body := fetch(t, rr, path).Body.String()
+		if strings.Contains(body, `id="faq-heading"`) {
+			t.Errorf("%s: FAQ heading rendered with no items", path)
+		}
+		if strings.Contains(body, `"FAQPage"`) {
+			t.Errorf("%s: empty FAQPage in JSON-LD", path)
+		}
+	}
 }
