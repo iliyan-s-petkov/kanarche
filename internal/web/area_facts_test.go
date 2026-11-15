@@ -98,7 +98,7 @@ func TestFactsBlocksBulgarianCityWithOwnBoundary(t *testing.T) {
 		"За въздуха в Шумен",
 		"Шумен е областен център в област Шумен. Границата на града, по която отнасяме сензорите, обхваща 66 км².",
 		"В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция.",
-		"Шумен сега е на 9-то място от 27 областни центъра по ФПЧ2.5, считано от най-чистия въздух. Стойността е 14,2 µg/m³, а медианата за всички 27 е 19,0 µg/m³. Подредбата се променя с всяко обновяване на данните.",
+		"Шумен сега е на 9-то място от 27 областни центъра по ФПЧ2.5, считано от най-чистия въздух. Стойността е 14,2 µg/m³, а медианата за всички 27 е 19,0 µg/m³.",
 	} {
 		if !hasLine(text, want) {
 			t.Errorf("missing line %q in:\n%s", want, text)
@@ -113,7 +113,7 @@ func TestFactsBlocksEnglishCityWithOwnBoundary(t *testing.T) {
 		"About the air in Shumen",
 		"Shumen is a provincial capital in Shumen Province. The city boundary we use to assign sensors covers 66 km².",
 		"Shumen has 11 citizen sensors and 1 official station of the Executive Environment Agency: AIS Shumen. It is an urban background station.",
-		"Shumen currently ranks 9th of 27 provincial capitals for PM2.5, counting from the cleanest air. The value is 14.2 µg/m³ and the median for all 27 is 19.0 µg/m³. The ranking changes with every data update.",
+		"Shumen currently ranks 9th of 27 provincial capitals for PM2.5, counting from the cleanest air. The value is 14.2 µg/m³ and the median for all 27 is 19.0 µg/m³.",
 	} {
 		if !hasLine(text, want) {
 			t.Errorf("missing line %q in:\n%s", want, text)
@@ -384,8 +384,8 @@ func TestFAQEnglishQuestions(t *testing.T) {
 func TestFAQLinksToTheSharedPages(t *testing.T) {
 	rr := renderer(t, factsSnapshot())
 	cases := []struct{ path, about, air, line string }{
-		{"/area/shumen", "/about-the-data", "/air-pollution", "Общите въпроси за данните, цветовете и обновяването са в За данните."},
-		{"/en/area/shumen", "/en/about-the-data", "/en/air-pollution", "The general questions about the data, the colours and the update times are in About the data."},
+		{"/area/shumen", "/about-the-data", "/air-pollution", "Откъде идва замърсяването и какво означават класовете, вижте в Замърсяване на въздуха: обяснение."},
+		{"/en/area/shumen", "/en/about-the-data", "/en/air-pollution", "For where pollution comes from and how to read the bands, see Air pollution explained."},
 	}
 	for _, c := range cases {
 		body := fetch(t, rr, c.path).Body.String()

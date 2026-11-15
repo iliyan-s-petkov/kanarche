@@ -71,8 +71,8 @@ func TestWHODaysPicksKeyByCount(t *testing.T) {
 			t.Errorf("%s: bg %q en %q", c.name, bg, en)
 		}
 		for _, tail := range []string{"Нормите се проверяват с официални измервания.", "Limits are checked with official measurements."} {
-			if !strings.Contains(bg+en, tail) {
-				t.Errorf("%s: missing closing sentence %q", c.name, tail)
+			if strings.Contains(bg+en, tail) {
+				t.Errorf("%s: still carries %q, which lives on the data page", c.name, tail)
 			}
 		}
 		if c.name != "many" && (strings.Contains(bg, c.notBG) || strings.Contains(en, c.notEN)) {

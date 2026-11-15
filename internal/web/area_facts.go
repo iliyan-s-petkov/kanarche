@@ -362,5 +362,5 @@ func (p PageData) rankFact(meta snapshot.AreaMeta, snap *snapshot.Snapshot) (ful
 		leadKey = "area.facts.rank.first"
 	}
 	forFAQ = joinSentences([]string{p.factText(leadKey, pairs...), p.factText("area.facts.rank.value", pairs...)})
-	return joinSentences([]string{forFAQ, p.T("area.facts.rank.note")}), forFAQ
+	return forFAQ, forFAQ
 }
