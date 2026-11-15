@@ -48,15 +48,15 @@ test('Bulgarian headings on a phone', async ({ ctx }) => {
   await page.close()
 })
 
-// Sofia and Varna each have a district called Младост. Both must list, and the
-// fixture fails the test on any uncaught page error (each_key_duplicate used to
-// abort the flush), so the dock still has to open on a sensor afterwards.
-test('two districts with the same name both list and the dock still opens', async ({ ctx }) => {
-  const { page, input } = await openOverSofia(ctx, '/', { width: 1440, height: 900 })
+// Sofia and Varna each have a district called Младост. The prod bug: with the
+// dock open, the finder rendering both names threw each_key_duplicate, which
+// aborted the flush and broke the dock. The fixture fails on any page error.
+test('two districts with the same name both list and the dock stays open', async ({ ctx }) => {
+  const { page, input } = await openOverSofia(ctx, '/#sensor=101', { width: 1440, height: 900 })
+  await expect(page.locator('.map-dock')).toBeVisible({ timeout: 20000 })
   await input.fill('Млад')
   // Typed results are a flat list, and "Млад" also matches a city entry.
   await expect(page.locator('[data-island="finder"] [role="option"]', { hasText: /^Младост$/ })).toHaveCount(2)
-  await page.goto('/#sensor=101')
-  await expect(page.locator('.map-dock')).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('.map-dock')).toBeVisible()
   await page.close()
 })
