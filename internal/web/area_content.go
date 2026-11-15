@@ -106,11 +106,16 @@ func (p PageData) cityLiveDescription(row AreaRow) (string, bool) {
 	if startsWithVav(row.Name) {
 		key += "_vav"
 	}
+	// The level is the worse of the two bands, as on the page's AQI line.
+	band := eaqiComposite(row.Values)
+	if band == "" {
+		band = bandLabel(p.DefaultMetric, row.Value)
+	}
 	return strings.NewReplacer(
 		"{name}", row.Name,
 		"{pm25}", formatValue(pm25, p.Lang),
 		"{pm10}", formatValue(pm10, p.Lang),
-		"{cat}", p.T("band."+bandLabel("P2", pm25)),
+		"{cat}", p.T("band."+band),
 	).Replace(p.T(key)), true
 }
 
