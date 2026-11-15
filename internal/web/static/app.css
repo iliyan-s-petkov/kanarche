@@ -157,7 +157,8 @@ strong, b { font-weight: var(--weight-emphasis); }
 .breadcrumb li { display: inline; }
 .breadcrumb li + li::before { content: "›"; content: "›" / ""; color: var(--muted); padding-inline: var(--space-1); }
 /* The air-now and 24h sentences sit under the h1, above the readouts. */
-.area-now, .area-day { margin-block: var(--space-2) 0; }
+.area-now, .area-day, .area-aqi { margin-block: var(--space-2) 0; }
+.panel-aqi { margin-block: var(--space-1) var(--space-2); }
 /* Touch phones: summary and no-coverage notice after the map, before the sections (reordered in the .frame grid). */
 @media (hover: none) {
   .frame > .area-summary { order: 1; }

@@ -68,6 +68,29 @@ func TestBandColourUsesTheSameTableTheMapDoes(t *testing.T) {
 	}
 }
 
+// The area level is the worse of the PM2.5 and PM10 EAQI bands, as the EAQI rates a site.
+func TestEaqiCompositeIsTheWorseParticulateBand(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]float64
+		want   string
+	}{
+		{"pm10 worse", map[string]float64{"P2": 4, "P1": 60}, "moderate"},
+		{"pm25 worse", map[string]float64{"P2": 60, "P1": 20}, "poor"},
+		{"equal bands", map[string]float64{"P2": 4, "P1": 10}, "good"},
+		{"only pm25", map[string]float64{"P2": 12}, "fair"},
+		{"only pm10", map[string]float64{"P1": 50}, "moderate"},
+		{"no data", map[string]float64{}, ""},
+		{"nil", nil, ""},
+		{"other metric only", map[string]float64{"temperature": 20}, ""},
+	}
+	for _, c := range cases {
+		if got := eaqiComposite(c.values); got != c.want {
+			t.Errorf("%s: eaqiComposite(%v) = %q, want %q", c.name, c.values, got, c.want)
+		}
+	}
+}
+
 // A health band exists only where an index publishes one. PM and the three EAQI
 // gases have it; benzene and CO are axis-only tables, weather and noise have
 // their own word lists. A bar and a band word on those would claim a health class.

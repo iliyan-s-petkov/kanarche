@@ -53,6 +53,7 @@ const PANEL_ATTR_FIXTURES = {
   tFavSave: 'Save as my sensor',
   tFavRemove: 'Remove my sensor',
   tNoValue: 'no reading',
+  tAqi: 'AQI (EU)',
   tFlagOutOfRange: 'This reading is out of the expected range.',
   tFlagStuck: 'This reading has not changed in a while.',
   tFlagClamped: 'The sensor is saturated.',

@@ -24,6 +24,7 @@ import { getFavourite } from '../lib/favourite.svelte.js'
 import { findSensor, getScales, normaliseSensor } from '../lib/sensors.svelte.js'
 import { gaugeModel } from '../lib/gauge.js'
 import { bandName, readBandNames } from '../lib/bandname.js'
+import { compositeBand } from '../lib/compositeband.js'
 import { bandsFor } from '../lib/mappaint.js'
 import { createPanelScroll } from '../lib/panelscroll.js'
 import { watchPanelScroll, returnFocus } from '../lib/panelwatch.svelte.js'
@@ -165,6 +166,14 @@ export function mount(el) {
       get favourite() { return vs.sensorId !== null && favourite.id === vs.sensorId },
       onstar: canStar ? () => { if (vs.sensorId !== null) favourite.toggle(vs.sensorId) } : null,
       noValue: d.tNoValue || '',
+      aqiLabel: d.tAqi || '',
+      // The worse of the sensor's PM2.5 and PM10 bands, whichever of them the page lists as gauges.
+      get aqi() {
+        const sensor = findSensor(vs.sensorId)
+        if (!sensor) return ''
+        const scales = getScales()
+        return compositeBand(sensor.values, { P2: bandsFor(scales, 'P2'), P1: bandsFor(scales, 'P1') }, bandNames)
+      },
       detailsLabel: d.tDetails || '',
       get details() {
         const sensor = findSensor(vs.sensorId)

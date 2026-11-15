@@ -50,7 +50,7 @@ func staticDescription(t *testing.T, lang, name string) string {
 
 func TestCityDescriptionLiveBG(t *testing.T) {
 	got, _, _ := cityDescriptions(t, liveCityFixture(time.Now()), "/area/plovdiv")
-	want := "В Пловдив ФПЧ2.5 е 12,4 µg/m³ (задоволително), ФПЧ10 е 21,1 µg/m³. Индекс за качество на въздуха (AQI) от граждански сензори и станции на ИАОС, с графика за 24 часа."
+	want := "В Пловдив ФПЧ2.5 е 12,4 µg/m³, ФПЧ10 е 21,1 µg/m³. AQI (ЕС): задоволително. Данни от граждански сензори и станции на ИАОС, с графика за 24 часа."
 	if got != want {
 		t.Fatalf("got %q\nwant %q", got, want)
 	}
@@ -58,7 +58,7 @@ func TestCityDescriptionLiveBG(t *testing.T) {
 
 func TestCityDescriptionLiveEN(t *testing.T) {
 	got, _, _ := cityDescriptions(t, liveCityFixture(time.Now()), "/en/area/plovdiv")
-	want := "In Plovdiv PM2.5 is 12.4 µg/m³ (fair) and PM10 is 21.1 µg/m³. Air quality index (AQI) from citizen sensors and IAOS stations, with a 24-hour chart."
+	want := "In Plovdiv PM2.5 is 12.4 µg/m³ and PM10 is 21.1 µg/m³. AQI (EU): fair. Data from citizen sensors and IAOS stations, with a 24-hour chart."
 	if got != want {
 		t.Fatalf("got %q\nwant %q", got, want)
 	}
@@ -117,5 +117,24 @@ func TestDistrictDescriptionStaysStatic(t *testing.T) {
 	got, _, _ := cityDescriptions(t, liveCityFixture(time.Now()), "/en/area/mladost")
 	if strings.Contains(got, "PM2.5 is") {
 		t.Errorf("district description turned live: %q", got)
+	}
+}
+
+// The description names the worse of the two bands: PM2.5 good, PM10 moderate reads moderate.
+func TestCityDescriptionNamesTheWorseParticulateBand(t *testing.T) {
+	snap := liveCityFixture(time.Now())
+	m := snap.KnownSlugs["plovdiv"]
+	m.Values = map[string]float64{"P2": 4, "P1": 60}
+	snap.KnownSlugs["plovdiv"] = m
+	for path, want := range map[string]string{
+		"/area/plovdiv":    "AQI (ЕС): умерено.",
+		"/en/area/plovdiv": "AQI (EU): moderate.",
+	} {
+		got, og, tw := cityDescriptions(t, snap, path)
+		for _, d := range []string{got, og, tw} {
+			if !strings.Contains(d, want) {
+				t.Errorf("%s: description %q lacks %q", path, d, want)
+			}
+		}
 	}
 }

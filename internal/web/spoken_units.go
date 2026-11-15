@@ -125,5 +125,14 @@ func (p PageData) HomeNowHTML() template.HTML {
 	}
 
 	return template.HTML(`<p class="visually-hidden" id="home-summary" data-home-summary` + attrs.String() + `>` +
-		p.areaNowText(row) + ` <span data-home-second aria-live="polite">` + second + `</span></p>`)
+		p.areaNowText(row) + p.homeAQISentence(row) + ` <span data-home-second aria-live="polite">` + second + `</span></p>`)
+}
+
+// homeAQISentence keeps the level in the spoken home summary now that area.now
+// no longer says it. Empty when the row has nothing to rate.
+func (p PageData) homeAQISentence(row AreaRow) string {
+	if line := p.areaAQIText(row); line != "" {
+		return " " + line + "."
+	}
+	return ""
 }

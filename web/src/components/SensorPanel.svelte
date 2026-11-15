@@ -38,7 +38,7 @@
   let {
     rows, title, flagText, closeLabel, noValue, onclose,
     details = [], detailsLabel = '', chart = null, open = true,
-    meta = [], network = '',
+    meta = [], network = '', aqi = '', aqiLabel = '',
     favourite = false, favSave = '', favRemove = '', onstar = null,
     source = '', updated = null, now = null, locale = undefined,
     link = createPanelLink(),
@@ -119,6 +119,8 @@
   {/if}
 
   {#if network}<p class="panel-network">{network}</p>{/if}
+
+  {#if aqi}<p class="panel-aqi">{aqiLabel}: {aqi}</p>{/if}
 
   <div class="gauges">
     {#each rows as row (row.metric)}

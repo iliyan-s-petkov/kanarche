@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"kanarche.eu/internal/i18n"
@@ -11,6 +12,9 @@ import (
 
 // maxDescRunes is the length past which search results truncate a meta description.
 const maxDescRunes = 155
+
+// maxLiveDescRunes is the owner-approved ceiling for the live city description, which carries the AQI level word.
+const maxLiveDescRunes = 160
 
 // Every description variant stays within maxDescRunes for every real area name.
 // Names come from the committed boundary files, the same data the snapshot's
@@ -64,6 +68,16 @@ func TestAreaDescriptionsFitForEveryRealName(t *testing.T) {
 					row := AreaRow{Slug: p.Slug, Name: name, Kind: f.kind, Covered: true, Source: source}
 					_, desc := rr.areaSEO(row, lang)
 					total++
+					if f.kind == "city" && source == "" {
+						// Longest band word and widest values the live city description can carry.
+						row.Values = map[string]float64{"P2": 999.9, "P1": 999.9}
+						pd := acPageData(rr, lang, time.Now(), time.Now())
+						if live, ok := pd.cityLiveDescription(row); !ok {
+							t.Errorf("%s city %s: no live description", lang, ft.Properties.Slug)
+						} else if n := utf8.RuneCountInString(live); n > maxLiveDescRunes {
+							t.Errorf("%s city %s: live description is %d runes, max %d: %q", lang, ft.Properties.Slug, n, maxLiveDescRunes, live)
+						}
+					}
 					if n := utf8.RuneCountInString(desc); n > maxDescRunes {
 						t.Errorf("%s %s %s source=%q: description is %d runes, max %d: %q", lang, f.kind, p.Slug, source, n, maxDescRunes, desc)
 					}

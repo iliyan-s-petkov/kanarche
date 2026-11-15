@@ -88,8 +88,11 @@ func TestAreaNowSentenceCovered(t *testing.T) {
 	p := acPageData(rr, i18n.DefaultLang, t0, t0)
 	row := rr.rowFrom(snap.KnownSlugs["plovdiv"], i18n.DefaultLang)
 
+	if got := string(p.areaAQIHTML(row)); !strings.Contains(got, "AQI (ЕС): задоволително") {
+		t.Errorf("areaAQIHTML() = %q, want the fair level", got)
+	}
 	got := string(p.areaNowHTML(row))
-	wants := []string{"Пловдив", "12,3", "µg/m³", "задоволително", "5 сензора", `<time datetime="`}
+	wants := []string{"Пловдив", "12,3", "µg/m³", "5 сензора", `<time datetime="`}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
 			t.Errorf("areaNowHTML() = %q, want substring %q", got, want)
