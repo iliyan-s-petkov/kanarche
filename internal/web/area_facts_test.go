@@ -354,8 +354,8 @@ func TestFAQDropsRankQuestionWhenRankIsHidden(t *testing.T) {
 	for _, lang := range []string{"", "/en"} {
 		body := fetch(t, rr, lang+"/area/shumen").Body.String()
 		items := faqVisible(t, body)
-		if len(items) != 2 {
-			t.Errorf("%s: %d FAQ items, want 2 without the rank", lang, len(items))
+		if len(items) != 3 {
+			t.Errorf("%s: %d FAQ items, want 3 without the rank", lang, len(items))
 		}
 		if strings.Contains(body, "compared with other") || strings.Contains(body, "в сравнение с другите") {
 			t.Errorf("%s: rank question still rendered", lang)

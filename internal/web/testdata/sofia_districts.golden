@@ -14,9 +14,11 @@ facts:
 faq visible: Колко чист е въздухът в район Младост в сравнение с другите райони? | Район Младост сега е на 1-во място от 6 района по ФПЧ2.5. Това е най-чистият въздух сред тях. Стойността е 6,0 µg/m³, а медианата за всички 6 е 9,8 µg/m³. Стойностите са от граждански сензори.
 faq visible: Има ли официална станция в район Младост? | В район Младост има 4 граждански сензора и няма официална станция на ИАОС.
 faq visible: Каква територия обхваща страницата за район Младост? | Район Младост е един от 6 района на София. Обхваща 5,0 км². По площ е на 6-то място, считано от най-големия.
+faq visible: Замърсен ли е въздухът в район Младост днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в район Младост е 6,0 µg/m³, а на ФПЧ10 е 9,0 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 faq jsonld: Колко чист е въздухът в район Младост в сравнение с другите райони? | Район Младост сега е на 1-во място от 6 района по ФПЧ2.5. Това е най-чистият въздух сред тях. Стойността е 6,0 µg/m³, а медианата за всички 6 е 9,8 µg/m³. Стойностите са от граждански сензори.
 faq jsonld: Има ли официална станция в район Младост? | В район Младост има 4 граждански сензора и няма официална станция на ИАОС.
 faq jsonld: Каква територия обхваща страницата за район Младост? | Район Младост е един от 6 района на София. Обхваща 5,0 км². По площ е на 6-то място, считано от най-големия.
+faq jsonld: Замърсен ли е въздухът в район Младост днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в район Младост е 6,0 µg/m³, а на ФПЧ10 е 9,0 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 links:
 
 
@@ -68,9 +70,11 @@ Mladost district currently ranks 1st of 6 Sofia districts for PM2.5. This is the
 faq visible: How clean is the air in Mladost district compared with other Sofia districts? | Mladost district currently ranks 1st of 6 Sofia districts for PM2.5. This is the cleanest air among them. The value is 6.0 µg/m³ and the median for all 6 is 9.8 µg/m³. The values come from citizen sensors.
 faq visible: Is there an official monitoring station in Mladost district? | Mladost district has 4 citizen sensors and no official station of the Executive Environment Agency.
 faq visible: What area does the page for Mladost district cover? | Mladost district is one of the 6 districts of Sofia. It covers 5.0 km². It ranks 6th by size, counting from the largest.
+faq visible: Is the air in Mladost district polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Mladost district is 6.0 µg/m³ and PM10 is 9.0 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 faq jsonld: How clean is the air in Mladost district compared with other Sofia districts? | Mladost district currently ranks 1st of 6 Sofia districts for PM2.5. This is the cleanest air among them. The value is 6.0 µg/m³ and the median for all 6 is 9.8 µg/m³. The values come from citizen sensors.
 faq jsonld: Is there an official monitoring station in Mladost district? | Mladost district has 4 citizen sensors and no official station of the Executive Environment Agency.
 faq jsonld: What area does the page for Mladost district cover? | Mladost district is one of the 6 districts of Sofia. It covers 5.0 km². It ranks 6th by size, counting from the largest.
+faq jsonld: Is the air in Mladost district polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Mladost district is 6.0 µg/m³ and PM10 is 9.0 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 links:
 
 
@@ -122,9 +126,11 @@ facts:
 faq visible: Колко чист е въздухът в район Средец в сравнение с другите райони? | Район Средец сега е на 3-то място от 6 района по ФПЧ2.5, считано от най-чистия въздух. Стойността е 9,0 µg/m³, а медианата за всички 6 е 9,8 µg/m³. Стойностите са от граждански сензори.
 faq visible: Има ли официална станция в район Средец? | В район Средец има 6 граждански сензора и няма официална станция на ИАОС.
 faq visible: Каква територия обхваща страницата за район Средец? | Район Средец е един от 6 района на София. Обхваща 11 км². По площ е на 4-то място, считано от най-големия.
+faq visible: Замърсен ли е въздухът в район Средец днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в район Средец е 9,0 µg/m³, а на ФПЧ10 е 13,5 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 faq jsonld: Колко чист е въздухът в район Средец в сравнение с другите райони? | Район Средец сега е на 3-то място от 6 района по ФПЧ2.5, считано от най-чистия въздух. Стойността е 9,0 µg/m³, а медианата за всички 6 е 9,8 µg/m³. Стойностите са от граждански сензори.
 faq jsonld: Има ли официална станция в район Средец? | В район Средец има 6 граждански сензора и няма официална станция на ИАОС.
 faq jsonld: Каква територия обхваща страницата за район Средец? | Район Средец е един от 6 района на София. Обхваща 11 км². По площ е на 4-то място, считано от най-големия.
+faq jsonld: Замърсен ли е въздухът в район Средец днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в район Средец е 9,0 µg/m³, а на ФПЧ10 е 13,5 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 links:
 
 
@@ -176,9 +182,11 @@ Sredets district currently ranks 3rd of 6 Sofia districts for PM2.5, counting fr
 faq visible: How clean is the air in Sredets district compared with other Sofia districts? | Sredets district currently ranks 3rd of 6 Sofia districts for PM2.5, counting from the cleanest air. The value is 9.0 µg/m³ and the median for all 6 is 9.8 µg/m³. The values come from citizen sensors.
 faq visible: Is there an official monitoring station in Sredets district? | Sredets district has 6 citizen sensors and no official station of the Executive Environment Agency.
 faq visible: What area does the page for Sredets district cover? | Sredets district is one of the 6 districts of Sofia. It covers 11 km². It ranks 4th by size, counting from the largest.
+faq visible: Is the air in Sredets district polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Sredets district is 9.0 µg/m³ and PM10 is 13.5 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 faq jsonld: How clean is the air in Sredets district compared with other Sofia districts? | Sredets district currently ranks 3rd of 6 Sofia districts for PM2.5, counting from the cleanest air. The value is 9.0 µg/m³ and the median for all 6 is 9.8 µg/m³. The values come from citizen sensors.
 faq jsonld: Is there an official monitoring station in Sredets district? | Sredets district has 6 citizen sensors and no official station of the Executive Environment Agency.
 faq jsonld: What area does the page for Sredets district cover? | Sredets district is one of the 6 districts of Sofia. It covers 11 km². It ranks 4th by size, counting from the largest.
+faq jsonld: Is the air in Sredets district polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Sredets district is 9.0 µg/m³ and PM10 is 13.5 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 links:
 
 
@@ -230,9 +238,11 @@ facts:
 faq visible: Колко чист е въздухът в район Надежда в сравнение с другите райони? | Район Надежда сега е на 6-то място от 6 района по ФПЧ2.5, считано от най-чистия въздух. Стойността е 13,5 µg/m³, а медианата за всички 6 е 9,8 µg/m³. Стойностите са от граждански сензори.
 faq visible: Има ли официална станция в район Надежда? | В район Надежда има 9 граждански сензора и няма официална станция на ИАОС.
 faq visible: Каква територия обхваща страницата за район Надежда? | Район Надежда е един от 6 района на София. Обхваща 20 км². По площ е на 1-во място, считано от най-големия.
+faq visible: Замърсен ли е въздухът в район Надежда днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в район Надежда е 13,5 µg/m³, а на ФПЧ10 е 20,2 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 faq jsonld: Колко чист е въздухът в район Надежда в сравнение с другите райони? | Район Надежда сега е на 6-то място от 6 района по ФПЧ2.5, считано от най-чистия въздух. Стойността е 13,5 µg/m³, а медианата за всички 6 е 9,8 µg/m³. Стойностите са от граждански сензори.
 faq jsonld: Има ли официална станция в район Надежда? | В район Надежда има 9 граждански сензора и няма официална станция на ИАОС.
 faq jsonld: Каква територия обхваща страницата за район Надежда? | Район Надежда е един от 6 района на София. Обхваща 20 км². По площ е на 1-во място, считано от най-големия.
+faq jsonld: Замърсен ли е въздухът в район Надежда днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в район Надежда е 13,5 µg/m³, а на ФПЧ10 е 20,2 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 links:
 
 
@@ -284,9 +294,11 @@ Nadezhda district currently ranks 6th of 6 Sofia districts for PM2.5, counting f
 faq visible: How clean is the air in Nadezhda district compared with other Sofia districts? | Nadezhda district currently ranks 6th of 6 Sofia districts for PM2.5, counting from the cleanest air. The value is 13.5 µg/m³ and the median for all 6 is 9.8 µg/m³. The values come from citizen sensors.
 faq visible: Is there an official monitoring station in Nadezhda district? | Nadezhda district has 9 citizen sensors and no official station of the Executive Environment Agency.
 faq visible: What area does the page for Nadezhda district cover? | Nadezhda district is one of the 6 districts of Sofia. It covers 20 km². It ranks 1st by size, counting from the largest.
+faq visible: Is the air in Nadezhda district polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Nadezhda district is 13.5 µg/m³ and PM10 is 20.2 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 faq jsonld: How clean is the air in Nadezhda district compared with other Sofia districts? | Nadezhda district currently ranks 6th of 6 Sofia districts for PM2.5, counting from the cleanest air. The value is 13.5 µg/m³ and the median for all 6 is 9.8 µg/m³. The values come from citizen sensors.
 faq jsonld: Is there an official monitoring station in Nadezhda district? | Nadezhda district has 9 citizen sensors and no official station of the Executive Environment Agency.
 faq jsonld: What area does the page for Nadezhda district cover? | Nadezhda district is one of the 6 districts of Sofia. It covers 20 km². It ranks 1st by size, counting from the largest.
+faq jsonld: Is the air in Nadezhda district polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Nadezhda district is 13.5 µg/m³ and PM10 is 20.2 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 links:
 
 
@@ -335,8 +347,10 @@ facts:
 
 faq visible: Има ли официална станция в София? | В София има 80 граждански сензора и няма официална станция на ИАОС.
 faq visible: Каква територия обхваща страницата за София? | София е областен център в област София-град. Границата на града, по която отнасяме сензорите, обхваща 1 300 км².
+faq visible: Замърсен ли е въздухът в София днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в София е 9,0 µg/m³, а на ФПЧ10 е 13,5 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 faq jsonld: Има ли официална станция в София? | В София има 80 граждански сензора и няма официална станция на ИАОС.
 faq jsonld: Каква територия обхваща страницата за София? | София е областен център в област София-град. Границата на града, по която отнасяме сензорите, обхваща 1 300 км².
+faq jsonld: Замърсен ли е въздухът в София днес? | Към 27.09.2026, 15:00 ч. медианата на ФПЧ2.5 в София е 9,0 µg/m³, а на ФПЧ10 е 13,5 µg/m³. По Европейския индекс за качество на въздуха това е клас „задоволително“. Можете да се занимавате с обичайните си дейности на открито.
 links:
 
 
@@ -387,8 +401,10 @@ Sofia has 80 citizen sensors and no official station of the Executive Environmen
 
 faq visible: Is there an official monitoring station in Sofia? | Sofia has 80 citizen sensors and no official station of the Executive Environment Agency.
 faq visible: What area does the page for Sofia cover? | Sofia is a provincial capital in Sofia City Province. The city boundary we use to assign sensors covers 1,300 km².
+faq visible: Is the air in Sofia polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Sofia is 9.0 µg/m³ and PM10 is 13.5 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 faq jsonld: Is there an official monitoring station in Sofia? | Sofia has 80 citizen sensors and no official station of the Executive Environment Agency.
 faq jsonld: What area does the page for Sofia cover? | Sofia is a provincial capital in Sofia City Province. The city boundary we use to assign sensors covers 1,300 km².
+faq jsonld: Is the air in Sofia polluted today? | As of Sep 27, 2026, 15:00 the median PM2.5 in Sofia is 9.0 µg/m³ and PM10 is 13.5 µg/m³. On the European Air Quality Index that is fair. Enjoy your usual outdoor activities.
 links:
 
 

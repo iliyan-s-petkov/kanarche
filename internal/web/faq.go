@@ -74,10 +74,61 @@ func (p PageData) faqBlock(f *AreaFacts) *FAQBlock {
 		add("faq.q2", f.Network)
 		add("faq.q3", f.Place)
 	}
+	// The two daily questions come last and apply to every kind, an oblast included.
+	if a := p.todayAnswer(); a != "" {
+		add("faq.q4", a)
+	}
+	if a := p.pollenAnswer(); a != "" {
+		add("faq.q5", a)
+	}
 	if len(block.Items) == 0 {
 		return nil
 	}
 	return block
+}
+
+// todayAnswer is the answer to "is the air polluted today", built from the same numbers the
+// readout cards and the AQI line show. An area with no PM2.5 median gets the no-value answer.
+// A PM2.5 median without a PM10 one has no approved copy, so that case gives no question.
+func (p PageData) todayAnswer() string {
+	row := *p.Area
+	p2, hasP2 := row.Values["P2"]
+	p1, hasP1 := row.Values["P1"]
+	if !row.Covered || !hasP2 {
+		return p.factText("faq.a4_none")
+	}
+	if !hasP1 {
+		return ""
+	}
+	// The class is the worse of the two PM bands, the same one the AQI line names.
+	band := eaqiComposite(row.Values)
+	if band == "" {
+		return ""
+	}
+	return p.factText("faq.a4",
+		"{time}", p.sofiaLayout(p.GeneratedAt),
+		"{p2}", formatValue(p2, p.Lang),
+		"{p1}", formatValue(p1, p.Lang),
+		"{band}", p.T("band."+band),
+		"{health}", p.T("health."+band+".general"),
+	)
+}
+
+// pollenAnswer is the answer to the pollen question from today's chip data: the highest level
+// species (the earlier one in the catalogue on a tie, as the snapshot picks it), or the all-low
+// answer. Empty when the area has no forecast for today.
+func (p PageData) pollenAnswer() string {
+	if p.AreaPollen == nil || p.AreaPollen.today == nil {
+		return ""
+	}
+	s := p.AreaPollen.today
+	if s.Species == "" {
+		return p.factText("faq.a5_low")
+	}
+	return p.factText("faq.a5",
+		"{species}", p.T("faq.pollen_species."+s.Species),
+		"{level}", p.T("faq.pollen_level."+s.Level),
+	)
 }
 
 // aboutFAQCount is the number of questions on the About the data page (about_faq.q1 to q17).

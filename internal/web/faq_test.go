@@ -260,7 +260,8 @@ func TestAreaFAQDropsTheGenericKeys(t *testing.T) {
 		if err := json.Unmarshal(raw, &cat); err != nil {
 			t.Fatal(err)
 		}
-		for n := 4; n <= 11; n++ {
+		// q4 and q5 are the daily air and pollen questions now.
+		for n := 6; n <= 11; n++ {
 			for _, k := range []string{"faq.q" + strconv.Itoa(n), "faq.a" + strconv.Itoa(n)} {
 				if _, ok := cat[k]; ok {
 					t.Errorf("%s.json still has %s", lang, k)
@@ -347,16 +348,18 @@ func TestOblastFAQJSONLDMatchesVisible(t *testing.T) {
 	t.Fatal("no FAQPage in JSON-LD")
 }
 
-// An oblast without a rank has no FAQ items, so neither the FAQ section nor a FAQPage is rendered.
-func TestUnrankedOblastHasNoEmptyFAQ(t *testing.T) {
+// An oblast without a rank still has the daily air question, so its FAQ holds that one item
+// and the heading and the FAQPage are never rendered empty.
+func TestUnrankedOblastFAQHoldsOnlyTheDailyQuestion(t *testing.T) {
 	rr := renderer(t, eeaFixture(t))
 	for _, path := range []string{"/area/smolyan-oblast", "/en/area/smolyan-oblast"} {
 		body := fetch(t, rr, path).Body.String()
-		if strings.Contains(body, `id="faq-heading"`) {
-			t.Errorf("%s: FAQ heading rendered with no items", path)
+		items := faqVisible(t, body)
+		if len(items) != 1 || !strings.HasPrefix(items[0].Q, pick(path, todayQBG, todayQEN)) {
+			t.Errorf("%s: FAQ items %+v, want only the daily air question", path, items)
 		}
-		if strings.Contains(body, `"FAQPage"`) {
-			t.Errorf("%s: empty FAQPage in JSON-LD", path)
+		if !strings.Contains(body, `"FAQPage"`) {
+			t.Errorf("%s: no FAQPage in JSON-LD", path)
 		}
 	}
 }

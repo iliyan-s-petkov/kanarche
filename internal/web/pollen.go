@@ -13,6 +13,8 @@ type PollenBlock struct {
 	Rows []PollenRow
 	// Chip is the toolbar summary; empty when today has no value or is off season.
 	Chip string
+	// today is the snapshot summary the FAQ answer reads; nil when today has no value.
+	today *snapshot.PollenSummary
 }
 
 type PollenDayHead struct {
@@ -41,7 +43,7 @@ func (rr *Renderer) pollenBlock(v *snapshot.PollenView, lang string) *PollenBloc
 		return nil
 	}
 	t := func(k string) string { return rr.cat.T(lang, k) }
-	b := &PollenBlock{}
+	b := &PollenBlock{today: v.Summary}
 	for i, d := range v.Days {
 		b.Days = append(b.Days, PollenDayHead{Date: d, Label: pollenDayLabel(t, i, d)})
 	}
