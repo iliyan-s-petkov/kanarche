@@ -365,7 +365,7 @@ func (rr *Renderer) areaJSONLD(p PageData, row AreaRow) (template.JS, error) {
 		return "", err
 	}
 	place := ldPlace{Type: "Place", Name: rr.areaCrumbName(row, p.Lang), URL: p.CanonicalURL(), Geo: geo}
-	country := &ldPlace{Type: "Place", Name: p.T("seo.dataset.place")}
+	country := &ldPlace{Type: "Country", Name: p.T("seo.dataset.place")}
 	place.ContainedInPlace = country
 	if p.AreaParentBlock != nil {
 		if parent := rr.containedIn(p, p.AreaParentBlock.Items, country); parent != nil {

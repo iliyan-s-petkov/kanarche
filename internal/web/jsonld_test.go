@@ -237,8 +237,8 @@ func TestJSONLDAreaContainedInPlace(t *testing.T) {
 			got = got.ContainedInPlace
 		}
 		// The chain ends at the country.
-		if got == nil || got.Type != "Place" || got.Name != wantCountry[strings.HasPrefix(path, "/en/")] || got.ContainedInPlace != nil {
-			t.Errorf("%s: chain must end at the country Place, got %+v", path, got)
+		if got == nil || got.Type != "Country" || got.Name != wantCountry[strings.HasPrefix(path, "/en/")] || got.ContainedInPlace != nil {
+			t.Errorf("%s: chain must end at the country, got %+v", path, got)
 		}
 		if place.Geo == nil || place.Geo.Type != "GeoCoordinates" || place.Geo.Lat == 0 || place.Geo.Lon == 0 {
 			t.Errorf("%s: geo = %+v, want GeoCoordinates with lat and lon", path, place.Geo)
@@ -246,7 +246,7 @@ func TestJSONLDAreaContainedInPlace(t *testing.T) {
 	}
 	// An oblast sits directly in the country.
 	if place := nodeOfType(jsonLD(t, "/area/plovdiv-oblast", fetch(t, rr, "/area/plovdiv-oblast").Body.String()), "Place"); place != nil {
-		if c := place.ContainedInPlace; c == nil || c.Name != "България" || c.ContainedInPlace != nil {
+		if c := place.ContainedInPlace; c == nil || c.Type != "Country" || c.Name != "България" || c.ContainedInPlace != nil {
 			t.Errorf("oblast containedInPlace = %+v, want the country alone", c)
 		}
 	}
