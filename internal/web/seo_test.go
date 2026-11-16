@@ -109,8 +109,15 @@ func TestSitemapContainsEveryArea(t *testing.T) {
 		}
 	}
 	// Thirteen pages in each of the two fixture languages (including the explainers and uncovered vidin).
-	if len(doc.URLs) != 26 {
-		t.Errorf("sitemap has %d <url> entries, want 26", len(doc.URLs))
+	// News entries come from the embedded content/news and are left out of the count.
+	pages := 0
+	for _, u := range doc.URLs {
+		if !strings.Contains(u.Loc, "/news") {
+			pages++
+		}
+	}
+	if pages != 26 {
+		t.Errorf("sitemap has %d non-news <url> entries, want 26", pages)
 	}
 }
 

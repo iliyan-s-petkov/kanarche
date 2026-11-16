@@ -528,3 +528,47 @@ func TestNewsPostEscapesTitleAndNeverRendersRawHTML(t *testing.T) {
 		t.Errorf("page contains an unescaped script")
 	}
 }
+
+func TestNewsPostImageRendersWithAltAndIsAbsoluteInTheFeed(t *testing.T) {
+	fsys := fstest.MapFS{"2026-10-img.bg.md": newsFile("С картинка", "2026-10-20", "", "published",
+		"Текст.\n\n![Картата с водите за къпане](/static/news/example.webp)\n\nОще текст.")}
+	set, err := news.Load(fsys, news.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := renderer(t, fixture(t))
+	rr.SetNews(set, newsClock)
+
+	page := fetch(t, rr, "/news/2026-10-img").Body.String()
+	if !strings.Contains(page, `<img src="/static/news/example.webp" alt="Картата с водите за къпане">`) {
+		t.Errorf("post page has no same-origin <img> with alt text")
+	}
+
+	rec := fetch(t, rr, "/news/feed.xml")
+	var f atomFeed
+	if err := xml.Unmarshal(rec.Body.Bytes(), &f); err != nil {
+		t.Fatalf("feed is not Atom: %v", err)
+	}
+	if len(f.Entries) != 1 {
+		t.Fatalf("entries = %d, want 1", len(f.Entries))
+	}
+	content := f.Entries[0].Content.Text
+	if !strings.Contains(content, `src="https://airbg.org/static/news/example.webp"`) || strings.Contains(content, `src="/static`) {
+		t.Errorf("feed image src is not absolute: %s", content)
+	}
+}
+
+// The draft posts point at these files, so each must be embedded and served as an image.
+func TestNewsImagesAreServedFromStatic(t *testing.T) {
+	rr := renderer(t, fixture(t))
+	for _, name := range []string{
+		"bathing-map-bg.webp", "bathing-map-en.webp", "bathing-rzi-varna-page.webp", "bathing-rzi-varna-pdf.webp",
+		"bathing-pipeline-bg.svg", "bathing-pipeline-en.svg",
+		"feedback-survey-bg.webp", "feedback-survey-en.webp", "feedback-link-bg.webp", "feedback-link-en.webp",
+	} {
+		rec := fetch(t, rr, "/static/news/"+name)
+		if rec.Code != http.StatusOK || !strings.HasPrefix(rec.Header().Get("Content-Type"), "image/") {
+			t.Errorf("GET /static/news/%s = %d %q", name, rec.Code, rec.Header().Get("Content-Type"))
+		}
+	}
+}
