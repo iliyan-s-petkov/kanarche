@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <rect width="1200" height="300" fill="#ffffff"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#4a5568"/>
+    </marker>
+  </defs>
+  <g fill="#f4f6f8" stroke="#4a5568" stroke-width="2">
+    <rect x="30" y="70" width="240" height="160" rx="12"/>
+    <rect x="330" y="70" width="240" height="160" rx="12"/>
+    <rect x="630" y="70" width="240" height="160" rx="12"/>
+    <rect x="930" y="70" width="240" height="160" rx="12" fill="#e8f4ec"/>
+  </g>
+  <g stroke="#4a5568" stroke-width="3" marker-end="url(#a)">
+    <line x1="272" y1="150" x2="326" y2="150"/>
+    <line x1="572" y1="150" x2="626" y2="150"/>
+    <line x1="872" y1="150" x2="926" y2="150"/>
+  </g>
+  <g fill="#1a202c" text-anchor="middle">
+    <text x="150" y="40" font-size="20" fill="#4a5568">1</text>
+    <text x="450" y="40" font-size="20" fill="#4a5568">2</text>
+    <text x="750" y="40" font-size="20" fill="#4a5568">3</text>
+    <text x="1050" y="40" font-size="20" fill="#4a5568">4</text>
+    <text x="150" y="118" font-size="24" font-weight="700">RHI websites</text>
+    <text x="150" y="156" font-size="19">Varna: PDF</text>
+    <text x="150" y="184" font-size="19">Burgas: XLS</text>
+    <text x="150" y="212" font-size="19">Dobrich: XLSX</text>
+    <text x="450" y="118" font-size="24" font-weight="700">Reading</text>
+    <text x="450" y="156" font-size="19">in an isolated container</text>
+    <text x="450" y="184" font-size="19">with no network access</text>
+    <text x="450" y="212" font-size="19">anything unknown is refused</text>
+    <text x="750" y="118" font-size="24" font-weight="700">Checks</text>
+    <text x="750" y="156" font-size="19">matched to EEA sites</text>
+    <text x="750" y="184" font-size="19">by number and coordinates</text>
+    <text x="750" y="212" font-size="19">doubtful files get a review</text>
+    <text x="1050" y="118" font-size="24" font-weight="700">The map</text>
+    <text x="1050" y="156" font-size="19">Bathing water layer</text>
+    <text x="1050" y="184" font-size="19">EEA class</text>
+    <text x="1050" y="212" font-size="19">and RHI samples</text>
+  </g>
+</svg>

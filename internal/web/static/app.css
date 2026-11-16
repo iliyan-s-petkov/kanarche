@@ -239,6 +239,7 @@ strong, b { font-weight: var(--weight-emphasis); }
 .news-body { overflow-wrap: anywhere; }
 .news-body table { display: block; max-inline-size: 100%; overflow-x: auto; border-collapse: collapse; }
 .news-body th, .news-body td { padding: var(--space-1) var(--space-3); border: 1px solid var(--border); text-align: start; }
+.news-body img { display: block; max-inline-size: 100%; block-size: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
 /* The frame, the 926:382 country fit, the height floor and the 1056px
    breakpoint are all the kit's .data-frame/.map/.map--hero now, and this file's
    own version of them is gone. It was the same rules written twice, and the
