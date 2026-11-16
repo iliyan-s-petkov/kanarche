@@ -422,10 +422,10 @@
 {{range .Cities}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{.Name}}</a></li>{{end}}
 </ul>
 {{end}}
-{{if .Districts}}
-<h4>{{.DistrictsLabel}}</h4>
+{{range .DistrictBlocks}}
+<h4>{{.Label}}</h4>
 <ul class="areas-directory__districts">
-{{range .Districts}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{.Name}}</a></li>{{end}}
+{{range .Rows}}<li><a class="link" href="{{$.Path (printf "/area/%s" .Slug)}}">{{.Name}}</a></li>{{end}}
 </ul>
 {{end}}
 </div>

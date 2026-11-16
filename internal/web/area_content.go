@@ -610,12 +610,17 @@ func (p PageData) districtsLabel(citySlug, cityName string) string {
 // cities inside it, and the districts of a city that has them (Sofia,
 // Plovdiv, Varna) nested under that city (§3 of the SEO6 plan).
 type DirGroup struct {
-	Oblast    AreaRow
-	Label     string
-	Cities    []AreaRow
-	Districts []AreaRow
-	// DistrictsLabel is the heading over Districts, naming their city.
-	DistrictsLabel string
+	Oblast AreaRow
+	Label  string
+	Cities []AreaRow
+	// DistrictBlocks holds one block per city that has districts, in city name order.
+	DistrictBlocks []DistrictBlock
+}
+
+// DistrictBlock is one city's districts under a heading naming that city.
+type DistrictBlock struct {
+	Label string
+	Rows  []AreaRow
 }
 
 // buildDirectory is the /areas directory: every oblast, its cities, and
@@ -650,8 +655,10 @@ func (rr *Renderer) buildDirectory(snap *snapshot.Snapshot, lang string) []DirGr
 				continue
 			}
 			sort.Slice(districts, func(i, j int) bool { return districts[i].Name < districts[j].Name })
-			g.Districts = districts
-			g.DistrictsLabel = PageData{Lang: lang, cat: rr.cat}.districtsLabel(c.Slug, c.Name)
+			g.DistrictBlocks = append(g.DistrictBlocks, DistrictBlock{
+				Label: PageData{Lang: lang, cat: rr.cat}.districtsLabel(c.Slug, c.Name),
+				Rows:  districts,
+			})
 		}
 		groups = append(groups, g)
 	}

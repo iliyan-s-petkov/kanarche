@@ -374,8 +374,10 @@ func TestAreasDirectoryLinksEveryArea(t *testing.T) {
 		for _, c := range g.Cities {
 			linked[c.Slug] = true
 		}
-		for _, d := range g.Districts {
-			linked[d.Slug] = true
+		for _, b := range g.DistrictBlocks {
+			for _, d := range b.Rows {
+				linked[d.Slug] = true
+			}
 		}
 	}
 	for slug, meta := range snap.KnownSlugs {
@@ -388,7 +390,7 @@ func TestAreasDirectoryLinksEveryArea(t *testing.T) {
 	// group carries a non-empty Districts slice.
 	withDistricts := 0
 	for _, g := range groups {
-		if len(g.Districts) > 0 {
+		if len(g.DistrictBlocks) > 0 {
 			withDistricts++
 			if g.Oblast.Slug != "sofia-grad-oblast" {
 				t.Errorf("group %q carries Districts, want only sofia-grad-oblast to", g.Oblast.Slug)
