@@ -87,6 +87,15 @@ func TestRunOnceReturnsAStoreError(t *testing.T) {
 	}
 }
 
+func TestRetryDelayIsADay(t *testing.T) {
+	if got := bathing.RetryDelay(168 * time.Hour); got != 24*time.Hour {
+		t.Errorf("RetryDelay(week) = %v, want 24h", got)
+	}
+	if got := bathing.RetryDelay(6 * time.Hour); got != 6*time.Hour {
+		t.Errorf("RetryDelay(6h) = %v, want the interval cap", got)
+	}
+}
+
 func TestNextDelay(t *testing.T) {
 	now := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
 	week := 168 * time.Hour

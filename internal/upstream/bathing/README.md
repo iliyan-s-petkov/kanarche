@@ -1,7 +1,7 @@
 # bathing — EEA bathing-water import (Sea layer)
 
 Source: EEA WISE Bathing Water Directive data via the Discodata SQL API
-(`sea.url`, plain GET, no auth). Licence CC BY 4.0; the credit is shown on the
+(`sea.url`, form POST like the EEA query page, no auth). Licence CC BY 4.0; the credit is shown on the
 map panel, the footer and `/licences`. OpenProject #668.
 
 Three queries per import, each scoped by `countryCode='<sea.country>'`:
@@ -35,7 +35,7 @@ The EEA publishes these tables once a year (season N appears around autumn of
 N+1); BG samples total about 800 KB. The import runs inside `airbg serve` (and
 `airbg collect`) every `sea.refresh_interval` (168h). The first wait counts
 from the newest `bathing_import` row, so restarts and deploys do not re-fetch;
-a fresh database imports immediately. A failed run retries after an hour and
+a fresh database imports immediately. A failed run retries after 24 hours and
 leaves the stored set untouched.
 
 `airbg import-sea` runs one import immediately, for a forced refresh.

@@ -142,21 +142,22 @@ func query[T row](c *Client, ctx context.Context, sql string) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	q := url.Values{}
-	q.Set("query", sql)
-	q.Set("p", "1")
-	q.Set("nrOfHits", strconv.Itoa(c.cfg.MaxRows))
-	u.RawQuery = q.Encode()
+	// A form POST is what the EEA query page sends. The gateway blocks SQL in a GET query string.
+	form := url.Values{}
+	form.Set("query", sql)
+	form.Set("p", "1")
+	form.Set("nrOfHits", strconv.Itoa(c.cfg.MaxRows))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", c.cfg.UserAgent)
 	req.Header.Set("Accept", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
-		// The query string is public SQL, but the error would otherwise carry all of it.
+		// The error would otherwise carry the full URL.
 		var uerr *url.Error
 		if errors.As(err, &uerr) {
 			return nil, fmt.Errorf("%s %s: %w", uerr.Op, c.cfg.URL, uerr.Err)

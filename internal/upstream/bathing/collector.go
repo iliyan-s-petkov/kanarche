@@ -11,7 +11,10 @@ import (
 )
 
 // retryAfter is the wait after a failed import, capped by refresh_interval.
-const retryAfter = time.Hour
+const retryAfter = 24 * time.Hour
+
+// RetryDelay is the wait before the next try after a failed import.
+func RetryDelay(interval time.Duration) time.Duration { return min(retryAfter, interval) }
 
 // watchEvery is the gap between new-edition probes. Imports run more often.
 const watchEvery = 7 * 24 * time.Hour
@@ -171,7 +174,7 @@ func (c *Collector) Loop(ctx context.Context) {
 		st, err := c.RunOnce(ctx)
 		if err != nil {
 			c.NoteFailure(ctx, err)
-			wait = min(retryAfter, c.cfg.RefreshInterval)
+			wait = RetryDelay(c.cfg.RefreshInterval)
 			continue
 		}
 		c.publishAge(ctx)
