@@ -701,6 +701,10 @@ func (p PageData) AreaReadoutsSub() string {
 	if p.Area == nil {
 		return ""
 	}
+	if p.Area.Citizens() == 0 && p.Area.Official > 0 {
+		// The headline fell back to the official median, so name the stations, not citizen sensors.
+		return p.AreaTier() + " · " + p.countText("area.facts.net.stations", p.Area.MedianCount())
+	}
 	return p.AreaTier() + " · " + p.sensorsText(p.Area.MedianCount())
 }
 
