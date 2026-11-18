@@ -30,6 +30,9 @@ type AreaFacts struct {
 	Place   string
 	Network string
 	Rank    string
+	// Density and Nearby come from the snapshot only and are not part of the FAQ.
+	Density string
+	Nearby  string
 	// rankFAQ is the rank block without its closing note, the start of the first FAQ answer.
 	rankFAQ   string
 	kindPlain string
@@ -120,6 +123,8 @@ func (rr *Renderer) areaFacts(p PageData, meta snapshot.AreaMeta, snap *snapshot
 	f.Place = rr.placeFact(p, meta, snap)
 	f.Network = p.networkFact(meta, snap)
 	f.Rank, f.rankFAQ = p.rankFact(meta, snap)
+	f.Density = p.densityFact(meta, snap)
+	f.Nearby = rr.nearbyFact(p, meta, snap)
 	if f.Rank != "" {
 		f.kindPlain = p.factText(districtKey("area.facts.kind_plain."+meta.Kind, p.Area.DistrictCity))
 	}
