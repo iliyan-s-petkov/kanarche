@@ -38,7 +38,7 @@ func TestDensityLineAndRank(t *testing.T) {
 	rr := renderer(t, nearSnapshot())
 	bg := factsText(t, fetch(t, rr, "/area/shumen").Body.String())
 	for _, want := range []string{
-		"Шумен има 17 граждански сензора на 100 км². По гъстота на гражданските сензори Шумен е на 11-то място от 27 областни центъра, считано от най-гъстата мрежа.",
+		"Шумен има 17 граждански сензора на 100 км². Шумен е на 11-то място от 27 областни центъра по брой граждански сензори на 100 км².",
 	} {
 		if !hasLine(bg, want) {
 			t.Errorf("missing %q in:\n%s", want, bg)
@@ -46,7 +46,7 @@ func TestDensityLineAndRank(t *testing.T) {
 	}
 	en := factsText(t, fetch(t, rr, "/en/area/shumen").Body.String())
 	for _, want := range []string{
-		"Shumen has 17 citizen sensors per 100 km². By citizen sensor density Shumen ranks 11th of 27 provincial capitals, counting from the densest network.",
+		"Shumen has 17 citizen sensors per 100 km². Shumen ranks 11th of 27 provincial capitals by citizen sensors per 100 km².",
 	} {
 		if !hasLine(en, want) {
 			t.Errorf("missing %q in:\n%s", want, en)

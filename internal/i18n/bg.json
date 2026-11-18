@@ -959,7 +959,7 @@
   "area.facts.rank.note": "Подредбата се променя с всяко обновяване на данните.",
   "area.facts.rank.citizen": "Стойностите са от граждански сензори.",
   "area.facts.density.line": "{subject} има {density} граждански сензора на 100 км².",
-  "area.facts.density.rank": "По гъстота на гражданските сензори {area_plain} е на {rank} място от {total} {kind}, считано от най-гъстата мрежа.",
+  "area.facts.density.rank": "{area_plain} е на {rank} място от {total} {kind} по брой граждански сензори на 100 км².",
   "area.facts.near.lead": "Най-близките {kind_plain} до {area_plain} са {list}.",
   "area.facts.near.item": "{name} ({km} км {dir}, {value} µg/m³)",
   "area.facts.near.none": "По ФПЧ2.5 сега никой от тях няма по-чист въздух от {area_plain}.",
