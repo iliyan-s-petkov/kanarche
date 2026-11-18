@@ -50,7 +50,7 @@ func TestAllOfficialAreaCountsOfficialStations(t *testing.T) {
 	a := area("city", 2, map[string]float64{"P2": 9})
 	a.Official = 2
 	a.HasValue, a.Value = true, 9
-	subs := map[string]string{"en": "city median · 2 sensors", "bg": "медиана за града · 2 сензора"}
+	subs := map[string]string{"en": "city median · 2 official stations of the Executive Environment Agency", "bg": "медиана за града · 2 официални станции на ИАОС"}
 	nows := map[string]string{"en": "Median of 2 sensors", "bg": "Медиана от 2 сензора"}
 	for lang := range subs {
 		p := areaPage(t, lang, a)
