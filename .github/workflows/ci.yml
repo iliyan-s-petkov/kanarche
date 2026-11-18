@@ -98,7 +98,7 @@ jobs:
       # one that was reviewed.
       - run: npm ci
         timeout-minutes: 10
-      - run: npm audit --audit-level=high
+      - run: node scripts/audit-gate.mjs
       - run: npm test
       - run: npm run build
 
