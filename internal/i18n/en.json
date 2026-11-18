@@ -959,7 +959,7 @@
   "area.facts.rank.note": "The ranking changes with every data update.",
   "area.facts.rank.citizen": "The values come from citizen sensors.",
   "area.facts.density.line": "{subject} has {density} citizen sensors per 100 km².",
-  "area.facts.density.rank": "{area_plain} ranks {rank} of {total} {kind} by citizen sensors per 100 km².",
+  "area.facts.density.rank": "{subject} ranks {rank} of {total} {kind} by citizen sensors per 100 km².",
   "area.facts.near.lead": "The nearest {kind_plain} to {area_plain} are {list}.",
   "area.facts.near.item": "{name} ({km} km {dir}, {value} µg/m³)",
   "area.facts.near.none": "On PM2.5 none of them has cleaner air than {area_plain} right now.",

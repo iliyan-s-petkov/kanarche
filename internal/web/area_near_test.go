@@ -54,6 +54,19 @@ func TestDensityLineAndRank(t *testing.T) {
 	}
 }
 
+// A BG district page starts its rank sentence with the capitalised subject, not the lowercase "район" of the plain name.
+func TestDensityRankSentenceStartsCapitalisedOnBGDistrict(t *testing.T) {
+	rr := renderer(t, sofiaOnlyFixture())
+	bg := factsText(t, fetch(t, rr, "/area/mladost").Body.String())
+	want := "Район Младост има 80 граждански сензора на 100 км². Район Младост е на 1-во място от 6 района по брой граждански сензори на 100 км²."
+	if !hasLine(bg, want) {
+		t.Errorf("missing %q in:\n%s", want, bg)
+	}
+	if strings.Contains(bg, "район Младост е на") {
+		t.Errorf("rank sentence starts lowercase:\n%s", bg)
+	}
+}
+
 func TestDensityKeepsTheLineWithoutEnoughPeers(t *testing.T) {
 	rr := renderer(t, factsSnapshot())
 	bg := factsText(t, fetch(t, rr, "/area/shumen").Body.String())
