@@ -1,0 +1,6 @@
+{
+  "GHSA-fc5q-39xc-vjpf": {
+    "reason": "picomatch ReDoS, dev toolchain only, no patched release",
+    "recheck": "2026-12-18"
+  }
+}
