@@ -50,12 +50,27 @@ func discodata(t *testing.T) (*httptest.Server, *atomic.Int32) {
 		if got := r.Header.Get("User-Agent"); got != testUA {
 			t.Errorf("User-Agent = %q, want %q", got, testUA)
 		}
-		q := r.URL.Query().Get("query")
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+			t.Errorf("Content-Type = %q, want a urlencoded form", ct)
+		}
+		if r.URL.RawQuery != "" {
+			t.Errorf("query string %q, want the fields in the body only", r.URL.RawQuery)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("ParseForm: %v", err)
+		}
+		q := r.PostForm.Get("query")
 		if !strings.Contains(q, "countryCode='BG'") {
 			t.Errorf("query %q is not scoped to BG", q)
 		}
-		if n := r.URL.Query().Get("nrOfHits"); n != "1000" {
-			t.Errorf("nrOfHits = %q, want max_rows", r.URL.Query().Get("nrOfHits"))
+		if n := r.PostForm.Get("nrOfHits"); n != "1000" {
+			t.Errorf("nrOfHits = %q, want max_rows", n)
+		}
+		if p := r.PostForm.Get("p"); p != "1" {
+			t.Errorf("p = %q, want 1", p)
 		}
 		switch {
 		case strings.Contains(q, "spatial_ProtectedArea"):
@@ -84,6 +99,35 @@ func TestFetchReadsAllThreeTables(t *testing.T) {
 	}
 	if calls.Load() != 3 {
 		t.Errorf("%d requests, want 3", calls.Load())
+	}
+}
+
+// The EEA gateway answers 403 to a GET with SQL in the query string and accepts the form POST.
+func TestFetchUsesPostNotGet(t *testing.T) {
+	sites, status, samples := fixture(t, "sites.json"), fixture(t, "status.json"), fixture(t, "samples.json")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		r.ParseForm()
+		q := r.PostForm.Get("query")
+		switch {
+		case strings.Contains(q, "spatial_ProtectedArea"):
+			w.Write(sites)
+		case strings.Contains(q, "assessment_BathingWaterStatus"):
+			w.Write(status)
+		default:
+			w.Write(samples)
+		}
+	}))
+	defer srv.Close()
+	raw, err := bathing.New(testConfig(srv.URL)).Fetch(context.Background())
+	if err != nil {
+		t.Fatalf("Fetch against a GET-blocking server: %v", err)
+	}
+	if len(raw.Sites) != 4 {
+		t.Errorf("got %d sites, want 4", len(raw.Sites))
 	}
 }
 
