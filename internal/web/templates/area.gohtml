@@ -490,7 +490,7 @@
 {{range .Items}}
 <details class="faq__item">
 <summary>{{.Question}}</summary>
-<div class="faq__answer"><p>{{.AnswerHTML}}</p></div>
+<div class="faq__answer"><p>{{.AnswerHTML}}</p>{{with $.SourceLine .}}<p class="faq__source">{{.}}</p>{{end}}</div>
 </details>
 {{end}}
 </section>

@@ -56,8 +56,8 @@ func (p PageData) airPollutionFAQ() *FAQBlock {
 	block := &FAQBlock{Heading: p.T("air_pollution.faq.heading")}
 	for n := 1; n <= airPollutionFAQCount; n++ {
 		num := strconv.Itoa(n)
-		block.Items = append(block.Items, newFAQItem(
-			fill.Replace(p.T("air_pollution.faq.q"+num)), fill.Replace(p.T("air_pollution.faq.a"+num))))
+		item := newFAQItem(fill.Replace(p.T("air_pollution.faq.q"+num)), fill.Replace(p.T("air_pollution.faq.a"+num)))
+		block.Items = append(block.Items, p.withRefs(item, airPollutionFAQRefs[n]...))
 	}
 	return block
 }
