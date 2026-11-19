@@ -141,8 +141,10 @@ type AreaMeta struct {
 	// Km2 is the boundary's size in square kilometres, 0 when unknown.
 	// Read once per snapshot build.
 	Km2 float64
-	// Stations are the EoI codes of the official stations inside the boundary, sorted.
+	// Stations are the EoI codes of the official stations inside the boundary, sorted, fresh or not.
 	Stations []string
+	// FreshStations is how many of Stations have a reading inside the official freshness window.
+	FreshStations int
 }
 
 // DayRange is the 24h min/max of an area's median series, gated so a bucket

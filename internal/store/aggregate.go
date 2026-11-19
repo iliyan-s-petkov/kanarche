@@ -447,6 +447,38 @@ func (s *Store) LatestSensors(ctx context.Context) ([]SensorReading, error) {
 	return scanSensorReadings(rows)
 }
 
+const officialStationsSQL = `
+SELECT s.sensor_id, ST_X(s.location::geometry), ST_Y(s.location::geometry), s.station_code,
+       COALESCE(
+           (SELECT array_agg(asx.area_slug ORDER BY asx.area_slug)
+              FROM area_sensor asx WHERE asx.sensor_id = s.sensor_id),
+           ARRAY[]::text[])
+  FROM sensor s
+ WHERE s.source = 'eea' AND s.active AND COALESCE(s.station_code, '') <> ''
+ ORDER BY s.sensor_id`
+
+// OfficialStations is the station registry: every active EEA station with its areas, fresh or not.
+// Only SensorID, Source, StationCode, Lon, Lat and AreaSlugs are set.
+func (s *Store) OfficialStations(ctx context.Context) ([]SensorReading, error) {
+	rows, err := s.pool.Query(ctx, officialStationsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("store: official stations: %w", err)
+	}
+	defer rows.Close()
+	var out []SensorReading
+	for rows.Next() {
+		sr := SensorReading{Source: "eea"}
+		if err := rows.Scan(&sr.SensorID, &sr.Lon, &sr.Lat, &sr.StationCode, &sr.AreaSlugs); err != nil {
+			return nil, fmt.Errorf("store: scan official station: %w", err)
+		}
+		out = append(out, sr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: official stations rows: %w", err)
+	}
+	return out, nil
+}
+
 // scanSensorReadings reads the projection sensorsSelect produces, for both the
 // live and the windowed query.
 func scanSensorReadings(rows pgx.Rows) ([]SensorReading, error) {

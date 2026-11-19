@@ -235,7 +235,13 @@ func Build(ctx context.Context, s *store.Store, h *Holder, now time.Time) (*Snap
 		slog.Warn("snapshot: area change times unavailable", "error", err)
 		stamps = nil
 	}
-	changed, err := buildSensors(snap, h, sensors, seriesBySlug, counts, s.CoverageThreshold(), stamps, now)
+	registry, err := s.OfficialStations(ctx)
+	if err != nil {
+		slog.Warn("snapshot: official station registry unavailable, listing only fresh stations", "error", err)
+		registry = sensors
+	}
+	roundSensorPositions(registry)
+	changed, err := buildSensors(snap, h, sensors, registry, seriesBySlug, counts, s.CoverageThreshold(), stamps, now)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +398,7 @@ func minDayBuckets(bucket time.Duration) int {
 // sensor list and series. It is handed the readings rather than querying for
 // its own: a second fetch would let this view and the grid's disagree about
 // what "now" means.
-func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seriesBySlug map[string][]store.Point, counts map[string]map[time.Time]int, coverageThreshold int, stamps map[string]store.AreaChange, now time.Time) ([]store.AreaChange, error) {
+func buildSensors(snap *Snapshot, h *Holder, sensors, registry []store.SensorReading, seriesBySlug map[string][]store.Point, counts map[string]map[time.Time]int, coverageThreshold int, stamps map[string]store.AreaChange, now time.Time) ([]store.AreaChange, error) {
 	// Group sensors by area. A sensor in three nested areas appears in three
 	// entries; that is correct, since each is a separate response.
 	bySlug := make(map[string][]store.SensorReading, len(snap.KnownSlugs))
@@ -402,8 +408,10 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 		}
 	}
 	floor := minDayBuckets(h.bucket)
-	stationsIn := stationCodesByArea(sensors)
-	snap.Stations = officialStationsFrom(sensors)
+	// The registry names the stations inside each boundary; the fresh readings only say which report now.
+	stationsIn := stationCodesByArea(registry)
+	freshIn := stationCodesByArea(sensors)
+	snap.Stations = officialStationsFrom(registry)
 	var changed []store.AreaChange
 	// Iterate the known areas, not bySlug, so every existing area gets an
 	// entry — including empty ones. See TestBuildIncludesEmptyAreasInAreaSensors.
@@ -427,6 +435,7 @@ func buildSensors(snap *Snapshot, h *Holder, sensors []store.SensorReading, seri
 			}
 		}
 		meta.Stations = stationsIn[slug]
+		meta.FreshStations = len(freshIn[slug])
 		// After Day is set, so the 24h range counts as part of what the page shows.
 		if stamps != nil {
 			stamp := changeStamp(stamps, meta, now)
