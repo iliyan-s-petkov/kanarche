@@ -233,6 +233,7 @@ func (rr *Renderer) handleArea(w http.ResponseWriter, r *http.Request) {
 	data.AreaFAQ = data.faqBlock(data.AreaFacts)
 	data.AreaSensorDistricts = rr.areaSensorDistricts(meta, snap, lang)
 	data.AreaStations = data.stationList(snap, meta.Slug)
+	data.AreaOfficial = data.officialList(meta, snap)
 	data.JSONLD = rr.mustJSONLD(rr.areaJSONLD(data, row))
 	rr.render(w, r, http.StatusOK, "area", data)
 }

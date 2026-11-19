@@ -2,9 +2,51 @@ package snapshot
 
 import (
 	"sort"
+	"time"
 
 	"kanarche.eu/internal/store"
 )
+
+// StationReading is the latest PM2.5, PM10, NO2 and O3 of one official station and when it last reported.
+// A station with no fresh reading has no Values and keeps the time the registry last saw it.
+type StationReading struct {
+	Values   map[string]float64
+	LastSeen time.Time
+}
+
+// stationMetrics are the metrics an area page tabulates for an official station.
+var stationMetrics = []string{"P2", "P1", "NO2", "O3"}
+
+// stationReadingsFrom keys every registry station by its EoI code, then fills it from the fresh readings.
+// A station can have several devices: a metric comes from the first device that has it, the time is the newest.
+func stationReadingsFrom(registry, fresh []store.SensorReading) map[string]StationReading {
+	out := map[string]StationReading{}
+	add := func(list []store.SensorReading) {
+		for _, sr := range list {
+			if sr.Source != "eea" || sr.StationCode == "" {
+				continue
+			}
+			r := out[sr.StationCode]
+			if r.Values == nil {
+				r.Values = map[string]float64{}
+			}
+			for _, m := range stationMetrics {
+				if v, ok := sr.Values[m]; ok {
+					if _, has := r.Values[m]; !has {
+						r.Values[m] = v
+					}
+				}
+			}
+			if sr.LastSeen.After(r.LastSeen) {
+				r.LastSeen = sr.LastSeen
+			}
+			out[sr.StationCode] = r
+		}
+	}
+	add(registry)
+	add(fresh)
+	return out
+}
 
 // OfficialStation is where one ИАОС station stands, keyed by its EoI code. The name and classification live
 // in the committed table in the eea package; the position is what the snapshot adds.

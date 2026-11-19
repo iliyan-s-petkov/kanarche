@@ -1164,6 +1164,7 @@
   "area.heading.pollutants": "Pollutants",
   "area.heading.weather": "Weather",
   "area.heading.sensors": "Sensors",
+  "area.official.heading": "Official stations ({n})",
   "badge.alt": "Air quality in {name}: {band}, PM2.5 {value} µg/m³. Kanarche",
   "badge.alt_vav": "Air quality in {name}: {band}, PM2.5 {value} µg/m³. Kanarche",
   "badge.link_text": "Air quality in {name} on Kanarche",

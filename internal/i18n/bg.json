@@ -1164,6 +1164,7 @@
   "area.heading.pollutants": "Замърсители",
   "area.heading.weather": "Времето",
   "area.heading.sensors": "Сензори",
+  "area.official.heading": "Официални станции ({n})",
   "badge.alt": "Качество на въздуха в {name}: {band}, ФПЧ2.5 {value} µg/m³. Канарче",
   "badge.alt_vav": "Качество на въздуха във {name}: {band}, ФПЧ2.5 {value} µg/m³. Канарче",
   "badge.link_text": "Качество на въздуха в {name} в Канарче",
