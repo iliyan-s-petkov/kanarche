@@ -455,9 +455,10 @@ SELECT s.sensor_id, ST_X(s.location::geometry), ST_Y(s.location::geometry), s.st
            ARRAY[]::text[])
   FROM sensor s
  WHERE s.source = 'eea' AND s.active AND COALESCE(s.station_code, '') <> ''
+   AND s.last_seen > now() - interval '30 days'
  ORDER BY s.sensor_id`
 
-// OfficialStations is the station registry: every active EEA station with its areas, fresh or not.
+// OfficialStations is the station registry: every active EEA station seen in the last 30 days, with its areas, fresh or not.
 // Only SensorID, Source, StationCode, Lon, Lat and AreaSlugs are set.
 func (s *Store) OfficialStations(ctx context.Context) ([]SensorReading, error) {
 	rows, err := s.pool.Query(ctx, officialStationsSQL)

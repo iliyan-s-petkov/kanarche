@@ -9,6 +9,7 @@ import (
 )
 
 // A station whose last reading is days old drops out of LatestSensors but is still a station inside the boundary.
+// One absent from the EEA files for over 30 days is not.
 func TestOfficialStationsListsActiveStationsRegardlessOfFreshness(t *testing.T) {
 	ctx, pool, s := newStore(t)
 	seedArea(t, ctx, pool, "sofia", "city", 23.32, 42.69)
@@ -16,6 +17,8 @@ func TestOfficialStationsListsActiveStationsRegardlessOfFreshness(t *testing.T) 
 	ids, err := s.UpsertStations(ctx, []store.StationUpsert{
 		{SourceRef: "BG/SPO-BG0050A_00008_100", Code: "BG0050A", Name: "Дружба", Lon: 23.32, Lat: 42.69, LastSeen: time.Now().UTC()},
 		{SourceRef: "BG/SPO-BG0052A_00008_100", Code: "BG0052A", Name: "Надежда", Lon: 23.321, Lat: 42.691, LastSeen: time.Now().UTC()},
+		// Gone from the EEA files for 40 days: decommissioned, not late.
+		{SourceRef: "BG/SPO-BG0040A_00008_100", Code: "BG0040A", Name: "Гара Яна", Lon: 23.322, Lat: 42.692, LastSeen: time.Now().UTC().Add(-40 * 24 * time.Hour)},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +49,7 @@ func TestOfficialStationsListsActiveStationsRegardlessOfFreshness(t *testing.T) 
 		t.Fatal(err)
 	}
 	if len(got) != 1 {
-		t.Fatalf("OfficialStations = %+v, want only the active BG0050A", got)
+		t.Fatalf("OfficialStations = %+v, want only the active, recently seen BG0050A", got)
 	}
 	g := got[0]
 	if g.Source != "eea" || g.StationCode != "BG0050A" || g.SensorID != ids["BG/SPO-BG0050A_00008_100"] {
