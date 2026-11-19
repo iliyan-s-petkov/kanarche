@@ -951,7 +951,7 @@
   "area.facts.net.neither": "{subject} has no citizen sensors and no official station of the Executive Environment Agency.",
   "area.facts.net.nearest": "The nearest official station is {name}. It is {km} km {dir} of the centre of {area_plain}. Its values may differ from those in {area_plain}.",
   "area.facts.net.official_stale": "The official stations have not reported in the last 12 hours.",
-  "area.facts.net.type_pronoun":"It is {article} {words} station.",
+  "area.facts.net.type_pronoun": "It is {article} {words} station.",
   "area.stype.urban": "urban",
   "area.stype.suburban": "suburban",
   "area.stype.remote": "remote",
