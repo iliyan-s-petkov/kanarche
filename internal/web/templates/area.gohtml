@@ -363,6 +363,22 @@
 {{/* Sensors: the in-view list and the full table, each a details whose summary is an H3. */}}
 {{if .Area.Covered}}<section class="area-sensors-sec" aria-labelledby="sensors-h">
 <h2 id="sensors-h">{{.T "area.heading.sensors"}}</h2>
+{{with .AreaOfficial}}<h3 class="official-stations__h3">{{.Heading $}}</h3>
+<div class="area-sensors__scroll">
+  <table class="table official-stations__table">
+    <thead><tr>
+      <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
+      <th scope="col" class="num">{{$.T "metric.P2"}}, {{$.T "unit.P2"}}</th>
+      <th scope="col" class="num">{{$.T "metric.P1"}}, {{$.T "unit.P1"}}</th>
+      <th scope="col" class="num">{{$.T "metric.NO2"}}, {{$.T "unit.NO2"}}</th>
+      <th scope="col" class="num">{{$.T "metric.O3"}}, {{$.T "unit.O3"}}</th>
+      <th scope="col">{{$.T "area.updated"}}</th>
+    </tr></thead>
+    <tbody>{{range .Rows}}
+      <tr><th scope="row">{{.Name}}</th><td class="num">{{.P2}}</td><td class="num">{{.P1}}</td><td class="num">{{.NO2}}</td><td class="num">{{.O3}}</td><td>{{.Updated}}</td></tr>{{end}}
+    </tbody>
+  </table>
+</div>{{end}}
 {{template "nearbyList" .}}
 
 {{/* Every sensor in the area as a table, the map's text alternative and keyboard route to

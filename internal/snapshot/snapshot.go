@@ -258,6 +258,9 @@ type Snapshot struct {
 	// Stations is every official station that has a position, by EoI code.
 	Stations map[string]OfficialStation
 
+	// StationReadings is the latest values and last time of each official station, by EoI code.
+	StationReadings map[string]StationReading
+
 	// pollen is the per-area forecast table; empty when disabled or unavailable.
 	pollen pollenState
 }

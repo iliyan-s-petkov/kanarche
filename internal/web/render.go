@@ -239,6 +239,8 @@ type PageData struct {
 	AreaSensorDistricts string
 	// AreaStations is the same table as plain HTML for readers without JS, nil when the area has none.
 	AreaStations *StationList
+	// AreaOfficial is the table of official stations inside the area, nil when it has none.
+	AreaOfficial *OfficialList
 
 	TitleKey string
 	BodyKey  string

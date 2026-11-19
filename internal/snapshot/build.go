@@ -412,6 +412,7 @@ func buildSensors(snap *Snapshot, h *Holder, sensors, registry []store.SensorRea
 	stationsIn := stationCodesByArea(registry)
 	freshIn := stationCodesByArea(sensors)
 	snap.Stations = officialStationsFrom(registry)
+	snap.StationReadings = stationReadingsFrom(registry, sensors)
 	var changed []store.AreaChange
 	// Iterate the known areas, not bySlug, so every existing area gets an
 	// entry — including empty ones. See TestBuildIncludesEmptyAreasInAreaSensors.
