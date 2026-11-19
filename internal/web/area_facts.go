@@ -322,6 +322,9 @@ func (p PageData) networkFact(meta snapshot.AreaMeta, snap *snapshot.Snapshot) s
 				p.stationType(info))
 		}
 	}
+	if len(meta.Stations) > 0 && meta.FreshStations == 0 {
+		parts = append(parts, p.factText("area.facts.net.official_stale"))
+	}
 	return joinSentences(parts)
 }
 
