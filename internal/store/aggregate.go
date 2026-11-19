@@ -448,7 +448,7 @@ func (s *Store) LatestSensors(ctx context.Context) ([]SensorReading, error) {
 }
 
 const officialStationsSQL = `
-SELECT s.sensor_id, ST_X(s.location::geometry), ST_Y(s.location::geometry), s.station_code, s.last_seen,
+SELECT s.sensor_id, ST_X(s.location::geometry), ST_Y(s.location::geometry), s.station_code,
        COALESCE(
            (SELECT array_agg(asx.area_slug ORDER BY asx.area_slug)
               FROM area_sensor asx WHERE asx.sensor_id = s.sensor_id),
@@ -459,7 +459,7 @@ SELECT s.sensor_id, ST_X(s.location::geometry), ST_Y(s.location::geometry), s.st
  ORDER BY s.sensor_id`
 
 // OfficialStations is the station registry: every active EEA station seen in the last 30 days, with its areas, fresh or not.
-// Only SensorID, Source, StationCode, LastSeen, Lon, Lat and AreaSlugs are set.
+// Only SensorID, Source, StationCode, Lon, Lat and AreaSlugs are set.
 func (s *Store) OfficialStations(ctx context.Context) ([]SensorReading, error) {
 	rows, err := s.pool.Query(ctx, officialStationsSQL)
 	if err != nil {
@@ -469,7 +469,7 @@ func (s *Store) OfficialStations(ctx context.Context) ([]SensorReading, error) {
 	var out []SensorReading
 	for rows.Next() {
 		sr := SensorReading{Source: "eea"}
-		if err := rows.Scan(&sr.SensorID, &sr.Lon, &sr.Lat, &sr.StationCode, &sr.LastSeen, &sr.AreaSlugs); err != nil {
+		if err := rows.Scan(&sr.SensorID, &sr.Lon, &sr.Lat, &sr.StationCode, &sr.AreaSlugs); err != nil {
 			return nil, fmt.Errorf("store: scan official station: %w", err)
 		}
 		out = append(out, sr)

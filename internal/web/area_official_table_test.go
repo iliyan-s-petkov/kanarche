@@ -25,7 +25,7 @@ func officialSnapshot() *snapshot.Snapshot {
 	snap.KnownSlugs["shumen"] = m
 	snap.StationReadings = map[string]snapshot.StationReading{
 		"BG0038A": {Values: map[string]float64{"P2": 14.2, "P1": 20, "NO2": 18}, LastSeen: time.Date(2026, 8, 9, 11, 50, 0, 0, time.UTC)},
-		"BG0050A": {LastSeen: time.Date(2026, 8, 4, 9, 0, 0, 0, time.UTC)},
+		"BG0050A": {},
 		"BG0052A": {Values: map[string]float64{"P2": 99}, LastSeen: time.Date(2026, 8, 9, 11, 50, 0, 0, time.UTC)},
 	}
 	return snap
@@ -63,7 +63,7 @@ func TestAreaOfficialTableListsStationsInsideTheArea(t *testing.T) {
 	}
 }
 
-// A station with no fresh reading keeps its row, with no values and the last time it reported.
+// A station with no fresh reading keeps its row, with no values and an empty updated cell.
 func TestAreaOfficialTableKeepsAStaleStation(t *testing.T) {
 	body := fetch(t, renderer(t, officialSnapshot()), "/area/shumen").Body.String()
 	rows := officialRows(t, body)
@@ -76,8 +76,8 @@ func TestAreaOfficialTableKeepsAStaleStation(t *testing.T) {
 			t.Errorf("stale cell %d = %q, want no reading", i, stale[i])
 		}
 	}
-	if !strings.Contains(body, `<time datetime="2026-08-04T09:00:00Z">`) {
-		t.Errorf("stale row does not show the time the station last reported")
+	if len(stale) != 6 || stale[5] != "" {
+		t.Errorf("stale updated cell = %q (row %v), want an empty cell", stale[len(stale)-1], stale)
 	}
 }
 
