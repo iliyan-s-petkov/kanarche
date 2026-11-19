@@ -1129,6 +1129,8 @@
   "air_pollution.faq.a13": "Birch, alder and hazel pollen appears in February and is strongest in March and April. Grasses are strongest in May and June. Mugwort peaks in August, and ragweed from late August to mid September. The dates shift with the region and the year. If you are allergic, keep an eye on the pollen forecast in the Pollen layer of the map and on the area pages.",
   "air_pollution.faq.q14": "Why is there more pollen in dry, windy weather?",
   "air_pollution.faq.a14": "In dry, windy weather pollen comes off the plants easily and the wind carries it far. Rain washes pollen out of the air, so levels usually drop after heavy rain. Light rain helps much less.",
+  "air_pollution.faq.q15": "What will the PM limits be from 2030?",
+  "air_pollution.faq.a15": "From 1 January 2030, under Directive (EU) 2024/2881, the yearly limit is 10 µg/m³ for PM2.5 and 20 µg/m³ for PM10. The daily limit is 25 µg/m³ for PM2.5 and 45 µg/m³ for PM10. Each daily limit may be exceeded up to 18 times a year. A country may postpone the deadline for a single zone to 2035 or 2040 if it meets the conditions in the directive. Compliance is checked with data from official stations.",
   "area.districts.heading": "Sofia districts: air quality by neighbourhood",
   "area.districts.intro": "All {n} districts of Sofia with the current PM2.5 value. Each district shows the median of the sensors inside its boundary.",
   "footer.copyright": "Iliyan Petkov (code under the MIT licence). Data belongs to its sources.",

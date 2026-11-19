@@ -31,7 +31,7 @@ var (
 		12: {"eeabw"}, 14: {"eeabw"}, 15: {"ecmwf"}, 16: {"cams"},
 	}
 	airPollutionFAQRefs = map[int][]string{
-		2: {"eaqi"}, 3: {"who2021", "dir2008", "dir2024", "ord12"}, 6: {"eaqi"}, 7: {"eaqi"}, 10: {"cams"},
+		2: {"eaqi"}, 3: {"who2021", "dir2008", "dir2024", "ord12"}, 6: {"eaqi"}, 7: {"eaqi"}, 10: {"cams"}, 15: {"dir2024"},
 	}
 )
 
