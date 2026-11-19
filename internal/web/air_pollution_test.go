@@ -112,14 +112,75 @@ func TestAirPollutionFAQPageMatchesVisibleDetails(t *testing.T) {
 				ldA = append(ldA, q.AcceptedAnswer.Text)
 			}
 		}
-		if len(ldQ) != 14 {
-			t.Fatalf("%s: FAQPage has %d questions, want 14", c.path, len(ldQ))
+		if len(ldQ) != 15 {
+			t.Fatalf("%s: FAQPage has %d questions, want 15", c.path, len(ldQ))
 		}
 		if strings.Join(ldQ, "|") != strings.Join(visibleQ, "|") {
 			t.Errorf("%s: FAQPage questions %q differ from visible details %q", c.path, ldQ, visibleQ)
 		}
 		if strings.Join(ldA, "|") != strings.Join(visibleA, "|") {
 			t.Errorf("%s: FAQPage answers %q differ from visible answers %q", c.path, ldA, visibleA)
+		}
+	}
+}
+
+// The 2030 limits question renders in both languages, sits in the FAQPage JSON-LD with its answer,
+// and its details block links the Directive (EU) 2024/2881 under the answer.
+func TestAirPollution2030LimitsFAQ(t *testing.T) {
+	cases := []struct{ path, q, a string }{
+		{"/air-pollution",
+			"Какви ще са нормите за ФПЧ от 2030 г.?",
+			"От 1 януари 2030 г. по Директива (ЕС) 2024/2881 средногодишната норма за ФПЧ2.5 е 10 µg/m³, а за ФПЧ10 е 20 µg/m³. Средноденонощната норма е 25 µg/m³ за ФПЧ2.5 и 45 µg/m³ за ФПЧ10. Всяка от двете дневни норми може да бъде превишена до 18 пъти в годината. Една държава може да отложи срока за отделна зона до 2035 г. или до 2040 г., ако изпълни условията на директивата. Нормите се проверяват по данни от официалните станции."},
+		{"/en/air-pollution",
+			"What will the PM limits be from 2030?",
+			"From 1 January 2030, under Directive (EU) 2024/2881, the yearly limit is 10 µg/m³ for PM2.5 and 20 µg/m³ for PM10. The daily limit is 25 µg/m³ for PM2.5 and 45 µg/m³ for PM10. Each daily limit may be exceeded up to 18 times a year. A country may postpone the deadline for a single zone to 2035 or 2040 if it meets the conditions in the directive. Compliance is checked with data from official stations."},
+	}
+	rr := renderer(t, fixture(t))
+	for _, c := range cases {
+		body := fetch(t, rr, c.path).Body.String()
+		if !strings.Contains(body, html.EscapeString(c.q)) {
+			t.Errorf("%s: question %q missing from the page", c.path, c.q)
+		}
+		found := false
+		for _, n := range ldGraph(t, body) {
+			if n.Type != "FAQPage" {
+				continue
+			}
+			for _, item := range n.MainEntity {
+				if item.Name == c.q && item.AcceptedAnswer.Text == c.a {
+					found = true
+				}
+			}
+		}
+		if !found {
+			t.Errorf("%s: FAQPage JSON-LD lacks the 2030 question with its answer", c.path)
+		}
+		// Locate the details block by its question, then check its source paragraph for the CELEX link.
+		var block string
+		for _, part := range strings.Split(body, `<details class="faq__item">`)[1:] {
+			if strings.Contains(part, html.EscapeString(c.q)) {
+				block = part
+				if end := strings.Index(part, "</details>"); end >= 0 {
+					block = part[:end]
+				}
+				break
+			}
+		}
+		if block == "" {
+			t.Fatalf("%s: no details block for the 2030 question", c.path)
+		}
+		m := faqSourceRE.FindStringSubmatch(block)
+		if m == nil {
+			t.Fatalf("%s: 2030 answer has no faq__source paragraph", c.path)
+		}
+		var celex bool
+		for _, href := range sourceLinks(t, c.path, m[1]) {
+			if strings.Contains(href, "CELEX:32024L2881") {
+				celex = true
+			}
+		}
+		if !celex {
+			t.Errorf("%s: 2030 answer source lacks a CELEX:32024L2881 link, got %q", c.path, m[1])
 		}
 	}
 }

@@ -75,7 +75,7 @@ func explainerSourceLinks(t *testing.T, path, body string) map[int][]string {
 func TestFAQAnswersRenderTheirOfficialRefs(t *testing.T) {
 	rr := renderer(t, fixture(t))
 	wantAbout := map[int]int{1: 1, 4: 1, 10: 2, 11: 2, 12: 1, 14: 1, 15: 1, 16: 1}
-	wantExplainer := map[int]int{2: 1, 3: 4, 6: 1, 7: 1, 10: 1}
+	wantExplainer := map[int]int{2: 1, 3: 4, 6: 1, 7: 1, 10: 1, 15: 1}
 	for _, path := range []string{"/about-the-data", "/en/about-the-data"} {
 		got := aboutSourceLinks(t, path, fetch(t, rr, path).Body.String())
 		for n, want := range wantAbout {
