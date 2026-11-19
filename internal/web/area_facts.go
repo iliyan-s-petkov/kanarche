@@ -203,8 +203,8 @@ func officialCount(meta snapshot.AreaMeta) int {
 	case meta.Source == "eea":
 		official = meta.SensorCount
 	case !meta.Covered:
-		// An uncovered area publishes no source split, so assume each station inside is counted.
-		official = min(len(meta.Stations), meta.SensorCount)
+		// An uncovered area publishes no source split; only stations reporting now are in SensorCount.
+		official = min(meta.FreshStations, meta.SensorCount)
 	}
 	return official
 }
