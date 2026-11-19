@@ -35,7 +35,7 @@ func factsSnapshot() *snapshot.Snapshot {
 
 	add(snapshot.AreaMeta{Slug: "shumen", Kind: "city", NameBG: "Шумен", NameEN: "Shumen", CentroidLon: 26.93, CentroidLat: 43.27,
 		Covered: true, SensorCount: 12, Values: val(14.2), ParentSlug: "shumen-oblast", Km2: 66,
-		BySource: map[string]snapshot.SourceEntry{"sensor.community": {N: 11}, "eea": {N: 1}}, Stations: []string{"BG0038A"}})
+		BySource: map[string]snapshot.SourceEntry{"sensor.community": {N: 11}, "eea": {N: 1}}, Stations: []string{"BG0038A"}, FreshStations: 1})
 	add(snapshot.AreaMeta{Slug: "pleven", Kind: "city", NameBG: "Плевен", NameEN: "Pleven", CentroidLon: 24.62, CentroidLat: 43.41,
 		Covered: true, SensorCount: 9, Values: val(15), ParentSlug: "pleven-oblast", Km2: 1044, Source: "sensor.community"})
 	for i := 1; i <= 25; i++ {
@@ -50,7 +50,7 @@ func factsSnapshot() *snapshot.Snapshot {
 	add(snapshot.AreaMeta{Slug: "razgrad-oblast", Kind: "oblast", NameBG: "Разград", NameEN: "Razgrad", CentroidLon: 26.549, CentroidLat: 43.547,
 		Covered: true, SensorCount: 9, Values: val(20), Km2: 2640, Source: "sensor.community"})
 	add(snapshot.AreaMeta{Slug: "shumen-oblast", Kind: "oblast", NameBG: "Шумен", NameEN: "Shumen", Covered: true, SensorCount: 12, Values: val(11), Km2: 1000,
-		BySource: map[string]snapshot.SourceEntry{"sensor.community": {N: 11}, "eea": {N: 1}}, Stations: []string{"BG0038A"}})
+		BySource: map[string]snapshot.SourceEntry{"sensor.community": {N: 11}, "eea": {N: 1}}, Stations: []string{"BG0038A"}, FreshStations: 1})
 	add(snapshot.AreaMeta{Slug: "pleven-oblast", Kind: "oblast", NameBG: "Плевен", NameEN: "Pleven", Covered: true, SensorCount: 9, Values: val(12), Km2: 1000, Source: "sensor.community"})
 	for i := 1; i <= 25; i++ {
 		km := 3000 + float64(i)
@@ -189,6 +189,7 @@ func networkSnapshot(sensors int, stations ...string) *snapshot.Snapshot {
 		m.Source = ""
 	}
 	m.Stations = stations
+	m.FreshStations = len(stations)
 	snap.KnownSlugs["shumen"] = m
 	return snap
 }

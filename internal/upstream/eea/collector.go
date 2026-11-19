@@ -60,6 +60,9 @@ type Collector struct {
 	metadata      Metadata
 	metadataAt    time.Time
 	lastFileFetch map[string]fileFetchState
+
+	newestSeen    time.Time
+	lastStaleWarn time.Time
 }
 
 // SetClockForTesting overrides the clock used to prune lastFileFetch and to
@@ -205,9 +208,7 @@ func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
 		slog.Warn("eea sampling point has no coordinates in the metadata file", "sampling_point", sp)
 	}
 
-	if age, stale := staleness(newest, now, StalenessWarnThreshold); stale {
-		slog.Warn("eea data stale", "age", age.Round(time.Minute).String(), "newest_row", newest, "threshold", StalenessWarnThreshold.String())
-	}
+	c.warnIfStale(newest, now)
 
 	if len(stations) == 0 {
 		return st, nil
@@ -283,6 +284,26 @@ func (c *Collector) RunOnce(ctx context.Context) (Stats, error) {
 		}
 	}
 	return st, nil
+}
+
+// staleWarnInterval is the shortest gap between two "eea data stale" warnings.
+const staleWarnInterval = time.Hour
+
+// warnIfStale remembers the newest row time seen so far, so a cycle that decoded nothing (every file
+// unmodified) still judges staleness. It warns at most once per staleWarnInterval.
+func (c *Collector) warnIfStale(newest, now time.Time) {
+	if newest.After(c.newestSeen) {
+		c.newestSeen = newest
+	}
+	age, stale := staleness(c.newestSeen, now, StalenessWarnThreshold)
+	if !stale {
+		return
+	}
+	if !c.lastStaleWarn.IsZero() && now.Sub(c.lastStaleWarn) < staleWarnInterval {
+		return
+	}
+	c.lastStaleWarn = now
+	slog.Warn("eea data stale", "age", age.Round(time.Minute).String(), "newest_row", c.newestSeen, "threshold", StalenessWarnThreshold.String())
 }
 
 // staleness reports how far behind now newest is, and whether that exceeds

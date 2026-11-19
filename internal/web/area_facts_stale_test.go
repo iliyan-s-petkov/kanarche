@@ -20,7 +20,7 @@ func TestFactsNameAStaleStationInsideTheBoundary(t *testing.T) {
 	if strings.Contains(text, "няма официална станция") {
 		t.Errorf("page claims no official station although BG0038A is inside:\n%s", text)
 	}
-	want := "В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция."
+	want := "В Шумен има 11 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция. " + officialStaleBG
 	if !hasLine(text, want) {
 		t.Errorf("missing line %q in:\n%s", want, text)
 	}
@@ -38,7 +38,7 @@ func TestFactsUncoveredAreaDoesNotSubtractStaleStationsFromCitizens(t *testing.T
 	snap.KnownSlugs["shumen"] = m
 
 	text := factsText(t, fetch(t, renderer(t, snap), "/area/shumen").Body.String())
-	want := "В Шумен има 2 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция."
+	want := "В Шумен има 2 граждански сензора и 1 официална станция на ИАОС: АИС Шумен. Тя е градска фонова станция. " + officialStaleBG
 	if !hasLine(text, want) {
 		t.Errorf("missing line %q in:\n%s", want, text)
 	}
