@@ -18,7 +18,7 @@ import (
 
 var (
 	faqSectionRE = regexp.MustCompile(`(?s)<section class="faq"[^>]*>.*?</section>`)
-	faqItemRE    = regexp.MustCompile(`(?s)<details class="faq__item">\s*<summary[^>]*>(.*?)</summary>\s*<div class="faq__answer">\s*<p>(.*?)</p>\s*</div>\s*</details>`)
+	faqItemRE    = regexp.MustCompile(`(?s)<details class="faq__item">\s*<summary[^>]*>(.*?)</summary>\s*<div class="faq__answer">\s*<p>(.*?)</p>(?:\s*<p class="faq__source">.*?</p>)?\s*</div>\s*</details>`)
 	tagRE        = regexp.MustCompile(`<[^>]*>`)
 )
 

@@ -88,7 +88,7 @@ func ldGraph(t *testing.T, body string) []apLDNode {
 
 var (
 	summaryRe = regexp.MustCompile(`(?s)<summary>(.*?)</summary>`)
-	answerRe  = regexp.MustCompile(`(?s)<div class="faq__answer"><p>(.*?)</p></div>`)
+	answerRe  = regexp.MustCompile(`(?s)<div class="faq__answer"><p>(.*?)</p>(?:<p class="faq__source">.*?</p>)?</div>`)
 )
 
 func TestAirPollutionFAQPageMatchesVisibleDetails(t *testing.T) {

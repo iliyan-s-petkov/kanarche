@@ -24,6 +24,7 @@
 {{range .Items}}
 <h3>{{.Question}}</h3>
 <p>{{.AnswerHTML}}</p>
+{{with $.SourceLine .}}<p class="faq__source">{{.}}</p>{{end}}
 {{end}}
 </section>
 {{end}}

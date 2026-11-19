@@ -12,6 +12,8 @@ type FAQItem struct {
 	Question   string
 	Answer     string
 	AnswerHTML template.HTML
+	// Refs are the official documents the answer rests on, shown as a source line under it.
+	Refs []FAQRef
 }
 
 // FAQBlock is a page's FAQ: a heading and its items.
@@ -61,9 +63,10 @@ func newFAQItem(question, answer string, links ...faqLink) FAQItem {
 // The rank question is left out when the rank block is.
 func (p PageData) faqBlock(f *AreaFacts) *FAQBlock {
 	block := &FAQBlock{Heading: p.factText("faq.heading")}
-	add := func(qKey, answer string) {
+	add := func(qKey, answer string, refs ...string) {
 		if answer != "" {
-			block.Items = append(block.Items, newFAQItem(p.factText(qKey, "{kind_plain}", f.kindPlain), answer))
+			item := newFAQItem(p.factText(qKey, "{kind_plain}", f.kindPlain), answer)
+			block.Items = append(block.Items, p.withRefs(item, refs...))
 		}
 	}
 	if f.rankFAQ != "" {
@@ -71,15 +74,20 @@ func (p PageData) faqBlock(f *AreaFacts) *FAQBlock {
 	}
 	// An oblast has one city, so the station and territory answers would repeat the city's.
 	if p.Area.Kind != "oblast" {
-		add("faq.q2", f.Network)
+		add("faq.q2", f.Network, "iaos")
 		add("faq.q3", f.Place)
 	}
 	// The two daily questions come last and apply to every kind, an oblast included.
 	if a := p.todayAnswer(); a != "" {
-		add("faq.q4", a)
+		// The no-value answer cites no document.
+		if p.Area.Covered {
+			add("faq.q4", a, "eaqi")
+		} else {
+			add("faq.q4", a)
+		}
 	}
 	if a := p.pollenAnswer(); a != "" {
-		add("faq.q5", a)
+		add("faq.q5", a, "cams")
 	}
 	if len(block.Items) == 0 {
 		return nil
@@ -160,6 +168,7 @@ func (p PageData) aboutFAQBlock() *FAQBlock {
 		if aboutFAQRZIAnswers[n] {
 			item = p.withRZILinks(item)
 		}
+		item = p.withRefs(item, aboutFAQRefs[n]...)
 		block.Items = append(block.Items, item)
 	}
 	return block
