@@ -288,10 +288,8 @@ cloudflare:
   url: "https://api.cloudflare.com/client/v4/graphql"
   zone_id: "99908e08fb4cf78baabd96d343b0b517"
   request_timeout: "30s"
-  # Once a day is enough: the API groups by day, and today's row is still
-  # accumulating until the UTC day rolls over. Each run re-pulls the last 3
-  # days to catch late-arriving/corrected data.
-  poll_interval: "24h"
+  # Hourly, so today's partial row stays fresh. Each run re-pulls the last 3 days.
+  poll_interval: "1h"
 
 # EEA bathing-water layer (Discodata WISE_BWD, CC BY 4.0). See
 # internal/upstream/bathing/README.md for the refresh cadence.

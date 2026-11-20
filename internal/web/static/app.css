@@ -2149,6 +2149,9 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .about-stats__title { margin: 0; font-size: var(--text-card); font-weight: var(--weight-body); }
 .about-stats__chart { min-block-size: 200px; }
 .about-stats__note { margin: 0; color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); line-height: 1.4; }
+.about-stats__range { justify-self: start; max-inline-size: 100%; }
+.about-stats__range .sea-seg__btn { min-inline-size: 44px; }
+.visitors-today { margin: var(--space-2) 0 0; color: var(--fg-2); font-size: var(--text-compact); }
 .visitors-chart .u-legend { visibility: hidden; }
 .visitors-chart.is-live .u-legend { visibility: visible; }
 

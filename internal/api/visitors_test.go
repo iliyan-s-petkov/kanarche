@@ -99,8 +99,8 @@ func TestVisitorsShape(t *testing.T) {
 			t.Errorf("%s = %v, want a number", k, first[k])
 		}
 	}
-	if len(first) != 4 {
-		t.Errorf("day has keys %v, want exactly day, uniques, requests, page_views", first)
+	if len(first) != 5 {
+		t.Errorf("day has keys %v, want exactly day, uniques, requests, page_views, partial", first)
 	}
 	if b.GeneratedAt.IsZero() {
 		t.Errorf("generated_at is zero")

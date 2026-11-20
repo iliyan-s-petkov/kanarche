@@ -26,6 +26,10 @@ re-checks a few recent days, since Cloudflare's own daily group can still
 shift for a day or two after it closes; `ON CONFLICT (day) DO UPDATE`
 corrects rather than duplicates.
 
+Each run covers the current UTC day, and `poll_interval` is one hour, so
+today's row is replaced every hour until the day closes. The API marks it
+`partial` and carries its `fetched_at`.
+
 30 days, not more: actual stored retention on this plan is ~29-30 days, well
 short of the ~52-week query-range cap the API itself enforces.
 
