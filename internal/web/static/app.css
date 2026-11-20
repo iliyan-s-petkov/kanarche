@@ -2152,8 +2152,11 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .about-stats__range { justify-self: start; max-inline-size: 100%; }
 .about-stats__range .sea-seg__btn { min-inline-size: 44px; }
 .visitors-today { margin: var(--space-2) 0 0; color: var(--fg-2); font-size: var(--text-compact); }
-.visitors-chart .u-legend { visibility: hidden; }
-.visitors-chart.is-live .u-legend { visibility: visible; }
+/* Series names and swatches stay visible so the average line is explained; uPlot hides the value cells until the cursor is live. The date row only means something with a value. */
+.visitors-chart .u-legend { margin-block-start: var(--space-2); }
+.visitors-chart:not(.is-live) .u-series:first-child { display: none; }
+.visitors-chart:not(.is-live) .u-value, .visitors-chart:not(.is-live) .u-legend th::after { display: none; }
+.visitors-chart .u-legend .u-series { display: inline-block; text-align: start; }
 
 .about-links { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
 /* Icon left of the title, body under the title; the arrow sits in the top corner. */
