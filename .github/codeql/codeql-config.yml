@@ -1,0 +1,7 @@
+name: kanarche codeql config
+paths-ignore:
+  - web/dist
+  - internal/web/dist
+  - '**/node_modules'
+  - design-kit
+  - '**/testdata'

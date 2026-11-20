@@ -42,6 +42,11 @@ pre-commit run --all-files
 
 On each commit the hooks check whitespace, YAML and JSON syntax, merge markers, large files, secrets (gitleaks), `gofmt`, `go vet`, the i18n copy rule and private paths. Tests, staticcheck, govulncheck and e2e run only in CI.
 
+## Security scans
+
+The `zap` workflow runs a passive OWASP ZAP baseline against an instance started inside the job, weekly and on pull requests that touch the web, API or HTTP code. It fails on any warning not ignored in `.zap/rules.tsv`, and the summary is in the job log.
+The `codeql` workflow runs CodeQL for Go and JavaScript on pull requests, pushes to master and weekly. Findings appear as pull request annotations and under Security, Code scanning.
+
 ## Pull requests
 
 - Open a PR against `master`. CI (`.github/workflows/ci.yml`) must be green:
