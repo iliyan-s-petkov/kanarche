@@ -1,0 +1,46 @@
+# Fixers skip generated, vendored and fixture files. Setup is in CONTRIBUTING.md.
+# Slow checks (tests, staticcheck, govulncheck, e2e) stay in CI.
+default_install_hook_types: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: &generated ^(data/|design-kit/|internal/upstream/eea/bg_station_names\.json$|internal/web/static/build-a-sensor/NOTICE\.txt$|.*/testdata/|web/dist/|.*\.min\.js$)
+      - id: end-of-file-fixer
+        exclude: *generated
+      - id: mixed-line-ending
+        exclude: *generated
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt
+        entry: tools/hooks/gofmt-check.sh
+        language: script
+        types: [go]
+      - id: go-vet
+        name: go vet
+        entry: tools/hooks/go-vet.sh
+        language: script
+        types: [go]
+        pass_filenames: false
+      - id: i18n-copy-rule
+        name: i18n copy rule
+        entry: tools/hooks/i18n-copy-rule.sh
+        language: script
+        files: ^internal/i18n/.*\.json$
+      - id: no-private-paths
+        name: no private paths
+        entry: tools/hooks/no-private-paths.sh
+        language: script
+        always_run: true

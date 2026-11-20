@@ -234,4 +234,3 @@ describe('SensorPanel.svelte favourite star', () => {
     expect(star(render())).toBeNull()
   })
 })
-

@@ -317,4 +317,3 @@ function sensorChartProps(sensor, options, d, link) {
     },
   }
 }
-
