@@ -27,6 +27,14 @@ import (
 )
 
 func TestBrowser(t *testing.T) {
+	baseURL := bootStack(t)
+	runPlaywright(t, baseURL)
+}
+
+// bootStack starts Postgres, migrates, seeds the fixtures and serves the
+// real stack on a loopback port. No collector runs, so nothing leaves the
+// machine. The ZAP scan (zap_test.go) boots the same stack.
+func bootStack(t *testing.T) string {
 	ctx := context.Background()
 	pool := testsupport.NewPostgres(t)
 	if err := db.Migrate(ctx, pool); err != nil {
@@ -77,8 +85,10 @@ func TestBrowser(t *testing.T) {
 			}
 		}()
 	})
-	baseURL := "http://" + public
+	return "http://" + public
+}
 
+func runPlaywright(t *testing.T, baseURL string) {
 	args := []string{"playwright", "test"}
 	// E2E_SHARD=i/N runs one slice of the suite; unset runs all of it.
 	if shard := os.Getenv("E2E_SHARD"); shard != "" {

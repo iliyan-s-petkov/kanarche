@@ -1,0 +1,51 @@
+name: zap
+on:
+  # Monday 04:00 UTC.
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'internal/web/**'
+      - 'internal/api/**'
+      - 'internal/httpx/**'
+      - 'cmd/**'
+      - 'Dockerfile'
+      - '.github/workflows/zap.yml'
+      - '.zap/**'
+      - 'tools/zap/**'
+permissions:
+  contents: read
+concurrency:
+  group: zap-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
+        with:
+          go-version: '1.26.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+        timeout-minutes: 10
+      # The server serves the embedded bundle, so build it first.
+      - run: npm run build
+        working-directory: web
+      # Passive baseline only, against an instance started inside this job on
+      # loopback (Postgres container, fixtures, no collectors, no upstream
+      # calls). No secrets, so it also runs on fork PRs. The report is not
+      # uploaded and no issue is written: the public repo gets pass or fail
+      # and a short summary in this log. Any WARN or FAIL rule not ignored in
+      # .zap/rules.tsv fails the job. Image: zaproxy stable, pinned by digest.
+      - name: ZAP baseline
+        env:
+          ZAP_IMAGE: ghcr.io/zaproxy/zaproxy@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af
+        run: tools/zap/scan.sh
