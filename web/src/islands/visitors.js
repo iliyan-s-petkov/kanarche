@@ -137,7 +137,7 @@ export async function mount(el) {
             filter: () => (data.partial >= 0 ? [data.partial] : null),
           },
         },
-        { label: d.tAvg, stroke: () => c.axis, width: 1.5, spanGaps: false, points: { show: false } },
+        { label: d.tAvg, stroke: () => c.axis, width: 1.5, spanGaps: false, points: { show: false }, value: (u, v) => (v == null ? '--' : Math.round(v)) },
       ],
       axes: [
         { values: tickValues(data.xs, document.documentElement.lang || undefined), stroke: () => c.axis, ticks: { stroke: () => c.axis }, grid: { stroke: () => c.grid } },
