@@ -109,7 +109,6 @@ func SecurityHeaders(next http.Handler, csp, permissionsPolicy string) http.Hand
 		probe("securityHeaders")
 		h := w.Header()
 		h.Set("Content-Security-Policy", csp)
-		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		// Legacy, for browsers that predate frame-ancestors. Harmless where
 		// both are understood; the CSP directive wins there.
