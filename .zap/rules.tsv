@@ -5,5 +5,5 @@
 10099	IGNORE	(Source Code Disclosure - Java)
 # The build-a-sensor guide documents the sensor setup access point address 192.168.4.1 on purpose.
 2	IGNORE	(Private IP Disclosure)
-# Not set yet: require-corp would block the cross-origin basemap tiles, credentialless needs a browser check of the map first. Listed for the owner in the PR.
+# Not set yet: require-corp would block the cross-origin basemap tiles and credentialless needs a browser check of the map first. A ticket tracks it.
 90004	IGNORE	(Cross-Origin-Embedder-Policy Header Missing or Invalid)
