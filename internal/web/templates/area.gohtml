@@ -424,13 +424,14 @@
     <table class="table area-sensors__table">
       <caption>{{.Caption $}}</caption>
       <thead><tr>
-        <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
+        <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>{{if .HasDistricts}}
+        <th scope="col">{{$.T "area.sensors.col.district"}}</th>{{end}}
         <th scope="col" class="num">{{$.PMLink "P2"}}, {{$.T "unit.P2"}}</th>
         <th scope="col" class="num">{{$.PMLink "P1"}}, {{$.T "unit.P1"}}</th>
         <th scope="col">{{$.T "area.updated"}}</th>
       </tr></thead>
       <tbody>{{range .Rows}}
-        <tr><th scope="row">{{.ID}}</th><td class="num">{{.P2}}</td><td class="num">{{.P1}}</td><td>{{.Updated}}</td></tr>{{end}}
+        <tr><th scope="row">{{.ID}}</th>{{if $.AreaStations.HasDistricts}}<td>{{.District}}</td>{{end}}<td class="num">{{.P2}}</td><td class="num">{{.P1}}</td><td>{{.Updated}}</td></tr>{{end}}
       </tbody>
     </table>
   </div>

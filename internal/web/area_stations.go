@@ -17,9 +17,10 @@ const maxStaticStations = 50
 
 // StationRow is one station in the server-rendered list.
 type StationRow struct {
-	ID      int64
-	P2, P1  string
-	Updated template.HTML
+	ID       int64
+	District string
+	P2, P1   string
+	Updated  template.HTML
 }
 
 // StationList is the no-JS copy of the area's sensor table.
@@ -27,6 +28,8 @@ type StationList struct {
 	Rows  []StationRow
 	Total int
 	Shown int
+	// HasDistricts is true when any row names a district, so the column is shown.
+	HasDistricts bool
 }
 
 // sensorColumnsIn reads only the columns the list needs from the snapshot's
@@ -44,7 +47,7 @@ type sensorColumnsIn struct {
 // stationList groups devices by station like web/src/lib/stations.js does: the
 // first device with a reading supplies the value, the newest last_seen the time.
 // Rows are ordered by station id, as in the island's table.
-func (p PageData) stationList(snap *snapshot.Snapshot, slug string) *StationList {
+func (p PageData) stationList(snap *snapshot.Snapshot, slug string, districts map[string]string) *StationList {
 	body, ok := snap.AreaSensors[slug]
 	if !ok || len(body.JSON) == 0 {
 		return nil
@@ -59,11 +62,13 @@ func (p PageData) stationList(snap *snapshot.Snapshot, slug string) *StationList
 		seen   time.Time
 	}
 	by := map[int64]*agg{}
+	members := map[int64][]int64{}
 	for i, id := range c.ID {
 		st := id
 		if i < len(c.Station) {
 			st = c.Station[i]
 		}
+		members[st] = append(members[st], id)
 		a := by[st]
 		if a == nil {
 			a = &agg{}
@@ -103,6 +108,16 @@ func (p PageData) stationList(snap *snapshot.Snapshot, slug string) *StationList
 	for _, id := range ids {
 		a := by[id]
 		row := StationRow{ID: id, P2: val(a.p2), P1: val(a.p1)}
+		// Same rule as sensorRows in web/src/lib/areasensors.js: the station id, then its devices.
+		for _, d := range append([]int64{id}, members[id]...) {
+			if name := districts[strconv.FormatInt(d, 10)]; name != "" {
+				row.District = name
+				break
+			}
+		}
+		if row.District != "" {
+			out.HasDistricts = true
+		}
 		if !a.seen.IsZero() {
 			row.Updated = template.HTML(timeTag(a.seen, p.sofiaLayout(a.seen)))
 		}
