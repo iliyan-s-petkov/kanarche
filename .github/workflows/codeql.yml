@@ -13,6 +13,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   analyze:
+    # Skipped until the repository's CodeQL default setup is turned off and
+    # the variable CODEQL_ADVANCED is set to true. While the default setup is
+    # on, GitHub rejects the upload of an advanced configuration, so the job
+    # would fail on every run.
+    if: vars.CODEQL_ADVANCED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -38,7 +43,3 @@ jobs:
       - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea  # v4.39.4
         with:
           category: /language:${{ matrix.language }}
-          upload: never
-          output: sarif-out
-      - run: |
-          for f in sarif-out/*.sarif; do echo "$f"; jq -r '[.runs[].results[]|.ruleId]|group_by(.)|map("\(.[0]) \(length)")|.[]' "$f"; done
