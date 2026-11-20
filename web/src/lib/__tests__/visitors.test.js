@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chartData, partialLabel, sliceRange, sofiaClock, trailingAverage, visitorDays } from '../visitors.js'
+import { chartData, dayLabel, partialLabel, sliceRange, sofiaClock, trailingAverage, visitorDays } from '../visitors.js'
 
 const day = (d, uniques, extra = {}) => ({ day: d, uniques, requests: 9999, page_views: 8888, partial: false, ...extra })
 const ymd = (n) => new Date(Date.UTC(2026, 8, 1 + n)).toISOString().slice(0, 10)
@@ -185,5 +185,32 @@ describe('partialLabel', () => {
 
   it('is empty without a stamp, so no half-filled label is shown', () => {
     expect(partialLabel('today until {time}', null)).toBe('')
+  })
+})
+
+describe('dayLabel', () => {
+  const midnight = Date.UTC(2026, 10, 8) / 1000
+
+  it('prints the UTC day in the page language, with no time', () => {
+    expect(dayLabel(midnight, 'bg')).toBe('08.11.2026')
+    expect(dayLabel(midnight, 'en')).toBe('8 Nov 2026')
+  })
+
+  it('does not slip back a day for a reader behind UTC', () => {
+    const was = process.env.TZ
+    process.env.TZ = 'America/Los_Angeles'
+    try {
+      // Local time there is 2026-11-07 16:00, so a local formatter would say the 7th.
+      expect(new Date(midnight * 1000).getDate()).toBe(7)
+      expect(dayLabel(midnight, 'bg')).toBe('08.11.2026')
+      expect(dayLabel(midnight, 'en')).toBe('8 Nov 2026')
+    } finally {
+      if (was === undefined) delete process.env.TZ
+      else process.env.TZ = was
+    }
+  })
+
+  it('is empty for an unusable value', () => {
+    expect(dayLabel(NaN)).toBe('')
   })
 })

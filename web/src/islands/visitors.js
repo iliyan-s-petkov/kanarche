@@ -7,7 +7,7 @@ import uPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { getJSON } from '../lib/api.js'
 import { tickValues } from '../lib/timeaxis.js'
-import { DEFAULT_RANGE, RANGES, chartData, partialLabel } from '../lib/visitors.js'
+import { DEFAULT_RANGE, RANGES, chartData, dayLabel, partialLabel } from '../lib/visitors.js'
 
 // One request for the longest range. The API caps days at 365.
 const URL = '/api/v1/visitors?days=365'
@@ -119,7 +119,7 @@ export async function mount(el) {
       // is on a point (see .visitors-chart in app.css). Strokes are functions so
       // a theme change only has to redraw.
       series: [
-        { label: d.tDate },
+        { label: d.tDate, value: (u, v) => (v == null ? '--' : dayLabel(v, document.documentElement.lang || 'bg')) },
         { label: d.tTitle, stroke: () => c.line, width: 2, spanGaps: false, points: { show: false } },
         {
           // Yesterday to today, dashed, with a hollow marker on today only.

@@ -104,3 +104,17 @@ export function partialLabel(template, iso) {
   const time = sofiaClock(iso)
   return time ? template.replace('{time}', time) : ''
 }
+
+const dayEn = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })
+
+// The UTC day behind an x value (epoch seconds at UTC midnight), for the hover
+// readout. Always UTC: in a zone behind UTC the local date would be the day before.
+export function dayLabel(seconds, lang = 'bg') {
+  const d = new Date(seconds * 1000)
+  if (Number.isNaN(d.getTime())) return ''
+  if (lang.startsWith('bg')) {
+    const p = (n) => String(n).padStart(2, '0')
+    return `${p(d.getUTCDate())}.${p(d.getUTCMonth() + 1)}.${d.getUTCFullYear()}`
+  }
+  return dayEn.format(d)
+}
