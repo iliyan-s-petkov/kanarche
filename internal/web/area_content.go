@@ -504,8 +504,22 @@ func (rr *Renderer) childrenOf(meta snapshot.AreaMeta, snap *snapshot.Snapshot, 
 // areaSensorDistricts maps sensor id to its Sofia district name for the area's sensor table.
 // Empty unless the area holds districts below it. A district page names only itself.
 func (rr *Renderer) areaSensorDistricts(meta snapshot.AreaMeta, snap *snapshot.Snapshot, lang string) string {
-	if meta.Kind == "neighbourhood" {
+	out := rr.sensorDistrictNames(meta, snap, lang)
+	if len(out) == 0 {
 		return ""
+	}
+	b, err := json.Marshal(out)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+// sensorDistrictNames is the {sensor id: district name} map behind both the island's
+// data-districts and the static table's district column. Nil when the area names none.
+func (rr *Renderer) sensorDistrictNames(meta snapshot.AreaMeta, snap *snapshot.Snapshot, lang string) map[string]string {
+	if meta.Kind == "neighbourhood" {
+		return nil
 	}
 	out := map[string]string{}
 	for id, loc := range snap.SensorLocations {
@@ -515,14 +529,7 @@ func (rr *Renderer) areaSensorDistricts(meta snapshot.AreaMeta, snap *snapshot.S
 		}
 		out[strconv.FormatInt(id, 10)] = rr.rowFrom(m, lang).Name
 	}
-	if len(out) == 0 {
-		return ""
-	}
-	b, err := json.Marshal(out)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return out
 }
 
 // descendsFrom walks m's parent chain. The bound guards against a cycle in bad data.
