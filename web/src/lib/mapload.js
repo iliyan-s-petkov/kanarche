@@ -52,6 +52,7 @@ import {
   locateVisitor, openDeepLinkedSensor, placeVisitor, prefetchPlacement, LOCATE_TIMEOUT_MS,
 } from './placement.js'
 import { restoreLastView } from './lastview.js'
+import { hashWantsSea } from './viewstate.js'
 import { openFavouriteSensor } from './favourite.js'
 import { installTimelapseLazy } from './timelapse-lazy.js'
 import { whenRenderSettled } from './idle.js'
@@ -389,6 +390,8 @@ export function installMapLoad({ map, state, cfg, chrome, vs, windState, boundar
       id: 'sea',
       label: cfg.t.sea.toggle,
       defaultOff: true,
+      // #layers=sea (the bathing page's map link) starts it on; undefined keeps the remembered choice.
+      initial: hashWantsSea(globalThis.location?.hash) || undefined,
       mark: 'square',
       apply: (on) => setSea(map, cfg, chrome, seaState, on),
     }

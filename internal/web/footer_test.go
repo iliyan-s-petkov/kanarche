@@ -355,8 +355,8 @@ func TestAirbgInfoIsLinkedFromTheFooterAndAboutAsIndependent(t *testing.T) {
 	rr := renderer(t, cityFixture(t))
 	for _, path := range []string{"/", "/en/"} {
 		foot := footerOf(t, fetch(t, rr, path).Body.String())
-		if !strings.Contains(foot, `href="https://airbg.info/" rel="noopener noreferrer"`) {
-			t.Errorf("%s: footer lacks the airbg.info link", path)
+		if strings.Contains(foot, `href="https://airbg.info/"`) {
+			t.Errorf("%s: footer still links airbg.info directly, it points to the build page", path)
 		}
 	}
 	for _, tc := range []struct{ path, note string }{

@@ -1,0 +1,166 @@
+{{/* /build-a-sensor: static guide. Copy is owner-approved (OP 767); the FAQPage JSON-LD is built from the same FAQBlock as the details below. */}}
+{{define "main"}}
+<div class="measure guide">
+{{template "breadcrumb" .}}
+<div class="page-head">
+  <h1 class="t-title">{{.T "build.h1"}}</h1>
+  <p class="t-body">{{.BuildIntro}}</p>
+</div>
+
+<nav class="about-toc" aria-label="{{.T "build.h1"}}">
+  <a href="#build-1">1. {{.T "build.s1.h2"}}</a>
+  <a href="#build-2">2. {{.T "build.s2.h2"}}</a>
+  <a href="#build-3">3. {{.T "build.s3.h2"}}</a>
+  <a href="#build-4">4. {{.T "build.s4.h2"}}</a>
+  <a href="#build-5">5. {{.T "build.s5.h2"}}</a>
+  <a href="#build-6">6. {{.T "build.s6.h2"}}</a>
+</nav>
+
+<section class="guide-step" id="build-1" aria-labelledby="build-1-h">
+  <h2 id="build-1-h" class="guide-step__h"><span class="guide-step__n">1</span>{{.T "build.s1.h2"}}</h2>
+  <div class="guide-split">
+    <ul class="guide-parts">
+    {{- range .GuideKeys "build.s1.p" 9}}{{with $.GuidePart .}}
+      <li><strong>{{.Name}}</strong>{{if .Detail}} {{.Detail}}{{end}}</li>
+    {{- end}}{{end}}
+    </ul>
+    {{.GuideFig "parts" "build.s1.parts_alt"}}
+  </div>
+  <div class="guide-callout guide-callout--usb" role="note">
+    {{.GuideFig "usb-board" "build.s1.usb_alt"}}
+    <p><strong>{{.T "build.s1.usb_lead"}}</strong> {{.T "build.s1.usb_body"}}</p>
+  </div>
+</section>
+
+<section class="guide-step" id="build-2" aria-labelledby="build-2-h">
+  <h2 id="build-2-h" class="guide-step__h"><span class="guide-step__n">2</span>{{.T "build.s2.h2"}}</h2>
+  <p class="guide-lead">{{.T "build.s2.lead"}}</p>
+  <ol class="guide-list">
+  {{- range $i, $k := .GuideKeys "build.s2.i" 7}}
+    <li>{{$.GuideText $k}}
+      {{- if eq $i 4}}{{$.GuideFig "flasher-select-firmware" "build.s2.alt_pick"}}{{end}}
+      {{- if eq $i 6}}{{$.GuideFig "flasher-finished" "build.s2.alt_done"}}{{end}}</li>
+  {{- end}}
+  </ol>
+  <details class="guide-more">
+    <summary>{{.T "build.s2.stuck_summary"}}</summary>
+    <ul>
+    {{- range .GuideKeys "build.s2.stuck" 3}}
+      <li>{{$.GuideText .}}</li>
+    {{- end}}
+    </ul>
+  </details>
+</section>
+
+<section class="guide-step" id="build-3" aria-labelledby="build-3-h">
+  <h2 id="build-3-h" class="guide-step__h"><span class="guide-step__n">3</span>{{.T "build.s3.h2"}}</h2>
+  <h3>{{.T "build.s3.wire.h3"}}</h3>
+  <p class="guide-lead">{{.T "build.s3.wire.lead"}}</p>
+  <div class="guide-wire">
+    <div class="guide-wire__text">
+      {{.GuideTable "build.s3.sds" 5}}
+      <p>{{.T "build.s3.solder.lead"}}</p>
+      <ol class="guide-list">
+      {{- range .GuideKeys "build.s3.solder.i" 4}}
+        <li>{{$.GuideText .}}</li>
+      {{- end}}
+      </ol>
+      <div class="guide-row guide-row--2">
+        {{.GuideFig "solder-parts" "build.s3.solder.alt1"}}
+        {{.GuideFig "solder-pins" "build.s3.solder.alt2"}}
+      </div>
+      {{.GuideTable "build.s3.bme" 4}}
+    </div>
+    <div class="guide-wire__figs">
+      {{.GuideFigZoom "wiring-diagram" "wiring-diagram-large" "build.s3.wire.alt_diagram"}}
+      {{.GuideFig "wiring-photo" "build.s3.wire.alt_photo"}}
+    </div>
+  </div>
+
+  <h3>{{.T "build.s3.pipe.h3"}}</h3>
+  <ol class="guide-list">
+  {{- range $i, $k := .GuideKeys "build.s3.pipe.i" 8}}
+    <li>{{$.GuideText $k}}
+      {{- if eq $i 0}}{{$.GuideFig "tie-board" "build.s3.pipe.alt1"}}{{end}}
+      {{- if eq $i 1}}{{$.GuideFig "tube-on-sensor" "build.s3.pipe.alt2"}}{{end}}
+      {{- if eq $i 2}}{{$.GuideFig "bme-on-tube" "build.s3.pipe.alt3"}}{{end}}
+      {{- if eq $i 4}}{{$.GuideFig "sensor-in-bend" "build.s3.pipe.alt5"}}{{end}}
+      {{- if eq $i 6}}{{$.GuideFig "bme-position" "build.s3.pipe.alt7"}}{{end}}</li>
+  {{- end}}
+  </ol>
+
+  <h3>{{.T "build.s3.place.h3"}}</h3>
+  <p>{{.T "build.s3.place.body"}}</p>
+</section>
+
+<section class="guide-step" id="build-4" aria-labelledby="build-4-h">
+  <h2 id="build-4-h" class="guide-step__h"><span class="guide-step__n">4</span>{{.T "build.s4.h2"}}</h2>
+  <ol class="guide-list">
+  {{- range $i, $k := .GuideKeys "build.s4.i" 8}}
+    <li>{{$.GuideText $k}}
+      {{- if eq $i 3}}{{$.GuideFig "station-home" "build.s4.alt_home"}}{{end}}
+      {{- if eq $i 4}}{{$.GuideFig "station-wifi" "build.s4.alt_wifi"}}{{end}}
+      {{- if eq $i 5}}
+      <div class="guide-row guide-row--3">
+        {{$.GuideFig "station-sensors" "build.s4.alt_sensors"}}
+        {{$.GuideFig "station-apis" "build.s4.alt_apis"}}
+        {{$.GuideFig "station-more" "build.s4.alt_more"}}
+      </div>
+      {{- end}}</li>
+  {{- end}}
+  </ol>
+  <div class="guide-callout" role="note">
+    <p><strong>{{.T "build.s4.android_lead"}}</strong> {{.T "build.s4.android_body"}}</p>
+  </div>
+  <div class="guide-callout" role="note">
+    <p><strong>{{.T "build.s4.find_lead"}}</strong> {{.T "build.s4.find_body"}}</p>
+    {{.GuideFig "station-values" "build.s4.alt_values"}}
+  </div>
+</section>
+
+<section class="guide-step" id="build-5" aria-labelledby="build-5-h">
+  <h2 id="build-5-h" class="guide-step__h"><span class="guide-step__n">5</span>{{.T "build.s5.h2"}}</h2>
+  <ol class="guide-list">
+  {{- range .GuideKeys "build.s5.i" 8}}
+    <li>{{$.GuideText .}}</li>
+  {{- end}}
+  </ol>
+</section>
+
+<section class="guide-step" id="build-6" aria-labelledby="build-6-h">
+  <h2 id="build-6-h" class="guide-step__h"><span class="guide-step__n">6</span>{{.T "build.s6.h2"}}</h2>
+  <table class="table guide-symptoms">
+    <thead><tr>{{range .GuideCells "build.s6.head"}}<th scope="col">{{.}}</th>{{end}}</tr></thead>
+    <tbody>
+    {{- range .GuideKeys "build.s6.r" 6}}
+      {{- $cells := $.GuideCells .}}
+      <tr><th scope="row">{{index $cells 0}}</th><td>{{$.GuideCell (index $cells 1)}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table>
+  <details class="guide-more">
+    <summary>{{.T "build.s6.adv_summary"}}</summary>
+    <p>{{.T "build.s6.adv_body"}}</p>
+  </details>
+</section>
+
+<section class="guide-plain" aria-labelledby="build-reach-h">
+  <h2 id="build-reach-h">{{.T "build.reach.h2"}}</h2>
+  <p>{{.GuideText "build.reach.body"}}</p>
+</section>
+
+{{with .BuildFAQ}}
+<section class="faq" aria-labelledby="faq-heading">
+<h2 id="faq-heading">{{.Heading}}</h2>
+{{range .Items}}
+<details class="faq__item">
+<summary>{{.Question}}</summary>
+<div class="faq__answer"><p>{{.AnswerHTML}}</p></div>
+</details>
+{{end}}
+</section>
+{{end}}
+
+<p class="guide-credit">{{.BuildCredit}} {{.T "build.credit.flasher"}}</p>
+</div>
+{{end}}

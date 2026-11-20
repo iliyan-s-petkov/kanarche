@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseHash, serialiseHash } from '../viewstate.js'
+import { parseHash, serialiseHash, hashWantsSea } from '../viewstate.js'
 import { SOURCES, CITIZEN_SOURCE, OFFICIAL_SOURCE } from '../sourcefilter.svelte.js'
 
 const opts = { metrics: ['P1', 'P2', 'temperature'], defaultMetric: 'P2' }
@@ -97,5 +97,26 @@ describe('serialiseHash', () => {
     for (const sources of [allSources, new Set([OFFICIAL_SOURCE]), new Set()]) {
       expect(parseHash(serialiseHash({ sources }, 'P2'), opts).sources).toEqual(sources)
     }
+  })
+})
+
+// The bathing page links the map as /#layers=sea. The token only asks for the sea layer: it must not
+// turn the air sources off, because parseSources ignores tokens it does not know.
+describe('hashWantsSea', () => {
+  it('is true when the layers key carries the sea token', () => {
+    expect(hashWantsSea('#layers=sea')).toBe(true)
+    expect(hashWantsSea('#metric=P1&layers=community,sea')).toBe(true)
+  })
+
+  it('is false without the token', () => {
+    expect(hashWantsSea('')).toBe(false)
+    expect(hashWantsSea('#layers=community')).toBe(false)
+    expect(hashWantsSea('#layers=none')).toBe(false)
+    expect(hashWantsSea('#metric=sea')).toBe(false)
+    expect(hashWantsSea(undefined)).toBe(false)
+  })
+
+  it('leaves the air sources on', () => {
+    expect(parseHash('#layers=sea', opts).sources).toEqual(allSources)
   })
 })

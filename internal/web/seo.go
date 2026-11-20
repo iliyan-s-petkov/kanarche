@@ -84,6 +84,8 @@ func (rr *Renderer) llmsTxt() string {
 		{"/licences", "Licences", en("seo.licences.description")},
 		{"/open-data", "Open data", en("seo.opendata.description")},
 		{"/privacy", "Privacy", en("seo.privacy.description")},
+		{"/build-a-sensor", "Build a sensor", en("seo.build.description")},
+		{"/bathing-water", "Bathing water", en("seo.bathing.description")},
 	}
 	// The news list is a page only in the languages that have a public post.
 	for _, lang := range rr.newsListLangs(rr.newsNow()) {
@@ -189,7 +191,7 @@ func (rr *Renderer) sitemapBytes(snap *snapshot.Snapshot) ([]byte, error) {
 	}
 	entries := make([]entry, 0, len(slugs)+10)
 	entries = append(entries, entry{path: "/", lastMod: day}, entry{path: "/areas", lastMod: day})
-	for _, p := range []string{"/about", "/about-the-data", "/privacy", "/licences", "/open-data", "/terms", "/pm25", "/pm10", "/air-pollution"} {
+	for _, p := range []string{"/about", "/about-the-data", "/privacy", "/licences", "/open-data", "/terms", "/pm25", "/pm10", "/air-pollution", "/build-a-sensor", "/bathing-water"} {
 		entries = append(entries, entry{path: p, lastMod: staticPagesLastMod})
 	}
 	for _, slug := range slugs {

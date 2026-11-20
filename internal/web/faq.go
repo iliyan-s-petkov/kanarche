@@ -151,25 +151,36 @@ func aboutFAQKeys(n int) (q, a string) {
 	return "about_faq.q" + num, "about_faq.a" + num
 }
 
-// aboutFAQBlock renders the About page FAQ. No area is involved, so only the poll interval and EAQI edges are filled.
-func (p PageData) aboutFAQBlock() *FAQBlock {
-	pairs := append([]string{"{minutes}", strconv.Itoa(p.pollMinutes)}, eaqiEdgePairs()...)
-	fill := strings.NewReplacer(pairs...)
+// aboutFAQFill fills the poll interval and EAQI edges in About copy. No area is involved.
+func (p PageData) aboutFAQFill() *strings.Replacer {
+	return strings.NewReplacer(append([]string{"{minutes}", strconv.Itoa(p.pollMinutes)}, eaqiEdgePairs()...)...)
+}
+
+// aboutFAQItem builds About question n with its links, RHI pages and references.
+func (p PageData) aboutFAQItem(n int, fill *strings.Replacer) FAQItem {
 	links := []faqLink{
 		{Label: p.T("about.sources.heading"), Href: "#sources"},
 		{Label: p.T("licences.title"), Href: p.Path("/licences")},
 		{Label: p.T("metric.P2"), Href: p.Path("/pm25")},
 		{Label: p.T("metric.P1"), Href: p.Path("/pm10")},
 	}
+	qKey, aKey := aboutFAQKeys(n)
+	item := newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...)
+	if aboutFAQRZIAnswers[n] {
+		item = p.withRZILinks(item)
+	}
+	return p.withRefs(item, aboutFAQRefs[n]...)
+}
+
+// aboutFAQBlock renders the About page FAQ. Questions 10 to 14 are about bathing water and live on /bathing-water.
+func (p PageData) aboutFAQBlock() *FAQBlock {
+	fill := p.aboutFAQFill()
 	block := &FAQBlock{Heading: p.T("about_faq.heading")}
 	for n := 1; n <= aboutFAQCount; n++ {
-		qKey, aKey := aboutFAQKeys(n)
-		item := newFAQItem(fill.Replace(p.T(qKey)), fill.Replace(p.T(aKey)), links...)
-		if aboutFAQRZIAnswers[n] {
-			item = p.withRZILinks(item)
+		if isBathingFAQ(n) {
+			continue
 		}
-		item = p.withRefs(item, aboutFAQRefs[n]...)
-		block.Items = append(block.Items, item)
+		block.Items = append(block.Items, p.aboutFAQItem(n, fill))
 	}
 	return block
 }

@@ -1,0 +1,70 @@
+{{/* /bathing-water: static explainer. Copy is owner-approved (OP 767); the FAQPage JSON-LD is built from the same FAQBlock as the details below. */}}
+{{define "main"}}
+<div class="measure guide">
+{{template "breadcrumb" .}}
+<div class="page-head">
+  <h1 class="t-title">{{.T "bathing.h1"}}</h1>
+  <p class="t-body">{{.T "bathing.intro"}}</p>
+</div>
+
+<nav class="about-toc" aria-label="{{.T "bathing.h1"}}">
+  <a href="#find">{{.T "bathing.find.h2"}}</a>
+  <a href="#classes">{{.T "bathing.classes.h2"}}</a>
+  <a href="#today">{{.T "bathing.today.h2"}}</a>
+  <a href="#rzi">{{.T "bathing.rzi.h2"}}</a>
+  <a href="#bans">{{.T "bathing.bans.h2"}}</a>
+  <a href="#source">{{.T "bathing.source.h2"}}</a>
+</nav>
+
+<section class="guide-plain" id="find" aria-labelledby="find-h">
+  <h2 id="find-h">{{.T "bathing.find.h2"}}</h2>
+  <p>{{.T "bathing.find.body"}}</p>
+  <p><a class="link guide-maplink" href="{{.SeaMapPath}}">{{.T "sea.toggle"}}</a></p>
+</section>
+
+<section class="guide-plain" id="classes" aria-labelledby="classes-h">
+  <h2 id="classes-h">{{.T "bathing.classes.h2"}}</h2>
+  <p>{{.T "bathing.classes.body"}}</p>
+</section>
+
+<section class="guide-plain" id="today" aria-labelledby="today-h">
+  <h2 id="today-h">{{.T "bathing.today.h2"}}</h2>
+  <p>{{.T "bathing.today.body"}}</p>
+</section>
+
+<section class="guide-plain" id="rzi" aria-labelledby="rzi-h">
+  <h2 id="rzi-h">{{.T "bathing.rzi.h2"}}</h2>
+  <p>{{.T "bathing.rzi.body"}}</p>
+</section>
+
+<section class="guide-plain" id="bans" aria-labelledby="bans-h">
+  <h2 id="bans-h">{{.T "bathing.bans.h2"}}</h2>
+  <div class="guide-callout" role="note">
+    <p>{{.T "bathing.bans.body"}}</p>
+    <p>{{range $i, $pg := .RZIPages}}{{if $pg.URL}}{{if $i}} · {{end}}<a class="link" href="{{$pg.URL}}" rel="noopener noreferrer">{{$.T $pg.LabelKey}}</a>{{end}}{{end}}</p>
+  </div>
+</section>
+
+<section class="guide-plain" id="source" aria-labelledby="source-h">
+  <h2 id="source-h">{{.T "bathing.source.h2"}}</h2>
+  <p>{{.T "bathing.source.body"}}</p>
+  <ul class="guide-links">
+    <li><a class="link" href="https://www.eea.europa.eu/en/topics/in-depth/bathing-water" rel="noopener noreferrer">{{.T "sea.info.link_eea"}}</a></li>
+    <li><a class="link" href="https://www.eea.europa.eu/en/analysis/maps-and-charts/state-of-bathing-waters-in-2025" rel="noopener noreferrer">{{.T "sea.info.link_map"}}</a></li>
+    <li><a class="link" href="{{.Path "/licences"}}">{{.T "licences.title"}}</a></li>
+  </ul>
+</section>
+
+{{with .BathingFAQ}}
+<section class="faq" aria-labelledby="faq-heading">
+<h2 id="faq-heading">{{.Heading}}</h2>
+{{range .Items}}
+<details class="faq__item">
+<summary>{{.Question}}</summary>
+<div class="faq__answer"><p>{{.AnswerHTML}}</p>{{with $.SourceLine .}}<p class="faq__source">{{.}}</p>{{end}}</div>
+</details>
+{{end}}
+</section>
+{{end}}
+</div>
+{{end}}
