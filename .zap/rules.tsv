@@ -1,0 +1,9 @@
+# ZAP baseline rules. Columns: rule id, action, name. Every IGNORE has a reason above it.
+# The embed route must be framable by any https origin, so its frame-ancestors differs from every other route (httpx.EmbedCSP).
+10055	IGNORE	(CSP: Failure to Define Directive with No Fallback)
+# False positive: i18n text in data-t-* attributes, such as "{season}", reads as Java source to the rule.
+10099	IGNORE	(Source Code Disclosure - Java)
+# The build-a-sensor guide documents the sensor setup access point address 192.168.4.1 on purpose.
+2	IGNORE	(Private IP Disclosure)
+# Not set yet: require-corp would block the cross-origin basemap tiles, credentialless needs a browser check of the map first. Listed for the owner in the PR.
+90004	IGNORE	(Cross-Origin-Embedder-Policy Header Missing or Invalid)

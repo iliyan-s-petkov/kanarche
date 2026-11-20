@@ -38,3 +38,7 @@ jobs:
       - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea  # v4.39.4
         with:
           category: /language:${{ matrix.language }}
+          upload: never
+          output: sarif-out
+      - run: |
+          for f in sarif-out/*.sarif; do echo "$f"; jq -r '[.runs[].results[]|.ruleId]|group_by(.)|map("\(.[0]) \(length)")|.[]' "$f"; done
