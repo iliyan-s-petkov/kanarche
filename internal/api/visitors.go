@@ -53,6 +53,11 @@ type visitorDay struct {
 	Uniques   int    `json:"uniques"`
 	Requests  int64  `json:"requests"`
 	PageViews int64  `json:"page_views"`
+	// Partial is true only for the current UTC day, which is still counting.
+	Partial bool `json:"partial"`
+	// FetchedAt is when the collector last pulled the partial day, so the page
+	// can say how fresh the number is. Absent for closed days.
+	FetchedAt *time.Time `json:"fetched_at,omitempty"`
 }
 
 // No total of uniques: Cloudflare counts unique IPs per day, so summing days
@@ -76,7 +81,7 @@ func (d Deps) handleVisitors(w http.ResponseWriter, r *http.Request) {
 		days = min(max(n, 1), visitorsMaxDays)
 	}
 
-	rows, generatedAt, err := d.visitors.get(r.Context(), d.Store, time.Now())
+	rows, generatedAt, err := d.visitors.get(r.Context(), d.Store, d.now())
 	if err != nil {
 		slog.Error("visitor daily query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal", "Internal server error.")
@@ -84,20 +89,27 @@ func (d Deps) handleVisitors(w http.ResponseWriter, r *http.Request) {
 	}
 	// Calendar window including today (UTC). Rows are ascending, so drop the
 	// old prefix; a gap shortens the result instead of reaching further back.
-	now := time.Now().UTC()
+	now := d.now().UTC()
 	cutoff := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -(days - 1))
 	for len(rows) > 0 && rows[0].Day.Before(cutoff) {
 		rows = rows[1:]
 	}
 
 	body := visitorsBody{GeneratedAt: generatedAt.UTC(), Days: make([]visitorDay, 0, len(rows))}
+	today := cutoff.AddDate(0, 0, days-1)
 	for _, v := range rows {
-		body.Days = append(body.Days, visitorDay{
+		day := visitorDay{
 			Day:       v.Day.Format("2006-01-02"),
 			Uniques:   v.Uniques,
 			Requests:  v.Requests,
 			PageViews: v.PageViews,
-		})
+			Partial:   v.Day.UTC().Equal(today),
+		}
+		if day.Partial {
+			fetched := v.FetchedAt.UTC()
+			day.FetchedAt = &fetched
+		}
+		body.Days = append(body.Days, day)
 	}
 	encoded, err := json.Marshal(body)
 	if err != nil {

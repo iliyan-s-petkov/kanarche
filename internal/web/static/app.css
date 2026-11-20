@@ -2149,8 +2149,19 @@ body:has(.map:fullscreen, .map--faux-full, .map-sensor-sheet) .back-to-top { dis
 .about-stats__title { margin: 0; font-size: var(--text-card); font-weight: var(--weight-body); }
 .about-stats__chart { min-block-size: 200px; }
 .about-stats__note { margin: 0; color: var(--fg-2); font-size: var(--text-compact); letter-spacing: var(--track-compact); line-height: 1.4; }
-.visitors-chart .u-legend { visibility: hidden; }
-.visitors-chart.is-live .u-legend { visibility: visible; }
+.about-stats__range { justify-self: start; max-inline-size: 100%; }
+.about-stats__range .sea-seg__btn { min-inline-size: 44px; }
+.visitors-today { margin: var(--space-2) 0 0; color: var(--fg-2); font-size: var(--text-compact); }
+/* Names and line swatches stay visible so the average line is explained; uPlot hides the value cells until the cursor is live. The date row only means something with a value, and the today row repeats the label under the chart. */
+.visitors-chart .u-legend { margin-block-start: var(--space-2); text-align: start; font: inherit; font-size: var(--text-compact); color: var(--fg-2); }
+.visitors-chart .u-legend th { font-weight: var(--weight-body); }
+.visitors-chart .u-legend .u-series { display: inline-block; margin-inline-end: var(--space-3); }
+.visitors-chart .u-legend .u-series > * { padding: 2px 0; }
+.visitors-chart:not(.is-live) .u-series:first-child { display: none; }
+.visitors-chart .u-series:nth-child(3) { display: none; }
+.visitors-chart:not(.is-live) .u-value, .visitors-chart:not(.is-live) .u-legend th::after { display: none; }
+.visitors-chart .u-legend .u-marker { block-size: 0; inline-size: 1.5em; margin-inline-end: var(--space-2); border-width: 0 0 2px !important; border-style: solid !important; background: none !important; vertical-align: middle; }
+.visitors-chart .u-legend .u-series:nth-child(4) .u-marker { border-style: dashed !important; }
 
 .about-links { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
 /* Icon left of the title, body under the title; the arrow sits in the top corner. */
@@ -2465,3 +2476,6 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 .guide-fig:has(img[src*="flasher-"]), .guide-fig:has(img[src*="station-"]), .guide-fig:has(img[src*="wiring-diagram"]) { max-inline-size: 640px; }
 .guide-callout--usb .guide-fig { max-inline-size: none; }
 .guide-row .guide-fig, .guide-wire__figs .guide-fig, .guide-split .guide-fig { max-inline-size: none; }
+.visitors-chart .uplot { font-family: inherit; }
+.visitors-chart .u-legend .u-series:first-child .u-marker { display: none; }
+.visitors-chart .u-legend .u-value { padding-inline-start: var(--space-1); }
