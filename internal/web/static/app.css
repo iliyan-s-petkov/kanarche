@@ -2422,7 +2422,7 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 .guide-wire { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); align-items: start; }
 .guide-wire__text, .guide-wire__figs { display: grid; gap: var(--space-4); min-inline-size: 0; }
 
-.guide-callout { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-2); border: 1px solid var(--border-faint); border-inline-start: 4px solid var(--accent); border-radius: var(--radius-sm); }
+.guide-callout { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface); border: 1px solid var(--border-faint); border-inline-start: 4px solid var(--accent); border-radius: var(--radius-sm); }
 .guide-callout p { margin: 0; max-inline-size: var(--prose-measure); }
 .guide-callout--usb { grid-template-columns: 5rem minmax(0, 1fr); align-items: center; }
 .guide-callout--usb .guide-fig figcaption { display: none; }

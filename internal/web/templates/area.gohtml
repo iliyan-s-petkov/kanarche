@@ -363,8 +363,8 @@
 {{/* Sensors: the in-view list and the full table, each a details whose summary is an H3. */}}
 {{if .Area.Covered}}<section class="area-sensors-sec" aria-labelledby="sensors-h">
 <h2 id="sensors-h">{{.T "area.heading.sensors"}}</h2>
-{{with .AreaOfficial}}<h3 class="official-stations__h3">{{.Heading $}}</h3>
-<div class="area-sensors__scroll">
+{{with .AreaOfficial}}<h3 class="official-stations__h3" id="official-sensors-h">{{.Heading $}}</h3>
+<div class="area-sensors__scroll" tabindex="0" role="region" aria-labelledby="official-sensors-h">
   <table class="table official-stations__table">
     <thead><tr>
       <th scope="col">{{$.T "area.sensors.col.sensor"}}</th>
@@ -419,8 +419,8 @@
      data-t-unit-p1="{{.T "unit.P1"}}"
      {{template "bandLabels" .}}>
 {{with .AreaStations}}<details class="area-sensors area-sensors--static" data-area-sensors-static>
-  <summary><h3 class="sensors-h3">{{.Summary $}}</h3></summary>
-  <div class="area-sensors__scroll">
+  <summary><h3 class="sensors-h3" id="static-sensors-h">{{.Summary $}}</h3></summary>
+  <div class="area-sensors__scroll" tabindex="0" role="region" aria-labelledby="static-sensors-h">
     <table class="table area-sensors__table">
       <caption>{{.Caption $}}</caption>
       <thead><tr>

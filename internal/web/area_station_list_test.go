@@ -54,7 +54,7 @@ func TestAreaStationListInRawHTML(t *testing.T) {
 // The list is the sensors section's H3: a heading inside the summary, after the H2.
 func TestAreaStationListSummaryIsAnH3UnderTheSensorsHeading(t *testing.T) {
 	list := stationList(t, "/en/area/sofia")
-	if !strings.Contains(list, `<summary><h3 class="sensors-h3">All sensors in this area (3)</h3></summary>`) {
+	if !strings.Contains(list, `<summary><h3 class="sensors-h3" id="static-sensors-h">All sensors in this area (3)</h3></summary>`) {
 		t.Errorf("the summary is not an H3:\n%s", list)
 	}
 	body := fetch(t, renderer(t, stationListFixture(t)), "/en/area/sofia").Body.String()
