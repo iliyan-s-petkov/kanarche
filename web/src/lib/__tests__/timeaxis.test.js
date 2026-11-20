@@ -133,4 +133,3 @@ describe('tickSpace', () => {
     expect(widths.every((t) => !/\d:\d/.test(t)), 'a week is labelled by date, not clock time').toBe(true)
   })
 })
-

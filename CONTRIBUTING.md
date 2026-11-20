@@ -32,6 +32,16 @@ go test -tags e2e -count=1 ./internal/e2e/
 cd web && npm run build   # rebuild without the E2E flag before committing/serving normally
 ```
 
+## Pre-commit hooks
+
+```bash
+brew install pre-commit gitleaks   # or: pipx install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+On each commit the hooks check whitespace, YAML and JSON syntax, merge markers, large files, secrets (gitleaks), `gofmt`, `go vet`, the i18n copy rule and private paths. Tests, staticcheck, govulncheck and e2e run only in CI.
+
 ## Pull requests
 
 - Open a PR against `master`. CI (`.github/workflows/ci.yml`) must be green:
