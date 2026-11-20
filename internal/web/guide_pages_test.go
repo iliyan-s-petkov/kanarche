@@ -230,7 +230,7 @@ func TestBathingFAQMovedOffAboutTheData(t *testing.T) {
 	}
 }
 
-var coastalSlugs = []string{"varna", "varna-oblast", "burgas", "burgas-oblast", "dobrich", "dobrich-oblast"}
+var coastalSlugs = []string{"varna", "varna-oblast", "burgas", "burgas-oblast", "dobrich-oblast"}
 
 func TestCoastalAreaPagesLinkBathingPage(t *testing.T) {
 	snap := fixture(t)
@@ -238,6 +238,8 @@ func TestCoastalAreaPagesLinkBathingPage(t *testing.T) {
 		snap.KnownSlugs[s] = snapshot.AreaMeta{Slug: s, Kind: "oblast", NameBG: s, NameEN: s,
 			CentroidLon: 27.9, CentroidLat: 43.2, DefaultZoom: 9, Covered: true, SensorCount: 3}
 	}
+	snap.KnownSlugs["dobrich"] = snapshot.AreaMeta{Slug: "dobrich", Kind: "city", NameBG: "dobrich", NameEN: "dobrich",
+		CentroidLon: 27.8, CentroidLat: 43.6, DefaultZoom: 11, Covered: true, SensorCount: 3}
 	rr := renderer(t, snap)
 	for _, s := range coastalSlugs {
 		for _, c := range []struct{ prefix, want string }{{"", `href="/bathing-water"`}, {"/en", `href="/en/bathing-water"`}} {
@@ -251,8 +253,10 @@ func TestCoastalAreaPagesLinkBathingPage(t *testing.T) {
 		}
 	}
 	for _, c := range []struct{ prefix, want string }{{"", `href="/bathing-water"`}, {"/en", `href="/en/bathing-water"`}} {
-		if strings.Contains(fetch(t, rr, c.prefix+"/area/sofia").Body.String(), c.want) {
-			t.Errorf("%s/area/sofia: an inland area links the bathing page", c.prefix)
+		for _, inland := range []string{"sofia", "dobrich"} {
+			if strings.Contains(fetch(t, rr, c.prefix+"/area/"+inland).Body.String(), c.want) {
+				t.Errorf("%s/area/%s: an inland area links the bathing page", c.prefix, inland)
+			}
 		}
 	}
 }

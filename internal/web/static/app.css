@@ -2457,3 +2457,11 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
 @media (max-width: 480px) {
   .guide-callout--usb { grid-template-columns: 4rem minmax(0, 1fr); }
 }
+
+/* Photos and screenshots stop growing on wide screens and sit with the step text. */
+.guide-fig { max-inline-size: 520px; }
+.guide-fig img { inline-size: auto; max-inline-size: 100%; }
+.guide-fig__zoom { max-inline-size: 100%; }
+.guide-fig:has(img[src*="flasher-"]), .guide-fig:has(img[src*="station-"]), .guide-fig:has(img[src*="wiring-diagram"]) { max-inline-size: 640px; }
+.guide-callout--usb .guide-fig { max-inline-size: none; }
+.guide-row .guide-fig, .guide-wire__figs .guide-fig, .guide-split .guide-fig { max-inline-size: none; }

@@ -172,7 +172,7 @@ func (p PageData) Coastal() bool {
 var coastalAreaSlugs = map[string]bool{
 	"varna": true, "varna-oblast": true,
 	"burgas": true, "burgas-oblast": true,
-	"dobrich": true, "dobrich-oblast": true,
+	"dobrich-oblast": true,
 }
 
 // SeaMapPath is the home map opened with the bathing water layer on.
