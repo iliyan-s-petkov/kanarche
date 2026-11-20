@@ -9,7 +9,7 @@ set -euo pipefail
 : "${ZAP_IMAGE:?set ZAP_IMAGE to the pinned zaproxy image}"
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 work=$(mktemp -d)
-trap 'touch "$work/stop"; wait "${app_pid:-}" 2>/dev/null || true; rm -rf "$work"' EXIT
+trap 'touch "$work/stop"; wait "${app_pid:-}" 2>/dev/null || true; rm -rf "$work" 2>/dev/null || true' EXIT
 
 # The app: the e2e stack (Postgres container, migrations, fixtures), no
 # collectors, geocoder stubbed. TestServeForZAP serves until $work/stop exists.
@@ -44,9 +44,22 @@ set +e
 docker run --rm ${ZAP_NETWORK_ARGS---network host} \
   -e ZAP_PATHS="$paths" \
   -v "$work/wrk:/zap/wrk:rw" \
-  "$ZAP_IMAGE" zap-baseline.py -t "$target" -c rules.tsv --hook=/zap/wrk/hook.py -m 2 -T 8 2>&1 \
+  "$ZAP_IMAGE" zap-baseline.py -t "$target" -c rules.tsv --hook=/zap/wrk/hook.py -m 2 -T 8 -J zap.json 2>&1 \
   | tee "$work/zap.log" | grep -vE '^\s*$' | tail -n 120
 status=${PIPESTATUS[0]}
 set -e
+# Short per-alert summary for the log. The full report is never uploaded.
+if [ -s "$work/wrk/zap.json" ]; then
+  python3 -I - "$work/wrk/zap.json" <<'PY'
+import json, sys
+for site in json.load(open(sys.argv[1]))["site"]:
+    for a in site["alerts"]:
+        if a["riskcode"] == "0":
+            continue
+        print("ALERT", a["pluginid"], a["name"], "risk", a["riskdesc"], "count", a["count"])
+        for i in a["instances"][:2]:
+            print("   ", i["uri"], "|", i.get("param", ""), "|", i.get("evidence", "")[:120].replace("\n", " "), "|", i.get("otherinfo", "")[:160].replace("\n", " "))
+PY
+fi
 echo "zap-baseline exit code: $status"
 exit "$status"
