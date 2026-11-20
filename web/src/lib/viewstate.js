@@ -49,6 +49,14 @@ function parseSources(raw) {
   return found.size ? found : new Set(SOURCES)
 }
 
+// hashWantsSea reports a 'sea' token in #layers=. It is read apart from parseHash, whose result the
+// air-source state is built from: the sea layer is a map view, not a source, and the token only asks
+// for it to start on. The bathing page links the map this way.
+export function hashWantsSea(hash) {
+  const raw = new URLSearchParams(String(hash || '').replace(/^#/, '')).get('layers')
+  return raw !== null && raw.split(',').includes('sea')
+}
+
 // A sensor id is a positive integer. Rejecting '0', '-5' and '1.5' explicitly:
 // Number('') is 0 and Number('1.5') is 1.5, so a bare Number() cast would let
 // all three through and produce a request for a sensor that cannot exist.

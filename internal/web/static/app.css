@@ -2384,3 +2384,84 @@ li:has(> .combobox__group) + li:has(> .combobox__group) { border-block-start: 1p
   .sea-panel__close { min-inline-size: 44px; min-block-size: 44px; margin: -6px; }
   .sea-panel__info { z-index: 1; }
 }
+
+/* Build-a-sensor and bathing-water guides (OP 767). Existing tokens only, so both themes follow. */
+.guide { display: grid; gap: var(--section-gap); }
+.guide > * { min-inline-size: 0; }
+.guide code { font: 0.92em/1.4 ui-monospace, monospace; background: var(--surface-2); border: 1px solid var(--border-faint); border-radius: var(--radius-sm); padding: 0 var(--space-1); overflow-wrap: anywhere; }
+.guide-step { display: grid; gap: var(--space-4); align-content: start; padding: var(--space-6); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); scroll-margin-block-start: var(--space-6); }
+.guide-step h2, .guide-step h3 { margin: 0; }
+.guide-step h3 { font-size: var(--text-card); }
+.guide-step p, .guide-step ul, .guide-step ol { margin: 0; }
+.guide-step__h { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-h2); }
+.guide-step__n { flex: none; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--accent); color: var(--accent-on); display: grid; place-items: center; font: var(--weight-emphasis) var(--text-compact)/1 var(--font-body); font-variant-numeric: tabular-nums; }
+.guide-lead { color: var(--fg-2); max-inline-size: var(--prose-measure); }
+.guide-plain { display: grid; gap: var(--space-2); max-inline-size: var(--prose-measure); scroll-margin-block-start: var(--space-6); }
+.guide-plain h2 { margin: 0; font-size: var(--text-h2); }
+.guide-plain p { margin: 0; }
+.guide-links { margin: 0; padding-inline-start: var(--space-6); }
+.guide-maplink { font-weight: var(--weight-emphasis); }
+
+.guide-list { list-style: none; padding: 0; display: grid; gap: var(--space-4); counter-reset: sub; max-inline-size: var(--prose-measure); }
+.guide-list > li { position: relative; padding-inline-start: var(--space-8); counter-increment: sub; display: grid; gap: var(--space-3); }
+.guide-list > li::before { content: counter(sub); position: absolute; inset-inline-start: 0; inset-block-start: 0; inline-size: 1.75rem; block-size: 1.75rem; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent); display: grid; place-items: center; font: var(--weight-emphasis) var(--text-caption)/1 var(--font-body); font-variant-numeric: tabular-nums; }
+
+.guide-split { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.guide-parts { list-style: none; padding: 0; display: grid; gap: var(--space-2); }
+.guide-parts li { position: relative; padding-inline-start: var(--space-6); font-size: var(--text-compact); }
+.guide-parts li::before { content: ""; position: absolute; inset-inline-start: 0; inset-block-start: 0.2em; inline-size: 1rem; block-size: 1rem; border: 2px solid var(--accent); border-radius: var(--radius-sm); }
+
+.guide-fig { margin: 0; display: grid; gap: var(--space-2); }
+.guide-fig img { display: block; inline-size: 100%; max-inline-size: 100%; block-size: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.guide-fig figcaption { font-size: var(--text-caption); color: var(--muted); }
+.guide-fig__zoom { display: block; border-radius: var(--radius-sm); }
+.guide-fig__zoom:focus-visible { box-shadow: var(--focus-ring); }
+.guide-row { display: grid; gap: var(--space-3); align-items: start; }
+.guide-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.guide-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.guide-wire { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); align-items: start; }
+.guide-wire__text, .guide-wire__figs { display: grid; gap: var(--space-4); min-inline-size: 0; }
+
+.guide-callout { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-2); border: 1px solid var(--border-faint); border-inline-start: 4px solid var(--accent); border-radius: var(--radius-sm); }
+.guide-callout p { margin: 0; max-inline-size: var(--prose-measure); }
+.guide-callout--usb { grid-template-columns: 5rem minmax(0, 1fr); align-items: center; }
+.guide-callout--usb .guide-fig figcaption { display: none; }
+
+.guide-table { inline-size: 100%; }
+.guide-table caption { text-align: start; font-weight: var(--weight-emphasis); padding-block-end: var(--space-2); }
+.guide-table th, .guide-table td { text-align: start; }
+.guide-table td, .guide-table th[scope="row"] { font-variant-numeric: tabular-nums; }
+.guide-symptoms { inline-size: 100%; }
+.guide-symptoms th, .guide-symptoms td { text-align: start; vertical-align: top; }
+
+.guide-more { border: 1px solid var(--border-faint); border-radius: var(--radius-sm); padding-inline: var(--space-4); }
+.guide-more > summary { display: flex; align-items: center; min-block-size: 44px; font-weight: var(--weight-emphasis); cursor: pointer; }
+.guide-more > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.guide-more > :not(summary) { padding-block-end: var(--space-3); }
+.guide-more ul { padding-inline-start: var(--space-6); display: grid; gap: var(--space-2); }
+
+.guide-credit { margin: 0; font-size: var(--text-caption); color: var(--muted); max-inline-size: var(--prose-measure); }
+
+@media (max-width: 672px) {
+  .guide-step { padding: var(--space-4); }
+  .guide-split, .guide-wire { grid-template-columns: minmax(0, 1fr); }
+  .guide-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .guide-row--3 .guide-fig figcaption { display: none; }
+  /* The symptom table becomes one card per row. */
+  .guide-symptoms thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .guide-symptoms, .guide-symptoms tbody, .guide-symptoms tr, .guide-symptoms th, .guide-symptoms td { display: block; }
+  .guide-symptoms tr { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-3); margin-block-end: var(--space-3); background: var(--surface); }
+  .guide-symptoms th[scope="row"] { padding: 0 0 var(--space-1); border: 0; font-weight: var(--weight-emphasis); }
+  .guide-symptoms td { padding: 0; border: 0; color: var(--fg-2); }
+}
+@media (max-width: 480px) {
+  .guide-callout--usb { grid-template-columns: 4rem minmax(0, 1fr); }
+}
+
+/* Photos and screenshots stop growing on wide screens and sit with the step text. */
+.guide-fig { max-inline-size: 520px; }
+.guide-fig img { inline-size: auto; max-inline-size: 100%; }
+.guide-fig__zoom { max-inline-size: 100%; }
+.guide-fig:has(img[src*="flasher-"]), .guide-fig:has(img[src*="station-"]), .guide-fig:has(img[src*="wiring-diagram"]) { max-inline-size: 640px; }
+.guide-callout--usb .guide-fig { max-inline-size: none; }
+.guide-row .guide-fig, .guide-wire__figs .guide-fig, .guide-split .guide-fig { max-inline-size: none; }
