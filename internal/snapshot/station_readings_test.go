@@ -8,8 +8,8 @@ import (
 	"kanarche.eu/internal/store"
 )
 
-// A fresh station carries its latest values and last time. A stale one has no values but keeps the
-// last time the registry knew.
+// A fresh station carries its latest values and last time. A stale one has no values and no time: the
+// registry's last_seen is an ingest stamp, so it must not show as a measurement time.
 func TestBuildSensorsKeepsOfficialReadingsPerStation(t *testing.T) {
 	now := time.Date(2026, 11, 19, 13, 0, 0, 0, time.UTC)
 	seen := now.Add(-10 * time.Minute)
@@ -38,8 +38,23 @@ func TestBuildSensorsKeepsOfficialReadingsPerStation(t *testing.T) {
 		t.Errorf("fresh station invented an O3 value: %+v", got)
 	}
 	stale, ok := snap.StationReadings["BG0052A"]
-	if !ok || len(stale.Values) != 0 || !stale.LastSeen.Equal(old) {
-		t.Errorf("stale station = %+v (present %v), want no values and seen %v", stale, ok, old)
+	if !ok || len(stale.Values) != 0 || !stale.LastSeen.IsZero() {
+		t.Errorf("stale station = %+v (present %v), want no values and no time", stale, ok)
+	}
+}
+
+// A station the registry knows but no fresh reading covers gets an entry with no values and a zero time,
+// even when the registry row carries a last_seen.
+func TestStationReadingsFromRegistryOnlyStationHasNoTime(t *testing.T) {
+	regSeen := time.Date(2026, 11, 19, 17, 19, 0, 0, time.UTC)
+	reg := officialSensor(1, "BG0052A", 23.4, 42.66)
+	reg.LastSeen = regSeen
+	got, ok := stationReadingsFrom([]store.SensorReading{reg}, nil)["BG0052A"]
+	if !ok {
+		t.Fatalf("registry-only station has no entry")
+	}
+	if len(got.Values) != 0 || !got.LastSeen.IsZero() {
+		t.Errorf("registry-only station = %+v, want no values and no time", got)
 	}
 }
 

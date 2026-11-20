@@ -27,7 +27,7 @@ func (l OfficialList) Heading(p PageData) string {
 }
 
 // officialList lists every registry station inside the area, in the registry's order. A station with no fresh
-// reading keeps its row: its cells say there is no measurement and the time is the last one known.
+// reading keeps its row: its cells say there is no measurement and its updated cell stays empty.
 // It is nil when the area has no official stations.
 func (p PageData) officialList(meta snapshot.AreaMeta, snap *snapshot.Snapshot) *OfficialList {
 	noValue := p.T("panel.no_value")

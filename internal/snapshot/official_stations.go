@@ -8,7 +8,7 @@ import (
 )
 
 // StationReading is the latest PM2.5, PM10, NO2 and O3 of one official station and when it last reported.
-// A station with no fresh reading has no Values and keeps the time the registry last saw it.
+// A station with no fresh reading has no Values and no time: the registry's last_seen is the ingest stamp, not a measurement.
 type StationReading struct {
 	Values   map[string]float64
 	LastSeen time.Time
@@ -18,33 +18,35 @@ type StationReading struct {
 var stationMetrics = []string{"P2", "P1", "NO2", "O3"}
 
 // stationReadingsFrom keys every registry station by its EoI code, then fills it from the fresh readings.
+// The registry only names the station: its LastSeen is not used, so a station with no fresh reading has a zero time.
 // A station can have several devices: a metric comes from the first device that has it, the time is the newest.
 func stationReadingsFrom(registry, fresh []store.SensorReading) map[string]StationReading {
 	out := map[string]StationReading{}
-	add := func(list []store.SensorReading) {
-		for _, sr := range list {
-			if sr.Source != "eea" || sr.StationCode == "" {
-				continue
-			}
-			r := out[sr.StationCode]
-			if r.Values == nil {
-				r.Values = map[string]float64{}
-			}
-			for _, m := range stationMetrics {
-				if v, ok := sr.Values[m]; ok {
-					if _, has := r.Values[m]; !has {
-						r.Values[m] = v
-					}
-				}
-			}
-			if sr.LastSeen.After(r.LastSeen) {
-				r.LastSeen = sr.LastSeen
-			}
-			out[sr.StationCode] = r
+	for _, sr := range registry {
+		if sr.Source == "eea" && sr.StationCode != "" {
+			out[sr.StationCode] = StationReading{}
 		}
 	}
-	add(registry)
-	add(fresh)
+	for _, sr := range fresh {
+		if sr.Source != "eea" || sr.StationCode == "" {
+			continue
+		}
+		r := out[sr.StationCode]
+		if r.Values == nil {
+			r.Values = map[string]float64{}
+		}
+		for _, m := range stationMetrics {
+			if v, ok := sr.Values[m]; ok {
+				if _, has := r.Values[m]; !has {
+					r.Values[m] = v
+				}
+			}
+		}
+		if sr.LastSeen.After(r.LastSeen) {
+			r.LastSeen = sr.LastSeen
+		}
+		out[sr.StationCode] = r
+	}
 	return out
 }
 
